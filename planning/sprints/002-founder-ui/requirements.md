@@ -45,7 +45,7 @@ PRD §3.1 (all ten) and §3.5 judge story.
 - Currency: `USD n / day`. Cost strip: `USD <totalDailyRate> / day` against `USD <dailyBudget> / day`.
 - Dates: `22 Sep – 29 Sep 2026` (en dash, Africa/Nairobi, date-only).
 - Each gap renders `statement`, its `rule` name, and one button per `nextActions` entry in order (D-29). A budget or team-size gap button pre-fills the review chip with the new value.
-- Evidence badge labels: `Credential`, `Project`, `Credential + project` for `credential`, `project` and `both`.
+- Evidence badge labels: `Credential`, `Project`, `Both` for `credential`, `project` and `both` (D-35: the Stitch DESIGN.md block wins).
 - The browser never parses MeTTa. It renders `VentureRoute` fields only.
 
 ## Edge cases

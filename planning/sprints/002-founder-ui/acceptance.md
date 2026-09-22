@@ -7,7 +7,7 @@ Every Playwright line runs against `vite preview` (production build) with the en
 - [ ] Engine: `uv run python scripts/export_offline_snapshot.py --check` reports up to date, and the snapshot's five routes equal `POST /api/route` for the five seed briefs (pytest, D-34).
 - [ ] Playwright, Health pilot: load the scenario → review → Find my route. The route screen shows:
   - the `Feasible` badge;
-  - exactly 3 builder cards (Amina Otieno, Daniel Kiptoo, Grace Wambui) with evidence badges `Credential + project`, `Credential + project`, `Credential`, each with a Demo data pill;
+  - exactly 3 builder cards (Amina Otieno, Daniel Kiptoo, Grace Wambui) with evidence badges `Both`, `Both`, `Credential` (D-35), each with a Demo data pill;
   - the cost strip `USD 370 / day` against `USD 400 / day`;
   - IP card `asset-afya-triage`, cohort `cohort-2026a`, partner `amani-health`.
 - [ ] Playwright, Constrained brief: shows the `Partial` badge. The Gaps panel precedes the team section in DOM order (asserted with `compareDocumentPosition`). The single gap shows rule `route-gap`, affected `mobile`, and exactly two next-action buttons with the D-29 texts. One builder card: Zawadi Njoroge.
