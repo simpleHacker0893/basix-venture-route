@@ -23,6 +23,53 @@ each of the seven named MeTTa rules from `planning/DOMAIN.md` (`verified-for-ski
 `route-gap`). Helper equations inside `rules.metta` do not count. `demo_today` echoes the frozen
 demo clock (D-14).
 
+## POST /api/route
+
+The structured-form path (requirements.md item 7): a full `VentureBrief` in, a `VentureRoute`
+out, no language model involved. `POST /api/conversation` returns the identical `route`
+object for the same brief (parity test in Sprint 001).
+
+Request: a `VentureBrief` (`packages/contracts`, PRD §5.3). `location` is required when
+`deliveryMode` is `on-site`; `maximumTeamSize` is 1–5; `dailyBudget` is a positive integer
+USD per day (D-16).
+
+Response `200`: a `VentureRoute` (PRD §5.4), camelCase on the wire:
+
+```json
+{
+  "status": "feasible",
+  "builders": [{ "builderId": "amina-otieno", "name": "Amina Otieno", "dayRate": 120,
+                 "covers": ["python"], "evidenceType": "both", "evidencePaths": [{ "rule": "eligible-builder", "facts": ["..."], "conclusion": "..." }] }],
+  "totalDailyRate": 370,
+  "reusableIp": { "assetId": "asset-afya-triage", "title": "Afya Triage", "path": { "rule": "reuse-fit", "...": "..." } },
+  "cohort": { "cohortId": "cohort-2026a", "universityId": "omni-university", "path": { "rule": "cohort-of", "...": "..." } },
+  "partner": { "partnerId": "amani-health", "path": { "rule": "partner-fit", "facts": ["(supports-vertical amani-health health)", "..."], "conclusion": "..." } },
+  "gaps": [],
+  "rulesApplied": ["cohort-of", "eligible-builder", "partner-fit", "reuse-fit"],
+  "summary": "Feasible route: 3 builders (Amina Otieno, Daniel Kiptoo, Grace Wambui) cover ai-metta, python, ui-ux for USD 370 a day. Reusable IP: Afya Triage. Partner: amani-health."
+}
+```
+
+`status` is computed by the route service from the gap set and coverage (D-09): all required
+skills covered by a team within size and budget → `feasible`; no builder eligible for any
+required skill → `infeasible` (`builders: []`, no `reusableIp`, `cohort` or `partner`, D-23);
+otherwise `partial`. Gaps carry `rule` (`route-gap` from MeTTa; `assembler.team-size-fit` /
+`assembler.budget-fit` from the assembler, D-22).
+
+Validation failures answer `422` with the contract's validation-error shape and a
+field-specific message, never a route:
+
+```json
+{ "type": "validation-error", "message": "location: Value error, location is required when deliveryMode is on-site" }
+```
+
+## GET /api/scenarios
+
+The five seed briefs from `services/engine/seed/briefs.json`, in seed order, as
+`VentureBrief[]` so the UI can preload the demo scenarios (`brief-health-01`, `brief-agri-01`,
+`brief-constrained-01`, `brief-budget-01`, `brief-onsite-01`). Every brief carries
+`demoData: true`.
+
 ## POST /internal/query (dev-only)
 
 **Off by default.** The route answers `404 Not Found` unless the engine runs with
