@@ -1,6 +1,6 @@
 # STATE — rolling snapshot (edit in place, never append a log)
 
-**Updated:** 2026-09-22 (night) · **Demo:** Thu 2026-10-01 · **Current sprint:** 001 — Routing core (PR "Sprint 001: Routing core" open from `sprint/001-routing-core`; every Must line ✅ from a clean checkout; one Should line ❌ with follow-up #19; awaiting Architect review and Operator merge)
+**Updated:** 2026-09-22 (night) · **Demo:** Thu 2026-10-01 · **Current sprint:** 001 — Routing core: Architect verdict **DONE_WITH_FOLLOW_UPS** (`planning/sprints/001-routing-core/review.md`); PR #20 ready to merge. Next: 002 — Founder UI (planned, Fri 25 Sep 08:00)
 
 ## Where we are
 - Sprint 000 merged into `master`: `services/engine` runs FastAPI with `hyperon==0.2.10` in-process; all seven named rules live in `seed/rules.metta` over 181 seed atoms; `GET /health` and dev-only `POST /internal/query` are up.
@@ -14,7 +14,7 @@
 - Money is USD per day (D-16); status is a pure function of gaps and coverage (D-09, Q-01 closed by the Architect ruling); display names derive from IDs and day rates come from `day_rates(builder_ids)` (D-24). Integers on the wire stay within the JavaScript safe range on both sides of the contract.
 - Web stack is React 19 + Vite (D-25). Keys arrive via `.env` only (D-26). Railway/Vercel commands are run by the Operator from `docs/DEPLOY.md` (D-27). Demo video via Playwright CLI; pitch deck as a Slides artifact with `docs/PITCH.md` (D-28).
 - Docker is not run locally (Operator decision 2026-09-22): the engine image and `docker compose up engine` are verified on GitHub Codespaces. Local Windows needs the VC++ 2015–2022 runtime for the hyperon wheel (installed). Clean-checkout runs must live at a short path: a worktree under the Claude scratchpad hit the Windows 260-character limit and one SDK module failed to import.
-- Knowledge graph: `graphify-out/graph.json` and `GRAPH_REPORT.md` are committed; `/graphify query "<question>"` answers codebase questions from it. Rebuild with `/graphify . --update` after a sprint merges.
+- Knowledge graph: `.gitignore` allows `graphify-out/graph.json` and `GRAPH_REPORT.md`, but neither is committed yet (Architect review of `2c38d84`). Build it with `/graphify .` and commit it before relying on `/graphify query`.
 - Stitch MCP is registered at user scope in Claude Code (`claude mcp get stitch` → Connected).
 
 ## What Sprint 002 inherits
@@ -26,18 +26,19 @@
 - **`VentureRoute` fields**: `status` (`feasible | partial | infeasible`), `builders[] {builderId, name, dayRate, covers[], evidenceType, evidencePaths[] {rule, facts[], conclusion}}`, `totalDailyRate`, `reusableIp {assetId, title, path} | null`, `cohort {cohortId, universityId, path} | null`, `partner {partnerId, path} | null`, `gaps[] {category, statement, affected[], nextActions[], rule}`, `rulesApplied[]`, `summary`. Infeasible routes have `builders: []` and null IP/cohort/partner (D-23); a budget-gap route has `builders: []` and one `assembler.budget-fit` gap (D-22). Render gaps above builder cards (AGENTS.md rule 6).
 - **Clarification fields** come in PRD §5.3 order: `title, vertical, requiredSkills, maximumTeamSize, availabilityStart, availabilityEnd, deliveryMode, dailyBudget, preferReusableIp`, plus `location` when the mode is on-site. `maximumTeamSize` is 1–5.
 - **Env**: `VITE_API_URL`, `VITE_CLERK_PUBLISHABLE_KEY`, `VITE_OFFLINE_DEMO` are already in `.env.example`.
-- **Open question** Q-12: next-action wording for `skill`/`availability`/`mode`/`location` gaps still uses the Sprint 000 engine strings; the requirements.md table needs facts the `route-gap` witness does not carry.
+- **Q-12 closed by D-29**: the engine's two-action strings for `skill`/`availability`/`mode`/`location` gaps are canonical; the UI renders one button per `nextActions` entry.
+- **Engine gaps Sprint 002 fixes first (review.md)**: no CORS (preflight 405) → D-30; offline snapshot generated → D-34; the placeholder `ANTHROPIC_API_KEY` must select `NullAdapter`. Technical view renders `ReasoningPath` only (D-31); PWA checked by Playwright, not Lighthouse (D-32); CI added (D-33).
 
 ## Next
-1. Architect Builder Review of the Sprint 001 PR; Operator merges (after resetting local `master` to `origin/master`).
-2. Operator: real `ANTHROPIC_API_KEY` in `.env`, then #19 (live Health pilot run) and paste the output into the PR.
-3. Codespaces check: `docker compose up engine` then `curl localhost:8000/health` shows `rules_loaded == 7`; paste into the Sprint 001 PR.
-4. Architect: answer Q-12 before Sprint 002 renders gap panels.
-5. Operator runs Stitch batch 1 (5 screens) and commits exports under `design/stitch/batch-1/` by Thu 2026-09-24 18:00 EAT.
-6. Sprint 002 P1 on `sprint/002-founder-ui` cut from `origin/master` once the PR is merged.
+1. Operator: reset local `master` to `origin/master`, merge PR #20, then merge the Architect planning PR (`claude/laughing-pascal-bs5cz8`). Full list in `planning/sprints/002-founder-ui/operator-checklist.md`.
+2. Operator: Stitch batch 1 under `design/stitch/batch-1/` by Thu 24 Sep 18:00; batch 2 (2.1 Landing, 2.2 Handoff only) by Fri 25 Sep 18:00.
+3. Sprint 002 P1 at Fri 25 Sep 08:00 on `sprint/002-founder-ui` from `origin/master` (prompts in `planning/PROMPTS.md` §Sprint 002).
+4. Optional: #19 with a real `ANTHROPIC_API_KEY`; Codespaces `docker compose up engine` health check.
+5. Operator, before Sat 26 Sep 20:00: Clerk application + session-token claim, Neon project with `dev`/`test` branches, all written into `.env` (operator-checklist.md §Clerk, §Neon).
 
 ## Blockers
-- `.env` values still to be delivered by the Operator: real `ANTHROPIC_API_KEY` (#19 only), Clerk keys and webhook secret (Sprint 003), Neon `DATABASE_URL` (Sprint 003).
+- None for Sprint 002 (no keys needed; CI runs on `LLM_PROVIDER=null`).
+- For Sprint 003 (due Sat 26 Sep 20:00): Clerk keys, JWKS URL, session-token `metadata` claim and webhook secret; Neon `DATABASE_URL`/`TEST_DATABASE_URL` in the asyncpg `?ssl=require` form.
 - Team member names for the pitch deck and README (Q-08) — "at the end".
 
 ## Scope floor (must be on screen on 1 Oct)

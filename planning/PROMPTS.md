@@ -99,11 +99,52 @@ Contracts ticket first: packages/contracts Zod schemas, exported JSON Schema, Py
 ```
 
 ### Sprint 002 — Founder UI (Fri 25 Sep 08:00 → Sat 26 Sep 20:00)
-Seams: rendered screens through React Testing Library (intake, review, route, drawer, handoff) and Playwright flows against the Sprint 001 API with `LLM_PROVIDER=null`; no component-internal tests.
-Skills: `stitch-build:react-components` (convert `design/stitch/batch-1/*` exports), `stitch-build:shadcn-ui`, `vercel-react-best-practices`, `vercel-composition-patterns`, `web-design-guidelines` (final audit), `playwright-cli`.
+Before P1: complete `planning/sprints/002-founder-ui/operator-checklist.md` §Before Sprint 002 (merge PR #20, reset local master, Stitch batch 1).
+
+Seams (D-19, D-30 to D-34):
+- Engine HTTP: CORS preflight on `/api/route`; snapshot equality against `POST /api/route`; placeholder key → `NullAdapter`.
+- Pure function: `handoffText(brief, route)` (Vitest).
+- Rendered screens through React Testing Library: review chips, status badge, evidence badge, gaps-first ordering.
+- Playwright flows against `vite preview` + the engine on `LLM_PROVIDER=null`: scenario → route, gaps first, drawer, budget change, form = chat, PWA.
+- No component-internal tests and no snapshot-of-markup tests.
+
+Skills: `stitch-build:react-components` and `stitch-build:shadcn-ui` (convert `design/stitch/batch-1/*` and `batch-2/*`), `ui-styling`, `vercel-react-best-practices`, `vercel-composition-patterns`, `playwright-cli`, `web-design-guidelines` (final audit only).
+
+Append to P1:
+```text
+Also read planning/sprints/001-routing-core/review.md and D-29 to D-34 in planning/DECISIONS.md. Confirm in your reply that the Sprint 001 engine answers a CORS preflight with 405 today (curl -i -X OPTIONS localhost:8000/api/route -H "Origin: http://localhost:5173" -H "Access-Control-Request-Method: POST"), and list which Stitch exports exist under design/stitch/.
+```
+
+Append to P2:
+```text
+Fixed ticket order:
+(1) engine prerequisites: CORS_ORIGINS (D-30), export_offline_snapshot.py --check (D-34), placeholder ANTHROPIC_API_KEY → NullAdapter;
+(2) apps/web scaffold + .github/workflows/ci.yml, with the engine and web jobs green (D-33);
+(3) API client + routing state; (4) intake; (5) review; (6) route result; (7) Why drawer; (8) handoff; (9) PWA + offline; (10) landing; (11) Playwright suite wired into CI.
+Tickets 4–10 may run in parallel only after 3 is closed.
+```
+
 Append to P3:
 ```text
-Tokens come from the DESIGN.md block in docs/design/stitch-prompts.md as CSS variables; if design/stitch/batch-1 is missing, build from shadcn defaults with those tokens and say so in the report. Gaps panel precedes team cards in DOM order (test it). Every seed-derived card shows the Demo data pill. The browser never parses MeTTa output; it renders VentureRoute only. Handoff text is generated client-side from VentureRoute with no LLM text. PWA manifest + service worker via vite-plugin-pwa; Lighthouse installable check in CI.
+Tokens come from the DESIGN.md block in docs/design/stitch-prompts.md as CSS variables. If design/stitch/batch-1 is missing, build from shadcn defaults with those tokens and say so in the report.
+
+Rendering rules:
+- The Gaps panel precedes team cards in DOM order (test it with compareDocumentPosition).
+- Every seed-derived card shows the Demo data pill.
+- The browser never parses MeTTa output. It renders VentureRoute only and imports every type and schema from @venture-route/contracts.
+- Next-action buttons follow D-29.
+- The Technical view renders ReasoningPath only (D-31); there is no route.debug.
+- Handoff text is generated client-side by handoffText(brief, route) and never includes route.summary.
+
+PWA and CI:
+- PWA via vite-plugin-pwa, checked by Playwright per D-32. Lighthouse has no PWA audit; do not add @lhci.
+- Playwright runs against vite preview with the engine on LLM_PROVIDER=null and CORS_ORIGINS=http://localhost:4173.
+- Paste the CI run URL in each ticket's closing comment.
+```
+
+Append to P5:
+```text
+The acceptance evidence must include the green GitHub Actions run URL for the PR head, and the Playwright HTML report as an artifact on that run. Evidence from a Windows machine is supplementary, not a substitute.
 ```
 
 ### Sprint 003 — Marketplace (Sun 27 Sep 08:00 → Mon 28 Sep 20:00)
