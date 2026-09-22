@@ -1,0 +1,68 @@
+[
+  {
+    "id": "brief-health-01",
+    "title": "Health pilot: triage assistant for community clinics",
+    "vertical": "health",
+    "requiredSkills": ["python", "ai-metta", "ui-ux"],
+    "maximumTeamSize": 3,
+    "availabilityStart": "2026-09-22",
+    "availabilityEnd": "2026-09-29",
+    "deliveryMode": "hybrid",
+    "dailyBudget": 400,
+    "preferReusableIp": true,
+    "demoData": true
+  },
+  {
+    "id": "brief-agri-01",
+    "title": "Agri marketplace: produce listings for smallholder cooperatives",
+    "vertical": "agri",
+    "requiredSkills": ["frontend", "backend", "domain-research"],
+    "maximumTeamSize": 3,
+    "availabilityStart": "2026-09-22",
+    "availabilityEnd": "2026-09-29",
+    "deliveryMode": "remote",
+    "dailyBudget": 350,
+    "preferReusableIp": true,
+    "demoData": true
+  },
+  {
+    "id": "brief-constrained-01",
+    "title": "Constrained brief: mobile field app with a Rust core",
+    "vertical": "agri",
+    "requiredSkills": ["mobile", "rust"],
+    "maximumTeamSize": 2,
+    "availabilityStart": "2026-09-22",
+    "availabilityEnd": "2026-10-06",
+    "deliveryMode": "remote",
+    "dailyBudget": 300,
+    "preferReusableIp": false,
+    "demoData": true
+  },
+  {
+    "id": "brief-budget-01",
+    "title": "Budget challenge: health pilot at USD 250 per day",
+    "vertical": "health",
+    "requiredSkills": ["python", "ai-metta", "ui-ux"],
+    "maximumTeamSize": 3,
+    "availabilityStart": "2026-09-22",
+    "availabilityEnd": "2026-09-29",
+    "deliveryMode": "hybrid",
+    "dailyBudget": 250,
+    "preferReusableIp": true,
+    "demoData": true
+  },
+  {
+    "id": "brief-onsite-01",
+    "title": "Delivery-mode challenge: health pilot on-site in Kisumu",
+    "vertical": "health",
+    "requiredSkills": ["python", "ai-metta", "ui-ux"],
+    "maximumTeamSize": 3,
+    "availabilityStart": "2026-09-22",
+    "availabilityEnd": "2026-09-29",
+    "deliveryMode": "on-site",
+    "location": "Kisumu",
+    "dailyBudget": 400,
+    "preferReusableIp": true,
+    "demoData": true
+  }
+]
