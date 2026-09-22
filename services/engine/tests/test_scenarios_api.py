@@ -96,7 +96,6 @@ def via_form(client: TestClient, brief_id: str) -> dict[str, Any]:
 
 def via_chat(client: TestClient, brief_id: str) -> dict[str, Any]:
     brief = seed_briefs()[brief_id]
-    del brief["demoData"]
     response = client.post("/api/conversation", json={"userMessage": "", "currentBrief": brief})
     assert response.status_code == 200, response.text
     body = response.json()

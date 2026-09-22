@@ -39,7 +39,10 @@ MAX_MESSAGE_LENGTH = 4000
 
 
 class PartialBrief(BaseModel):
-    """Partial<VentureBrief>: every field optional; `null` and absent both mean unknown."""
+    """Partial<VentureBrief> (PRD §5.2): every field optional; `null` and absent both mean unknown.
+
+    Carries `demoData` too, so a brief from `GET /api/scenarios` round-trips as `currentBrief`.
+    """
 
     model_config = ConfigDict(populate_by_name=True, extra="forbid")
 
@@ -56,6 +59,7 @@ class PartialBrief(BaseModel):
     location: str | None = Field(default=None, min_length=1, max_length=100)
     daily_budget: PositiveSafeInt | None = Field(default=None, alias="dailyBudget")
     prefer_reusable_ip: bool | None = Field(default=None, alias="preferReusableIp")
+    demo_data: bool | None = Field(default=None, alias="demoData")
 
 
 class ChatTurn(BaseModel):

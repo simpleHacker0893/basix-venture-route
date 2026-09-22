@@ -72,7 +72,6 @@ def test_confirmed_brief_routes_and_equals_the_form_path_byte_for_byte(
     client: TestClient,
 ) -> None:
     brief = seed_brief("brief-health-01")
-    del brief["demoData"]  # PartialBrief carries the founder's fields only
 
     chat = client.post("/api/conversation", json={"userMessage": "", "currentBrief": brief})
     form = client.post("/api/route", json=seed_brief("brief-health-01"))
@@ -88,7 +87,6 @@ def test_confirmed_brief_routes_and_equals_the_form_path_byte_for_byte(
 
 def test_invalid_merged_brief_is_a_validation_error_response(client: TestClient) -> None:
     brief = {**seed_brief("brief-health-01"), "availabilityEnd": "2026-09-01"}
-    del brief["demoData"]
 
     response = client.post("/api/conversation", json={"userMessage": "", "currentBrief": brief})
 
@@ -114,7 +112,6 @@ def test_llm_outage_falls_back_to_null_behaviour_with_the_form_hint(
     outage_client: TestClient,
 ) -> None:
     brief = seed_brief("brief-health-01")
-    del brief["demoData"]
 
     vague = outage_client.post("/api/conversation", json={"userMessage": "help me"})
     full = outage_client.post(

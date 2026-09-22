@@ -73,7 +73,10 @@ export const BriefField = z.enum([
 ]);
 export type BriefField = z.infer<typeof BriefField>;
 
-/** Partial<VentureBrief>: every field optional; `null` and absent both mean unknown. */
+/**
+ * Partial<VentureBrief> (PRD §5.2): every field optional; `null` and absent both mean unknown.
+ * Carries `demoData` too, so a brief from `GET /api/scenarios` round-trips as `currentBrief`.
+ */
 export const PartialBrief = z.strictObject({
   id: Slug.nullable().default(null),
   title: BriefTitle.nullable().default(null),
@@ -86,6 +89,7 @@ export const PartialBrief = z.strictObject({
   location: Location.nullable().default(null),
   dailyBudget: DailyBudget.nullable().default(null),
   preferReusableIp: z.boolean().nullable().default(null),
+  demoData: z.boolean().nullable().default(null),
 });
 export type PartialBrief = z.infer<typeof PartialBrief>;
 export type PartialBriefInput = z.input<typeof PartialBrief>;
