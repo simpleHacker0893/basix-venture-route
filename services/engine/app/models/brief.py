@@ -4,7 +4,7 @@ import json
 import re
 from datetime import date
 from pathlib import Path
-from typing import Literal, Self
+from typing import Annotated, Literal, Self
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
@@ -25,6 +25,14 @@ SkillId = Literal[
 # Stable kebab-case IDs (AGENTS.md §Conventions); the only shape spliced into MeTTa queries.
 SLUG = re.compile(r"^[a-z0-9]+(-[a-z0-9]+)*$")
 
+# Integers on the wire stay inside JavaScript's safe range so the Zod contract (`z.int()`) and
+# this mirror describe the same set of values (Sprint 001 parity test).
+JS_SAFE_INT = 2**53 - 1
+SafeInt = Annotated[int, Field(ge=-JS_SAFE_INT, le=JS_SAFE_INT)]
+PositiveSafeInt = Annotated[int, Field(gt=0, le=JS_SAFE_INT)]
+# Small positive integer (PRD 5.3); 1 to 5 per Sprint 001 requirements.md item 2.
+TeamSize = Annotated[int, Field(ge=1, le=5)]
+
 
 class VentureBrief(BaseModel):
     """Wire shape is camelCase; Python attributes are snake_case."""
@@ -35,12 +43,12 @@ class VentureBrief(BaseModel):
     title: str = Field(min_length=1, max_length=200)
     vertical: Vertical
     required_skills: list[SkillId] = Field(alias="requiredSkills", min_length=1)
-    maximum_team_size: int = Field(alias="maximumTeamSize", ge=1, le=10)
+    maximum_team_size: TeamSize = Field(alias="maximumTeamSize")
     availability_start: date = Field(alias="availabilityStart")
     availability_end: date = Field(alias="availabilityEnd")
     delivery_mode: DeliveryMode = Field(alias="deliveryMode")
     location: str | None = Field(default=None, min_length=1, max_length=100)
-    daily_budget: int = Field(alias="dailyBudget", gt=0)
+    daily_budget: PositiveSafeInt = Field(alias="dailyBudget")
     prefer_reusable_ip: bool = Field(alias="preferReusableIp")
     demo_data: bool = Field(default=True, alias="demoData")
 

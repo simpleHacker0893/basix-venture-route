@@ -92,17 +92,59 @@ Time-box: half a day. Python 3.12, uv, hyperon==0.2.10 (verified by the Architec
 Seams: HTTP `POST /api/conversation`, `POST /api/route`, `GET /api/scenarios`; pure function `assemble(tuples, brief) -> VentureRoute`; `LlmAdapter` protocol via a fake adapter; Zod↔Pydantic JSON-Schema parity test.
 Skills: `claude-api` for the Anthropic adapter (official SDK, `claude-opus-5`, `output_config.format`, no raw HTTP), `secure-coding` for input validation.
 Inherited (D-20 to D-23): engine models live in `app/models/engine.py`; `gaps()` already covers skill/availability/mode/location; the assembler adds team-size and budget only; partner is the candidate of the first selected builder; infeasible returns no IP/cohort/partner; expected scenario outputs are exact in DOMAIN.md.
+Inherited (D-24, D-26): display names derive from builder IDs via one presenter helper; day rates come from `day_rates(builder_ids)` and reach the assembler as plain input; `ANTHROPIC_API_KEY` is read from `.env` only and never requested in chat.
 Append to P3:
 ```text
 Contracts ticket first: packages/contracts Zod schemas, exported JSON Schema, Pydantic mirror, parity test green before any assembler work. Status is a pure function of gaps and coverage (D-09); the LLM explanation call receives only route.model_dump() and the test asserts no fact atoms and no outside entity in the request. With ANTHROPIC_API_KEY unset the NullAdapter serves every response type. The five DOMAIN.md scenarios are parametrised pytest cases with exact expected teams, totals and gaps.
 ```
 
 ### Sprint 002 — Founder UI (Fri 25 Sep 08:00 → Sat 26 Sep 20:00)
-Seams: rendered screens through React Testing Library (intake, review, route, drawer, handoff) and Playwright flows against the Sprint 001 API with `LLM_PROVIDER=null`; no component-internal tests.
-Skills: `stitch-build:react-components` (convert `design/stitch/batch-1/*` exports), `stitch-build:shadcn-ui`, `vercel-react-best-practices`, `vercel-composition-patterns`, `web-design-guidelines` (final audit), `playwright-cli`.
+Before P1: complete `planning/sprints/002-founder-ui/operator-checklist.md` §Before Sprint 002 (merge PR #20, reset local master, Stitch batch 1).
+
+Seams (D-19, D-30 to D-34):
+- Engine HTTP: CORS preflight on `/api/route`; snapshot equality against `POST /api/route`; placeholder key → `NullAdapter`.
+- Pure function: `handoffText(brief, route)` (Vitest).
+- Rendered screens through React Testing Library: review chips, status badge, evidence badge, gaps-first ordering.
+- Playwright flows against `vite preview` + the engine on `LLM_PROVIDER=null`: scenario → route, gaps first, drawer, budget change, form = chat, PWA.
+- No component-internal tests and no snapshot-of-markup tests.
+
+Skills: `stitch-build:react-components` and `stitch-build:shadcn-ui` (convert `design/stitch/batch-1/*` and `batch-2/*`), `ui-styling`, `vercel-react-best-practices`, `vercel-composition-patterns`, `playwright-cli`, `web-design-guidelines` (final audit only).
+
+Append to P1:
+```text
+Also read planning/sprints/001-routing-core/review.md and D-29 to D-34 in planning/DECISIONS.md. Confirm in your reply that the Sprint 001 engine answers a CORS preflight with 405 today (curl -i -X OPTIONS localhost:8000/api/route -H "Origin: http://localhost:5173" -H "Access-Control-Request-Method: POST"), and list which Stitch exports exist under design/stitch/.
+```
+
+Append to P2:
+```text
+Fixed ticket order:
+(1) engine prerequisites: CORS_ORIGINS (D-30), export_offline_snapshot.py --check (D-34), placeholder ANTHROPIC_API_KEY → NullAdapter;
+(2) apps/web scaffold + .github/workflows/ci.yml, with the engine and web jobs green (D-33);
+(3) API client + routing state; (4) intake; (5) review; (6) route result; (7) Why drawer; (8) handoff; (9) PWA + offline; (10) landing; (11) Playwright suite wired into CI.
+Tickets 4–10 may run in parallel only after 3 is closed.
+```
+
 Append to P3:
 ```text
-Tokens come from the DESIGN.md block in docs/design/stitch-prompts.md as CSS variables; if design/stitch/batch-1 is missing, build from shadcn defaults with those tokens and say so in the report. Gaps panel precedes team cards in DOM order (test it). Every seed-derived card shows the Demo data pill. The browser never parses MeTTa output; it renders VentureRoute only. Handoff text is generated client-side from VentureRoute with no LLM text. PWA manifest + service worker via vite-plugin-pwa; Lighthouse installable check in CI.
+Tokens come from the DESIGN.md block in docs/design/stitch-prompts.md as CSS variables. If design/stitch/batch-1 is missing, build from shadcn defaults with those tokens and say so in the report.
+
+Rendering rules:
+- The Gaps panel precedes team cards in DOM order (test it with compareDocumentPosition).
+- Every seed-derived card shows the Demo data pill.
+- The browser never parses MeTTa output. It renders VentureRoute only and imports every type and schema from @venture-route/contracts.
+- Next-action buttons follow D-29.
+- The Technical view renders ReasoningPath only (D-31); there is no route.debug.
+- Handoff text is generated client-side by handoffText(brief, route) and never includes route.summary.
+
+PWA and CI:
+- PWA via vite-plugin-pwa, checked by Playwright per D-32. Lighthouse has no PWA audit; do not add @lhci.
+- Playwright runs against vite preview with the engine on LLM_PROVIDER=null and CORS_ORIGINS=http://localhost:4173.
+- Paste the CI run URL in each ticket's closing comment.
+```
+
+Append to P5:
+```text
+The acceptance evidence must include the green GitHub Actions run URL for the PR head, and the Playwright HTML report as an artifact on that run. Evidence from a Windows machine is supplementary, not a substitute.
 ```
 
 ### Sprint 003 — Marketplace (Sun 27 Sep 08:00 → Mon 28 Sep 20:00)
@@ -123,10 +165,10 @@ Bid creation calls the route service's eligibility(brief, builder_id) in-process
 
 ### Sprint 005 — Demo hardening and deployment (Wed 30 Sep 08:00 → 20:00, freeze 22:00)
 Seams: `docker compose up` end-to-end via Playwright `demo.spec.ts`; deployed `/health` and landing page via HTTP checks; every earlier sprint's acceptance suite on the freeze commit.
-Skills: `docker-build-strategies` (multi-stage, non-root, small engine image), `docker-compose-patterns`, `use-railway` (engine service, `DATABASE_URL`, `ANTHROPIC_API_KEY`, `CLERK_*`, release command `alembic upgrade head`, health check `/health`), `deploy-to-vercel` (web, `VITE_API_URL`, `VITE_CLERK_PUBLISHABLE_KEY`), `neon-postgres` (production `main` branch, `demo` branch for resets), `secure-coding` (final pass on headers, CORS, secrets).
+Skills: `docker-build-strategies` (multi-stage, non-root, small engine image), `docker-compose-patterns`, `use-railway` and `deploy-to-vercel` **for writing `docs/DEPLOY.md` only** (engine service, `DATABASE_URL`, `ANTHROPIC_API_KEY`, `CLERK_*`, release command `alembic upgrade head`, health check `/health`; web `VITE_API_URL`, `VITE_CLERK_PUBLISHABLE_KEY`), `mattpocock-skills:wizard` (turn DEPLOY.md into the step-by-step wizard the Operator runs), `neon-postgres` (production `main` branch, `demo` branch for resets), `playwright-cli` (record the demo video), `secure-coding` (final pass on headers, CORS, secrets).
 Append to P3 (deployment is the last two tickets):
 ```text
-No new features. Order: regressions from earlier acceptance suites → single launch command and README → docs/DEMO.md script → Railway deploy of services/engine (Dockerfile, release command, health check, env vars from .env.example, public domain) → Vercel deploy of apps/web pointing VITE_API_URL at the Railway URL → Neon main as production DATABASE_URL, demo branch for resets → docs/SUBMISSION.md. Paste every deployed URL and its /health or landing-page HTTP 200 in the ticket comment. Freeze: tag v0.1.0-demo on the merged commit and write the SHA into STATE.md.
+No new features. Order: regressions from earlier acceptance suites → single launch command and README → docs/DEMO.md script → Playwright CLI recording of demo.spec.ts to docs/demo/ (D-28) → docs/PITCH.md per-slide script and the Slides-artifact deck rebuilt from the existing pitch PDF with the video on the demo slide, team names as a placeholder → docs/DEPLOY.md wizard (D-27): Railway steps for services/engine (Dockerfile, release command, health check, env vars from .env.example, public domain), Vercel steps for apps/web with VITE_API_URL, Neon main as production DATABASE_URL and demo branch for resets — the Operator runs every railway and vercel command and pastes the URLs and /health 200s back → docs/SUBMISSION.md. Never run railway or vercel yourself. Freeze: tag v0.1.0-demo on the merged commit and write the SHA into STATE.md.
 ```
 
 ---

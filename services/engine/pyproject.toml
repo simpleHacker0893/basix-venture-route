@@ -9,6 +9,7 @@ dependencies = [
     "pydantic>=2.7",
     "pydantic-settings>=2.3",
     "hyperon==0.2.10",
+    "anthropic>=1",
 ]
 
 [dependency-groups]

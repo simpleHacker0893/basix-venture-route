@@ -10,9 +10,9 @@ Demo: **Thursday 1 October 2026**. Nine calendar days. Sprints are gated by **ti
 | Stitch batch 1 (Operator, parallel) | Wed 23 Sep → Thu 24 Sep 18:00 | — | 5 exports under `design/stitch/batch-1/` | Builder uses shadcn defaults + DESIGN.md tokens |
 | 002 Founder UI | Fri 25 Sep 08:00 → Sat 26 Sep 20:00 | G2 Sat 26 Sep 20:00 | Playwright: preloaded brief → route, gaps, drawer, handoff; PR merged | **Scope floor trigger:** 003+004 collapse to read-only profiles + gated bids; 005 starts Mon 28 Sep |
 | Stitch batches 2–4 (Operator, parallel) | Fri 25 Sep → Sat 26 Sep | — | exports under `design/stitch/batch-{2,3,4}/` | Builder uses shadcn defaults |
-| 003 Marketplace | Sun 27 Sep 08:00 → Mon 28 Sep 20:00 | G3 Mon 28 Sep 20:00 | Clerk sign-in per role; admin confirmation gates visibility; Convex → graph reprojection test; PR merged | Ship profiles + admin queue only; defer projects UI |
+| 003 Marketplace | Sun 27 Sep 08:00 → Mon 28 Sep 20:00 | G3 Mon 28 Sep 20:00 | Clerk sign-in per role; admin confirmation gates visibility; Postgres → graph reprojection test (D-17); PR merged | Ship profiles + admin queue only; defer projects UI |
 | 004 Requests & interviews | Tue 29 Sep 08:00 → Tue 29 Sep 22:00 | G4 Tue 29 Sep 22:00 | Gated bid test; booking round-trip test; PR merged | Ship requests board + gated bids; defer booking |
-| 005 Demo hardening | Wed 30 Sep 08:00 → Wed 30 Sep 20:00 | G5 (freeze) Wed 30 Sep 22:00 | `docker compose up` clean run of all five scenarios; README; Railway + Vercel deploy; recording saved | Demo from laptop only; recording still mandatory |
+| 005 Demo hardening | Wed 30 Sep 08:00 → Wed 30 Sep 20:00 | G5 (freeze) Wed 30 Sep 22:00 | `docker compose up` clean run of all five scenarios; README; `docs/DEPLOY.md` wizard handed to the Operator, who runs Railway + Vercel (D-27); Playwright demo video saved; pitch deck + `docs/PITCH.md` (D-28) | Demo from laptop only; recording still mandatory |
 | Rehearsal | Wed 30 Sep 20:00 → 22:00 | — | Operator runs the demo script twice from a clean launch | — |
 | **Demo** | **Thu 1 Oct** | — | — | Play the recording if live fails |
 
