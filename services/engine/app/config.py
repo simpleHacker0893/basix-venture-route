@@ -3,6 +3,7 @@
 from datetime import date
 from functools import lru_cache
 from pathlib import Path
+from typing import Literal
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
@@ -21,6 +22,9 @@ class Settings(BaseSettings):
     engine_port: int = 8000
     # Directory holding facts.metta, rules.metta and briefs.json.
     seed_dir: Path = PACKAGE_ROOT / "seed"
+    # LLM adapter (D-06, D-26). The key arrives through .env only; unset means NullAdapter.
+    llm_provider: Literal["anthropic", "null"] = "anthropic"
+    anthropic_api_key: str | None = None
 
 
 @lru_cache
