@@ -22,7 +22,8 @@ SkillId = Literal[
     "data",
 ]
 
-_SLUG = re.compile(r"^[a-z0-9]+(-[a-z0-9]+)*$")
+# Stable kebab-case IDs (AGENTS.md §Conventions); the only shape spliced into MeTTa queries.
+SLUG = re.compile(r"^[a-z0-9]+(-[a-z0-9]+)*$")
 
 
 class VentureBrief(BaseModel):
@@ -30,7 +31,7 @@ class VentureBrief(BaseModel):
 
     model_config = ConfigDict(populate_by_name=True, extra="forbid")
 
-    id: str = Field(pattern=_SLUG.pattern)
+    id: str = Field(pattern=SLUG.pattern)
     title: str = Field(min_length=1, max_length=200)
     vertical: Vertical
     required_skills: list[SkillId] = Field(alias="requiredSkills", min_length=1)

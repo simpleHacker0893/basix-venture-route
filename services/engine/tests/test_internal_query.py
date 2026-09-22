@@ -33,13 +33,13 @@ def test_internal_query_returns_typed_results_for_a_seed_brief(dev_client: TestC
     assert response.status_code == 200
     body = response.json()
     assert body["briefId"] == "brief-health-01"
-    eligible = {(t["builder_id"], t["skill_id"]): t for t in body["eligible"]}
+    eligible = {(t["builderId"], t["skillId"]): t for t in body["eligible"]}
     assert eligible[("amina-otieno", "python")]["evidence"] == "both"
     assert eligible[("amina-otieno", "python")]["path"]["rule"] == "eligible-builder"
-    assert [r["asset_id"] for r in body["reuse"]] == ["asset-afya-triage"]
+    assert [r["assetId"] for r in body["reuse"]] == ["asset-afya-triage"]
     # One partner candidate per eligible builder; all three health builders share the cohort.
-    assert {p["partner_id"] for p in body["partners"]} == {"amani-health"}
-    assert sorted(p["builder_id"] for p in body["partners"]) == [
+    assert {p["partnerId"] for p in body["partners"]} == {"amani-health"}
+    assert sorted(p["builderId"] for p in body["partners"]) == [
         "amina-otieno",
         "daniel-kiptoo",
         "grace-wambui",
@@ -53,6 +53,14 @@ def test_internal_query_unknown_brief_is_404(dev_client: TestClient) -> None:
 
     assert response.status_code == 404
     assert "brief-none" in response.json()["detail"]
+
+
+def test_internal_query_gaps_are_camel_case_on_the_wire(dev_client: TestClient) -> None:
+    body = dev_client.post("/internal/query", json={"briefId": "brief-constrained-01"}).json()
+
+    assert [g["category"] for g in body["gaps"]] == ["skill"]
+    assert body["gaps"][0]["nextActions"]
+    assert "next_actions" not in body["gaps"][0]
 
 
 def test_health_reports_all_seven_named_rules(client: TestClient) -> None:

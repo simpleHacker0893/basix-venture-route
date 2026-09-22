@@ -15,13 +15,6 @@
 (skill-name rust "Rust")
 (skill-name data "Data engineering")
 
-; ---- delivery-mode compatibility (requirements.md: hybrid accepts remote and hybrid) ----
-(mode-accepts remote remote)
-(mode-accepts remote hybrid)
-(mode-accepts hybrid remote)
-(mode-accepts hybrid hybrid)
-(mode-accepts on-site on-site)
-
 ; ---- universities and cohorts ----
 (cohort-of cohort-2026a omni-university)
 (cohort-of cohort-2026b lakeside-university)

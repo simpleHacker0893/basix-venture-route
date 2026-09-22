@@ -1,9 +1,14 @@
-"""Typed engine results consumed by Sprint 001 (blueprint "Interfaces")."""
+"""Typed engine results consumed by Sprint 001 (blueprint "Interfaces").
+
+Python attributes are snake_case; the wire shape is camelCase to match the Zod contracts in
+`packages/contracts` (AGENTS.md §Stack) and the `nextActions[]` shape in DOMAIN.md.
+"""
 
 from enum import StrEnum
 from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field
+from pydantic.alias_generators import to_camel
 
 EvidenceType = Literal["credential", "project", "both"]
 GapCategory = Literal["skill", "availability", "mode", "location", "team-size", "budget"]
@@ -23,58 +28,57 @@ class RuleName(StrEnum):
     ASSEMBLER_BUDGET_FIT = "assembler.budget-fit"
 
 
-METTA_RULES: tuple[RuleName, ...] = (
-    RuleName.VERIFIED_FOR_SKILL,
-    RuleName.MODE_COMPATIBLE,
-    RuleName.AVAILABLE_FOR_BRIEF,
-    RuleName.ELIGIBLE_BUILDER,
-    RuleName.REUSE_FIT,
-    RuleName.PARTNER_FIT,
-    RuleName.ROUTE_GAP,
-)
+class LookupName(StrEnum):
+    """Graph predicates read directly for a reasoning path that no named rule produces."""
+
+    COHORT_OF = "cohort-of"
 
 
-class ReasoningPath(BaseModel):
+# Named MeTTa rule -> number of arguments in its head, used to confirm each one is loaded.
+METTA_RULE_ARITY: dict[RuleName, int] = {
+    RuleName.VERIFIED_FOR_SKILL: 2,
+    RuleName.MODE_COMPATIBLE: 2,
+    RuleName.AVAILABLE_FOR_BRIEF: 2,
+    RuleName.ELIGIBLE_BUILDER: 3,
+    RuleName.REUSE_FIT: 2,
+    RuleName.PARTNER_FIT: 2,
+    RuleName.ROUTE_GAP: 3,
+}
+
+
+class EngineModel(BaseModel):
+    model_config = ConfigDict(frozen=True, alias_generator=to_camel, populate_by_name=True)
+
+
+class ReasoningPath(EngineModel):
     """{ rule, facts[], conclusion }: one per builder×skill, per IP, per cohort, per partner."""
 
-    model_config = ConfigDict(frozen=True)
-
-    rule: RuleName | Literal["cohort-of"] = Field(
-        description="The named rule, or the predicate looked up directly (cohort membership)"
-    )
+    rule: RuleName | LookupName
     facts: list[str] = Field(description="Source facts as written in the space, in match order")
     conclusion: str
 
 
-class EligibleTuple(BaseModel):
-    model_config = ConfigDict(frozen=True)
-
+class EligibleTuple(EngineModel):
     builder_id: str
     skill_id: str
     evidence: EvidenceType
     path: ReasoningPath
 
 
-class CohortInfo(BaseModel):
-    model_config = ConfigDict(frozen=True)
-
+class CohortInfo(EngineModel):
     builder_id: str
     cohort_id: str
     university_id: str
     path: ReasoningPath
 
 
-class ReuseCandidate(BaseModel):
-    model_config = ConfigDict(frozen=True)
-
+class ReuseCandidate(EngineModel):
     asset_id: str
     skill_ids: list[str] = Field(description="Required skills the asset demonstrates")
     path: ReasoningPath
 
 
-class PartnerCandidate(BaseModel):
-    model_config = ConfigDict(frozen=True)
-
+class PartnerCandidate(EngineModel):
     partner_id: str
     builder_id: str
     university_id: str
@@ -82,9 +86,7 @@ class PartnerCandidate(BaseModel):
     path: ReasoningPath
 
 
-class Gap(BaseModel):
-    model_config = ConfigDict(frozen=True)
-
+class Gap(EngineModel):
     category: GapCategory
     statement: str
     affected: list[str]

@@ -1,19 +1,19 @@
 """MettaRouteEngine: the only adapter over the Hyperon runtime.
 
-Every decision (eligibility, evidence, availability, mode/location fit) is a named MeTTa rule in
-seed/rules.metta evaluated over the facts in seed/facts.metta. Python here loads the space,
-adds the brief's facts for the duration of a query, runs the rule, and parses witnesses into
-typed models. No Python code selects builders (AGENTS.md non-negotiable 1).
+Every decision (eligibility, evidence, availability, mode/location fit, reuse fit, partner fit,
+gaps) is a named MeTTa rule in seed/rules.metta evaluated over the facts in seed/facts.metta.
+Python here loads the space, adds the brief's facts for the duration of a query, runs the rule,
+and parses witnesses into typed models. No Python code selects builders (AGENTS.md rule 1).
 """
 
 from __future__ import annotations
 
 import importlib.metadata
-import re
 import threading
 from collections.abc import Iterator
 from contextlib import contextmanager
 from pathlib import Path
+from typing import cast, get_args
 
 from hyperon import Atom, MeTTa
 
@@ -29,28 +29,28 @@ from app.engine.atoms import (
 )
 from app.engine.errors import EngineError
 from app.engine.grounded import register_grounded_atoms
-from app.models.brief import VentureBrief
+from app.models.brief import SLUG, VentureBrief
 from app.models.engine import (
-    METTA_RULES,
+    METTA_RULE_ARITY,
     CohortInfo,
     EligibleTuple,
     EvidenceType,
     Gap,
     GapCategory,
+    LookupName,
     PartnerCandidate,
     ReasoningPath,
     ReuseCandidate,
     RuleName,
 )
 
-_RULE_HEAD = re.compile(r"^\(=\s*\(([a-z][a-z0-9-]*)\b", re.MULTILINE)
-_RULE_NAMES = frozenset(rule.value for rule in METTA_RULES)
-_SYMBOL = re.compile(r"^[a-z0-9]+(-[a-z0-9]+)*$")
+_WITNESS_EVIDENCE: frozenset[str] = frozenset({"credential", "project"})
+_GAP_CATEGORIES: frozenset[str] = frozenset(get_args(GapCategory))
 
 
 def _symbol(value: str, what: str) -> str:
     """Only kebab-case slugs may be spliced into a query (never raw user text)."""
-    if not _SYMBOL.match(value):
+    if not SLUG.match(value):
         raise EngineError(f"{what} must be a kebab-case slug, got {value!r}")
     return value
 
@@ -66,9 +66,10 @@ class MettaRouteEngine:
         except Exception as exc:  # pragma: no cover - only when the native runtime is broken
             raise EngineError("Hyperon runtime failed to start") from exc
         register_grounded_atoms(self._metta)
-        self.facts_loaded = self._load_facts(settings.seed_dir / "facts.metta")
-        self.rules_loaded = self._load_rules(settings.seed_dir / "rules.metta")
-        self._add_engine_constants()
+        self.facts_loaded = self._add_program(settings.seed_dir / "facts.metta")
+        self._add_program(settings.seed_dir / "rules.metta")
+        self.rules_loaded = self._count_named_rules_in_space()
+        self._metta.run(f"(min-overlap-days {settings.min_overlap_days})")
 
     @property
     def hyperon_version(self) -> str:
@@ -88,6 +89,17 @@ class MettaRouteEngine:
         ordered = sorted(folded.values(), key=lambda w: (w.builder_id, w.skill_id))
         return [w.to_tuple() for w in ordered]
 
+    def reuse_candidates(self, brief: VentureBrief) -> list[ReuseCandidate]:
+        """Licensable assets in the brief's vertical that demonstrate a required skill."""
+        with self._brief_in_space(brief):
+            witnesses = self._query(f"!(reuse-fit {brief.id} $asset)")
+        by_asset: dict[str, _ReuseWitness] = {}
+        for witness in witnesses:
+            parsed = _ReuseWitness.parse(witness)
+            key = parsed.asset_id
+            by_asset[key] = parsed if key not in by_asset else by_asset[key].merge(parsed)
+        return [by_asset[key].to_candidate() for key in sorted(by_asset)]
+
     def partner_candidates(
         self, brief: VentureBrief, builder_ids: list[str]
     ) -> list[PartnerCandidate]:
@@ -100,16 +112,15 @@ class MettaRouteEngine:
                     candidates.append(_parse_partner(witness, builder))
         return sorted(candidates, key=lambda c: (c.partner_id, c.builder_id))
 
-    def reuse_candidates(self, brief: VentureBrief) -> list[ReuseCandidate]:
-        """Licensable assets in the brief's vertical that demonstrate a required skill."""
-        with self._brief_in_space(brief):
-            witnesses = self._query(f"!(reuse-fit {brief.id} $asset)")
-        by_asset: dict[str, _ReuseWitness] = {}
-        for witness in witnesses:
-            parsed = _ReuseWitness.parse(witness)
-            key = parsed.asset_id
-            by_asset[key] = parsed if key not in by_asset else by_asset[key].merge(parsed)
-        return [by_asset[key].to_candidate() for key in sorted(by_asset)]
+    def cohort_of(self, builder_id: str) -> CohortInfo | None:
+        """The builder's cohort and university via the `cohort-membership` lookup in rules.metta."""
+        builder = _symbol(builder_id, "builder id")
+        witnesses = self._query(f"!(cohort-membership {builder})")
+        if not witnesses:
+            return None
+        if len(witnesses) > 1:
+            raise EngineError(f"{builder} belongs to more than one cohort")
+        return _parse_cohort(witnesses[0], builder)
 
     def gaps(self, brief: VentureBrief) -> list[Gap]:
         """skill / availability / mode / location gaps per required skill from `route-gap`."""
@@ -118,45 +129,10 @@ class MettaRouteEngine:
         gaps = [_parse_gap(witness, brief) for witness in witnesses]
         return sorted(gaps, key=lambda g: (g.affected[0], g.category))
 
-    def cohort_of(self, builder_id: str) -> CohortInfo | None:
-        """The builder's cohort and university, from `belongs-to` and `cohort-of` facts."""
-        builder = _symbol(builder_id, "builder id")
-        witnesses = self._query(
-            f"!(match &self (, (belongs-to {builder} $c) (cohort-of $c $u))"
-            f" (cohort $c $u ((belongs-to {builder} $c) (cohort-of $c $u))))"
-        )
-        if not witnesses:
-            return None
-        if len(witnesses) > 1:
-            raise EngineError(f"{builder} belongs to more than one cohort")
-        parts = expect_list(witnesses[0], "cohort witness")
-        if len(parts) != 4 or parts[0] != "cohort":
-            raise EngineError(f"malformed cohort witness: {witnesses[0]!r}")
-        cohort_id = expect_symbol(parts[1], "cohort id")
-        university_id = expect_symbol(parts[2], "university id")
-        return CohortInfo(
-            builder_id=builder,
-            cohort_id=cohort_id,
-            university_id=university_id,
-            path=ReasoningPath(
-                rule="cohort-of",
-                facts=facts_text(parts[3], "cohort facts"),
-                conclusion=f"{builder} belongs to {cohort_id} of {university_id}",
-            ),
-        )
-
     # -- loading ---------------------------------------------------------------------------------
 
-    def _load_facts(self, path: Path) -> int:
-        return self._add_program(path)
-
-    def _load_rules(self, path: Path) -> int:
-        """Count the named rules (DOMAIN.md) defined in the file; helper equations do not count."""
-        self._add_program(path)
-        heads = set(_RULE_HEAD.findall(path.read_text(encoding="utf-8")))
-        return len(heads & _RULE_NAMES)
-
     def _add_program(self, path: Path) -> int:
+        """Parse a seed file and add every atom to the space; returns the atom count."""
         if not path.exists():
             raise EngineError(f"seed file missing: {path}")
         try:
@@ -168,8 +144,14 @@ class MettaRouteEngine:
             space.add_atom(atom)
         return len(atoms)
 
-    def _add_engine_constants(self) -> None:
-        self._metta.run(f"(min-overlap-days {self._settings.min_overlap_days})")
+    def _count_named_rules_in_space(self) -> int:
+        """Ask the space which of the seven named rules have at least one equation loaded."""
+        loaded = 0
+        for rule, arity in METTA_RULE_ARITY.items():
+            args = " ".join(f"$a{i}" for i in range(arity))
+            if self._query(f"!(match &self (= ({rule} {args}) $body) {rule})"):
+                loaded += 1
+        return loaded
 
     # -- querying --------------------------------------------------------------------------------
 
@@ -217,11 +199,19 @@ def _brief_atoms(brief: VentureBrief) -> list[Atom]:
     return atoms
 
 
+# -- witness parsers (parsing only; no selection happens here) ---------------------------------
+
+
+def _witness_parts(term: Term, head: str, size: int) -> list[Term]:
+    parts = expect_list(term, f"{head} witness")
+    if len(parts) != size or parts[0] != head:
+        raise EngineError(f"malformed {head} witness: {term!r}")
+    return parts
+
+
 def _parse_partner(term: Term, builder_id: str) -> PartnerCandidate:
     """(partner p u c (facts...))"""
-    parts = expect_list(term, "partner witness")
-    if len(parts) != 5 or parts[0] != "partner":
-        raise EngineError(f"malformed partner witness: {term!r}")
+    parts = _witness_parts(term, "partner", 5)
     partner_id = expect_symbol(parts[1], "partner id")
     university_id = expect_symbol(parts[2], "university id")
     cohort_id = expect_symbol(parts[3], "cohort id")
@@ -233,9 +223,24 @@ def _parse_partner(term: Term, builder_id: str) -> PartnerCandidate:
         path=ReasoningPath(
             rule=RuleName.PARTNER_FIT,
             facts=facts_text(parts[4], "partner-fit facts"),
-            conclusion=(
-                f"{partner_id} fits via {university_id} and {cohort_id} of {builder_id}"
-            ),
+            conclusion=f"{partner_id} fits via {university_id} and {cohort_id} of {builder_id}",
+        ),
+    )
+
+
+def _parse_cohort(term: Term, builder_id: str) -> CohortInfo:
+    """(cohort c u (facts...))"""
+    parts = _witness_parts(term, "cohort", 4)
+    cohort_id = expect_symbol(parts[1], "cohort id")
+    university_id = expect_symbol(parts[2], "university id")
+    return CohortInfo(
+        builder_id=builder_id,
+        cohort_id=cohort_id,
+        university_id=university_id,
+        path=ReasoningPath(
+            rule=LookupName.COHORT_OF,
+            facts=facts_text(parts[3], "cohort facts"),
+            conclusion=f"{builder_id} belongs to {cohort_id} of {university_id}",
         ),
     )
 
@@ -250,9 +255,7 @@ class _ReuseWitness:
 
     @classmethod
     def parse(cls, term: Term) -> _ReuseWitness:
-        parts = expect_list(term, "reuse witness")
-        if len(parts) != 4 or parts[0] != "reuse":
-            raise EngineError(f"malformed reuse witness: {term!r}")
+        parts = _witness_parts(term, "reuse", 4)
         return cls(
             asset_id=expect_symbol(parts[1], "asset id"),
             skill_ids=[expect_symbol(parts[2], "skill id")],
@@ -287,9 +290,7 @@ _GAP_STATEMENTS: dict[str, str] = {
         "Builders verified for {skill} exist, but none overlaps the brief window "
         "{start} to {end} by at least the minimum overlap."
     ),
-    "mode": (
-        "Builders verified for {skill} are available, but none supports {mode} delivery."
-    ),
+    "mode": "Builders verified for {skill} are available, but none supports {mode} delivery.",
     "location": (
         "Builders verified for {skill} are available and support on-site delivery, "
         "but none is located in {location}."
@@ -318,22 +319,12 @@ _GAP_NEXT_ACTIONS: dict[str, list[str]] = {
 
 def _parse_gap(term: Term, brief: VentureBrief) -> Gap:
     """(gap category s)"""
-    parts = expect_list(term, "gap witness")
-    if len(parts) != 3 or parts[0] != "gap":
-        raise EngineError(f"malformed gap witness: {term!r}")
+    parts = _witness_parts(term, "gap", 3)
     category_symbol = expect_symbol(parts[1], "gap category")
-    skill_id = expect_symbol(parts[2], "skill id")
-    category: GapCategory
-    if category_symbol == "skill":
-        category = "skill"
-    elif category_symbol == "availability":
-        category = "availability"
-    elif category_symbol == "mode":
-        category = "mode"
-    elif category_symbol == "location":
-        category = "location"
-    else:
+    if category_symbol not in _GAP_CATEGORIES or category_symbol not in _GAP_STATEMENTS:
         raise EngineError(f"unknown gap category {category_symbol!r}")
+    category = cast(GapCategory, category_symbol)
+    skill_id = expect_symbol(parts[2], "skill id")
     fields = {
         "skill": skill_id,
         "start": brief.availability_start.isoformat(),
@@ -373,21 +364,14 @@ class _EligibleWitness:
 
     @classmethod
     def parse(cls, term: Term) -> _EligibleWitness:
-        parts = expect_list(term, "eligible witness")
-        if len(parts) != 8 or parts[0] != "eligible":
-            raise EngineError(f"malformed eligible witness: {term!r}")
+        parts = _witness_parts(term, "eligible", 8)
         evidence_symbol = expect_symbol(parts[3], "evidence type")
-        evidence: EvidenceType
-        if evidence_symbol == "credential":
-            evidence = "credential"
-        elif evidence_symbol == "project":
-            evidence = "project"
-        else:
+        if evidence_symbol not in _WITNESS_EVIDENCE:
             raise EngineError(f"unknown evidence type {evidence_symbol!r}")
         return cls(
             builder_id=expect_symbol(parts[1], "builder id"),
             skill_id=expect_symbol(parts[2], "skill id"),
-            evidence=evidence,
+            evidence=cast(EvidenceType, evidence_symbol),
             verified_facts=facts_text(parts[4], "verified-for-skill facts"),
             mode_facts=facts_text(parts[5], "mode-compatible facts"),
             avail_facts=facts_text(parts[6], "available-for-brief facts"),
@@ -396,9 +380,7 @@ class _EligibleWitness:
 
     def merge(self, other: _EligibleWitness) -> _EligibleWitness:
         """Same builder and skill seen again: union the facts, fold evidence to `both`."""
-        evidence: EvidenceType = (
-            self.evidence if self.evidence == other.evidence else "both"
-        )
+        evidence: EvidenceType = self.evidence if self.evidence == other.evidence else "both"
         return _EligibleWitness(
             builder_id=self.builder_id,
             skill_id=self.skill_id,

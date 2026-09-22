@@ -8,7 +8,7 @@ from pydantic import BaseModel, ConfigDict, Field
 from app.api.deps import get_engine, get_seed_briefs
 from app.config import Settings, get_settings
 from app.engine.metta_engine import MettaRouteEngine
-from app.models.brief import VentureBrief
+from app.models.brief import SLUG, VentureBrief
 from app.models.engine import EligibleTuple, Gap, PartnerCandidate, ReuseCandidate
 
 router = APIRouter(prefix="/internal", tags=["internal"])
@@ -17,7 +17,7 @@ router = APIRouter(prefix="/internal", tags=["internal"])
 class QueryRequest(BaseModel):
     model_config = ConfigDict(populate_by_name=True, extra="forbid")
 
-    brief_id: str = Field(alias="briefId", pattern=r"^[a-z0-9]+(-[a-z0-9]+)*$")
+    brief_id: str = Field(alias="briefId", pattern=SLUG.pattern)
 
 
 class QueryResponse(BaseModel):

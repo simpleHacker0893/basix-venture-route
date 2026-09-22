@@ -19,6 +19,14 @@
 
 ; ---- mode-compatible (brief b) -> (mode-path (facts...)) ----
 ; The builder supports a mode the brief accepts; on-site briefs also need the builder's location.
+; Policy table (mode-accepts <brief mode> <builder mode>): requirements.md fixes "hybrid accepts
+; remote and hybrid supporters"; "remote accepts hybrid supporters" is the reading recorded in
+; planning/QUESTIONS.md Q-10. This is engine policy, not a graph fact, so it lives here.
+(mode-accepts remote remote)
+(mode-accepts remote hybrid)
+(mode-accepts hybrid remote)
+(mode-accepts hybrid hybrid)
+(mode-accepts on-site on-site)
 (= (mode-compatible $brief $b)
    (match &self (, (brief-mode $brief $m) (mode-accepts $m $bm) (supports-mode $b $bm))
       (case $m
@@ -97,6 +105,12 @@
           ((brief-mode $brief on-site) (match &self (brief-mode $brief on-site) (brief-mode $brief on-site)))
           ((supports-mode $b on-site) (match &self (supports-mode $b on-site) (supports-mode $b on-site))))
      $b))
+
+; ---- cohort-membership (b) -> (cohort c u (facts...)) ----
+; Not a decision rule: a direct lookup of belongs-to and cohort-of for the reasoning path per cohort.
+(= (cohort-membership $b)
+   (match &self (, (belongs-to $b $c) (cohort-of $c $u))
+      (cohort $c $u ((belongs-to $b $c) (cohort-of $c $u)))))
 
 ; ---- eligible-builder (brief b s) -> (eligible b s ev (verified facts) (mode facts) (avail facts) (account fact)) ----
 (= (eligible-builder $brief $b $s)
