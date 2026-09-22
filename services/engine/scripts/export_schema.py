@@ -96,7 +96,7 @@ def main(argv: list[str]) -> int:
         print(f"{SCHEMA_PATH} is up to date")
         return 0
     SCHEMA_PATH.parent.mkdir(parents=True, exist_ok=True)
-    SCHEMA_PATH.write_text(text, encoding="utf-8")
+    SCHEMA_PATH.write_text(text, encoding="utf-8", newline="\n")
     print(f"wrote {SCHEMA_PATH}")
     return 0
 

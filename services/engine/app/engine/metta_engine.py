@@ -122,6 +122,17 @@ class MettaRouteEngine:
             raise EngineError(f"{builder} belongs to more than one cohort")
         return _parse_cohort(witnesses[0], builder)
 
+    def day_rates(self, builder_ids: list[str]) -> dict[str, int]:
+        """USD per day per builder from `day-rate` atoms (D-24); every id must have one."""
+        rates: dict[str, int] = {}
+        for builder_id in builder_ids:
+            builder = _symbol(builder_id, "builder id")
+            witnesses = self._query(f"!(match &self (day-rate {builder} $usd) $usd)")
+            if len(witnesses) != 1 or not isinstance(witnesses[0], int):
+                raise EngineError(f"expected one integer day-rate fact for {builder}")
+            rates[builder] = witnesses[0]
+        return rates
+
     def gaps(self, brief: VentureBrief) -> list[Gap]:
         """skill / availability / mode / location gaps per required skill from `route-gap`."""
         with self._brief_in_space(brief):
