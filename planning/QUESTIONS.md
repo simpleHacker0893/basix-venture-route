@@ -2,7 +2,7 @@
 
 | # | Question | Owner | Needed by | Status |
 |---|---|---|---|---|
-| Q-01 | Confirm D-09: status value is deterministic; the LLM explains it. (Operator wording on 2026-09-22 could be read as "LLM decides status".) | Operator | Sprint 001 start | Open |
+| Q-01 | Confirm D-09: status value is deterministic; the LLM explains it. (Operator wording on 2026-09-22 could be read as "LLM decides status".) ADR 0006 records the deterministic reading. | Operator | Sprint 001 start | Open — one-word confirmation requested |
 | Q-02 | Anthropic API key available in `.env` for Sprint 001? | Operator | Wed 2026-09-23 | Open |
 | Q-03 | Clerk application (publishable + secret keys, webhook signing secret) created? | Operator | Sat 2026-09-26 | Open |
 | Q-04 | Neon project created; pooled `DATABASE_URL` for `main` and a `demo` branch known? (Neon MCP is connected in the Architect session and can create it on request.) | Operator | Sat 2026-09-26 | Open |

@@ -23,7 +23,7 @@ Give a founder one trustworthy answer: *given my MVP, constraints and budget, wh
 | Self-described skill | A skill the builder claims without proof. Shown on profiles as "Self-described"; never eligible. |
 | Demo data | Every record in this release. Shown as an amber pill. |
 | Verticals | `health`, `agri`, `education`. |
-| Skills (seed) | `python`, `ai-metta`, `ui-ux`, `frontend`, `backend`, `domain-research`, `mobile`, `rust`, `data`. Nine IDs; display names in the seed file. |
+| Skills (seed) | Nine IDs with display names: `python` Python · `ai-metta` AI / MeTTa · `ui-ux` UI/UX design · `frontend` Frontend · `backend` Backend · `domain-research` Domain research · `mobile` Mobile · `rust` Rust · `data` Data engineering. The seed file repeats these exactly. |
 
 ## Graph predicates (facts)
 `has-self-described-skill`, `earned (builder credential)`, `proves (credential skill)`, `built (builder project)`, `demonstrates (project skill)`, `belongs-to (builder cohort)`, `cohort-of (cohort university)`, `available (builder start end)`, `supports-mode (builder mode)`, `located-in (builder location)`, `day-rate (builder usd)`, `vertical (asset|project vertical)`, `licensable (asset)`, `supports-vertical (partner vertical)`, `partners-with (partner university)`, `confirmed (admin record)`.
