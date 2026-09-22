@@ -74,7 +74,9 @@ class AnthropicAdapter:
         )
 
     def extract_brief(self, message: str, current: PartialBrief | None) -> ExtractedBrief:
-        known = current.model_dump(by_alias=True, exclude_none=True) if current else {}
+        # mode="json" renders dates as ISO strings; a python-mode dump would make json.dumps
+        # raise TypeError on the second turn of every real conversation.
+        known = current.model_dump(mode="json", by_alias=True, exclude_none=True) if current else {}
         prompt = (
             f"Fields already confirmed (JSON, for context only):\n{json.dumps(known)}\n\n"
             f"Founder message:\n{message}"

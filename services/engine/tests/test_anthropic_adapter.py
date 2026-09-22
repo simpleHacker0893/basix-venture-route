@@ -195,6 +195,19 @@ def test_extract_brief_uses_structured_output_and_returns_only_stated_fields() -
     assert "USD 400 a day" in json.dumps(request["messages"])
 
 
+def test_extract_brief_serialises_a_dated_current_brief_as_json_context() -> None:
+    """A second turn carries dates in `currentBrief`; they must reach the wire as ISO strings."""
+    api = FakeApi(ok(json.dumps({"dailyBudget": 500})))
+    current = PartialBrief.model_validate(
+        {"availabilityStart": "2026-09-22", "availabilityEnd": "2026-09-29", "dailyBudget": 400}
+    )
+
+    extracted = api.adapter().extract_brief("make the budget 500", current)
+
+    assert extracted.daily_budget == 500
+    assert "2026-09-22" in json.dumps(api.requests[0]["messages"])
+
+
 def test_extract_brief_never_returns_unknown_fields() -> None:
     api = FakeApi(ok(json.dumps({"title": "x", "status": "feasible", "builders": ["hassan-abdi"]})))
 
