@@ -91,6 +91,7 @@ Time-box: half a day. Python 3.12, uv, hyperon==0.2.10 (verified by the Architec
 ### Sprint 001 — Routing core (Wed 23 Sep 12:00 → Thu 24 Sep 20:00)
 Seams: HTTP `POST /api/conversation`, `POST /api/route`, `GET /api/scenarios`; pure function `assemble(tuples, brief) -> VentureRoute`; `LlmAdapter` protocol via a fake adapter; Zod↔Pydantic JSON-Schema parity test.
 Skills: `claude-api` for the Anthropic adapter (official SDK, `claude-opus-5`, `output_config.format`, no raw HTTP), `secure-coding` for input validation.
+Inherited (D-20 to D-23): engine models live in `app/models/engine.py`; `gaps()` already covers skill/availability/mode/location; the assembler adds team-size and budget only; partner is the candidate of the first selected builder; infeasible returns no IP/cohort/partner; expected scenario outputs are exact in DOMAIN.md.
 Append to P3:
 ```text
 Contracts ticket first: packages/contracts Zod schemas, exported JSON Schema, Pydantic mirror, parity test green before any assembler work. Status is a pure function of gaps and coverage (D-09); the LLM explanation call receives only route.model_dump() and the test asserts no fact atoms and no outside entity in the request. With ANTHROPIC_API_KEY unset the NullAdapter serves every response type. The five DOMAIN.md scenarios are parametrised pytest cases with exact expected teams, totals and gaps.
