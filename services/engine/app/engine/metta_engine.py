@@ -31,15 +31,20 @@ from app.engine.errors import EngineError
 from app.engine.grounded import register_grounded_atoms
 from app.models.brief import VentureBrief
 from app.models.engine import (
+    METTA_RULES,
     CohortInfo,
     EligibleTuple,
     EvidenceType,
+    Gap,
+    GapCategory,
     PartnerCandidate,
     ReasoningPath,
+    ReuseCandidate,
     RuleName,
 )
 
 _RULE_HEAD = re.compile(r"^\(=\s*\(([a-z][a-z0-9-]*)\b", re.MULTILINE)
+_RULE_NAMES = frozenset(rule.value for rule in METTA_RULES)
 _SYMBOL = re.compile(r"^[a-z0-9]+(-[a-z0-9]+)*$")
 
 
@@ -95,6 +100,24 @@ class MettaRouteEngine:
                     candidates.append(_parse_partner(witness, builder))
         return sorted(candidates, key=lambda c: (c.partner_id, c.builder_id))
 
+    def reuse_candidates(self, brief: VentureBrief) -> list[ReuseCandidate]:
+        """Licensable assets in the brief's vertical that demonstrate a required skill."""
+        with self._brief_in_space(brief):
+            witnesses = self._query(f"!(reuse-fit {brief.id} $asset)")
+        by_asset: dict[str, _ReuseWitness] = {}
+        for witness in witnesses:
+            parsed = _ReuseWitness.parse(witness)
+            key = parsed.asset_id
+            by_asset[key] = parsed if key not in by_asset else by_asset[key].merge(parsed)
+        return [by_asset[key].to_candidate() for key in sorted(by_asset)]
+
+    def gaps(self, brief: VentureBrief) -> list[Gap]:
+        """skill / availability / mode / location gaps per required skill from `route-gap`."""
+        with self._brief_in_space(brief):
+            witnesses = self._query(f"!(route-gap {brief.id} $s $category)")
+        gaps = [_parse_gap(witness, brief) for witness in witnesses]
+        return sorted(gaps, key=lambda g: (g.affected[0], g.category))
+
     def cohort_of(self, builder_id: str) -> CohortInfo | None:
         """The builder's cohort and university, from `belongs-to` and `cohort-of` facts."""
         builder = _symbol(builder_id, "builder id")
@@ -128,8 +151,10 @@ class MettaRouteEngine:
         return self._add_program(path)
 
     def _load_rules(self, path: Path) -> int:
+        """Count the named rules (DOMAIN.md) defined in the file; helper equations do not count."""
         self._add_program(path)
-        return len(set(_RULE_HEAD.findall(path.read_text(encoding="utf-8"))))
+        heads = set(_RULE_HEAD.findall(path.read_text(encoding="utf-8")))
+        return len(heads & _RULE_NAMES)
 
     def _add_program(self, path: Path) -> int:
         if not path.exists():
@@ -212,6 +237,116 @@ def _parse_partner(term: Term, builder_id: str) -> PartnerCandidate:
                 f"{partner_id} fits via {university_id} and {cohort_id} of {builder_id}"
             ),
         ),
+    )
+
+
+class _ReuseWitness:
+    """(reuse asset s (facts...)); one witness per (asset, required skill)."""
+
+    def __init__(self, asset_id: str, skill_ids: list[str], facts: list[str]) -> None:
+        self.asset_id = asset_id
+        self.skill_ids = skill_ids
+        self.facts = facts
+
+    @classmethod
+    def parse(cls, term: Term) -> _ReuseWitness:
+        parts = expect_list(term, "reuse witness")
+        if len(parts) != 4 or parts[0] != "reuse":
+            raise EngineError(f"malformed reuse witness: {term!r}")
+        return cls(
+            asset_id=expect_symbol(parts[1], "asset id"),
+            skill_ids=[expect_symbol(parts[2], "skill id")],
+            facts=facts_text(parts[3], "reuse-fit facts"),
+        )
+
+    def merge(self, other: _ReuseWitness) -> _ReuseWitness:
+        return _ReuseWitness(
+            asset_id=self.asset_id,
+            skill_ids=sorted(set(self.skill_ids) | set(other.skill_ids)),
+            facts=_union(self.facts, other.facts),
+        )
+
+    def to_candidate(self) -> ReuseCandidate:
+        return ReuseCandidate(
+            asset_id=self.asset_id,
+            skill_ids=self.skill_ids,
+            path=ReasoningPath(
+                rule=RuleName.REUSE_FIT,
+                facts=self.facts,
+                conclusion=(
+                    f"{self.asset_id} is licensable in the brief's vertical and demonstrates "
+                    + ", ".join(self.skill_ids)
+                ),
+            ),
+        )
+
+
+_GAP_STATEMENTS: dict[str, str] = {
+    "skill": "No confirmed credential or completed project proves {skill} for any builder.",
+    "availability": (
+        "Builders verified for {skill} exist, but none overlaps the brief window "
+        "{start} to {end} by at least the minimum overlap."
+    ),
+    "mode": (
+        "Builders verified for {skill} are available, but none supports {mode} delivery."
+    ),
+    "location": (
+        "Builders verified for {skill} are available and support on-site delivery, "
+        "but none is located in {location}."
+    ),
+}
+
+_GAP_NEXT_ACTIONS: dict[str, list[str]] = {
+    "skill": [
+        "Ask BASIX to confirm a credential or project for {skill}.",
+        "Remove {skill} from the brief or replace it with a related skill.",
+    ],
+    "availability": [
+        "Widen the availability window.",
+        "Ask a verified {skill} builder to open availability inside the window.",
+    ],
+    "mode": [
+        "Change the delivery mode.",
+        "Ask a verified {skill} builder to support {mode} delivery.",
+    ],
+    "location": [
+        "Change the location or switch to hybrid delivery.",
+        "Ask a verified {skill} builder located in {location} to support on-site delivery.",
+    ],
+}
+
+
+def _parse_gap(term: Term, brief: VentureBrief) -> Gap:
+    """(gap category s)"""
+    parts = expect_list(term, "gap witness")
+    if len(parts) != 3 or parts[0] != "gap":
+        raise EngineError(f"malformed gap witness: {term!r}")
+    category_symbol = expect_symbol(parts[1], "gap category")
+    skill_id = expect_symbol(parts[2], "skill id")
+    category: GapCategory
+    if category_symbol == "skill":
+        category = "skill"
+    elif category_symbol == "availability":
+        category = "availability"
+    elif category_symbol == "mode":
+        category = "mode"
+    elif category_symbol == "location":
+        category = "location"
+    else:
+        raise EngineError(f"unknown gap category {category_symbol!r}")
+    fields = {
+        "skill": skill_id,
+        "start": brief.availability_start.isoformat(),
+        "end": brief.availability_end.isoformat(),
+        "mode": brief.delivery_mode,
+        "location": brief.location or "",
+    }
+    return Gap(
+        category=category,
+        statement=_GAP_STATEMENTS[category].format(**fields),
+        affected=[skill_id],
+        next_actions=[action.format(**fields) for action in _GAP_NEXT_ACTIONS[category]],
+        rule=RuleName.ROUTE_GAP,
     )
 
 
