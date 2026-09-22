@@ -17,7 +17,7 @@ As a reviewer, I want a real-runtime integration test so that the graph engine c
 6. Contract test `tests/test_runtime_contract.py` marked `@pytest.mark.runtime`: real hyperon, loads the fixture, runs `eligible-builder` and `partner-fit` for the Health brief, asserts the four-hop partner path and the `both` evidence for `amina-otieno`/`python`, fails if hyperon is missing.
 
 ## Out of scope
-Conversation API, LLM, assembler, web app, Convex, Clerk.
+Conversation API, LLM, assembler, web app, Postgres, Clerk.
 
 ## Business rules
 All from DOMAIN.md. `MIN_OVERLAP_DAYS = 2`. Self-described skills present in facts and provably ignored by `verified-for-skill` (test asserts it).

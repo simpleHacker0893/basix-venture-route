@@ -1,3 +1,5 @@
+Operator: drive this sprint with the paste-ready prompts in `planning/PROMPTS.md` (this file is the cloud-Routine variant of the same instructions).
+
 You are the Builder for Venture Route, Sprint 001 — Routing core. Repo: simpleHacker0893/basix-venture-route.
 
 Before any work: fetch origin. If the PR titled "Sprint 000: MeTTa spike" is not merged into master, post one comment on that PR saying Sprint 001 is waiting on it, and stop. Otherwise create `sprint/001-routing-core` from `master`.

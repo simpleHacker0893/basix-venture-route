@@ -1,3 +1,3 @@
-DRAFT — finalised by the Architect after the Sprint 003 Builder Review.
+DRAFT — finalised by the Architect after the Sprint 003 Builder Review. The Operator drives this sprint with the prompts in `planning/PROMPTS.md` §Sprint 004.
 
 You are the Builder for Venture Route, Sprint 004 — Requests and interviews. Before any work: fetch origin. If the PR "Sprint 003: Marketplace" is not merged, comment that Sprint 004 is waiting, and stop. Otherwise create `sprint/004-requests-interviews` from `master`. If `planning/STATE.md` says the scope floor is active, build only requests + gated bids. Read the pack files, this sprint's files, slice with `to-tickets`, build with `implement` + `tdd`, review per ticket, `code-review`, open PR `Sprint 004: Requests and interviews`.

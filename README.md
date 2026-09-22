@@ -113,11 +113,11 @@ The adapter returns typed Pydantic results and rejects malformed or unexpected r
 - React 18 + Vite + TypeScript client, Tailwind and shadcn/ui, installable PWA (desktop-first)
 - Python 3.12 + FastAPI + Pydantic v2 engine and API service, with the official `hyperon` runtime loaded in-process
 - Zod schemas (client and API edge) mirrored by Pydantic models (server) for brief and route contracts
-- Clerk for auth and roles; Convex (schema + functions in `convex/`, Clerk via `auth.config.ts`) for marketplace persistence, projected into the MeTTa graph on admin confirmation
+- Clerk for auth and roles; Neon Postgres (SQLModel + Alembic inside the FastAPI service) for marketplace persistence, projected into the MeTTa graph on admin confirmation
 - Anthropic Claude behind a provider-agnostic adapter, server-side key, structured output, with a form-only fallback
 - Vitest, React Testing Library and Playwright for the client; pytest for the engine, including a real-runtime adapter contract test
-- Docker Compose (`engine`, `web`) plus `npx convex dev` for local runs; Vercel for the web client, Railway (Render fallback) for the engine container, Convex cloud for data
-- Monorepo: `apps/web`, `services/engine`, `packages/contracts`, `convex/`
+- Docker Compose (`engine`, `db`, `web`) for local runs; Vercel for the web client, Railway (Render fallback) for the engine container, Neon for the database
+- Monorepo: `apps/web`, `services/engine`, `packages/contracts`
 
 Planning follows the 120x Architect/Builder Operating Pack: start with `AGENTS.md`, then `planning/STATE.md` and `planning/TIMELINE.md` (demo: 1 October 2026). Stitch prompts for the UI live in `docs/design/stitch-prompts.md`.
 

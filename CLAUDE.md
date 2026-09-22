@@ -4,6 +4,6 @@ Read `AGENTS.md` first. It holds the operating rules, roles, stack, and sprint p
 
 Then read, in order: `planning/STATE.md`, `planning/DECISIONS.md`, `planning/DOMAIN.md`, `planning/TIMELINE.md`, and the current sprint folder under `planning/sprints/`.
 
-Skills this repo expects the Builder to use: Matt Pocock's `to-tickets`, `implement`, `tdd`, `code-review` (install: `npx skills add mattpocock/skills`), Convex's `convex` skill (`npx skills add https://github.com/get-convex/agent-skills --skill convex`), and superpowers `verification-before-completion` (`npx skills add obra/superpowers`).
+Skills are installed under `.claude/skills/` (restore with `npx skills experimental_install`). The Builder process is Matt Pocock's chain: `/setup-matt-pocock-skills` once, then per sprint `/to-tickets` → `/implement` (with `tdd` at the seams in `planning/PROMPTS.md`) → `/code-review master`. The exact prompts to paste are in `planning/PROMPTS.md`. Neon Postgres is the store (D-17); never use the Convex skill.
 
 Never write application code from the `120x-architect` role. Never claim a sprint complete without running the commands in its `acceptance.md` and pasting the output.

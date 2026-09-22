@@ -24,7 +24,7 @@ Ship the end-to-end seam `POST /api/conversation` (PRD §5.2): message in, one o
 9. `.env.example` gains `ANTHROPIC_API_KEY`, `LLM_PROVIDER=anthropic|null`.
 
 ## Out of scope
-Any UI. Convex. Clerk. Persistence of briefs (Sprint 003 stores them in Convex).
+Any UI. Postgres. Clerk. Persistence of briefs (Sprint 004 stores them with requests).
 
 ## Business rules
 DOMAIN.md and D-08, D-09. Next-action table:

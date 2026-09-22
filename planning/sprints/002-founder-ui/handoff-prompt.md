@@ -1,3 +1,5 @@
+Operator: drive this sprint with the paste-ready prompts in `planning/PROMPTS.md` (this file is the cloud-Routine variant of the same instructions).
+
 DRAFT — the Architect finalises this prompt after the Sprint 001 Builder Review (adds the blueprint file list and any inherited follow-ups).
 
 You are the Builder for Venture Route, Sprint 002 — Founder UI. Before any work: fetch origin. If the PR "Sprint 001: Routing core" is not merged into master, comment on it that Sprint 002 is waiting, and stop. Otherwise create `sprint/002-founder-ui` from `master`.

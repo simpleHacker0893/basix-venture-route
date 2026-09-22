@@ -18,7 +18,7 @@ PRD §3.1 (all ten) and §3.5 judge story.
 7. Offline mode flag (`VITE_OFFLINE_DEMO=1`): loads the five seed routes from a static JSON snapshot for the recorded fallback.
 
 ## Out of scope
-Auth, marketplace screens, Convex.
+Auth, marketplace screens, Postgres.
 
 ## Business rules
 Gaps panel above team cards whenever `gaps.length > 0`. Status badge text exactly `Feasible | Partial | Infeasible`. Currency `USD n / day`. Dates `22 Sep – 29 Sep 2026`.

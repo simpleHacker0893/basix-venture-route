@@ -32,17 +32,16 @@ Demo: Thursday 1 October 2026, BASIX hackathon, SingularityNET MeTTa track. Time
 
 ## Stack (decided, see DECISIONS.md)
 
-- `services/engine`: Python 3.12, FastAPI, Pydantic v2, `hyperon==0.2.10` in-process, `anthropic` SDK, `convex` Python client 0.8.x. Managed with `uv`. Tests: pytest.
-- `apps/web`: React 18 + Vite + TypeScript, Tailwind, shadcn/ui, vite-plugin-pwa, Clerk React, Convex React client. Tests: Vitest + React Testing Library + Playwright.
-- `convex/`: Convex functions and schema (marketplace data), Clerk auth via `convex/auth.config.ts`. CLI: `npx convex dev`, `npx convex deploy`. MCP: `npx convex@latest mcp start`.
+- `services/engine`: Python 3.12, FastAPI, Pydantic v2, `hyperon==0.2.10` in-process, `anthropic` SDK, SQLModel + Alembic + `asyncpg` against Neon Postgres. Managed with `uv`. Tests: pytest (marketplace tests run against a Neon branch or the compose `db`).
+- `apps/web`: React 18 + Vite + TypeScript, Tailwind, shadcn/ui, vite-plugin-pwa, Clerk React. Talks only to the FastAPI service. Tests: Vitest + React Testing Library + Playwright.
 - `packages/contracts`: Zod schemas for `VentureBrief`, `VentureRoute`, `ChatResponse`; JSON Schema exported for the Pydantic mirror test.
-- Root: Turborepo, Docker Compose (`engine`, `web`), `.env.example`.
-- Deploy: web on Vercel; engine container on Railway (Render as fallback); Convex cloud.
+- Root: Turborepo, Docker Compose (`engine`, `db`, `web`), `.env.example`.
+- Deploy: web on Vercel; engine container on Railway (Render as fallback); database on Neon (Neon CLI/MCP for branches).
 
 ## How a sprint runs
 
 1. Builder starts from `planning/sprints/<sprint>/handoff-prompt.md` on branch `sprint/<sprint>`.
-2. Builder runs the Matt Pocock `to-tickets` skill on `requirements.md` to slice tracer-bullet tickets into `planning/sprints/<sprint>/tickets/`, then `implement` with `tdd` per ticket, then `code-review` before the PR.
+2. Operator drives the Matt Pocock skills from `planning/PROMPTS.md`: `/to-tickets` on `requirements.md` (tickets published as GitHub Issues labelled `ready-for-agent`, sprint label `sprint:NNN`), `/implement` per ticket (runs `tdd` at the sprint's fixed seams and `code-review`), `/code-review master` before the PR.
 3. Builder opens one PR titled `Sprint <NNN>: <name>` whose body is the completion report (`planning/AUTOMATION.md` §Completion report). The PR must not be marked ready until every `acceptance.md` line has evidence.
 4. Architect reviews the report against `acceptance.md`; Operator merges. Merge of sprint N is the only trigger for sprint N+1.
 5. `planning/STATE.md` is updated in the same PR: what shipped, what did not, what the next sprint inherits.
@@ -65,9 +64,9 @@ Restore on a fresh clone with `npx skills experimental_install`. The Stitch plug
 
 | When | Use |
 |---|---|
-| Planning, any sprint | `grilling`, `grill-me`, `to-spec`, `to-tickets`, `implement`, `tdd`, `code-review` (Matt Pocock); `brainstorming`, `writing-plans`, `subagent-driven-development`, `test-driven-development`, `verification-before-completion` (superpowers) |
+| Planning, any sprint | `setup-matt-pocock-skills` (once), `domain-modeling`, `codebase-design`, `grilling`, `grill-me`, `to-tickets`, `implement`, `tdd`, `code-review` (Matt Pocock; prompts in `planning/PROMPTS.md`); `brainstorming`, `writing-plans`, `subagent-driven-development`, `test-driven-development`, `verification-before-completion` (superpowers) |
 | Sprint 000–001 engine | `fastapi-clean-architecture`, `secure-coding`, `docker-project-foundations`, `docker-build-strategies` |
 | Sprint 002 web | `vercel-react-best-practices`, `vercel-composition-patterns`, `web-design-guidelines`, `playwright-cli`; Stitch plugins `stitch-build` (`shadcn-ui`, `react-components`, `react-vite-dashboard`), `stitch-design` (`generate-design`, `extract-design-md`, `code-to-design`), `stitch-utilities` (`design-md`, `enhance-prompt`) |
-| Sprint 003–004 marketplace | `convex`, `clerk-setup`, `clerk-react-patterns`, `clerk-cli`, `clerk-orgs`, `clerk-testing`, `clerk-backend-api` |
+| Sprint 003–004 marketplace | `neon-postgres`, `fastapi-clean-architecture` (Clerk JWT section), `clerk-setup`, `clerk-react-patterns`, `clerk-cli`, `clerk-webhooks`, `clerk-testing`, `clerk-backend-api` |
 | Sprint 005 deploy | `docker-compose-patterns`, `deploy-to-vercel`, `use-railway`, `docker-vps-deploy` (Render/VPS fallback only) |
-| Not used by this project (installed, kept for reference) | `neon-postgres`, `redis-*`, `iris-development`, `clerk-android`, `clerk-expo`, `clerk-swift`, `clerk-nextjs-patterns`, `clerk-nuxt-patterns`, `clerk-vue-patterns`, `clerk-astro-patterns`, `clerk-tanstack-patterns`, `clerk-react-router-patterns`, `clerk-chrome-extension-patterns`, `clerk-billing`. D-02 makes Convex the store; a Neon or Redis skill must not be used without a superseding decision. |
+| Not used by this project (installed, kept for reference) | `convex` (superseded by D-17), `redis-*`, `iris-development`, `clerk-android`, `clerk-expo`, `clerk-swift`, `clerk-nextjs-patterns`, `clerk-nuxt-patterns`, `clerk-vue-patterns`, `clerk-astro-patterns`, `clerk-tanstack-patterns`, `clerk-react-router-patterns`, `clerk-chrome-extension-patterns`, `clerk-billing`. D-17 makes Neon Postgres the store; the Convex or Redis skills must not be used without a superseding decision. |
