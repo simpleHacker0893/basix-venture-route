@@ -1,0 +1,16 @@
+# Local stack. Sprint 000 ships the engine service only; db and web arrive in later sprints (D-05).
+services:
+  engine:
+    build:
+      context: ./services/engine
+    ports:
+      - "${ENGINE_PORT:-8000}:8000"
+    environment:
+      DEMO_TODAY: ${DEMO_TODAY:-2026-09-22}
+      MIN_OVERLAP_DAYS: ${MIN_OVERLAP_DAYS:-2}
+      ENGINE_DEV_QUERY: ${ENGINE_DEV_QUERY:-0}
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:8000/health').status == 200 else 1)"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
