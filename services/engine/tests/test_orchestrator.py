@@ -92,7 +92,7 @@ def orchestrator(adapter: LlmAdapter) -> Orchestrator:
 
 def test_vague_message_with_null_adapter_asks_for_every_required_field() -> None:
     response = orchestrator(NullAdapter()).handle(
-        ChatTurn(userMessage="I want to build something for farmers")
+        ChatTurn(user_message="I want to build something for farmers")
     )
 
     assert response.type == "clarification"
@@ -104,9 +104,9 @@ def test_vague_message_with_null_adapter_asks_for_every_required_field() -> None
 
 
 def test_partial_extraction_asks_only_for_what_is_missing() -> None:
-    adapter = FakeAdapter(ExtractedBrief(vertical="agri", dailyBudget=300))
+    adapter = FakeAdapter(ExtractedBrief(vertical="agri", daily_budget=300))
 
-    response = orchestrator(adapter).handle(ChatTurn(userMessage="an agri app, USD 300 a day"))
+    response = orchestrator(adapter).handle(ChatTurn(user_message="an agri app, USD 300 a day"))
 
     assert response.type == "clarification"
     assert "vertical" not in response.missing_fields
@@ -120,7 +120,7 @@ def test_on_site_brief_without_location_is_asked_for_the_location() -> None:
         ExtractedBrief.model_validate({**HEALTH_FIELDS, "deliveryMode": "on-site"})
     )
 
-    response = orchestrator(adapter).handle(ChatTurn(userMessage="on site please"))
+    response = orchestrator(adapter).handle(ChatTurn(user_message="on site please"))
 
     assert response.type == "clarification"
     assert response.missing_fields == ["location"]
@@ -129,7 +129,7 @@ def test_on_site_brief_without_location_is_asked_for_the_location() -> None:
 def test_full_extraction_routes_in_one_turn_with_a_generated_id() -> None:
     adapter = FakeAdapter(ExtractedBrief.model_validate(HEALTH_FIELDS))
 
-    response = orchestrator(adapter).handle(ChatTurn(userMessage="the whole brief in prose"))
+    response = orchestrator(adapter).handle(ChatTurn(user_message="the whole brief in prose"))
 
     assert response.type == "route"
     assert response.brief.id == "brief-health-pilot"
@@ -140,10 +140,10 @@ def test_full_extraction_routes_in_one_turn_with_a_generated_id() -> None:
 
 def test_latest_explicit_correction_wins_over_current_brief() -> None:
     current = PartialBrief.model_validate({**HEALTH_FIELDS, "id": "brief-health-01"})
-    adapter = FakeAdapter(ExtractedBrief(dailyBudget=500))
+    adapter = FakeAdapter(ExtractedBrief(daily_budget=500))
 
     response = orchestrator(adapter).handle(
-        ChatTurn(userMessage="make the budget 500", currentBrief=current)
+        ChatTurn(user_message="make the budget 500", current_brief=current)
     )
 
     assert response.type == "route"
@@ -155,7 +155,7 @@ def test_latest_explicit_correction_wins_over_current_brief() -> None:
 def test_confirmed_brief_with_empty_message_and_null_adapter_routes_unchanged() -> None:
     current = PartialBrief.model_validate({**HEALTH_FIELDS, "id": "brief-health-01"})
 
-    response = orchestrator(NullAdapter()).handle(ChatTurn(userMessage="", currentBrief=current))
+    response = orchestrator(NullAdapter()).handle(ChatTurn(user_message="", current_brief=current))
 
     assert response.type == "route"
     assert response.route == STUB_ROUTE
@@ -167,7 +167,7 @@ def test_invalid_merged_brief_is_a_validation_error_never_a_route() -> None:
         {**HEALTH_FIELDS, "availabilityStart": "2026-09-29", "availabilityEnd": "2026-09-22"}
     )
 
-    response = orchestrator(NullAdapter()).handle(ChatTurn(userMessage="", currentBrief=current))
+    response = orchestrator(NullAdapter()).handle(ChatTurn(user_message="", current_brief=current))
 
     assert response.type == "validation-error"
     assert "availabilityEnd" in response.message
@@ -179,7 +179,7 @@ def test_llm_outage_falls_back_to_null_behaviour_with_the_form_hint(
 ) -> None:
     adapter = FakeAdapter(unavailable=True)
 
-    response = orchestrator(adapter).handle(ChatTurn(userMessage="hello", currentBrief=current))
+    response = orchestrator(adapter).handle(ChatTurn(user_message="hello", current_brief=current))
 
     assert response.type == ("route" if current else "clarification")
     assert FORM_FALLBACK_HINT in response.message
@@ -193,7 +193,7 @@ def test_explanation_naming_an_entity_outside_the_route_is_replaced_by_the_templ
         explanation="Amina Otieno is great; you could also try Hassan Abdi.",
     )
 
-    response = orchestrator(adapter).handle(ChatTurn(userMessage="route me"))
+    response = orchestrator(adapter).handle(ChatTurn(user_message="route me"))
 
     assert response.type == "route"
     assert response.route.summary == STUB_ROUTE.summary
@@ -205,7 +205,7 @@ def test_explanation_naming_only_route_entities_becomes_the_summary() -> None:
         explanation="Amina Otieno covers python with both a credential and a project.",
     )
 
-    response = orchestrator(adapter).handle(ChatTurn(userMessage="route me"))
+    response = orchestrator(adapter).handle(ChatTurn(user_message="route me"))
 
     assert response.type == "route"
     assert (

@@ -70,7 +70,8 @@ def canonical(schema: Any, defs: Json | None = None) -> Any:
 
 def export() -> Json:
     def model(cls: type[BaseModel]) -> Json:
-        return canonical(cls.model_json_schema(mode="validation"))
+        schema: Json = canonical(cls.model_json_schema(mode="validation"))
+        return schema
 
     return {
         "VentureBrief": model(VentureBrief),
