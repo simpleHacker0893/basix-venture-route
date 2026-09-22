@@ -1,0 +1,215 @@
+---
+description: Estructura proyectos FastAPI separando lógica de negocio de framework, ORM y servicios externos, sin caer en arquitectura limpia purista. Aplica al crear/refactorizar routers, casos de uso, repositorios, dependencies, lifespan, schemas Pydantic, tareas Celery, integraciones MongoDB async o auth Clerk JWT / API key.
+globs: **/app/**/*.py, **/api/**/*.py, **/modules/**/*.py, **/use_cases/**/*.py, **/repositories/**/*.py, **/routers/**/*.py, **/worker*.py, **/celery*.py
+alwaysApply: false
+---
+
+# FastAPI Clean Architecture — Pragmático
+
+Separar lo que vale (lógica de negocio, servicios externos, persistencia testeable) sin duplicar entidades por purismo ni introducir Unit of Work.
+
+## Filosofía
+
+1. **FastAPI es la capa de entrega, no el centro.** Routers, `Depends`, `HTTPException` y `response_model` viven en API; la lógica de negocio NO.
+2. **Pydantic vive en la frontera HTTP**, no en el dominio. Entidades de domain son `@dataclass`.
+3. **Servicios externos detrás de Protocol** (HTTP, colas, terceros) — ahí es donde la abstracción paga. ORM con BD de tests puede quedar concreto.
+4. **Excepciones de dominio, NO HTTPException, dentro de use cases.** El mapeo a HTTP vive en `@app.exception_handler`.
+
+Regla mental: **"¿En los tests me duele tener la implementación real?"** → Si sí, Protocol + fake. Si no, clase concreta.
+
+## Cuándo aplicar el patrón
+
+- Integración con servicio externo (API REST, webhook, cola).
+- Operación disparada desde varios lugares (router + Celery + command).
+- Reglas de negocio no triviales que vale testear sin levantar FastAPI.
+- Orquesta múltiples fuentes (DB + HTTP + cache).
+
+**NO aplicar** para CRUD plano. Un router con SQLModel + `response_model` es suficiente.
+
+## Modelo de capas
+
+| Capa | Responsabilidad |
+|------|-----------------|
+| **Domain** | Entidades, value objects, excepciones, ports (Protocol). Python puro. |
+| **Application** | Use cases, DTOs, errores de aplicación. Depende de Protocols. |
+| **Interface / API** | Routers, schemas Pydantic, deps, exception handlers. |
+| **Infrastructure** | Repos concretos, clientes HTTP, tasks Celery. |
+| **Composition root** | `main.py`, `lifespan`, wiring. |
+
+## Estructura
+
+```
+app/
+├── main.py
+├── workers/celery_app.py
+├── core/                     # config, exceptions, security
+├── api/
+│   ├── deps.py
+│   ├── exception_handlers.py
+│   ├── auth/                 # clerk_auth.py, api_key_auth.py
+│   └── v1/<feature>.py       # APIRouter
+└── modules/<feature>/
+    ├── domain/               # entities, exceptions, ports (Protocol)
+    ├── application/          # dto, use_cases, tests
+    ├── infrastructure/       # repositories, celery_tasks, mongo_indexes
+    └── schemas.py            # Pydantic request/response
+```
+
+## Reglas Domain
+
+**Sí**: `@dataclass(frozen=True)`, Protocols, excepciones, value objects, servicios de dominio.
+
+**No**: `from fastapi import ...`, `from sqlalchemy import ...`, `from pymongo import ...`, `from bson import ObjectId`, `HTTPException`, `Request`.
+
+Nunca lanzar `HTTPException` desde domain o application.
+
+## Pydantic schemas vs entidades
+
+Cinco modelos distintos cuando el patrón paga:
+
+```
+UserCreateSchema   # request HTTP (Pydantic)
+UserResponse       # response HTTP (Pydantic)
+CreateUserCommand  # DTO application (dataclass)
+User               # entidad de dominio (dataclass frozen)
+UserORM / UserDoc  # persistencia (SQLAlchemy ORM o dict Mongo)
+```
+
+Mappers `_to_domain` / `_to_persistence` viven en el repositorio.
+
+## Repositorios
+
+```python
+# domain/ports.py
+class UserRepository(Protocol):
+    async def get_by_id(self, user_id: str) -> User | None: ...
+    async def save(self, user: User) -> None: ...
+```
+
+```python
+# infrastructure/repositories.py
+class MongoUserRepository:  # implementa el Protocol
+    def __init__(self, db: AsyncDatabase): ...
+```
+
+## Routers DELGADOS
+
+```python
+# BIEN
+@router.post("/users", response_model=UserResponse, status_code=201)
+async def create_user(
+    payload: UserCreateSchema,
+    use_case: CreateUserUseCase = Depends(get_create_user_use_case),
+    principal: AuthenticatedPrincipal = Depends(get_user_principal),
+):
+    result = await use_case.execute(payload.to_command(), principal=principal)
+    return UserResponse.model_validate(result)
+```
+
+**MAL**: lógica de negocio, queries ORM directas, llamadas HTTP a terceros dentro del endpoint.
+
+## Lifespan
+
+Recursos costosos en `lifespan`, nunca en import time:
+
+```python
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    client = AsyncMongoClient(settings.mongo_uri, ...)
+    await client.admin.command("ping")
+    app.state.db = client[settings.mongo_db_name]
+    try:
+        yield
+    finally:
+        await client.close()
+```
+
+## Async / sync
+
+```text
+async def -> solo I/O awaitable (httpx, pymongo async, sqlalchemy async).
+def       -> librerías bloqueantes sin await.
+NUNCA llamar I/O bloqueante (requests, time.sleep, drivers sync) dentro de async def.
+CPU-heavy -> worker process / task queue.
+```
+
+## Background tasks vs Celery
+
+```text
+Sin consecuencia si se pierde la tarea  -> BackgroundTasks
+Retry, idempotencia, schedule, crítico  -> Celery
+```
+
+## Error handling
+
+```python
+# application/use_cases.py
+class CreateUserUseCase:
+    async def execute(self, command):
+        if await self.repo.get_by_email(command.email):
+            raise UserAlreadyExists(command.email)  # NUNCA HTTPException
+```
+
+```python
+# api/exception_handlers.py
+@app.exception_handler(UserAlreadyExists)
+async def handler(req, exc):
+    return JSONResponse(status_code=409, content={"detail": "User already exists"})
+```
+
+## Auth
+
+```text
+Verificación JWT / API key  -> dependencia FastAPI
+AuthenticatedPrincipal      -> objeto interno inyectado al use case
+Reglas "X no puede editar Y" -> use case con principal
+```
+
+Clerk JWT RS256 + JWKS cacheado. API keys: `secrets.token_urlsafe` + SHA-256 hash + `hmac.compare_digest`.
+
+## Celery 5.4 (si aplica)
+
+```text
+[ ] Tasks son adapters delgados, no contienen reglas de negocio.
+[ ] autoretry_for SOLO errores transitorios (red, timeout, rate limit).
+[ ] acks_late=True requiere idempotencia (idempotency_key).
+[ ] Pasar IDs/JSON pequeño, NUNCA modelos ORM/ODM.
+[ ] soft_time_limit < time_limit; timeout del cliente HTTP aún más chico.
+[ ] Queues separadas para trabajos lentos / rápidos / críticos.
+[ ] Celery worker NO importa la FastAPI app.
+```
+
+## PyMongo async (si aplica)
+
+```text
+[ ] AsyncMongoClient en FastAPI (NO Motor para proyectos nuevos).
+[ ] Cliente en lifespan, cerrado con await client.close().
+[ ] No crear cliente por request.
+[ ] Domain NO importa bson ni pymongo.
+[ ] Mappers _to_domain / _to_document en el repositorio.
+[ ] Índices únicos respaldan invariantes (email, clerk_user_id, idempotency_key).
+[ ] Transacciones SOLO para multi-doc real.
+```
+
+## Testing
+
+```text
+[ ] Use cases con fake del Protocol (NO MagicMock suelto).
+[ ] AAA: Arrange / Act / Assert con líneas en blanco.
+[ ] Tests de router con dependency_overrides + test DB.
+[ ] app.dependency_overrides.clear() en cleanup.
+```
+
+## Checklist mínimo
+
+```text
+[ ] Domain NO importa fastapi/sqlalchemy/pymongo/bson.
+[ ] Routers DELGADOS: validar + inyectar use case + responder.
+[ ] HTTPException solo en API layer.
+[ ] Use cases reciben Protocols, no implementaciones.
+[ ] Schemas/DTOs/entities/ORM modelos distintos cuando el patrón paga.
+[ ] response_model en cada endpoint.
+[ ] lifespan en lugar de @app.on_event.
+[ ] register_exception_handlers(app) en main.py.
+[ ] dependency_overrides en tests, no monkeypatching interno.
+```

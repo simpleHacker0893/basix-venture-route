@@ -58,3 +58,16 @@ Demo: Thursday 1 October 2026, BASIX hackathon, SingularityNET MeTTa track. Time
 ## Adapters
 
 `CLAUDE.md` is a thin pointer to this file. There is no `CODEX.md`.
+
+## Installed skills (project scope, `.claude/skills/` and `skills-lock.json`)
+
+Restore on a fresh clone with `npx skills experimental_install`. The Stitch plugin is pinned in `.claude/settings.json`; Playwright CLI: `npm i -g @playwright/cli && playwright-cli install --skills`.
+
+| When | Use |
+|---|---|
+| Planning, any sprint | `grilling`, `grill-me`, `to-spec`, `to-tickets`, `implement`, `tdd`, `code-review` (Matt Pocock); `brainstorming`, `writing-plans`, `subagent-driven-development`, `test-driven-development`, `verification-before-completion` (superpowers) |
+| Sprint 000–001 engine | `fastapi-clean-architecture`, `secure-coding`, `docker-project-foundations`, `docker-build-strategies` |
+| Sprint 002 web | `vercel-react-best-practices`, `vercel-composition-patterns`, `web-design-guidelines`, `playwright-cli`; Stitch plugins `stitch-build` (`shadcn-ui`, `react-components`, `react-vite-dashboard`), `stitch-design` (`generate-design`, `extract-design-md`, `code-to-design`), `stitch-utilities` (`design-md`, `enhance-prompt`) |
+| Sprint 003–004 marketplace | `convex`, `clerk-setup`, `clerk-react-patterns`, `clerk-cli`, `clerk-orgs`, `clerk-testing`, `clerk-backend-api` |
+| Sprint 005 deploy | `docker-compose-patterns`, `deploy-to-vercel`, `use-railway`, `docker-vps-deploy` (Render/VPS fallback only) |
+| Not used by this project (installed, kept for reference) | `neon-postgres`, `redis-*`, `iris-development`, `clerk-android`, `clerk-expo`, `clerk-swift`, `clerk-nextjs-patterns`, `clerk-nuxt-patterns`, `clerk-vue-patterns`, `clerk-astro-patterns`, `clerk-tanstack-patterns`, `clerk-react-router-patterns`, `clerk-chrome-extension-patterns`, `clerk-billing`. D-02 makes Convex the store; a Neon or Redis skill must not be used without a superseding decision. |
