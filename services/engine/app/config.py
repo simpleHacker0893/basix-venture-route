@@ -8,10 +8,18 @@ from typing import Literal
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 PACKAGE_ROOT = Path(__file__).resolve().parent.parent
+REPO_ROOT = PACKAGE_ROOT.parent.parent
 
 
 class Settings(BaseSettings):
-    model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")
+    """Reads the repo-root `.env` (where the Operator places every key, D-26), then an optional
+    `services/engine/.env` that overrides it, then the process environment on top."""
+
+    model_config = SettingsConfigDict(
+        env_file=(REPO_ROOT / ".env", PACKAGE_ROOT / ".env"),
+        env_file_encoding="utf-8",
+        extra="ignore",
+    )
 
     # Demo clock frozen for deterministic availability windows (D-14).
     demo_today: date = date(2026, 9, 22)

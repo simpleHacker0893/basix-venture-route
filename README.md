@@ -94,8 +94,10 @@ Copy `.env.example` to `.env`. Every variable the engine reads is listed there.
 | `MIN_OVERLAP_DAYS` | `2` | Minimum inclusive overlap between a builder's availability and the brief window (D-08). |
 | `ENGINE_DEV_QUERY` | `0` | `1` exposes `POST /internal/query`. Never enable in a deployed engine. |
 | `ENGINE_PORT` | `8000` | Host port published by Docker Compose. |
+| `LLM_PROVIDER` | `anthropic` | `anthropic` uses the official SDK with `claude-opus-5`; `null` serves every response without a model (D-06). |
+| `ANTHROPIC_API_KEY` | unset | Server-side key read from `.env` only (D-26). Unset means the `null` adapter, never an error. |
 
-Secrets never live in the repo. Keys for later sprints (Anthropic, Clerk, Neon) are documented in `.env.example` as they arrive.
+The engine reads the repo-root `.env` first, then an optional `services/engine/.env` that overrides it, then the process environment. Secrets never live in the repo. Variables for later sprints (Neon `DATABASE_URL`, Clerk keys, `VITE_*`) are already listed in `.env.example` with placeholders and the sprint that reads them.
 
 ## Architecture
 
