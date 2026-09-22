@@ -7,7 +7,7 @@
 | R-03 | LLM obscures MeTTa's role for judges | Medium | High | Form fallback, editable brief, evidence drawer on every route, rule names in mono everywhere, status deterministic (D-09) | Architect |
 | R-04 | Marketplace tables and the atomspace drift (a confirmed row not reflected in routes) | Medium | Medium | D-15: `reproject()` runs in-process after every confirmation commit; full rebuild only; acceptance test asserts `facts_loaded` changes | Builder |
 | R-05 | Claude sessions cannot push (GitHub App not installed) | Certain today | High | Operator installs app; local Claude Code is the fallback Builder path | Operator |
-| R-06 | Stitch exports arrive late or off-system | Medium | Medium | Batch 1 due Thu 24 Sep 18:00; Builder falls back to shadcn defaults with the DESIGN.md tokens if exports are missing at Sprint 002 start | Operator |
+| R-06 | Stitch exports arrive late or off-system | Low (was Medium) | Medium | All four batches landed Tue 22 Sep under `design/stitch/` (15 screens, HTML + screenshots); Builder still falls back to shadcn defaults with the DESIGN.md tokens if an export proves unusable | Operator |
 | R-07 | Synthetic data mistaken for real | Low | High | `demoData: true` on every record; amber pill; fictional names; footer disclaimer | Builder |
 | R-08 | Live demo fails (network, key, runtime) | Medium | High | Recorded fallback by Wed 30 Sep 20:00; offline mode flag renders seed routes without LLM | Operator |
 | R-09 | No hyperon wheel for Python 3.13 | Certain | Low | Pin 3.12 in `.python-version`, Dockerfile, CI | Builder |

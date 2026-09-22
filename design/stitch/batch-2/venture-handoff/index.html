@@ -1,0 +1,414 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Venture Handoff — Venture Route</title>
+<!-- Material Symbols Outlined font -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Editorial Typefaces: Newsreader (Editorial Serif) & IBM Plex Sans / IBM Plex Mono -->
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:ital,wght@0,400;0,500;0,600;1,400&amp;family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&amp;family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;1,6..72,400&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Tailwind CSS v3 with Container Queries & Forms -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          "colors": {
+            "secondary-fixed": "#dee0ff",
+            "ink": "#16181b",
+            "on-secondary-fixed-variant": "#344089",
+            "project": "#35418a",
+            "primary": "#00422f",
+            "ink-2": "#3f4650",
+            "surface-dim": "#d9dade",
+            "secondary-fixed-dim": "#bbc3ff",
+            "secondary-container": "#a2aeff",
+            "surface-container-lowest": "#ffffff",
+            "surface-container-high": "#e8e8ec",
+            "dark": "#16181b",
+            "accent": "#1e5a45",
+            "error": "#ba1a1a",
+            "on-error": "#ffffff",
+            "border": "#e3ded3",
+            "primary-container": "#1e5a45",
+            "on-primary-fixed-variant": "#11503c",
+            "tertiary-container": "#79403c",
+            "surface-container-highest": "#e2e2e6",
+            "inverse-surface": "#2f3034",
+            "border-strong": "#c9c2b3",
+            "on-secondary": "#ffffff",
+            "primary-fixed-dim": "#97d3b8",
+            "tertiary": "#5d2a27",
+            "primary-fixed": "#b2f0d4",
+            "on-surface": "#1a1c1f",
+            "on-background": "#1a1c1f",
+            "tertiary-fixed-dim": "#ffb3ad",
+            "tertiary-fixed": "#ffdad7",
+            "on-error-container": "#93000a",
+            "on-tertiary-container": "#fdafa9",
+            "on-secondary-fixed": "#000f5d",
+            "ink-3": "#5c6169",
+            "surface-tint": "#2e6953",
+            "on-secondary-container": "#333f88",
+            "outline": "#707974",
+            "on-primary": "#ffffff",
+            "surface-strong": "#ffffff",
+            "on-primary-container": "#93cfb4",
+            "surface-variant": "#e2e2e6",
+            "surface-container-low": "#f3f3f7",
+            "on-primary-fixed": "#002116",
+            "on-tertiary-fixed": "#370d0b",
+            "secondary": "#4d58a3",
+            "inverse-primary": "#97d3b8",
+            "ground": "#f4f1ea",
+            "error-container": "#ffdad6",
+            "on-tertiary": "#ffffff",
+            "surface-bright": "#f9f9fd",
+            "surface-container": "#ededf2",
+            "on-tertiary-fixed-variant": "#6e3733",
+            "accent-on-dark": "#7fd1ac",
+            "amber-ink": "#8a4b12",
+            "surface": "#fbf9f4",
+            "on-surface-variant": "#404944",
+            "danger": "#8a2d2d",
+            "amber-fill": "#e8c58f",
+            "background": "#f9f9fd",
+            "outline-variant": "#bfc9c2",
+            "inverse-on-surface": "#f0f0f4"
+          },
+          "borderRadius": {
+            "DEFAULT": "0.25rem",
+            "lg": "0.5rem",
+            "xl": "0.75rem",
+            "full": "9999px"
+          },
+          "spacing": {
+            "space-lg": "1rem",
+            "space-md": "0.75rem",
+            "space-4xl": "4rem",
+            "space-3xl": "3rem",
+            "space-xs": "0.25rem",
+            "margin": "2rem",
+            "space-2xl": "2rem",
+            "space-sm": "0.5rem",
+            "space-xl": "1.5rem",
+            "gutter": "1.5rem"
+          },
+          "fontFamily": {
+            "mono-sm": ["IBM Plex Mono", "monospace"],
+            "caption": ["IBM Plex Sans", "sans-serif"],
+            "mono-base": ["IBM Plex Mono", "monospace"],
+            "title-card": ["IBM Plex Sans", "sans-serif"],
+            "display": ["Newsreader", "serif"],
+            "headline-md": ["Newsreader", "serif"],
+            "body-base": ["IBM Plex Sans", "sans-serif"],
+            "headline-lg": ["Newsreader", "serif"],
+            "label-regular": ["IBM Plex Sans", "sans-serif"],
+            "body-medium": ["IBM Plex Sans", "sans-serif"]
+          },
+          "fontSize": {
+            "mono-sm": ["13px", { "lineHeight": "18px", "fontWeight": "400" }],
+            "caption": ["13px", { "lineHeight": "18px", "fontWeight": "400" }],
+            "mono-base": ["14px", { "lineHeight": "20px", "fontWeight": "400" }],
+            "title-card": ["20px", { "lineHeight": "28px", "fontWeight": "600" }],
+            "display": ["44px", { "lineHeight": "52px", "letterSpacing": "-0.02em", "fontWeight": "600" }],
+            "headline-md": ["28px", { "lineHeight": "36px", "letterSpacing": "-0.01em", "fontWeight": "500" }],
+            "body-base": ["16px", { "lineHeight": "24px", "fontWeight": "400" }],
+            "headline-lg": ["36px", { "lineHeight": "44px", "letterSpacing": "-0.015em", "fontWeight": "600" }],
+            "label-regular": ["13px", { "lineHeight": "18px", "fontWeight": "500" }],
+            "body-medium": ["16px", { "lineHeight": "24px", "fontWeight": "500" }]
+          }
+        }
+      }
+    }
+  </script>
+<style>
+    .material-symbols-outlined {
+      font-family: 'Material Symbols Outlined';
+      font-weight: normal;
+      font-style: normal;
+      font-size: 20px;
+      line-height: 1;
+      letter-spacing: normal;
+      text-transform: none;
+      display: inline-block;
+      white-space: nowrap;
+      word-wrap: normal;
+      direction: ltr;
+      -webkit-font-smoothing: antialiased;
+    }
+    ::selection {
+      background-color: #1e5a45;
+      color: #ffffff;
+    }
+  </style>
+</head>
+<body class="bg-ground text-ink min-h-screen flex flex-col font-body-base text-body-base antialiased selection:bg-accent selection:text-surface-strong">
+<!-- TOP APP BAR (from Shared Components JSON: TopNavBar) -->
+<header class="bg-ground border-b border-border w-full">
+<div class="max-w-[1200px] mx-auto px-6 h-16 flex items-center justify-between w-full">
+<!-- Brand anchor -->
+<div class="flex items-center gap-3">
+<a class="font-display text-title-card text-ink tracking-tight font-semibold hover:opacity-90 transition-opacity" href="#">
+          Venture Route
+        </a>
+<span class="inline-flex items-center px-2 py-0.5 rounded-full border border-border-strong bg-surface text-ink-3 font-mono-sm text-mono-sm tracking-wider">
+          BASIX EDITION
+        </span>
+</div>
+<!-- Navigation links + Primary action -->
+<nav class="flex items-center gap-8">
+<div class="hidden md:flex items-center gap-6">
+<a class="text-ink-2 font-body-base text-body-base hover:text-ink transition-colors duration-150" href="#">How it works</a>
+<a class="text-ink-2 font-body-base text-body-base hover:text-ink transition-colors duration-150" href="#">For builders</a>
+</div>
+<button class="h-10 px-4 rounded-lg bg-surface-strong border border-border-strong text-ink font-body-medium text-body-medium hover:bg-surface transition-colors duration-150" type="button">
+          Sign in
+        </button>
+</nav>
+</div>
+</header>
+<!-- MAIN CANVAS -->
+<main class="flex-grow w-full max-w-[1200px] mx-auto px-6 pt-8 pb-16">
+<!-- SUB-NAV / CONTEXTUAL BACK -->
+<div class="mb-6">
+<a class="inline-flex items-center gap-1.5 text-ink-2 font-body-base text-body-base hover:text-ink transition-colors" href="#">
+<span class="material-symbols-outlined text-ink-3">arrow_back</span>
+<span>Back to route</span>
+</a>
+</div>
+<!-- PAGE HEADER -->
+<div class="mb-10 pb-6 border-b border-border">
+<div class="flex flex-col md:flex-row md:items-baseline md:justify-between gap-4">
+<div class="flex items-center gap-4 flex-wrap">
+<h1 class="font-headline-lg text-headline-lg text-ink font-semibold tracking-tight">
+            Venture handoff
+          </h1>
+<!-- Status Badge: Feasible -->
+<span class="inline-flex items-center px-3 h-6 rounded-full bg-accent/10 border border-accent/20 text-accent font-label-regular text-label-regular uppercase tracking-wider">
+            Feasible
+          </span>
+</div>
+<div class="font-mono-sm text-mono-sm text-ink-3">
+          Ref: VR-8492-NTU
+        </div>
+</div>
+<p class="mt-2 text-ink-2 font-body-base text-body-base max-w-2xl">
+        A plain-text summary you can share with a co-founder, mentor or BASIX operator.
+      </p>
+</div>
+<!-- TWO-COLUMN WORKSPACE (760px / 400px split at 1200px) -->
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+<!-- LEFT COLUMN: Structured Export Display (8 cols / 760px approx) -->
+<section class="lg:col-span-8 bg-surface-strong rounded-lg border border-border p-6 flex flex-col">
+<!-- Card Header Meta -->
+<div class="flex items-center justify-between pb-4 mb-4 border-b border-border">
+<div class="flex items-center gap-2">
+<span class="w-2 h-2 rounded-full bg-accent"></span>
+<span class="font-label-regular text-label-regular text-ink-2 uppercase tracking-wider">
+              STRUCTURED EXPORT · READ-ONLY
+            </span>
+</div>
+<span class="font-mono-sm text-mono-sm text-ink-3">
+            22 lines · 1,048 bytes
+          </span>
+</div>
+<!-- Read-Only Monospace Text Block -->
+<div class="bg-surface rounded border border-border p-6 overflow-x-auto selection:bg-accent selection:text-surface-strong">
+<pre class="font-mono-base text-mono-base text-ink leading-relaxed whitespace-pre font-normal" id="handoff-content">VENTURE ROUTE HANDOFF
+Brief: Maternal health triage pilot
+Vertical: Health
+Skills: Python, AI/MeTTa, UI/UX
+Window: 22 Sep – 6 Oct 2026
+Mode: Hybrid
+Budget: USD 400 / day
+STATUS: Feasible
+TEAM
+- Amina Otieno · Python · Both · USD 140 / day
+- Tendai Moyo · AI/MeTTa · Credential · USD 150 / day
+- Wanjiru Kamau · UI/UX · Project · USD 80 / day
+TOTAL DAY RATE: USD 370
+REUSABLE IP: Clinic triage intake flow (licensable)
+COHORT: Lakeview cohort 2026, Nairobi Technical University
+PARTNER: Amani Health Network
+RULES APPLIED: verified-for-skill, mode-compatible, available-for-brief, eligible-builder, reuse-fit, partner-fit
+All records are demo data.</pre>
+</div>
+<!-- Footer verification hint within card -->
+<div class="mt-4 pt-4 border-t border-border flex items-center justify-between text-ink-3 font-caption text-caption">
+<span>Deterministically generated from MeTTa graph proof graph-0x9a8f</span>
+<span class="font-mono-sm text-mono-sm">Encoding: UTF-8 CRLF</span>
+</div>
+</section>
+<!-- RIGHT COLUMN: Export Actions & Provenance Ledger (4 cols / 400px approx) -->
+<aside class="lg:col-span-4 flex flex-col gap-6">
+<!-- Action Card -->
+<div class="bg-surface rounded-lg border border-border p-6 flex flex-col">
+<!-- Card Title & Demo Data Pill -->
+<div class="flex items-center justify-between mb-5">
+<h2 class="font-title-card text-title-card text-ink">
+              Export handoff
+            </h2>
+<!-- Mandatory Demo Data Label -->
+<span class="inline-flex items-center px-2 py-0.5 rounded-full bg-amber-fill/85 text-amber-ink font-label-regular text-label-regular">
+              Demo data
+            </span>
+</div>
+<!-- Action Buttons (Strictly ONE Primary Action per system guidelines) -->
+<div class="flex flex-col gap-3">
+<!-- Sole Primary Action on Screen -->
+<button class="w-full h-10 px-4 rounded-lg bg-accent text-surface-strong font-body-medium text-body-medium flex items-center justify-center gap-2 hover:bg-primary transition-colors duration-150" id="copy-btn" type="button">
+<span class="material-symbols-outlined" style="font-size: 18px;">content_copy</span>
+<span id="copy-text">Copy to clipboard</span>
+</button>
+<!-- Secondary Outline Action -->
+<button class="w-full h-10 px-4 rounded-lg bg-surface-strong border border-border-strong text-ink font-body-medium text-body-medium flex items-center justify-center gap-2 hover:bg-ground transition-colors duration-150" id="download-btn" type="button">
+<span class="material-symbols-outlined text-ink-2" style="font-size: 18px;">download</span>
+<span>Download .txt</span>
+</button>
+</div>
+<!-- Explanation caption -->
+<p class="mt-4 text-ink-3 font-caption text-caption leading-relaxed">
+            Generated from the structured route result only. No language model text is included.
+          </p>
+<!-- Divider -->
+<div class="my-5 border-t border-border"></div>
+<!-- Cryptographic Ledger Attestation Block -->
+<div class="flex flex-col gap-3">
+<div class="flex items-center gap-1.5 text-ink-2 font-label-regular text-label-regular">
+<span class="material-symbols-outlined text-accent" style="font-size: 16px;">verified</span>
+<span>Ledger Attestation</span>
+</div>
+<div class="bg-surface-strong rounded border border-border p-3.5 space-y-2">
+<div class="flex justify-between items-baseline text-caption font-caption">
+<span class="text-ink-3">Anchor Block</span>
+<span class="font-mono-sm text-mono-sm text-ink font-medium">#418,908</span>
+</div>
+<div class="flex justify-between items-baseline text-caption font-caption">
+<span class="text-ink-3">Evaluator Engine</span>
+<span class="font-mono-sm text-mono-sm text-ink">MeTTa-Core v0.4b</span>
+</div>
+<div class="flex flex-col gap-0.5 pt-1 border-t border-border">
+<span class="text-ink-3 font-caption text-caption">SHA-256 Digest</span>
+<span class="font-mono-sm text-mono-sm text-ink-2 break-all selection:bg-accent selection:text-surface-strong">
+                  e9b72c68a41df3c1538a7199589d90e2d14cb8fa04bca62f43d842511475c879
+                </span>
+</div>
+</div>
+<p class="text-ink-3 font-caption text-caption leading-relaxed">
+              Deterministic compilation ensures this handoff matches repository commit state exactly.
+            </p>
+</div>
+</div>
+<!-- Secondary Information Card: Route Specs -->
+<div class="bg-surface rounded-lg border border-border p-6">
+<h3 class="font-title-card text-title-card text-ink mb-3">Verification Details</h3>
+<dl class="space-y-2.5 font-caption text-caption">
+<div class="flex justify-between py-1 border-b border-border">
+<dt class="text-ink-3">Candidate Pool</dt>
+<dd class="text-ink font-medium">18 evaluated</dd>
+</div>
+<div class="flex justify-between py-1 border-b border-border">
+<dt class="text-ink-3">Selected Builders</dt>
+<dd class="text-ink font-medium">3 matched (100% capacity)</dd>
+</div>
+<div class="flex justify-between py-1 border-b border-border">
+<dt class="text-ink-3">Daily Budget Cap</dt>
+<dd class="font-mono-sm text-mono-sm text-ink">USD 400.00</dd>
+</div>
+<div class="flex justify-between py-1">
+<dt class="text-ink-3">Total Allocated</dt>
+<dd class="font-mono-sm text-mono-sm text-accent font-medium">USD 370.00 (-7.5%)</dd>
+</div>
+</dl>
+</div>
+</aside>
+</div>
+<!-- FOOTER STRIP: Deterministic Rules Applied -->
+<div class="mt-8 rounded-lg bg-dark text-ground p-4 flex flex-col md:flex-row items-start md:items-center justify-between gap-4 border border-ink">
+<div class="flex items-center gap-3">
+<span class="w-2.5 h-2.5 rounded-full bg-accent-on-dark animate-pulse"></span>
+<span class="font-mono-sm text-mono-sm text-ground tracking-tight">
+          Rules applied: verified-for-skill · mode-compatible · available-for-brief · eligible-builder · reuse-fit · partner-fit
+        </span>
+</div>
+<div class="font-mono-sm text-mono-sm text-accent-on-dark font-medium whitespace-nowrap pl-4 md:pl-0 border-l md:border-l-0 border-ink-2">
+        6 OF 6 EVALUATED TRUE
+      </div>
+</div>
+</main>
+<!-- GLOBAL RESEARCH LEDGER FOOTER (from Shared Components JSON: Footer) -->
+<footer class="bg-ground border-t border-border mt-auto w-full">
+<div class="max-w-[1200px] mx-auto px-6 py-12 flex flex-col md:flex-row justify-between items-start md:items-center w-full gap-6">
+<!-- Brand & Ledger Claim -->
+<div class="flex flex-col gap-2 max-w-xl">
+<span class="font-display text-title-card text-ink font-semibold">
+          Venture Route
+        </span>
+<p class="font-caption text-caption text-ink-3">
+          © 2024 Venture Route. All evaluations deterministic and inspectable via cryptographic ledger attestations.
+        </p>
+</div>
+<!-- Links defined in Shared Components JSON -->
+<nav class="flex flex-wrap items-center gap-x-6 gap-y-2">
+<a class="font-label-regular text-label-regular text-ink-3 hover:text-ink underline transition-colors duration-150" href="#">Deterministic Rules</a>
+<a class="font-label-regular text-label-regular text-ink-3 hover:text-ink underline transition-colors duration-150" href="#">Evidence Registry</a>
+<a class="font-label-regular text-label-regular text-ink-3 hover:text-ink underline transition-colors duration-150" href="#">Methodology</a>
+<a class="font-label-regular text-label-regular text-ink-3 hover:text-ink underline transition-colors duration-150" href="#">Privacy</a>
+<a class="font-label-regular text-label-regular text-ink-3 hover:text-ink underline transition-colors duration-150" href="#">Terms</a>
+</nav>
+</div>
+</footer>
+<!-- Micro-Interactions Script: Deterministic Clipboard Copy & Download -->
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+      const copyBtn = document.getElementById('copy-btn');
+      const copyText = document.getElementById('copy-text');
+      const downloadBtn = document.getElementById('download-btn');
+      const handoffContent = document.getElementById('handoff-content');
+
+      if (copyBtn && handoffContent) {
+        copyBtn.addEventListener('click', async () => {
+          try {
+            await navigator.clipboard.writeText(handoffContent.innerText);
+            copyText.textContent = 'Copied to clipboard';
+            setTimeout(() => {
+              copyText.textContent = 'Copy to clipboard';
+            }, 2000);
+          } catch (err) {
+            // Fallback for isolated environments
+            const textArea = document.createElement('textarea');
+            textArea.value = handoffContent.innerText;
+            document.body.appendChild(textArea);
+            textArea.select();
+            document.execCommand('copy');
+            document.body.removeChild(textArea);
+            copyText.textContent = 'Copied to clipboard';
+            setTimeout(() => {
+              copyText.textContent = 'Copy to clipboard';
+            }, 2000);
+          }
+        });
+      }
+
+      if (downloadBtn && handoffContent) {
+        downloadBtn.addEventListener('click', () => {
+          const blob = new Blob([handoffContent.innerText], { type: 'text/plain;charset=utf-8' });
+          const url = URL.createObjectURL(blob);
+          const link = document.createElement('a');
+          link.href = url;
+          link.download = 'venture-route-handoff-maternal-health.txt';
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+          URL.revokeObjectURL(url);
+        });
+      }
+    });
+  </script>
+</body></html>

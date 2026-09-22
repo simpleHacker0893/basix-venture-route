@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+
+<html lang="en"><head><meta charset="utf-8"/><meta content="width=device-width, initial-scale=1.0" name="viewport"/><meta content="web_standard" name="shell-type"/><title>Venture Route</title><link href="https://fonts.googleapis.com" rel="preconnect"/><link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/><link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400..700;1,9..144,400..700&amp;family=IBM+Plex+Sans:wght@400;500;600&amp;family=Newsreader:ital,opsz,wght@0,6..72,400..600;1,6..72,400..600&amp;display=swap" rel="stylesheet"/><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/><style>@layer base { html, body { margin: 0; padding: 0; } body { overscroll-behavior: none; } main > :first-child { margin-top: 0 !important; } main > :last-child { margin-bottom: 0 !important; } } ::-webkit-scrollbar { display: none; } .font-fraunces { font-family: 'Fraunces', serif; }</style><script src="https://cdn.tailwindcss.com"></script><script id="tailwind-config">tailwind.config = { darkMode: "class", theme: { extend: { "colors": { "project": "#35418a", "ground": "#f4f1ea", "surface-bright": "#f9f9fd", "on-tertiary-fixed": "#370d0b", "amber-ink": "#8a4b12", "surface-container-highest": "#e2e2e6", "on-error": "#ffffff", "outline": "#707974", "on-error-container": "#93000a", "error": "#ba1a1a", "surface-container-high": "#e8e8ec", "surface-variant": "#e2e2e6", "on-secondary-fixed": "#000f5d", "secondary-fixed-dim": "#bbc3ff", "tertiary": "#5d2a27", "surface": "#fbf9f4", "primary-container": "#1e5a45", "secondary": "#4d58a3", "surface-dim": "#d9dade", "accent-on-dark": "#7fd1ac", "accent": "#1e5a45", "on-primary": "#ffffff", "outline-variant": "#bfc9c2", "ink": "#16181b", "error-container": "#ffdad6", "amber-fill": "#e8c58f", "tertiary-container": "#79403c", "tertiary-fixed-dim": "#ffb3ad", "tertiary-fixed": "#ffdad7", "on-secondary": "#ffffff", "on-primary-fixed": "#002116", "primary-fixed": "#b2f0d4", "danger": "#8a2d2d", "on-tertiary": "#ffffff", "secondary-fixed": "#dee0ff", "on-primary-fixed-variant": "#11503c", "on-tertiary-container": "#fdafa9", "border-strong": "#c9c2b3", "on-surface-variant": "#404944", "inverse-surface": "#2f3034", "inverse-primary": "#97d3b8", "on-tertiary-fixed-variant": "#6e3733", "inverse-on-surface": "#f0f0f4", "secondary-container": "#a2aeff", "on-secondary-fixed-variant": "#344089", "surface-container-low": "#f3f3f7", "primary-fixed-dim": "#97d3b8", "surface-tint": "#2e6953", "surface-strong": "#ffffff", "border": "#e3ded3", "background": "#f9f9fd", "ink-3": "#5c6169", "on-primary-container": "#93cfb4", "on-secondary-container": "#333f88", "surface-container-lowest": "#ffffff", "dark": "#16181b", "primary": "#00422f", "surface-container": "#ededf2", "on-background": "#1a1c1f", "on-surface": "#1a1c1f", "ink-2": "#3f4650" }, "borderRadius": { "DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px" }, "spacing": { "gutter": "1.5rem", "space-3xl": "3rem", "space-2xl": "2rem", "space-sm": "0.5rem", "space-lg": "1rem", "space-xl": "1.5rem", "margin": "2rem", "space-md": "0.75rem", "space-4xl": "4rem", "space-xs": "0.25rem" }, "fontFamily": { "mono-sm": ["IBM Plex Sans"], "title-card": ["IBM Plex Sans"], "headline-md": ["Newsreader"], "mono-base": ["IBM Plex Sans"], "label-regular": ["IBM Plex Sans"], "body-base": ["IBM Plex Sans"], "headline-lg": ["Newsreader"], "display": ["Newsreader"], "caption": ["IBM Plex Sans"], "body-medium": ["IBM Plex Sans"] }, "fontSize": { "mono-sm": ["13px", { "lineHeight": "18px", "fontWeight": "400" }], "title-card": ["20px", { "lineHeight": "28px", "fontWeight": "600" }], "headline-md": ["28px", { "lineHeight": "36px", "letterSpacing": "-0.01em", "fontWeight": "500" }], "mono-base": ["14px", { "lineHeight": "20px", "fontWeight": "400" }], "label-regular": ["13px", { "lineHeight": "18px", "fontWeight": "500" }], "body-base": ["16px", { "lineHeight": "24px", "fontWeight": "400" }], "headline-lg": ["36px", { "lineHeight": "44px", "letterSpacing": "-0.015em", "fontWeight": "600" }], "display": ["44px", { "lineHeight": "52px", "letterSpacing": "-0.02em", "fontWeight": "600" }], "caption": ["13px", { "lineHeight": "18px", "fontWeight": "400" }], "body-medium": ["16px", { "lineHeight": "24px", "fontWeight": "500" }] } } } };</script></head><body class="bg-surface font-body-base text-ink"><header class="fixed top-0 left-0 right-0 z-50 h-16 bg-ground border-b border-border"><div class="max-w-[1200px] h-16 mx-auto px-gutter flex items-center justify-between"><div class="flex items-center gap-space-lg"><a class="flex items-center gap-space-md" data-path="overview" href="#"><span class="font-fraunces text-title-card font-semibold tracking-tight text-ink">Venture Route</span></a><span class="h-4 w-px bg-border-strong"></span><span class="px-2 py-0.5 border border-border text-ink-3 font-caption text-caption rounded-full uppercase tracking-wider bg-surface-strong">BASIX EDITION</span></div><nav class="flex items-center gap-space-xl" data-active-classes="text-ink border-b-2 border-accent font-body-medium"><a class="text-ink-2 hover:text-ink font-body-medium text-body-medium transition-colors py-5" data-path="how-it-works" href="#">How it works</a><a class="text-ink-2 hover:text-ink font-body-medium text-body-medium transition-colors py-5" data-path="for-builders" href="#">For builders</a><a class="text-ink-2 hover:text-ink font-body-medium text-body-medium transition-colors py-5" data-path="evidence-and-rules" href="#">Evidence &amp; rules</a></nav><div class="flex items-center gap-space-lg"><button class="flex items-center gap-space-xs text-ink-2 hover:text-ink py-1 px-2 rounded transition-colors" type="button"><span class="font-label-regular text-label-regular text-ink">Amina Otieno</span><span class="material-symbols-outlined text-[18px] text-ink-3">keyboard_arrow_down</span></button><div class="w-8 h-8 rounded-full bg-primary flex items-center justify-center"><span class="material-symbols-outlined text-on-primary text-[18px]">person</span></div></div></div></header><main class="w-full pt-16 bg-surface min-h-[calc(100vh-64px)]"><div class="flex flex-col w-full">
+<!-- Interactive View Container -->
+<div class="w-full max-w-[1200px] mx-auto px-gutter py-space-2xl">
+<!-- Ledger Meta / Breadcrumb Line -->
+<div class="flex items-center justify-between pb-space-md border-b border-border text-ink-3">
+<div class="flex items-center gap-space-sm font-label-regular text-label-regular uppercase tracking-wider">
+<span class="text-ink">BUILDER CONSOLE</span>
+<span class="text-border-strong">/</span>
+<span class="text-accent font-medium">OPEN OPPORTUNITIES</span>
+<span class="inline-block w-1 h-1 rounded-full bg-border-strong mx-1"></span>
+<span class="font-mono-sm text-mono-sm text-ink-3 lowercase">ledger: <strong class="font-normal text-ink">#4419208</strong></span>
+</div>
+<div class="flex items-center gap-space-sm font-mono-sm text-mono-sm">
+<span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded bg-surface-container-low text-ink-2 border border-border">
+<span class="w-2 h-2 rounded-full bg-accent animate-pulse"></span>
+          State: Synchronized
+        </span>
+<span class="text-ink-3">Latency: 28ms</span>
+</div>
+</div>
+<!-- Header Section with Profile Badge -->
+<div class="pt-space-xl pb-space-2xl flex flex-col md:flex-row md:items-start justify-between gap-space-xl">
+<div class="max-w-2xl">
+<h1 class="font-fraunces text-display text-ink font-semibold tracking-tight">Open requests</h1>
+<p class="font-body-base text-body-base text-ink-2 mt-space-sm">
+          You can bid only where the 
+          <code class="font-mono-base text-[13px] bg-ground text-primary px-1.5 py-0.5 rounded border border-border">eligible-builder</code> 
+          rule holds for your profile.
+        </p>
+</div>
+<!-- Right Header Profile Verified Badge -->
+<div class="bg-surface-strong border border-border p-space-md rounded-lg flex items-center gap-space-md shadow-sm shrink-0">
+<div class="relative flex items-center justify-center w-9 h-9 rounded-full bg-ground border border-border text-primary font-mono-base font-medium">
+          AO
+          <span class="absolute bottom-0 right-0 w-2.5 h-2.5 bg-accent border-2 border-surface-strong rounded-full"></span>
+</div>
+<div>
+<div class="flex items-center gap-1.5">
+<span class="font-label-regular text-label-regular text-ink font-semibold">Active builder profile: Amina Otieno</span>
+<span class="material-symbols-outlined text-[16px] text-accent">verified</span>
+</div>
+<div class="font-caption text-caption text-ink-3 flex items-center gap-1 mt-0.5">
+<span>Verified skills:</span>
+<span class="font-mono-sm text-accent bg-surface px-1.5 py-0.2 rounded border border-border text-xs">(Python, AI/MeTTa)</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Filter and Search Row -->
+<div class="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-space-md pb-space-xl border-b border-border">
+<!-- Filter Chips -->
+<div class="flex items-center gap-space-xs overflow-x-auto">
+<button class="h-8 px-3.5 rounded-full border border-border text-ink-2 hover:border-border-strong font-label-regular text-label-regular bg-surface transition-colors whitespace-nowrap">
+          All (14)
+        </button>
+<button class="h-8 px-3.5 rounded-full bg-accent text-on-primary font-label-regular text-label-regular font-medium transition-colors shadow-sm flex items-center gap-1.5 whitespace-nowrap">
+<span class="w-1.5 h-1.5 rounded-full bg-accent-on-dark"></span>
+          Eligible for me (4)
+        </button>
+<button class="h-8 px-3.5 rounded-full border border-border text-ink-2 hover:border-border-strong font-label-regular text-label-regular bg-surface transition-colors whitespace-nowrap">
+          Health
+        </button>
+<button class="h-8 px-3.5 rounded-full border border-border text-ink-2 hover:border-border-strong font-label-regular text-label-regular bg-surface transition-colors whitespace-nowrap">
+          Agri
+        </button>
+<button class="h-8 px-3.5 rounded-full border border-border text-ink-2 hover:border-border-strong font-label-regular text-label-regular bg-surface transition-colors whitespace-nowrap">
+          Education
+        </button>
+</div>
+<!-- Sort & Filter Selector -->
+<div class="flex items-center gap-space-sm self-end sm:self-auto">
+<span class="font-caption text-caption text-ink-3">Sort by:</span>
+<div class="relative">
+<select class="h-8 pl-2.5 pr-7 bg-surface-strong border border-border rounded text-ink font-label-regular text-label-regular appearance-none focus:outline-none focus:border-accent cursor-pointer">
+<option>Deadline (soonest)</option>
+<option>Rate ceiling (highest)</option>
+<option>Recently registered</option>
+</select>
+<span class="material-symbols-outlined text-[16px] text-ink-3 absolute right-1.5 top-2 pointer-events-none">expand_more</span>
+</div>
+</div>
+</div>
+<!-- Ledger Opportunities List -->
+<div class="mt-space-xl flex flex-col gap-space-lg">
+<!-- Card 1: Eligible & Interactive with Active Bid Target -->
+<div class="relative bg-surface border border-border hover:border-border-strong rounded-lg p-space-xl transition-all duration-150">
+<div class="flex flex-col lg:flex-row lg:items-start justify-between gap-space-lg">
+<!-- Request Info -->
+<div class="space-y-space-sm flex-1">
+<div class="flex flex-wrap items-center gap-space-sm">
+<span class="px-2 py-0.5 rounded-full font-caption text-[11px] tracking-wider font-semibold uppercase bg-amber-fill/25 text-amber-ink border border-amber-fill/50">
+                Demo data
+              </span>
+<span class="px-2 py-0.5 rounded-full font-caption text-[11px] tracking-wider uppercase font-medium bg-surface-strong text-ink-2 border border-border">
+                Health
+              </span>
+<span class="font-mono-sm text-mono-sm text-ink-3">Req ID: #REQ-9921-KE</span>
+</div>
+<div class="pt-0.5">
+<h2 class="font-fraunces text-headline-md text-ink font-semibold">Maternal health triage pilot</h2>
+<p class="font-body-base text-ink-2 text-[15px] mt-0.5">
+                Founded by Dr. Lerato Dube <span class="text-ink-3">·</span> <span class="text-ink">Nairobi Health Collective</span>
+</p>
+</div>
+<!-- Tags & Metas -->
+<div class="flex flex-wrap items-center gap-space-md pt-space-xs text-ink-2 font-caption text-caption">
+<!-- Skills Required -->
+<div class="flex items-center gap-1.5 flex-wrap">
+<span class="text-ink-3">Skills:</span>
+<span class="px-2 py-0.5 rounded bg-surface-strong border border-accent/40 text-accent font-medium font-mono-sm">Python ✓</span>
+<span class="px-2 py-0.5 rounded bg-surface-strong border border-border text-ink-2 font-mono-sm">FastAPI</span>
+<span class="px-2 py-0.5 rounded bg-surface-strong border border-border text-ink-2 font-mono-sm">Offline Sync</span>
+</div>
+<span class="text-border-strong hidden sm:inline">|</span>
+<div class="flex items-center gap-1 text-ink-2">
+<span class="material-symbols-outlined text-[16px] text-ink-3">calendar_today</span>
+<span>22 Sep – 6 Oct 2026</span>
+</div>
+<span class="text-border-strong hidden sm:inline">|</span>
+<div class="flex items-center gap-1 text-ink-2">
+<span class="material-symbols-outlined text-[16px] text-ink-3">desktop_windows</span>
+<span>Remote</span>
+</div>
+</div>
+</div>
+<!-- Price & Eligibility & Action -->
+<div class="flex lg:flex-col items-start lg:items-end justify-between border-t lg:border-t-0 pt-space-md lg:pt-0 border-border gap-space-md shrink-0">
+<div class="text-left lg:text-right">
+<span class="block font-caption text-caption text-ink-3">Budget ceiling</span>
+<span class="font-mono-base text-[15px] font-semibold text-ink">USD 180 / day</span>
+</div>
+<div class="flex items-center lg:flex-col lg:items-end gap-space-md">
+<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-primary-fixed/30 border border-primary text-primary font-label-regular text-label-regular font-medium">
+<span class="w-1.5 h-1.5 rounded-full bg-accent"></span>
+                Eligible · Python
+              </span>
+<button class="h-10 px-5 rounded-lg bg-accent hover:bg-primary text-on-primary font-body-medium text-body-medium flex items-center justify-center transition-colors" onclick="document.getElementById('bid-modal').classList.remove('hidden')">
+                Bid
+              </button>
+</div>
+</div>
+</div>
+</div>
+<!-- Card 2: Ineligible - Availability Overlap -->
+<div class="bg-surface border border-border rounded-lg p-space-xl opacity-95">
+<div class="flex flex-col lg:flex-row lg:items-start justify-between gap-space-lg">
+<!-- Request Info -->
+<div class="space-y-space-sm flex-1">
+<div class="flex flex-wrap items-center gap-space-sm">
+<span class="px-2 py-0.5 rounded-full font-caption text-[11px] tracking-wider font-semibold uppercase bg-amber-fill/25 text-amber-ink border border-amber-fill/50">
+                Demo data
+              </span>
+<span class="px-2 py-0.5 rounded-full font-caption text-[11px] tracking-wider uppercase font-medium bg-surface-strong text-ink-2 border border-border">
+                Agri
+              </span>
+<span class="font-mono-sm text-mono-sm text-ink-3">Req ID: #REQ-9884-UG</span>
+</div>
+<div class="pt-0.5">
+<h2 class="font-fraunces text-headline-md text-ink font-semibold">Agri input marketplace</h2>
+<p class="font-body-base text-ink-2 text-[15px] mt-0.5">
+                Founded by Tendai Moyo <span class="text-ink-3">·</span> <span class="text-ink">Kilimo Direct</span>
+</p>
+</div>
+<!-- Tags & Metas -->
+<div class="flex flex-wrap items-center gap-space-md pt-space-xs text-ink-2 font-caption text-caption">
+<!-- Skills Required -->
+<div class="flex items-center gap-1.5 flex-wrap">
+<span class="text-ink-3">Skills:</span>
+<span class="px-2 py-0.5 rounded bg-surface-strong border border-border text-ink-2 font-mono-sm">Python</span>
+<span class="px-2 py-0.5 rounded bg-surface-strong border border-border text-ink-2 font-mono-sm">PostgreSQL</span>
+<span class="px-2 py-0.5 rounded bg-surface-strong border border-border text-ink-2 font-mono-sm">USSD Gateway</span>
+</div>
+<span class="text-border-strong hidden sm:inline">|</span>
+<div class="flex items-center gap-1 text-ink-2">
+<span class="material-symbols-outlined text-[16px] text-ink-3">calendar_today</span>
+<span>28 Sep – 15 Oct 2026</span>
+</div>
+<span class="text-border-strong hidden sm:inline">|</span>
+<div class="flex items-center gap-1 text-ink-2">
+<span class="material-symbols-outlined text-[16px] text-ink-3">location_on</span>
+<span>Hybrid (Nakuru)</span>
+</div>
+</div>
+</div>
+<!-- Price & Eligibility & Action -->
+<div class="flex lg:flex-col items-start lg:items-end justify-between border-t lg:border-t-0 pt-space-md lg:pt-0 border-border gap-space-md shrink-0">
+<div class="text-left lg:text-right">
+<span class="block font-caption text-caption text-ink-3">Budget ceiling</span>
+<span class="font-mono-base text-[15px] font-semibold text-ink">USD 150 / day</span>
+</div>
+<div class="flex items-center lg:flex-col lg:items-end gap-space-md">
+<span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-surface-strong border border-border-strong text-ink-3 font-label-regular text-label-regular">
+<span class="material-symbols-outlined text-[14px]">info</span>
+                Not eligible · availability overlap too short
+              </span>
+<button class="h-10 px-5 rounded-lg bg-surface-container-highest text-ink-3 font-body-medium text-body-medium cursor-not-allowed" disabled="">
+                Bid
+              </button>
+</div>
+</div>
+</div>
+</div>
+<!-- Card 3: Ineligible - Unverified Skills -->
+<div class="bg-surface border border-border rounded-lg p-space-xl opacity-95">
+<div class="flex flex-col lg:flex-row lg:items-start justify-between gap-space-lg">
+<!-- Request Info -->
+<div class="space-y-space-sm flex-1">
+<div class="flex flex-wrap items-center gap-space-sm">
+<span class="px-2 py-0.5 rounded-full font-caption text-[11px] tracking-wider font-semibold uppercase bg-amber-fill/25 text-amber-ink border border-amber-fill/50">
+                Demo data
+              </span>
+<span class="px-2 py-0.5 rounded-full font-caption text-[11px] tracking-wider uppercase font-medium bg-surface-strong text-ink-2 border border-border">
+                Logistics
+              </span>
+<span class="font-mono-sm text-mono-sm text-ink-3">Req ID: #REQ-9752-RW</span>
+</div>
+<div class="pt-0.5">
+<h2 class="font-fraunces text-headline-md text-ink font-semibold">Cross-border logistics tracker</h2>
+<p class="font-body-base text-ink-2 text-[15px] mt-0.5">
+                Founded by Chiamaka Eze <span class="text-ink-3">·</span> <span class="text-ink">TransSahara Cargo</span>
+</p>
+</div>
+<!-- Tags & Metas -->
+<div class="flex flex-wrap items-center gap-space-md pt-space-xs text-ink-2 font-caption text-caption">
+<!-- Skills Required -->
+<div class="flex items-center gap-1.5 flex-wrap">
+<span class="text-ink-3">Skills:</span>
+<span class="px-2 py-0.5 rounded bg-surface-strong border border-border text-ink-2 font-mono-sm">Mobile (Flutter/React Native)</span>
+<span class="px-2 py-0.5 rounded bg-surface-strong border border-border text-ink-2 font-mono-sm">GPS Tracking</span>
+<span class="px-2 py-0.5 rounded bg-surface-strong border border-border text-ink-2 font-mono-sm">Rust</span>
+</div>
+<span class="text-border-strong hidden sm:inline">|</span>
+<div class="flex items-center gap-1 text-ink-2">
+<span class="material-symbols-outlined text-[16px] text-ink-3">calendar_today</span>
+<span>1 Oct – 20 Oct 2026</span>
+</div>
+<span class="text-border-strong hidden sm:inline">|</span>
+<div class="flex items-center gap-1 text-ink-2">
+<span class="material-symbols-outlined text-[16px] text-ink-3">desktop_windows</span>
+<span>Remote</span>
+</div>
+</div>
+</div>
+<!-- Price & Eligibility & Action -->
+<div class="flex lg:flex-col items-start lg:items-end justify-between border-t lg:border-t-0 pt-space-md lg:pt-0 border-border gap-space-md shrink-0">
+<div class="text-left lg:text-right">
+<span class="block font-caption text-caption text-ink-3">Budget ceiling</span>
+<span class="font-mono-base text-[15px] font-semibold text-ink">USD 160 / day</span>
+</div>
+<div class="flex items-center lg:flex-col lg:items-end gap-space-md">
+<span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-surface-strong border border-border-strong text-ink-3 font-label-regular text-label-regular">
+<span class="material-symbols-outlined text-[14px]">warning</span>
+                Not eligible · Mobile not verified
+              </span>
+<button class="h-10 px-5 rounded-lg bg-surface-container-highest text-ink-3 font-body-medium text-body-medium cursor-not-allowed" disabled="">
+                Bid
+              </button>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Ledger Provenance Note -->
+<div class="mt-space-3xl p-space-lg rounded-lg bg-surface border border-border flex items-start gap-space-md">
+<span class="material-symbols-outlined text-accent text-[20px] mt-0.5">policy</span>
+<div class="text-ink-2 font-body-base text-[14px] leading-relaxed">
+<strong class="font-medium text-ink">Deterministic rule evaluation:</strong> Bidding permissions are calculated dynamically by evaluating candidate attestations against request constraints in MeTTa. Only authenticated ledger credentials and mutual calendar overlap permit state transitions to bid submission.
+      </div>
+</div>
+</div>
+<!-- Modal / Dialog (Bid Dialog) -->
+<div class="fixed inset-0 z-50 flex items-center justify-center bg-dark/45 backdrop-blur-[2px] p-space-md transition-opacity" id="bid-modal">
+<div class="relative w-full max-w-[480px] bg-surface-strong rounded-lg border border-surface-dim shadow-xl overflow-hidden flex flex-col animate-in fade-in zoom-in-95 duration-150">
+<!-- Modal Header -->
+<div class="flex items-start justify-between p-space-xl border-b border-border bg-surface">
+<div>
+<span class="font-mono-sm text-mono-sm text-accent uppercase tracking-wider font-medium">Bidding Ledger Entry</span>
+<h3 class="font-fraunces text-title-card text-ink font-semibold mt-1">Bid on Maternal health triage pilot</h3>
+</div>
+<button class="w-8 h-8 rounded flex items-center justify-center text-ink-3 hover:text-ink hover:bg-surface-container transition-colors" onclick="document.getElementById('bid-modal').classList.add('hidden')">
+<span class="material-symbols-outlined text-[18px]">close</span>
+</button>
+</div>
+<!-- Modal Body -->
+<form class="p-space-xl flex flex-col gap-space-lg" id="bid-form" onsubmit="event.preventDefault(); document.getElementById('bid-modal').classList.add('hidden'); alert('Bid cryptographically registered to block #4419209.');">
+<!-- Eligibility Confirmation Banner -->
+<div class="p-space-md rounded bg-ground border border-border flex items-center justify-between text-ink">
+<div class="flex items-center gap-space-sm">
+<span class="material-symbols-outlined text-accent text-[20px]">check_circle</span>
+<span class="font-label-regular text-label-regular text-ink-2">Your eligible skills: <strong class="text-ink font-semibold">Python</strong></span>
+</div>
+<span class="font-mono-sm text-mono-sm text-accent font-medium">Attested</span>
+</div>
+<!-- Form Field: Day Rate -->
+<div>
+<label class="block font-label-regular text-label-regular text-ink-2 mb-1.5" for="day-rate">
+            Your day rate (USD)
+          </label>
+<div class="relative">
+<span class="absolute left-3 top-2.5 font-mono-base text-ink-3 text-mono-base">USD</span>
+<input class="w-full h-10 pl-14 pr-16 bg-surface-strong border border-border rounded-lg font-mono-base text-mono-base text-ink focus:outline-none focus:border-accent" id="day-rate" required="" type="text" value="140"/>
+<span class="absolute right-3 top-2.5 font-mono-base text-ink-3 text-mono-base">/ day</span>
+</div>
+<p class="font-caption text-caption text-ink-3 mt-1.5">
+            Matches your profile ceiling (Founder max: <span class="font-mono-sm text-ink-2">USD 180 / day</span>)
+          </p>
+</div>
+<!-- Form Field: Message to Founder -->
+<div>
+<label class="block font-label-regular text-label-regular text-ink-2 mb-1.5" for="founder-message">
+            Message to founder <span class="text-ink-3 font-normal">(optional)</span>
+</label>
+<textarea class="w-full p-2.5 bg-surface-strong border border-border rounded-lg font-body-base text-[14px] text-ink focus:outline-none focus:border-accent leading-relaxed" id="founder-message" rows="3">I built the Clinic triage intake flow project verified in the registry and have extensive experience deploying low-bandwidth mobile sync.</textarea>
+<p class="font-caption text-caption text-ink-3 mt-1.5">
+            Primary project references from your portfolio are attached automatically.
+          </p>
+</div>
+<!-- Availability Confirmation Pill -->
+<div class="py-2 px-3 rounded bg-surface border border-border flex items-center gap-2 text-ink-2 font-caption text-caption">
+<span class="material-symbols-outlined text-[16px] text-accent">event_available</span>
+<span>Available for entire window: <strong class="text-ink font-medium">22 Sep – 6 Oct 2026</strong></span>
+</div>
+<!-- Modal Footer Actions -->
+<div class="pt-space-sm flex items-center justify-end gap-space-md border-t border-border mt-space-xs">
+<button class="h-10 px-4 rounded-lg bg-surface-strong border border-border-strong text-ink hover:bg-surface font-body-medium text-[15px] transition-colors" onclick="document.getElementById('bid-modal').classList.add('hidden')" type="button">
+            Cancel
+          </button>
+<button class="h-10 px-5 rounded-lg bg-accent hover:bg-primary text-on-primary font-body-medium text-[15px] flex items-center gap-1.5 transition-colors shadow-sm" type="submit">
+<span>Submit bid</span>
+<span class="material-symbols-outlined text-[18px]">arrow_forward</span>
+</button>
+</div>
+<!-- Verification / Ledger Guarantee Footer -->
+<p class="font-caption text-[11px] text-ink-3 text-center leading-normal">
+          Bids write deterministically to the BASIX ecosystem attestation ledger upon confirmation.
+        </p>
+</form>
+</div>
+</div>
+<script>
+    // Keyboard Escape handler for research modal
+    document.addEventListener('keydown', function(event) {
+      if (event.key === 'Escape') {
+        const modal = document.getElementById('bid-modal');
+        if (modal && !modal.classList.contains('hidden')) {
+          modal.classList.add('hidden');
+        }
+      }
+    });
+  </script>
+</div></main><footer class="w-full bg-ground border-t border-border mt-space-4xl"><div class="max-w-[1200px] mx-auto px-gutter py-space-3xl"><div class="grid grid-cols-1 md:grid-cols-3 gap-space-2xl pb-space-2xl border-b border-border"><div class="flex flex-col gap-space-md"><span class="font-label-regular text-label-regular text-ink-3 uppercase tracking-wider">Product</span><ul class="flex flex-col gap-space-sm"><li class="leading-none"><a class="font-body-base text-body-base text-ink-2 hover:text-ink transition-colors" data-path="how-it-works" href="#">How it works</a></li><li class="leading-none"><a class="font-body-base text-body-base text-ink-2 hover:text-ink transition-colors" data-path="evidence-and-rules" href="#">Evidence &amp; rules</a></li><li class="leading-none"><a class="font-body-base text-body-base text-ink-2 hover:text-ink transition-colors" data-path="for-builders" href="#">For builders</a></li><li class="leading-none"><a class="font-body-base text-body-base text-ink-2 hover:text-ink transition-colors" data-path="demo-scenarios" href="#">Demo scenarios</a></li></ul></div><div class="flex flex-col gap-space-md"><span class="font-label-regular text-label-regular text-ink-3 uppercase tracking-wider">Ecosystem</span><ul class="flex flex-col gap-space-sm"><li class="leading-none"><a class="font-body-base text-body-base text-ink-2 hover:text-ink transition-colors" data-path="ecosystem-basix" href="#">BASIX</a></li><li class="leading-none"><a class="font-body-base text-body-base text-ink-2 hover:text-ink transition-colors" data-path="ecosystem-metta-omniuniversity" href="#">MeTTa OmniUniversity</a></li><li class="leading-none"><a class="font-body-base text-body-base text-ink-2 hover:text-ink transition-colors" data-path="ecosystem-singularitynet-metta" href="#">SingularityNET MeTTa</a></li><li class="leading-none"><a class="font-body-base text-body-base text-ink-2 hover:text-ink transition-colors" data-path="ecosystem-partners" href="#">Partners</a></li></ul></div><div class="flex flex-col gap-space-md"><span class="font-label-regular text-label-regular text-ink-3 uppercase tracking-wider">Account</span><ul class="flex flex-col gap-space-sm"><li class="leading-none"><a class="font-body-base text-body-base text-ink-2 hover:text-ink transition-colors" data-path="auth-login" href="#">Sign in</a></li><li class="leading-none"><a class="font-body-base text-body-base text-ink-2 hover:text-ink transition-colors" data-path="auth-founder-register" href="#">Create a founder account</a></li><li class="leading-none"><a class="font-body-base text-body-base text-ink-2 hover:text-ink transition-colors" data-path="auth-builder-register" href="#">Create a builder profile</a></li><li class="leading-none"><a class="font-body-base text-body-base text-ink-2 hover:text-ink transition-colors" data-path="admin-portal" href="#">Admin</a></li></ul></div></div><div class="pt-space-2xl flex flex-col md:flex-row md:items-center justify-between gap-space-lg text-ink-3 font-caption text-caption"><p class="text-ink-2">Venture Route — A deterministic evaluation registry and research ledger for ecosystem founders.</p><p class="text-ink-3">Inspectable rules and cryptographically grounded evidence. Demo data flagged.</p></div></div></footer></body></html>

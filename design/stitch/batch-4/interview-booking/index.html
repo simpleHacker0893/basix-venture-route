@@ -1,0 +1,552 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<meta content="web_standard" name="shell-type"/>
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400..700;1,6..72,400..700&amp;family=IBM+Plex+Sans:wght@400;500;600&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<style>
+@layer base {
+  html, body { margin: 0; padding: 0; }
+  body { overscroll-behavior: none; }
+  main > :first-child { margin-top: 0 !important; }
+  main > :last-child { margin-bottom: 0 !important; }
+}
+::-webkit-scrollbar { display: none; }
+</style>
+<script src="https://cdn.tailwindcss.com"></script>
+<script id="tailwind-config">
+tailwind.config = {
+  darkMode: "class",
+  theme: {
+    extend: {
+      "colors": {
+        "on-surface-variant": "#404944",
+        "tertiary": "#5d2a27",
+        "primary-fixed": "#b2f0d4",
+        "surface-container-lowest": "#ffffff",
+        "on-secondary": "#ffffff",
+        "surface-container": "#ededf2",
+        "surface-dim": "#d9dade",
+        "dark": "#16181b",
+        "outline-variant": "#bfc9c2",
+        "surface-variant": "#e2e2e6",
+        "tertiary-fixed-dim": "#ffb3ad",
+        "ink-3": "#5c6169",
+        "outline": "#707974",
+        "border-strong": "#c9c2b3",
+        "project": "#35418a",
+        "inverse-primary": "#97d3b8",
+        "surface": "#fbf9f4",
+        "on-tertiary-fixed-variant": "#6e3733",
+        "secondary-container": "#a2aeff",
+        "surface-container-low": "#f3f3f7",
+        "on-primary-container": "#93cfb4",
+        "on-tertiary-fixed": "#370d0b",
+        "on-secondary-container": "#333f88",
+        "amber-ink": "#8a4b12",
+        "danger": "#8a2d2d",
+        "on-primary-fixed-variant": "#11503c",
+        "on-tertiary": "#ffffff",
+        "on-background": "#1a1c1f",
+        "surface-bright": "#f9f9fd",
+        "error": "#ba1a1a",
+        "inverse-surface": "#2f3034",
+        "surface-tint": "#2e6953",
+        "on-primary-fixed": "#002116",
+        "primary-container": "#1e5a45",
+        "on-secondary-fixed-variant": "#344089",
+        "primary": "#00422f",
+        "ink-2": "#3f4650",
+        "on-surface": "#1a1c1f",
+        "border": "#e3ded3",
+        "tertiary-fixed": "#ffdad7",
+        "on-error": "#ffffff",
+        "on-primary": "#ffffff",
+        "accent": "#1e5a45",
+        "on-secondary-fixed": "#000f5d",
+        "error-container": "#ffdad6",
+        "ink": "#16181b",
+        "secondary": "#4d58a3",
+        "on-tertiary-container": "#fdafa9",
+        "secondary-fixed-dim": "#bbc3ff",
+        "tertiary-container": "#79403c",
+        "surface-strong": "#ffffff",
+        "amber-fill": "#e8c58f",
+        "accent-on-dark": "#7fd1ac",
+        "on-error-container": "#93000a",
+        "surface-container-high": "#e8e8ec",
+        "inverse-on-surface": "#f0f0f4",
+        "primary-fixed-dim": "#97d3b8",
+        "ground": "#f4f1ea",
+        "background": "#f9f9fd",
+        "secondary-fixed": "#dee0ff",
+        "surface-container-highest": "#e2e2e6"
+      },
+      "borderRadius": {
+        "DEFAULT": "0.25rem",
+        "lg": "0.5rem",
+        "xl": "0.75rem",
+        "full": "9999px"
+      },
+      "spacing": {
+        "space-md": "0.75rem",
+        "margin": "2rem",
+        "space-4xl": "4rem",
+        "gutter": "1.5rem",
+        "space-lg": "1rem",
+        "space-xl": "1.5rem",
+        "space-3xl": "3rem",
+        "space-sm": "0.5rem",
+        "space-xs": "0.25rem",
+        "space-2xl": "2rem"
+      },
+      "fontFamily": {
+        "display": ["Newsreader"],
+        "title-card": ["IBM Plex Sans"],
+        "label-regular": ["IBM Plex Sans"],
+        "body-medium": ["IBM Plex Sans"],
+        "headline-lg": ["Newsreader"],
+        "caption": ["IBM Plex Sans"],
+        "mono-sm": ["IBM Plex Sans"],
+        "headline-md": ["Newsreader"],
+        "body-base": ["IBM Plex Sans"],
+        "mono-base": ["IBM Plex Sans"]
+      },
+      "fontSize": {
+        "display": ["44px", {"lineHeight": "52px", "letterSpacing": "-0.02em", "fontWeight": "600"}],
+        "title-card": ["20px", {"lineHeight": "28px", "fontWeight": "600"}],
+        "label-regular": ["13px", {"lineHeight": "18px", "fontWeight": "500"}],
+        "body-medium": ["16px", {"lineHeight": "24px", "fontWeight": "500"}],
+        "headline-lg": ["36px", {"lineHeight": "44px", "letterSpacing": "-0.015em", "fontWeight": "600"}],
+        "caption": ["13px", {"lineHeight": "18px", "fontWeight": "400"}],
+        "mono-sm": ["13px", {"lineHeight": "18px", "fontWeight": "400"}],
+        "headline-md": ["28px", {"lineHeight": "36px", "letterSpacing": "-0.01em", "fontWeight": "500"}],
+        "body-base": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
+        "mono-base": ["14px", {"lineHeight": "20px", "fontWeight": "400"}]
+      }
+    }
+  }
+};
+</script>
+</head>
+<body class="bg-ground font-body-base text-body-base text-ink">
+<header class="fixed top-0 left-0 right-0 z-50 bg-ground border-b border-border">
+<div class="h-16 max-w-[1200px] mx-auto px-gutter flex items-center justify-between">
+<div class="flex items-center gap-space-md">
+<a class="flex items-baseline gap-space-sm" data-path="overview" href="#">
+<span class="font-headline-md text-headline-md text-ink tracking-tight font-serif">Venture Route</span>
+</a>
+<span class="inline-flex items-center px-space-sm h-5 rounded-full border border-border-strong font-label-regular text-[10px] uppercase tracking-wider text-ink-2 bg-surface">BASIX EDITION</span>
+</div>
+<nav class="hidden md:flex items-center gap-space-xl h-16" data-active-classes="text-primary font-body-medium border-b-2 border-primary">
+<a class="text-ink-2 hover:text-ink font-body-base text-body-base transition-colors" data-path="how-it-works" href="#">How it works</a>
+<a class="text-ink-2 hover:text-ink font-body-base text-body-base transition-colors" data-path="evidence-and-rules" href="#">Evidence &amp; rules</a>
+<a aria-current="page" class="transition-colors text-primary font-body-medium border-b-2 border-primary" data-path="founder-area" href="#">Founder Area</a>
+</nav>
+<div class="flex items-center gap-space-md">
+<div class="flex items-center gap-space-sm pl-space-md border-l border-border">
+<div class="relative flex items-center gap-space-xs cursor-pointer py-space-xs px-space-sm rounded hover:bg-surface">
+<span class="w-2 h-2 rounded-full bg-accent"></span>
+<span class="font-body-medium text-body-medium text-ink">Cpt. N</span>
+<span class="material-symbols-outlined text-ink-3 text-[18px]">expand_more</span>
+</div>
+<div class="w-8 h-8 rounded-full bg-primary flex items-center justify-center">
+<span class="material-symbols-outlined text-on-primary text-[18px]">person</span>
+</div>
+</div>
+</div>
+</div>
+</header>
+<main class="w-full pt-16 bg-surface min-h-[calc(100vh-64px)]">
+<div class="flex flex-col w-full">
+<!-- Content Container -->
+<div class="max-w-[1200px] w-full mx-auto px-gutter py-space-2xl">
+<!-- Breadcrumb & Top Metadata Bar -->
+<div class="flex flex-col gap-space-sm pb-space-lg border-b border-border mb-space-2xl">
+<div class="flex flex-wrap items-center justify-between gap-space-md text-caption font-mono-sm text-ink-3">
+<div class="flex items-center gap-space-sm tracking-wide">
+<span class="font-medium text-ink-2 uppercase">Founder Console</span>
+<span>·</span>
+<span>Calendar Discovery &amp; Consensus Handshake</span>
+<span>·</span>
+<span class="text-ink">Africa/Nairobi (UTC+3)</span>
+</div>
+<div class="flex items-center gap-space-xs text-caption text-ink-2 bg-surface px-space-sm py-0.5 rounded border border-border">
+<span class="w-1.5 h-1.5 rounded-full bg-accent"></span>
+<span>Block #418,908 verified</span>
+</div>
+</div>
+<div class="pt-space-xs">
+<a class="inline-flex items-center gap-space-xs font-label-regular text-label-regular text-accent hover:text-ink transition-colors group" href="#">
+<span class="material-symbols-outlined text-[16px] transition-transform group-hover:-translate-x-0.5">arrow_back</span>
+<span>Back to candidate profile</span>
+</a>
+</div>
+<!-- Main Headline & Subtitle -->
+<div class="flex flex-col md:flex-row md:items-end justify-between gap-space-md pt-space-xs">
+<div>
+<h1 class="font-headline-lg text-headline-lg text-ink font-serif tracking-tight">Book an interview with Amina Otieno</h1>
+<p class="font-body-base text-body-base text-ink-2 mt-1">Times are shown in Africa/Nairobi.</p>
+</div>
+<div class="flex items-center gap-space-sm flex-wrap">
+<span class="inline-flex items-center gap-1.5 px-space-md py-1 rounded-full border border-border font-label-regular text-[12px] bg-surface text-ink-2">
+<span class="w-1.5 h-1.5 rounded-full bg-project"></span>
+            Maternal health triage pilot
+          </span>
+<span class="inline-flex items-center px-space-md py-1 rounded-full border border-border font-label-regular text-[12px] bg-surface text-ink-2">
+            Lakeview Cohort 2026
+          </span>
+<span class="inline-flex items-center px-space-md py-1 rounded-full border border-border font-label-regular text-[12px] bg-surface text-ink-2 font-mono-sm">
+            Python &amp; MeTTa
+          </span>
+<span class="inline-flex items-center px-2 py-0.5 rounded-full font-label-regular text-[11px] uppercase tracking-wider font-semibold text-amber-ink bg-amber-fill/85 border border-amber-ink/20">
+            Demo data
+          </span>
+</div>
+</div>
+</div>
+<!-- Two-Column Grid: Left 760px, Right 400px -->
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-gutter items-start">
+<!-- Left Column (Scheduling Card) -->
+<div class="lg:col-span-8 flex flex-col gap-space-xl">
+<div class="bg-surface-container-lowest rounded-lg border border-border p-space-xl">
+<!-- Card Header -->
+<div class="pb-space-lg border-b border-border mb-space-xl flex flex-col sm:flex-row sm:items-baseline justify-between gap-space-xs">
+<div>
+<h2 class="font-headline-md text-[22px] leading-7 text-ink font-serif">Select date &amp; time slot</h2>
+<p class="font-label-regular text-label-regular text-ink-3 mt-1">Builder verified availability window: 22 Sep – 20 Oct 2026</p>
+</div>
+<div class="inline-flex items-center gap-1.5 font-mono-sm text-[12px] text-accent">
+<span class="material-symbols-outlined text-[15px]">verified</span>
+<span>Ledger Attested</span>
+</div>
+</div>
+<!-- Calendar & Slots Combined Grid -->
+<div class="grid grid-cols-1 md:grid-cols-12 gap-space-xl items-start pb-space-xl border-b border-border">
+<!-- Single Month Calendar (Left inside card) -->
+<div class="md:col-span-7 select-none">
+<!-- Calendar Header -->
+<div class="flex items-center justify-between mb-space-md">
+<span class="font-title-card text-[17px] font-semibold text-ink">October 2026</span>
+<div class="flex items-center gap-1">
+<button aria-label="Previous month" class="w-8 h-8 rounded border border-border hover:border-border-strong flex items-center justify-center text-ink-2 hover:text-ink transition-colors bg-surface" type="button">
+<span class="material-symbols-outlined text-[18px]">chevron_left</span>
+</button>
+<button aria-label="Next month" class="w-8 h-8 rounded border border-border hover:border-border-strong flex items-center justify-center text-ink-2 hover:text-ink transition-colors bg-surface" type="button">
+<span class="material-symbols-outlined text-[18px]">chevron_right</span>
+</button>
+</div>
+</div>
+<!-- Day Labels -->
+<div class="grid grid-cols-7 text-center mb-space-xs">
+<span class="font-label-regular text-caption text-ink-3 uppercase py-1">Mo</span>
+<span class="font-label-regular text-caption text-ink-3 uppercase py-1">Tu</span>
+<span class="font-label-regular text-caption text-ink-3 uppercase py-1">We</span>
+<span class="font-label-regular text-caption text-ink-3 uppercase py-1">Th</span>
+<span class="font-label-regular text-caption text-ink-3 uppercase py-1">Fr</span>
+<span class="font-label-regular text-caption text-ink-3 uppercase py-1">Sa</span>
+<span class="font-label-regular text-caption text-ink-3 uppercase py-1">Su</span>
+</div>
+<!-- Calendar Month Grid -->
+<!-- Oct 1, 2026 is a Thursday. Tail from Sep: 28, 29, 30 -->
+<div class="grid grid-cols-7 gap-1 text-center font-mono-base text-body-base">
+<!-- Sep 28-30 (Previous month tail) -->
+<div class="h-9 flex items-center justify-center text-outline-variant font-normal">28</div>
+<div class="h-9 flex items-center justify-center text-outline-variant font-normal">29</div>
+<div class="h-9 flex items-center justify-center text-outline-variant font-normal">30</div>
+<!-- Oct 1-4 (Available) -->
+<button class="h-9 rounded border border-transparent hover:border-border-strong hover:bg-surface text-ink flex items-center justify-center transition-colors" type="button">1</button>
+<button class="h-9 rounded border border-transparent hover:border-border-strong hover:bg-surface text-ink flex items-center justify-center transition-colors" type="button">2</button>
+<button class="h-9 rounded border border-transparent text-ink-3 flex items-center justify-center opacity-70" type="button">3</button>
+<button class="h-9 rounded border border-transparent text-ink-3 flex items-center justify-center opacity-70" type="button">4</button>
+<!-- Oct 5-11 -->
+<button class="h-9 rounded border border-transparent hover:border-border-strong hover:bg-surface text-ink flex items-center justify-center transition-colors" type="button">5</button>
+<!-- Oct 6: SELECTED -->
+<div class="h-9 flex items-center justify-center">
+<span class="w-8 h-8 rounded-full bg-accent text-on-primary font-semibold flex items-center justify-center ring-2 ring-accent/20">6</span>
+</div>
+<button class="h-9 rounded border border-transparent hover:border-border-strong hover:bg-surface text-ink flex items-center justify-center transition-colors" type="button">7</button>
+<button class="h-9 rounded border border-transparent hover:border-border-strong hover:bg-surface text-ink flex items-center justify-center transition-colors" type="button">8</button>
+<button class="h-9 rounded border border-transparent hover:border-border-strong hover:bg-surface text-ink flex items-center justify-center transition-colors" type="button">9</button>
+<button class="h-9 rounded border border-transparent text-ink-3 flex items-center justify-center opacity-70" type="button">10</button>
+<button class="h-9 rounded border border-transparent text-ink-3 flex items-center justify-center opacity-70" type="button">11</button>
+<!-- Oct 12-18 -->
+<button class="h-9 rounded border border-transparent hover:border-border-strong hover:bg-surface text-ink flex items-center justify-center transition-colors" type="button">12</button>
+<button class="h-9 rounded border border-transparent hover:border-border-strong hover:bg-surface text-ink flex items-center justify-center transition-colors" type="button">13</button>
+<button class="h-9 rounded border border-transparent hover:border-border-strong hover:bg-surface text-ink flex items-center justify-center transition-colors" type="button">14</button>
+<button class="h-9 rounded border border-transparent hover:border-border-strong hover:bg-surface text-ink flex items-center justify-center transition-colors" type="button">15</button>
+<button class="h-9 rounded border border-transparent hover:border-border-strong hover:bg-surface text-ink flex items-center justify-center transition-colors" type="button">16</button>
+<button class="h-9 rounded border border-transparent text-ink-3 flex items-center justify-center opacity-70" type="button">17</button>
+<button class="h-9 rounded border border-transparent text-ink-3 flex items-center justify-center opacity-70" type="button">18</button>
+<!-- Oct 19-25 (20 is last available) -->
+<button class="h-9 rounded border border-transparent hover:border-border-strong hover:bg-surface text-ink flex items-center justify-center transition-colors" type="button">19</button>
+<button class="h-9 rounded border border-transparent hover:border-border-strong hover:bg-surface text-ink flex items-center justify-center transition-colors" type="button">20</button>
+<span class="h-9 flex items-center justify-center text-outline-variant cursor-not-allowed">21</span>
+<span class="h-9 flex items-center justify-center text-outline-variant cursor-not-allowed">22</span>
+<span class="h-9 flex items-center justify-center text-outline-variant cursor-not-allowed">23</span>
+<span class="h-9 flex items-center justify-center text-outline-variant cursor-not-allowed">24</span>
+<span class="h-9 flex items-center justify-center text-outline-variant cursor-not-allowed">25</span>
+<!-- Oct 26-31 -->
+<span class="h-9 flex items-center justify-center text-outline-variant cursor-not-allowed">26</span>
+<span class="h-9 flex items-center justify-center text-outline-variant cursor-not-allowed">27</span>
+<span class="h-9 flex items-center justify-center text-outline-variant cursor-not-allowed">28</span>
+<span class="h-9 flex items-center justify-center text-outline-variant cursor-not-allowed">29</span>
+<span class="h-9 flex items-center justify-center text-outline-variant cursor-not-allowed">30</span>
+<span class="h-9 flex items-center justify-center text-outline-variant cursor-not-allowed">31</span>
+<div class="h-9 flex items-center justify-center text-outline-variant font-normal">1</div>
+</div>
+<!-- Legend -->
+<div class="flex items-center gap-space-lg mt-space-md pt-space-sm border-t border-border font-label-regular text-[11px] text-ink-3">
+<div class="flex items-center gap-1.5">
+<span class="w-2.5 h-2.5 rounded-full bg-accent"></span>
+<span>Selected</span>
+</div>
+<div class="flex items-center gap-1.5">
+<span class="w-2 h-2 rounded-full border border-border-strong bg-surface"></span>
+<span>Available window</span>
+</div>
+<div class="flex items-center gap-1.5">
+<span class="w-2 h-2 rounded-full bg-outline-variant/40"></span>
+<span>Unavailable</span>
+</div>
+</div>
+</div>
+<!-- Time Slots Column (Right inside card) -->
+<div class="md:col-span-5 flex flex-col gap-space-sm md:border-l md:border-border md:pl-space-xl">
+<div class="flex items-baseline justify-between mb-space-xs">
+<span class="font-label-regular text-label-regular text-ink-2 font-medium">Available slots</span>
+<span class="font-caption text-[11px] text-ink-3">Africa/Nairobi</span>
+</div>
+<!-- Slot Button 1 -->
+<button class="w-full h-10 px-space-md rounded-lg border border-border bg-surface-strong hover:bg-surface hover:border-border-strong text-ink font-mono-base text-body-base flex items-center justify-between transition-colors" type="button">
+<span>09:00 EAT</span>
+<span class="font-label-regular text-[11px] text-ink-3">30m open</span>
+</button>
+<!-- Slot Button 2: SELECTED -->
+<button class="w-full h-10 px-space-md rounded-lg bg-accent text-on-primary font-mono-base text-body-base font-semibold flex items-center justify-between shadow-none" type="button">
+<span class="flex items-center gap-1.5">
+<span class="material-symbols-outlined text-[18px]">check</span>
+<span>10:30 EAT</span>
+</span>
+<span class="font-label-regular text-[11px] uppercase tracking-wider bg-white/20 px-2 py-0.5 rounded text-white">Active</span>
+</button>
+<!-- Slot Button 3 -->
+<button class="w-full h-10 px-space-md rounded-lg border border-border bg-surface-strong hover:bg-surface hover:border-border-strong text-ink font-mono-base text-body-base flex items-center justify-between transition-colors" type="button">
+<span>14:00 EAT</span>
+<span class="font-label-regular text-[11px] text-ink-3">30m open</span>
+</button>
+<!-- Slot Button 4 -->
+<button class="w-full h-10 px-space-md rounded-lg border border-border bg-surface-strong hover:bg-surface hover:border-border-strong text-ink font-mono-base text-body-base flex items-center justify-between transition-colors" type="button">
+<span>16:30 EAT</span>
+<span class="font-label-regular text-[11px] text-ink-3">30m open</span>
+</button>
+<div class="mt-space-sm pt-space-sm border-t border-border flex items-start gap-1.5 text-caption text-ink-3">
+<span class="material-symbols-outlined text-[15px] text-ink-3 mt-0.5">info</span>
+<span>30-min buffer between ledger evaluations automatically enforced.</span>
+</div>
+</div>
+</div>
+<!-- Duration Segmented Control -->
+<div class="pt-space-lg pb-space-lg border-b border-border flex flex-col sm:flex-row sm:items-center justify-between gap-space-md">
+<div>
+<label class="font-label-regular text-label-regular text-ink-2 font-medium block">Duration</label>
+<p class="font-caption text-caption text-ink-3">Standard consensus inquiry window</p>
+</div>
+<div class="inline-flex p-1 bg-ground border border-border rounded-lg" role="group">
+<button class="h-8 px-space-lg rounded bg-accent text-on-primary font-label-regular text-label-regular font-medium transition-colors" type="button">
+                30 min
+              </button>
+<button class="h-8 px-space-lg rounded text-ink-2 hover:text-ink font-label-regular text-label-regular font-medium transition-colors" type="button">
+                45 min
+              </button>
+</div>
+</div>
+<!-- Notes Field -->
+<div class="pt-space-lg">
+<div class="flex items-center justify-between mb-space-xs">
+<label class="font-label-regular text-label-regular text-ink-2 font-medium" for="founder-notes">Notes to builder (optional)</label>
+<span class="font-caption text-[12px] text-ink-3">Cryptographically signed</span>
+</div>
+<textarea class="w-full rounded-lg bg-surface-strong border border-border focus:border-accent p-space-md font-body-base text-body-base text-ink placeholder:text-ink-3/60 outline-none transition-colors resize-none leading-relaxed" id="founder-notes" rows="3">Reviewing your Clinic triage intake flow architecture and offline sync implementation for the Maternal health triage brief.</textarea>
+<p class="font-caption text-caption text-ink-3 mt-1.5">
+              Visible to Amina Otieno upon dispatch. Transmitted with signed founder credential.
+            </p>
+</div>
+</div>
+<!-- Ledger Rule Compliance Footnote -->
+<div class="px-space-lg py-space-md bg-surface rounded-lg border border-border flex items-center justify-between text-caption text-ink-3">
+<div class="flex items-center gap-space-sm">
+<span class="w-2 h-2 rounded-full bg-accent"></span>
+<span>MeTTa Rule: <code class="font-mono-sm text-ink-2">Rule-(builder-interview-consensus-v2)</code> active</span>
+</div>
+<span class="font-mono-sm text-[12px] text-ink-3">Gas fee waived for verified cohorts</span>
+</div>
+</div>
+<!-- Right Column (Summary, Status Machine, Counter-Proposal) -->
+<div class="lg:col-span-4 flex flex-col gap-space-xl">
+<!-- Summary Card -->
+<div class="bg-surface-container-lowest rounded-lg border border-border p-space-xl">
+<div class="flex items-center justify-between border-b border-border pb-space-md mb-space-md">
+<h2 class="font-headline-md text-[20px] leading-6 text-ink font-serif">Summary</h2>
+<span class="inline-flex items-center px-2 py-0.5 rounded-full font-label-regular text-[10px] uppercase tracking-wider font-semibold text-amber-ink bg-amber-fill/85 border border-amber-ink/20">
+              Demo data
+            </span>
+</div>
+<!-- Builder Metadata -->
+<div class="flex items-start gap-space-md pb-space-md border-b border-border">
+<div class="w-10 h-10 rounded-full bg-surface border border-border flex items-center justify-center shrink-0">
+<span class="font-title-card text-[15px] font-semibold text-accent">AO</span>
+</div>
+<div class="min-w-0">
+<div class="flex items-center gap-2">
+<span class="font-title-card text-[16px] font-semibold text-ink truncate">Amina Otieno</span>
+</div>
+<p class="font-caption text-caption text-ink-3 mt-0.5">Backend builder · Lakeview cohort</p>
+</div>
+</div>
+<!-- Details Grid -->
+<div class="py-space-md space-y-space-md border-b border-border text-body-base">
+<div>
+<span class="font-label-regular text-caption text-ink-3 block uppercase tracking-wide">Proposed Time</span>
+<p class="font-mono-base text-[14px] text-ink font-medium mt-0.5">
+                Tue 6 Oct 2026 · 10:30 – 11:00 EAT
+              </p>
+</div>
+<div>
+<span class="font-label-regular text-caption text-ink-3 block uppercase tracking-wide">Platform</span>
+<div class="flex items-center gap-1.5 mt-0.5 text-body-base text-ink-2">
+<span class="material-symbols-outlined text-[17px] text-ink-3">videocam</span>
+<span class="text-[14px]">Video link will be added in-app</span>
+</div>
+</div>
+<div>
+<span class="font-label-regular text-caption text-ink-3 block uppercase tracking-wide">Commercial Reference</span>
+<p class="font-mono-base text-[13px] text-ink-2 mt-0.5">
+                USD 140 / day rate applies to contract phase, not interview.
+              </p>
+</div>
+</div>
+<!-- Primary CTA Button (single primary action in view) -->
+<div class="pt-space-md">
+<button class="w-full h-10 px-space-lg rounded-lg bg-accent hover:bg-primary-container text-on-primary font-body-medium text-body-medium font-semibold flex items-center justify-center gap-space-xs transition-colors" type="button">
+<span>Propose time</span>
+<span class="material-symbols-outlined text-[18px]">send</span>
+</button>
+<p class="font-caption text-[11px] text-ink-3 text-center mt-2">
+              Dispatch will lock selected slot for 24h awaiting builder response.
+            </p>
+</div>
+</div>
+<!-- Status & Lifecycle State Machine Card -->
+<div class="bg-surface-container-lowest rounded-lg border border-border p-space-lg">
+<div class="flex items-center justify-between mb-space-md">
+<h3 class="font-title-card text-[16px] font-semibold text-ink">Status &amp; lifecycle</h3>
+<span class="font-label-regular text-[11px] font-mono-sm text-ink-3">Seq #01</span>
+</div>
+<!-- 3-step state machine stepper -->
+<div class="relative flex items-center justify-between pb-space-lg mb-space-md border-b border-border">
+<!-- Connecting line background -->
+<div class="absolute left-4 right-4 top-3.5 h-[2px] bg-border -z-0"></div>
+<!-- Step 1: Proposed (ACTIVE) -->
+<div class="relative z-10 flex flex-col items-center gap-1 bg-surface-container-lowest px-1">
+<span class="w-7 h-7 rounded-full bg-accent text-on-primary flex items-center justify-center text-[12px] font-mono-sm font-semibold">
+                1
+              </span>
+<span class="font-label-regular text-[12px] font-semibold text-accent">Proposed</span>
+</div>
+<!-- Step 2: Accepted (Pending) -->
+<div class="relative z-10 flex flex-col items-center gap-1 bg-surface-container-lowest px-1">
+<span class="w-7 h-7 rounded-full border border-border-strong bg-surface text-ink-3 flex items-center justify-center text-[12px] font-mono-sm">
+                2
+              </span>
+<span class="font-label-regular text-[12px] text-ink-3">Accepted</span>
+</div>
+<!-- Step 3: Confirmed (Pending) -->
+<div class="relative z-10 flex flex-col items-center gap-1 bg-surface-container-lowest px-1">
+<span class="w-7 h-7 rounded-full border border-border-strong bg-surface text-ink-3 flex items-center justify-center text-[12px] font-mono-sm">
+                3
+              </span>
+<span class="font-label-regular text-[12px] text-ink-3">Confirmed</span>
+</div>
+</div>
+<div class="space-y-space-xs text-caption text-ink-3">
+<p class="leading-relaxed">Amina can accept or counter-propose from her side.</p>
+<div class="flex items-center gap-1.5 pt-1 text-ink-2 font-mono-sm text-[12px]">
+<span class="material-symbols-outlined text-[15px] text-accent">lock</span>
+<span>Cryptographic booking hash anchored upon mutual acceptance.</span>
+</div>
+</div>
+</div>
+<!-- Builder Counter-Proposal Variant Card -->
+<div class="bg-surface rounded-lg border border-border p-space-lg">
+<div class="flex items-center justify-between mb-space-sm">
+<span class="font-label-regular text-[10px] uppercase tracking-wider font-semibold text-ink-2 bg-ground px-2 py-0.5 rounded border border-border">
+              COUNTER-PROPOSAL VARIANT (INCOMING)
+            </span>
+<span class="w-2 h-2 rounded-full bg-secondary"></span>
+</div>
+<p class="font-mono-base text-[13px] font-medium text-ink">
+            Amina proposed Wed 7 Oct 2026 · 14:00 – 14:30 EAT
+          </p>
+<div class="mt-space-sm p-space-sm bg-surface-strong rounded border border-border text-caption text-ink-2">
+<span class="font-label-regular text-[11px] text-ink-3 uppercase block mb-0.5">Note from builder:</span>
+            "Prefers afternoon window after clinical site demo."
+          </div>
+<div class="grid grid-cols-2 gap-space-sm mt-space-md">
+<button class="h-9 px-space-sm rounded-lg border border-border-strong bg-surface-strong hover:bg-surface text-ink font-label-regular text-label-regular font-medium transition-colors" type="button">
+              Counter
+            </button>
+<button class="h-9 px-space-sm rounded-lg bg-accent hover:bg-primary-container text-on-primary font-label-regular text-label-regular font-medium transition-colors" type="button">
+              Accept
+            </button>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</main>
+<footer class="w-full bg-ground border-t border-border">
+<div class="max-w-[1200px] mx-auto px-gutter pt-space-3xl pb-space-2xl">
+<div class="grid grid-cols-1 md:grid-cols-3 gap-gutter pb-space-2xl border-b border-border">
+<div>
+<h4 class="font-label-regular text-label-regular text-ink-3 uppercase tracking-wider mb-space-md">Product</h4>
+<ul class="space-y-space-sm">
+<li class="leading-normal"><a class="font-body-base text-body-base text-ink-2 hover:text-primary transition-colors" data-path="how-it-works" href="#">How it works</a></li>
+<li class="leading-normal"><a class="font-body-base text-body-base text-ink-2 hover:text-primary transition-colors" data-path="evidence-and-rules" href="#">Evidence &amp; rules</a></li>
+<li class="leading-normal"><a class="font-body-base text-body-base text-ink-2 hover:text-primary transition-colors" data-path="founder-area" href="#">Founder Area</a></li>
+<li class="leading-normal"><a class="font-body-base text-body-base text-ink-2 hover:text-primary transition-colors" data-path="demo-scenarios" href="#">Demo scenarios</a></li>
+</ul>
+</div>
+<div>
+<h4 class="font-label-regular text-label-regular text-ink-3 uppercase tracking-wider mb-space-md">Ecosystem</h4>
+<ul class="space-y-space-sm">
+<li class="leading-normal"><a class="font-body-base text-body-base text-ink-2 hover:text-primary transition-colors" data-path="basix-network" href="#">BASIX</a></li>
+<li class="leading-normal"><a class="font-body-base text-body-base text-ink-2 hover:text-primary transition-colors" data-path="omniuniversity" href="#">MeTTa OmniUniversity</a></li>
+<li class="leading-normal"><a class="font-body-base text-body-base text-ink-2 hover:text-primary transition-colors" data-path="singularitynet-metta" href="#">SingularityNET MeTTa</a></li>
+<li class="leading-normal"><a class="font-body-base text-body-base text-ink-2 hover:text-primary transition-colors" data-path="ecosystem-partners" href="#">Partners</a></li>
+</ul>
+</div>
+<div>
+<h4 class="font-label-regular text-label-regular text-ink-3 uppercase tracking-wider mb-space-md">Account</h4>
+<ul class="space-y-space-sm">
+<li class="leading-normal"><a class="font-body-base text-body-base text-ink-2 hover:text-primary transition-colors" data-path="sign-in" href="#">Sign in</a></li>
+<li class="leading-normal"><a class="font-body-base text-body-base text-ink-2 hover:text-primary transition-colors" data-path="register-founder" href="#">Create a founder account</a></li>
+<li class="leading-normal"><a class="font-body-base text-body-base text-ink-2 hover:text-primary transition-colors" data-path="register-builder" href="#">Create a builder profile</a></li>
+<li class="leading-normal"><a class="font-body-base text-body-base text-ink-2 hover:text-primary transition-colors" data-path="admin-portal" href="#">Admin</a></li>
+</ul>
+</div>
+</div>
+<div class="pt-space-xl flex flex-col md:flex-row items-start md:items-center justify-between gap-space-md">
+<p class="font-caption text-caption text-ink-3 max-w-2xl">Venture Route — Deterministic evaluation registry and research ledger for ecosystem founders. Inspectable rules, cryptographic evidence, and zero speculative claims. Demo data flagged.</p>
+<div class="flex items-center gap-space-xs font-mono-sm text-mono-sm text-ink-2 bg-surface px-space-sm py-1 rounded border border-border">
+<span class="w-2 h-2 rounded-full bg-accent"></span>
+<span>Deterministic ledger synced</span>
+</div>
+</div>
+</div>
+</footer>
+</body></html>
