@@ -61,8 +61,8 @@ System instruction (verbatim, must appear in code): *The routing engine is the s
 ## Demo scenarios (seed IDs in `services/engine/seed/briefs.json`)
 | Scenario | Brief | Expected |
 |---|---|---|
-| Health pilot | python, ai-metta, ui-ux; hybrid; 2026-09-22→2026-09-29; team ≤3; USD 400; reusable IP | `feasible`, 3 builders, health IP asset, cohort, health partner via 4-hop chain |
-| Agri marketplace | frontend, backend, domain-research; remote; team ≤3; USD 350 | `feasible`, different team, agri IP, agri partner |
-| Constrained brief | mobile, rust; remote; 2026-09-22→2026-10-06; team ≤2; USD 300 | `partial`, `skill` gap for mobile, rust builder shown |
-| Budget challenge | Health pilot with USD 250 | `partial`, `budget` gap, or a cheaper covering team only if evidence supports one |
-| Delivery-mode challenge | Health pilot, on-site, location "Kisumu" | `partial`, `location` gaps |
+| Health pilot `brief-health-01` | python, ai-metta, ui-ux; hybrid; 2026-09-22→2026-09-29; team ≤3; USD 400; reusable IP | `feasible`; team amina-otieno (python, both), daniel-kiptoo (ai-metta, both), grace-wambui (ui-ux, credential); total 370; IP `asset-afya-triage`; partner `amani-health` via 4-hop chain |
+| Agri marketplace `brief-agri-01` | frontend, backend, domain-research; remote; team ≤3; USD 350 | `feasible`; team wanjiru-mwangi (frontend, credential), lucy-achieng (backend, project), fatuma-hassan (domain-research, credential); total 315 (lucy-achieng beats brian-odhiambo on cost); IP `asset-shamba-records`; partner `shamba-agri` |
+| Constrained brief `brief-constrained-01` | mobile, rust; remote; 2026-09-22→2026-10-06; team ≤2; USD 300 | `partial`; gap `skill` for mobile (`route-gap`); zawadi-njoroge (rust, credential), total 130; no IP, no partner |
+| Budget challenge `brief-budget-01` | Health pilot with USD 250 | `partial`; `builders: []`; one `budget` gap (`assembler.budget-fit`) naming the 370 team and "Raise daily budget to USD 370" (D-22) |
+| Delivery-mode challenge `brief-onsite-01` | Health pilot, on-site, location "Kisumu" | `infeasible`; three `location` gaps (`route-gap`), no builders, no IP, no partner (D-23) |

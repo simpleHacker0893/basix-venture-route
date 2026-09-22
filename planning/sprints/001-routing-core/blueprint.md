@@ -17,6 +17,13 @@ services/engine/app/api/conversation.py      # POST /api/conversation, POST /api
 services/engine/tests/test_assembler.py, test_route_service_scenarios.py, test_conversation_api.py, test_llm_boundary.py, test_schemas.py
 ```
 
+## Inherited from Sprint 000 (read before slicing)
+- Engine models already exist in `app/models/engine.py`: `EligibleTuple`, `ReuseCandidate`, `PartnerCandidate`, `CohortInfo`, `Gap`, `ReasoningPath`, `RuleName`. Reuse them; do not redefine.
+- `MettaRouteEngine(settings)` is created in the FastAPI lifespan and reached through `app/api/deps.py:get_engine`. Brief facts are added to the space per query under a lock; the route service calls engine methods and never touches the space.
+- `partner_candidates` returns one candidate per selected builder; the assembler takes the candidate for the first selected builder (D-23).
+- `gaps()` already yields `skill`, `availability`, `mode`, `location` gaps with rule `route-gap` (D-20, D-21). The assembler adds only `team-size` and `budget` (D-22).
+- Seed briefs in `seed/briefs.json`: `brief-health-01`, `brief-agri-01`, `brief-constrained-01`, `brief-budget-01`, `brief-onsite-01`. Expected outcomes in DOMAIN.md §Demo scenarios are exact and were computed by the Architect against the merged engine.
+
 ## Steps
 1. Contracts first (Zod), export JSON Schema, then Pydantic mirrors, then the parity test. This is the seam every later sprint depends on.
 2. Assembler with pure functions and table-driven tests: coverage, ordering (fewer people → cost → evidence → id), team-size gap, budget gap.
