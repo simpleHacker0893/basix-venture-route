@@ -23,6 +23,38 @@ each of the seven named MeTTa rules from `planning/DOMAIN.md` (`verified-for-ski
 `route-gap`). Helper equations inside `rules.metta` do not count. `demo_today` echoes the frozen
 demo clock (D-14).
 
+## POST /api/conversation
+
+The main behavioural seam (PRD §5.2): one founder message plus an optional partial brief in,
+exactly one of three `ChatResponse` shapes out, always `200`.
+
+Request (`ChatTurn`):
+
+```json
+{ "userMessage": "I want to build something for farmers", "currentBrief": { "vertical": "agri" } }
+```
+
+`currentBrief` is `Partial<VentureBrief>`: every field optional, `null` means unknown. Field
+values are validated (`maximumTeamSize` 1–5, positive `dailyBudget`, known modes and
+verticals); a malformed body answers `422` with the validation-error shape below.
+
+Responses, discriminated by `type`:
+
+- `clarification`: `missingFields` (PRD §5.3 field names; `location` joins when the mode is
+  on-site), a `message` built from template questions keyed by field, and the merged
+  `partialBrief`. The language model never writes these questions.
+- `route`: the validated `brief` (an id is derived from the title when none was given), the
+  `route` (identical to `POST /api/route` for the same brief), and a `message`.
+- `validation-error`: the merged brief failed a cross-field rule, e.g.
+  `{ "type": "validation-error", "message": "availabilityEnd: availabilityEnd must not precede availabilityStart" }`.
+
+Adapter selection (D-06, D-26): `LLM_PROVIDER=anthropic` with `ANTHROPIC_API_KEY` set uses the
+Anthropic adapter for intake and for the route summary; with the key unset, or
+`LLM_PROVIDER=null`, the `NullAdapter` extracts nothing and keeps the engine's template summary,
+so the structured form is the only input path. If the model times out or errors, the turn falls
+back to `NullAdapter` behaviour and `message` carries the form-fallback hint; the client never
+sees a `500`. A summary that names an entity outside the route is discarded for the template.
+
 ## POST /api/route
 
 The structured-form path (requirements.md item 7): a full `VentureBrief` in, a `VentureRoute`

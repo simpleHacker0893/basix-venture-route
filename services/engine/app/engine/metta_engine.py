@@ -133,6 +133,26 @@ class MettaRouteEngine:
             rates[builder] = witnesses[0]
         return rates
 
+    def known_entities(self) -> frozenset[str]:
+        """Every builder, cohort, university, partner and asset id in the space.
+
+        Used by the explanation boundary to spot an LLM summary naming an entity the route
+        does not carry. Read from graph predicates, no rule involved.
+        """
+        queries = (
+            "!(match &self (belongs-to $b $c) ($b $c))",
+            "!(match &self (cohort-of $c $u) ($c $u))",
+            "!(match &self (supports-vertical $p $v) ($p))",
+            "!(match &self (vertical $x $v) ($x))",
+        )
+        found: set[str] = set()
+        for query in queries:
+            for witness in self._query(query):
+                found.update(
+                    expect_symbol(part, "entity id") for part in expect_list(witness, "ids")
+                )
+        return frozenset(found)
+
     def gaps(self, brief: VentureBrief) -> list[Gap]:
         """skill / availability / mode / location gaps per required skill from `route-gap`."""
         with self._brief_in_space(brief):

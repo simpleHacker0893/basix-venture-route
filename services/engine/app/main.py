@@ -8,12 +8,14 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from pydantic import ValidationError
 
+from app.api.conversation import router as conversation_router
 from app.api.health import router as health_router
 from app.api.internal import router as internal_router
 from app.api.route import router as route_router
 from app.config import get_settings
 from app.engine.errors import EngineError
 from app.engine.metta_engine import MettaRouteEngine
+from app.llm.factory import select_adapter
 from app.models.brief import load_seed_briefs
 from app.models.chat import ValidationErrorResponse
 from app.models.validation import errors_message, validation_message
@@ -29,6 +31,8 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         brief.id: brief for brief in load_seed_briefs(settings.seed_dir / "briefs.json")
     }
     app.state.route_service = RouteService(engine)
+    app.state.known_entities = engine.known_entities()
+    app.state.llm_adapter = select_adapter(settings)
     yield
 
 
@@ -36,6 +40,7 @@ app = FastAPI(title="Venture Route engine", version="0.0.1", lifespan=lifespan)
 app.include_router(health_router)
 app.include_router(internal_router)
 app.include_router(route_router)
+app.include_router(conversation_router)
 
 
 @app.exception_handler(EngineError)
