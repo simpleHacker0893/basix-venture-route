@@ -12,7 +12,7 @@ Demo: **Thursday 1 October 2026**. Nine calendar days. Sprints are gated by **ti
 | Stitch batches 2–4 (Operator, parallel) | Fri 25 Sep → Sat 26 Sep | — | exports under `design/stitch/batch-{2,3,4}/` | Builder uses shadcn defaults |
 | 003 Marketplace | Sun 27 Sep 08:00 → Mon 28 Sep 20:00 | G3 Mon 28 Sep 20:00 | Clerk sign-in per role; admin confirmation gates visibility; Convex → graph reprojection test; PR merged | Ship profiles + admin queue only; defer projects UI |
 | 004 Requests & interviews | Tue 29 Sep 08:00 → Tue 29 Sep 22:00 | G4 Tue 29 Sep 22:00 | Gated bid test; booking round-trip test; PR merged | Ship requests board + gated bids; defer booking |
-| 005 Demo hardening | Wed 30 Sep 08:00 → Wed 30 Sep 20:00 | G5 (freeze) Wed 30 Sep 22:00 | `docker compose up` clean run of all five scenarios; README; Railway + Vercel deploy; recording saved | Demo from laptop only; recording still mandatory |
+| 005 Demo hardening | Wed 30 Sep 08:00 → Wed 30 Sep 20:00 | G5 (freeze) Wed 30 Sep 22:00 | `docker compose up` clean run of all five scenarios; README; `docs/DEPLOY.md` wizard handed to the Operator, who runs Railway + Vercel (D-27); Playwright demo video saved; pitch deck + `docs/PITCH.md` (D-28) | Demo from laptop only; recording still mandatory |
 | Rehearsal | Wed 30 Sep 20:00 → 22:00 | — | Operator runs the demo script twice from a clean launch | — |
 | **Demo** | **Thu 1 Oct** | — | — | Play the recording if live fails |
 

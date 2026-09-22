@@ -33,7 +33,7 @@ Demo: Thursday 1 October 2026, BASIX hackathon, SingularityNET MeTTa track. Time
 ## Stack (decided, see DECISIONS.md)
 
 - `services/engine`: Python 3.12, FastAPI, Pydantic v2, `hyperon==0.2.10` in-process, `anthropic` SDK, SQLModel + Alembic + `asyncpg` against Neon Postgres. Managed with `uv`. Tests: pytest (marketplace tests run against a Neon branch or the compose `db`).
-- `apps/web`: React 18 + Vite + TypeScript, Tailwind, shadcn/ui, vite-plugin-pwa, Clerk React. Talks only to the FastAPI service. Tests: Vitest + React Testing Library + Playwright.
+- `apps/web`: React 19 + Vite + TypeScript, Tailwind, shadcn/ui, vite-plugin-pwa, Clerk React. Talks only to the FastAPI service. Tests: Vitest + React Testing Library + Playwright.
 - `packages/contracts`: Zod schemas for `VentureBrief`, `VentureRoute`, `ChatResponse`; JSON Schema exported for the Pydantic mirror test.
 - Root: Turborepo, Docker Compose (`engine`, `db`, `web`), `.env.example`.
 - Deploy: web on Vercel; engine container on Railway (Render as fallback); database on Neon (Neon CLI/MCP for branches).

@@ -265,7 +265,7 @@ Projection: on every confirmed write (profile, project, credential, confirmation
 |---|---|---|
 | Reasoning | MeTTa via `pip install hyperon` (official Hyperon runtime), pinned version | Track requirement; the official runtime is what judges expect |
 | Engine / API | Python 3.12, FastAPI, Pydantic v2 | Same process as the runtime; atomspace loaded once; typed contracts |
-| Frontend | React 18 + Vite, TypeScript, Tailwind, shadcn/ui, PWA (installable, desktop-first) | Fast build, matches Stitch's Tailwind output |
+| Frontend | React 19 + Vite, TypeScript, Tailwind, shadcn/ui, PWA (installable, desktop-first) | Fast build, matches Stitch's Tailwind output |
 | Validation | Zod (client and API edge), Pydantic (server) | Identical brief/route schemas on both sides |
 | Auth | Clerk | Sign-up/sign-in, roles via metadata, webhooks to `users` |
 | Database | Neon Postgres, SQLModel/SQLAlchemy, Alembic | Marketplace persistence; branchable for demo resets |

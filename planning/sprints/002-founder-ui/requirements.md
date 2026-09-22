@@ -9,7 +9,7 @@ The demo floor on screen: intake, brief review, route result with gaps first, Wh
 PRD §3.1 (all ten) and §3.5 judge story.
 
 ## In scope
-1. `apps/web` scaffold: Vite + React 18 + TS strict, Tailwind with DESIGN.md tokens as CSS variables, shadcn/ui (button, badge, card, sheet, calendar, popover, form, toggle, tabs, table), vite-plugin-pwa manifest + service worker (app shell + `/api/scenarios` cached), fonts Fraunces / IBM Plex Sans / IBM Plex Mono.
+1. `apps/web` scaffold: Vite + React 19 + TS strict (D-25), Tailwind with DESIGN.md tokens as CSS variables, shadcn/ui (button, badge, card, sheet, calendar, popover, form, toggle, tabs, table), vite-plugin-pwa manifest + service worker (app shell + `/api/scenarios` cached), fonts Fraunces / IBM Plex Sans / IBM Plex Mono.
 2. Screens 1, 3, 4, 5 (feasible + partial + infeasible), 6, 7 from `docs/design/stitch-prompts.md`, converted from Stitch exports; every seed-derived card carries the Demo data pill.
 3. Routing state: `currentBrief`, chat turns, latest `ChatResponse`; "Load scenario" chips call `GET /api/scenarios`; "Use the form instead" renders the full brief form (shadcn Calendar range picker, D-08) posting to `POST /api/route`.
 4. Brief review chips editable; edits re-validate with the Zod schema from `packages/contracts` before submit.
