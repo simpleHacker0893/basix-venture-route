@@ -10,6 +10,7 @@ import logging
 from collections.abc import Callable
 
 from app.config import Settings
+from app.llm.anthropic_adapter import AnthropicAdapter
 from app.llm.base import LlmAdapter
 from app.llm.null_adapter import NullAdapter
 
@@ -18,7 +19,7 @@ log = logging.getLogger(__name__)
 AdapterFactory = Callable[[Settings], LlmAdapter]
 
 # Providers that need a key register here; "null" needs nothing.
-KEYED_ADAPTERS: dict[str, AdapterFactory] = {}
+KEYED_ADAPTERS: dict[str, AdapterFactory] = {"anthropic": AnthropicAdapter.from_settings}
 
 
 def select_adapter(settings: Settings) -> LlmAdapter:
