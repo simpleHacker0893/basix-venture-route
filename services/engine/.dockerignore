@@ -1,0 +1,14 @@
+# Keep the build context to source, seed data and the lockfile.
+.git/
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.env
+.env.*
+tests/
+Dockerfile
+.dockerignore
+*.md

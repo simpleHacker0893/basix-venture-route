@@ -1,0 +1,20 @@
+# Playwright CLI output (may contain credentials)
+.playwright-cli/
+
+# Secrets
+.env
+.env.*
+!.env.example
+
+# Python
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Node
+node_modules/
+.turbo/
+dist/
