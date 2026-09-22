@@ -2,7 +2,9 @@
 
 > Evidence-backed venture routing through the BASIX ecosystem.
 
-**Status:** Hackathon proof of concept — demo data only.
+**Status:** Hackathon proof of concept (demo data only). Sprint 000, the MeTTa spike, is implemented: the routing engine runs and is tested. The founder UI arrives in Sprint 002. The demo is on **Thursday 1 October 2026**.
+
+**Contents:** [Architecture](#architecture) · [Demo scenarios](#demo-scenarios) · [Delivery gates](#delivery-gates) · [Stack](#stack) · [Roadmap](#roadmap) · [Getting started](#getting-started) · [Quality gates](#quality-gates) · [Troubleshooting](#troubleshooting)
 
 Venture Route helps a founder turn an MVP brief into the smallest credible route through a BASIX-shaped ecosystem: verified labour, reusable IP, cohort and university context, relevant partners, daily cost, and explicit capability gaps.
 
@@ -98,28 +100,49 @@ Routes are described as the smallest feasible route under the current rules. Tea
 
 ## Delivery gates
 
-Before frontend work, the project will demonstrate a real local MeTTa runtime that:
+Frontend work is gated on a real MeTTa runtime, not a stand-in. Sprint 000 has met the gate. Each criterion below is backed by a test in `services/engine/tests/`:
 
-1. starts locally;
-2. loads deterministic fixture facts;
-3. executes a named rule;
-4. returns a parseable multi-hop result; and
-5. is invoked in-process from the Python adapter in a pytest contract test that fails if the runtime is unavailable, a rule does not execute, or output cannot be parsed.
+| # | Criterion | Status |
+| --- | --- | --- |
+| 1 | The Hyperon runtime starts in-process inside FastAPI | ✅ `GET /health` reports `hyperon_version` |
+| 2 | Deterministic seed facts load | ✅ 181 facts, frozen demo clock `DEMO_TODAY` |
+| 3 | Named rules execute | ✅ all seven (`verified-for-skill` … `route-gap`) are present and queried |
+| 4 | Results are parseable, multi-hop and typed | ✅ `EligibleTuple`, `ReuseCandidate`, `PartnerCandidate`, `Gap`, each with a `ReasoningPath` |
+| 5 | A contract test fails, never skips, if the runtime is missing, a rule fails to run, or output can't be parsed | ✅ `uv run pytest -m runtime` |
 
-The adapter returns typed Pydantic results and rejects malformed or unexpected runtime output. The MVP must never silently replace MeTTa reasoning with an in-memory Python or TypeScript matcher.
+The adapter returns typed Pydantic results and rejects malformed or unexpected runtime output. The MVP must never silently replace MeTTa reasoning with an in-memory Python or TypeScript matcher (D-11).
 
-## Planned stack
+## Stack
 
-- React 18 + Vite + TypeScript client, Tailwind and shadcn/ui, installable PWA (desktop-first)
-- Python 3.12 + FastAPI + Pydantic v2 engine and API service, with the official `hyperon` runtime loaded in-process
-- Zod schemas (client and API edge) mirrored by Pydantic models (server) for brief and route contracts
-- Clerk for auth and roles; Neon Postgres (SQLModel + Alembic inside the FastAPI service) for marketplace persistence, projected into the MeTTa graph on admin confirmation
-- Anthropic Claude behind a provider-agnostic adapter, server-side key, structured output, with a form-only fallback
-- Vitest, React Testing Library and Playwright for the client; pytest for the engine, including a real-runtime adapter contract test
-- Docker Compose (`engine`, `db`, `web`) for local runs; Vercel for the web client, Railway (Render fallback) for the engine container, Neon for the database
-- Monorepo: `apps/web`, `services/engine`, `packages/contracts`
+| Layer | Choice | Status |
+| --- | --- | --- |
+| Engine and API | Python 3.12, FastAPI, Pydantic v2, official `hyperon==0.2.10` in-process, managed with `uv` | ✅ Sprint 000 |
+| Engine quality | pytest (with real-runtime contract tests), ruff, mypy strict | ✅ Sprint 000 |
+| Containers | Docker Compose: `engine` today; `db` and `web` later | ✅ `engine` · ⏳ `db`, `web` |
+| Contracts | Zod (client and API edge) mirrored by Pydantic models (server) | ⏳ Sprint 001 |
+| LLM | Anthropic Claude behind a provider-agnostic adapter; server-side key; structured output; form-only fallback | ⏳ Sprint 001 |
+| Client | React 18, Vite, TypeScript, Tailwind, shadcn/ui; installable PWA (desktop-first); Vitest, React Testing Library, Playwright | ⏳ Sprint 002 |
+| Auth and data | Clerk for auth and roles; Neon Postgres (SQLModel + Alembic) projected into the MeTTa graph on admin confirmation | ⏳ Sprint 003 |
+| Hosting | Vercel (web), Railway with Render as fallback (engine), Neon (database) | ⏳ Sprint 005 |
 
-Planning follows the 120x Architect/Builder Operating Pack: start with `AGENTS.md`, then `planning/STATE.md` and `planning/TIMELINE.md` (demo: 1 October 2026). Stitch prompts for the UI live in `docs/design/stitch-prompts.md`.
+The monorepo layout is `apps/web`, `services/engine` and `packages/contracts`, orchestrated by Turborepo and pnpm. The ADRs in [`docs/adr/`](docs/adr/) record why each choice was made.
+
+## Roadmap
+
+Nine calendar days, gated by acceptance. A sprint starts only when the previous sprint's PR is merged. [`planning/TIMELINE.md`](planning/TIMELINE.md) has the dates and the fallback for each missed gate.
+
+| Sprint | Scope | Gate |
+| --- | --- | --- |
+| **000 MeTTa spike** | Hyperon in FastAPI, seven named rules, `/health`, dev-only `/internal/query` | ✅ Implemented; in review |
+| 001 Routing core | Bounded team assembler, route status, budget and team-size gaps, LLM intake and explanation adapter | All five scenarios pass in pytest; form path = chat path |
+| 002 Founder UI | Chat and form intake, brief review chips, route result with gaps first, "Why this route?" drawer | Playwright: preloaded brief → route, gaps, drawer, handoff |
+| 003 Marketplace | Clerk roles, builder profiles, admin confirmation, projection into the graph | Admin confirmation gates visibility |
+| 004 Requests and interviews | Requests board, gated bids, interview booking | Gated bid and booking round-trip tests |
+| 005 Demo hardening | One-command launch, deploys, recorded demo | `docker compose up` runs all five scenarios cleanly |
+
+Sprints 000–002 are the demo floor and can't slip. Everything from 003 on is stretch.
+
+Planning follows the 120x Architect/Builder Operating Pack. Start with [`AGENTS.md`](AGENTS.md), then [`planning/STATE.md`](planning/STATE.md). The Stitch prompts for the UI are in [`docs/design/stitch-prompts.md`](docs/design/stitch-prompts.md).
 
 ## Getting started
 
@@ -162,6 +185,8 @@ No API keys are needed yet. The engine runs fully offline.
 ```bash
 docker compose up --build engine
 ```
+
+The project checks the Docker path on GitHub Codespaces. On machines without Docker, use 2b.
 
 The image is based on `python:3.12-slim`. It installs the locked dependencies with `uv`, runs as a non-root user and has a health check on `GET /health`. `docker compose ps` shows the service as `healthy` once the MeTTa space has loaded.
 
@@ -225,6 +250,7 @@ uv run pytest -m runtime     # real-Hyperon contract tests; they fail, never ski
 | `No solution found when resolving dependencies` / `hyperon` wheel not found | Wrong Python. Run `uv python install 3.12`, then run `uv sync` again. |
 | `rules_loaded` below `7` | `seed/rules.metta` has been edited and a named rule no longer parses. Run `uv run pytest -m runtime` to find which one. |
 | `POST /internal/query` returns `404` for a valid ID | `ENGINE_DEV_QUERY` is not `1` in the engine's environment. |
+| Importing `hyperon` fails on Windows | Install the Microsoft Visual C++ 2015–2022 Redistributable (x64), which the `hyperon` wheel needs. |
 | Port `8000` already in use | Set `ENGINE_PORT` in `.env` (Docker), or pass a different `--port` to uvicorn. |
 | `/docs` renders a blank page | Swagger UI loads from `cdn.jsdelivr.net`. Allow that host, or use `curl` and `docs/API.md` instead. |
 
