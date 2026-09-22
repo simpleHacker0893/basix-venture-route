@@ -47,7 +47,7 @@ The browser does not invoke MeTTa directly, parse raw MeTTa output, or hold LLM 
 
 ### MeTTa decision boundary
 
-The server-side `MettaRouteEngine` is the only module that knows about runtime invocation, query syntax, fact/rule loading, and output parsing. It provides typed results that include entity identifiers, evidence type, named rule, and ordered source facts.
+The server-side `MettaRouteEngine` (Python, inside the FastAPI service) is the only module that knows about the Hyperon runtime, query syntax, fact/rule loading, and output parsing. It provides typed results that include entity identifiers, evidence type, named rule, and ordered source facts.
 
 Core rule outcomes:
 
@@ -104,17 +104,22 @@ Before frontend work, the project will demonstrate a real local MeTTa runtime th
 2. loads deterministic fixture facts;
 3. executes a named rule;
 4. returns a parseable multi-hop result; and
-5. is invoked from the Node adapter in an integration test.
+5. is invoked in-process from the Python adapter in a pytest contract test that fails if the runtime is unavailable, a rule does not execute, or output cannot be parsed.
 
-The adapter emits a fixed sentinel-delimited JSON result and rejects malformed or unexpected protocol output. The MVP must never silently replace MeTTa reasoning with an in-memory TypeScript matcher.
+The adapter returns typed Pydantic results and rejects malformed or unexpected runtime output. The MVP must never silently replace MeTTa reasoning with an in-memory Python or TypeScript matcher.
 
 ## Planned stack
 
-- React + Vite client
-- Node + TypeScript application server
-- Zod schemas for brief and route contracts
-- Local MeTTa / Hyperon runtime behind a narrow server-side adapter
-- Standard TypeScript tests, React Testing Library, and a real-runtime adapter integration test
+- React 18 + Vite + TypeScript client, Tailwind and shadcn/ui, installable PWA (desktop-first)
+- Python 3.12 + FastAPI + Pydantic v2 engine and API service, with the official `hyperon` runtime loaded in-process
+- Zod schemas (client and API edge) mirrored by Pydantic models (server) for brief and route contracts
+- Clerk for auth and roles; Neon Postgres for marketplace persistence
+- Anthropic Claude behind a provider-agnostic adapter, server-side key, structured output, with a form-only fallback
+- Vitest, React Testing Library and Playwright for the client; pytest for the engine, including a real-runtime adapter contract test
+- Docker Compose (`engine`, `db`, `web`) for the single local launch command; Vercel for the web client
+- Monorepo: `apps/web`, `services/engine`, `packages/contracts`
+
+Planning follows the 120x Architect/Builder Operating Pack under `planning/`. Stitch prompts for the UI live in `docs/design/stitch-prompts.md`.
 
 ## Getting started
 
