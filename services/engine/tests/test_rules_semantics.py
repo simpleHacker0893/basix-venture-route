@@ -67,3 +67,72 @@ class TestModeCompatible:
 
         assert "amina-otieno" in _eligible_ids(engine, on_site_nairobi)
         assert "amina-otieno" not in _eligible_ids(engine, on_site_kisumu)
+
+
+class TestReuseFit:
+    """DOMAIN.md: licensable, same vertical, demonstrates a required skill, only when preferred."""
+
+    def test_wrong_vertical_licensable_asset_is_not_a_fit(self, engine: MettaRouteEngine) -> None:
+        # asset-elimu-quiz is licensable and demonstrates frontend, but its vertical is education.
+        brief = _brief(vertical="agri", requiredSkills=["frontend"], preferReusableIp=True)
+
+        assert "asset-elimu-quiz" not in {c.asset_id for c in engine.reuse_candidates(brief)}
+
+    def test_non_licensable_asset_is_not_a_fit(self, engine: MettaRouteEngine) -> None:
+        # asset-clinic-dash is health and demonstrates ui-ux, but is not licensable.
+        brief = _brief(vertical="health", requiredSkills=["ui-ux"], preferReusableIp=True)
+
+        assert engine.reuse_candidates(brief) == []
+
+    def test_brief_that_does_not_prefer_reusable_ip_gets_nothing(
+        self, engine: MettaRouteEngine
+    ) -> None:
+        brief = _brief(vertical="agri", requiredSkills=["backend"], preferReusableIp=False)
+
+        assert engine.reuse_candidates(brief) == []
+
+    def test_agri_brief_gets_agri_asset(self, engine: MettaRouteEngine) -> None:
+        brief = _brief(vertical="agri", requiredSkills=["backend"], preferReusableIp=True)
+
+        assert [c.asset_id for c in engine.reuse_candidates(brief)] == ["asset-shamba-records"]
+
+
+class TestRouteGap:
+    """Category reading (ticket #5): skill, then availability, then mode or location."""
+
+    def test_availability_gap_when_verified_builders_are_all_outside_the_window(
+        self, engine: MettaRouteEngine
+    ) -> None:
+        brief = _brief(
+            requiredSkills=["python"], availabilityStart="2026-11-01", availabilityEnd="2026-11-07"
+        )
+
+        assert [(g.category, g.affected) for g in engine.gaps(brief)] == [
+            ("availability", ["python"])
+        ]
+
+    def test_mode_gap_when_only_verified_builder_is_on_site_only(
+        self, engine: MettaRouteEngine
+    ) -> None:
+        # peter-omondi (data) supports on-site only; the brief is remote.
+        brief = _brief(requiredSkills=["data"])
+
+        assert [(g.category, g.affected) for g in engine.gaps(brief)] == [("mode", ["data"])]
+
+    def test_location_gaps_for_health_pilot_on_site_in_kisumu(
+        self, engine: MettaRouteEngine, briefs: dict[str, VentureBrief]
+    ) -> None:
+        gaps = engine.gaps(briefs["brief-onsite-01"])
+
+        assert sorted((g.category, g.affected[0]) for g in gaps) == [
+            ("location", "ai-metta"),
+            ("location", "python"),
+            ("location", "ui-ux"),
+        ]
+        assert all("kisumu" in g.statement.lower() for g in gaps)
+
+    def test_feasible_brief_has_no_gaps(
+        self, engine: MettaRouteEngine, briefs: dict[str, VentureBrief]
+    ) -> None:
+        assert engine.gaps(briefs["brief-health-01"]) == []
+        assert engine.gaps(briefs["brief-agri-01"]) == []

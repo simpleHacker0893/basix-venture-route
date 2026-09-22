@@ -39,7 +39,9 @@ class ReasoningPath(BaseModel):
 
     model_config = ConfigDict(frozen=True)
 
-    rule: RuleName
+    rule: RuleName | Literal["cohort-of"] = Field(
+        description="The named rule, or the predicate looked up directly (cohort membership)"
+    )
     facts: list[str] = Field(description="Source facts as written in the space, in match order")
     conclusion: str
 

@@ -35,6 +35,15 @@
           (avail-path ((brief-window $brief $bs $be) (available $b $s $e) (min-overlap-days $min)))
           (empty))))
 
+; ---- partner-fit (brief b) -> (partner p u c (facts...)) ----
+; Four hops (D-07): brief vertical -> supports-vertical partner -> partners-with university
+;                    -> cohort-of cohort -> belongs-to builder.
+(= (partner-fit $brief $b)
+   (match &self (, (brief-vertical $brief $v) (supports-vertical $p $v) (partners-with $p $u)
+                   (cohort-of $c $u) (belongs-to $b $c))
+      (partner $p $u $c ((supports-vertical $p $v) (partners-with $p $u)
+                         (cohort-of $c $u) (belongs-to $b $c)))))
+
 ; ---- eligible-builder (brief b s) -> (eligible b s ev (verified facts) (mode facts) (avail facts) (account fact)) ----
 (= (eligible-builder $brief $b $s)
    (let* (((brief-skill $brief $s) (match &self (brief-skill $brief $s) (brief-skill $brief $s)))

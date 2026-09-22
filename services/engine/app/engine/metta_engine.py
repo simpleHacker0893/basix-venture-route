@@ -30,9 +30,24 @@ from app.engine.atoms import (
 from app.engine.errors import EngineError
 from app.engine.grounded import register_grounded_atoms
 from app.models.brief import VentureBrief
-from app.models.engine import EligibleTuple, EvidenceType, ReasoningPath, RuleName
+from app.models.engine import (
+    CohortInfo,
+    EligibleTuple,
+    EvidenceType,
+    PartnerCandidate,
+    ReasoningPath,
+    RuleName,
+)
 
 _RULE_HEAD = re.compile(r"^\(=\s*\(([a-z][a-z0-9-]*)\b", re.MULTILINE)
+_SYMBOL = re.compile(r"^[a-z0-9]+(-[a-z0-9]+)*$")
+
+
+def _symbol(value: str, what: str) -> str:
+    """Only kebab-case slugs may be spliced into a query (never raw user text)."""
+    if not _SYMBOL.match(value):
+        raise EngineError(f"{what} must be a kebab-case slug, got {value!r}")
+    return value
 
 
 class MettaRouteEngine:
@@ -67,6 +82,45 @@ class MettaRouteEngine:
             folded[key] = parsed if key not in folded else folded[key].merge(parsed)
         ordered = sorted(folded.values(), key=lambda w: (w.builder_id, w.skill_id))
         return [w.to_tuple() for w in ordered]
+
+    def partner_candidates(
+        self, brief: VentureBrief, builder_ids: list[str]
+    ) -> list[PartnerCandidate]:
+        """Partners reached from each selected builder by the four-hop `partner-fit` chain."""
+        candidates: list[PartnerCandidate] = []
+        with self._brief_in_space(brief):
+            for builder_id in builder_ids:
+                builder = _symbol(builder_id, "builder id")
+                for witness in self._query(f"!(partner-fit {brief.id} {builder})"):
+                    candidates.append(_parse_partner(witness, builder))
+        return sorted(candidates, key=lambda c: (c.partner_id, c.builder_id))
+
+    def cohort_of(self, builder_id: str) -> CohortInfo | None:
+        """The builder's cohort and university, from `belongs-to` and `cohort-of` facts."""
+        builder = _symbol(builder_id, "builder id")
+        witnesses = self._query(
+            f"!(match &self (, (belongs-to {builder} $c) (cohort-of $c $u))"
+            f" (cohort $c $u ((belongs-to {builder} $c) (cohort-of $c $u))))"
+        )
+        if not witnesses:
+            return None
+        if len(witnesses) > 1:
+            raise EngineError(f"{builder} belongs to more than one cohort")
+        parts = expect_list(witnesses[0], "cohort witness")
+        if len(parts) != 4 or parts[0] != "cohort":
+            raise EngineError(f"malformed cohort witness: {witnesses[0]!r}")
+        cohort_id = expect_symbol(parts[1], "cohort id")
+        university_id = expect_symbol(parts[2], "university id")
+        return CohortInfo(
+            builder_id=builder,
+            cohort_id=cohort_id,
+            university_id=university_id,
+            path=ReasoningPath(
+                rule="cohort-of",
+                facts=facts_text(parts[3], "cohort facts"),
+                conclusion=f"{builder} belongs to {cohort_id} of {university_id}",
+            ),
+        )
 
     # -- loading ---------------------------------------------------------------------------------
 
@@ -136,6 +190,29 @@ def _brief_atoms(brief: VentureBrief) -> list[Atom]:
     if brief.prefer_reusable_ip:
         atoms.append(fact_atom("brief-prefers-ip", brief.id))
     return atoms
+
+
+def _parse_partner(term: Term, builder_id: str) -> PartnerCandidate:
+    """(partner p u c (facts...))"""
+    parts = expect_list(term, "partner witness")
+    if len(parts) != 5 or parts[0] != "partner":
+        raise EngineError(f"malformed partner witness: {term!r}")
+    partner_id = expect_symbol(parts[1], "partner id")
+    university_id = expect_symbol(parts[2], "university id")
+    cohort_id = expect_symbol(parts[3], "cohort id")
+    return PartnerCandidate(
+        partner_id=partner_id,
+        builder_id=builder_id,
+        university_id=university_id,
+        cohort_id=cohort_id,
+        path=ReasoningPath(
+            rule=RuleName.PARTNER_FIT,
+            facts=facts_text(parts[4], "partner-fit facts"),
+            conclusion=(
+                f"{partner_id} fits via {university_id} and {cohort_id} of {builder_id}"
+            ),
+        ),
+    )
 
 
 class _EligibleWitness:
