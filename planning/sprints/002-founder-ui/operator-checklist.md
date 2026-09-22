@@ -33,6 +33,11 @@ The Builder never asks for a key in chat (D-26). Everything below is the Operato
 | Railway project + public URL | 005 (a smoke deploy in 002 is optional) | railway.com | n/a |
 | Vercel project + URL | 005 (an offline-mode preview in 002 is optional) | vercel.com | n/a |
 
+## Provisioned on 2026-09-22 (identifiers only, no secrets)
+
+- **Clerk**: application `venture_route`, id `app_3JhCRjM1hxEOxLGT8WtytYs5nuI`. The Clerk CLI 3.3.0 is installed and logged in on the Builder machine. `clerk init --app app_3JhCRjM1hxEOxLGT8WtytYs5nuI` runs inside `apps/web` in the Sprint 003 first ticket, after Sprint 002 creates the app (Sprint 002 has no Clerk).
+- **Neon**: project `venture_route`, id `bold-credit-14500621`, org `org-floral-bird-33863487`, region `aws-us-east-2`, one branch `production`. The Neon CLI 4.18 is installed and logged in; the Neon MCP is connected. This differs from the plan above (`eu-central-1`, branches `main`/`dev`/`test`): the Sprint 003 first ticket either creates `dev` and `test` from `production` or the Operator confirms a single-branch setup. `neon link --project-id bold-credit-14500621 --branch production -y` writes `.neon` and `.env.local` (libpq URLs with `sslmode`/`channel_binding`, which the asyncpg form must drop, see §Neon step 3) and appends both to `.gitignore`; `neon config init` and `neon deploy` add a `neon.ts` policy and the `@neon/config` packages, which D-17 does not use, so they stay unrun until a decision says otherwise.
+
 ## Clerk (needed by Sat 26 Sep 20:00 for Sprint 003)
 Skills that will use it: `clerk-setup`, `clerk-react-patterns` (`@clerk/react`, Vite), `clerk-cli`, `clerk-webhooks`, `clerk-testing`, `clerk-backend-api`, and `fastapi-clean-architecture` (Clerk JWT section). Unused: every other `clerk-*` platform skill and `clerk-billing`/`clerk-orgs`.
 
