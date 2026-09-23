@@ -9,7 +9,24 @@
 import { describe, expect, it } from "vitest";
 import { z } from "zod";
 
-import { ChatResponse, ChatTurn, Gap, ReasoningPath, VentureBrief, VentureRoute } from "../src/index.js";
+import {
+  AdminDecision,
+  BuilderProfile,
+  Candidate,
+  ChatResponse,
+  ChatTurn,
+  Credential,
+  CredentialInput,
+  Gap,
+  PendingQueue,
+  ProfileInput,
+  Project,
+  ProjectInput,
+  ReasoningPath,
+  RoleResponse,
+  VentureBrief,
+  VentureRoute,
+} from "../src/index.js";
 import exported from "../src/schema.json" with { type: "json" };
 
 type Json = { [key: string]: unknown };
@@ -31,8 +48,8 @@ function canonical(schema: unknown): unknown {
   for (const key of Object.keys(source).sort()) {
     const value = source[key];
     if (DECORATION_KEYWORDS.has(key)) continue;
-    // Zod restates `format: "date"` as a regex; the format keyword is the contract.
-    if (key === "pattern" && source["format"] === "date") continue;
+    // Zod restates `format: "date"` / `"date-time"` as a regex; the format keyword is the contract.
+    if (key === "pattern" && (source["format"] === "date" || source["format"] === "date-time")) continue;
     if (key === "properties") {
       const props: Json = {};
       for (const name of Object.keys(value as Json).sort()) props[name] = canonical((value as Json)[name]);
@@ -53,6 +70,16 @@ const cases: [keyof typeof exported, z.ZodType][] = [
   ["ChatResponse", ChatResponse],
   ["ReasoningPath", ReasoningPath],
   ["Gap", Gap],
+  ["ProfileInput", ProfileInput],
+  ["BuilderProfile", BuilderProfile],
+  ["RoleResponse", RoleResponse],
+  ["CredentialInput", CredentialInput],
+  ["Credential", Credential],
+  ["ProjectInput", ProjectInput],
+  ["Project", Project],
+  ["PendingQueue", PendingQueue],
+  ["AdminDecision", AdminDecision],
+  ["Candidate", Candidate],
 ];
 
 describe("Zod JSON Schema equals Pydantic JSON Schema", () => {

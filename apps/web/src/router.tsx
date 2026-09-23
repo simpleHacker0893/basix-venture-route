@@ -1,8 +1,15 @@
 import { Outlet, Route, Routes } from "react-router";
 
+import { RequireRole } from "./auth/RequireRole";
 import { OfflineBanner } from "./components/OfflineBanner";
 import { SiteFooter } from "./components/SiteFooter";
 import { TopNav } from "./components/TopNav";
+import { AdminHome } from "./features/admin/AdminHome";
+import { RoleSelect } from "./features/auth/RoleSelect";
+import { SignInScreen } from "./features/auth/SignInScreen";
+import { AddProjectPage } from "./features/builder/AddProjectPage";
+import { ProfilePage } from "./features/builder/ProfilePage";
+import { CandidatePage } from "./features/candidate/CandidatePage";
 import { HandoffScreen } from "./features/handoff/HandoffScreen";
 import { LandingPage } from "./features/landing/LandingPage";
 import { RoutePage } from "./features/route/RoutePage";
@@ -33,6 +40,20 @@ export function AppRoutes() {
         <Route index element={<LandingPage />} />
         <Route path="route" element={<RoutePage />} />
         <Route path="handoff" element={<HandoffScreen />} />
+        {/* Clerk's path routing owns the sub-paths (factor steps, SSO callback). */}
+        <Route path="sign-in/*" element={<SignInScreen />} />
+        <Route path="sign-up/*" element={<SignInScreen />} />
+        <Route path="choose-role" element={<RoleSelect />} />
+        <Route element={<RequireRole roles={["builder"]} />}>
+          <Route path="profile" element={<ProfilePage />} />
+          <Route path="profile/projects/new" element={<AddProjectPage />} />
+        </Route>
+        <Route element={<RequireRole roles={["founder", "admin"]} />}>
+          <Route path="builders/:builderId" element={<CandidatePage />} />
+        </Route>
+        <Route element={<RequireRole roles={["admin"]} />}>
+          <Route path="admin" element={<AdminHome />} />
+        </Route>
       </Route>
     </Routes>
   );

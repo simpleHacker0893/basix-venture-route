@@ -16,6 +16,9 @@ RUN --mount=type=cache,target=/root/.cache/uv \
 
 COPY app ./app
 COPY seed ./seed
+# Migrations ship in the image so the release command is `alembic upgrade head` (D-17, D-27).
+COPY alembic.ini ./alembic.ini
+COPY alembic ./alembic
 RUN --mount=type=cache,target=/root/.cache/uv \
     uv sync --frozen --no-dev
 

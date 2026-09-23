@@ -1,0 +1,476 @@
+/**
+ * /admin (screen 14, Stitch batch-3/admin-queue, D-36): the BASIX admin's confirmation queue.
+ * Loads the pending accounts, credentials and projects; each Confirm or Reject posts the decision,
+ * the engine rebuilds the MeTTa space in the same request (D-15) and answers with `projectedRows`,
+ * which the status line shows as `projected_rows`. An expanded row previews the facts the row would
+ * add, rendered client-side from the row's fields with the seed predicates; it is a preview, not the
+ * projection itself and not a ledger.
+ */
+import type {
+  AdminDecision,
+  DecisionKind,
+  PendingAccount,
+  PendingCredential,
+  PendingProject,
+  PendingQueue,
+} from "@venture-route/contracts";
+import { useEffect, useState } from "react";
+
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+
+import { useMarketplaceApi } from "../../api/marketplaceContext";
+import { DemoDataPill } from "../../components/DemoDataPill";
+import { SKILL_LABELS, VERTICAL_LABELS } from "../../lib/brief";
+import { isoDate } from "../../lib/format";
+import { accountPreview, credentialPreview, projectPreview, type ProjectionPreview } from "../../lib/projection";
+import { errorMessage } from "../builder/formStyles";
+
+type Decision = "confirm" | "reject";
+
+type LastDecision = { decision: AdminDecision; label: string };
+
+const KIND_LABEL: Record<DecisionKind, string> = {
+  account: "account",
+  credential: "credential",
+  project: "project",
+};
+
+function submitted(iso: string): string {
+  return isoDate(iso.slice(0, 10));
+}
+
+export function AdminHome() {
+  const api = useMarketplaceApi();
+  const [queue, setQueue] = useState<PendingQueue | null>(null);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [last, setLast] = useState<LastDecision | null>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
+  const [busy, setBusy] = useState<string | null>(null);
+  const [expanded, setExpanded] = useState<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    api
+      .getPending()
+      .then((next) => {
+        if (!cancelled) setQueue(next);
+      })
+      .catch((cause: unknown) => {
+        if (!cancelled) setLoadError(errorMessage(cause, "The queue could not be loaded."));
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [api]);
+
+  async function decide(decision: Decision, kind: DecisionKind, id: string, label: string) {
+    setBusy(id);
+    setActionError(null);
+    try {
+      const result = decision === "confirm" ? await api.confirm(kind, id) : await api.reject(kind, id);
+      setQueue((current) => {
+        if (!current) return current;
+        return {
+          accounts: kind === "account" ? current.accounts.filter((row) => row.id !== id) : current.accounts,
+          credentials: kind === "credential" ? current.credentials.filter((row) => row.id !== id) : current.credentials,
+          projects: kind === "project" ? current.projects.filter((row) => row.id !== id) : current.projects,
+        };
+      });
+      setExpanded((current) => (current === id ? null : current));
+      setLast({ decision: result, label });
+    } catch (cause) {
+      setActionError(errorMessage(cause, `The ${KIND_LABEL[kind]} decision could not be saved.`));
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  const counts = {
+    accounts: queue?.accounts.length ?? 0,
+    credentials: queue?.credentials.length ?? 0,
+    projects: queue?.projects.length ?? 0,
+  };
+  const total = counts.accounts + counts.credentials + counts.projects;
+
+  const rowProps = (kind: DecisionKind, id: string, label: string, preview: ProjectionPreview) => ({
+    kind,
+    id,
+    label,
+    preview,
+    busy: busy === id,
+    expanded: expanded === id,
+    onToggle: () => setExpanded((current) => (current === id ? null : id)),
+    onDecide: (decision: Decision) => decide(decision, kind, id, label),
+  });
+
+  return (
+    <div className="mx-auto flex w-full max-w-[1200px] flex-col gap-6 px-6 py-8">
+      <div className="flex items-center gap-1 font-mono text-[11px] uppercase tracking-wider">
+        <span className="text-ink-3">Registry</span>
+        <span aria-hidden="true" className="text-border-strong">
+          /
+        </span>
+        <span className="font-medium text-ink">Confirmation queue</span>
+      </div>
+
+      <header className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+        <div className="flex flex-col gap-2">
+          <h1 className="font-display text-3xl font-semibold text-ink">Confirmation queue</h1>
+          <p className="max-w-2xl text-sm leading-relaxed text-ink-muted">
+            Only confirmed accounts, credentials, and projects appear in routes and bids. Each decision rebuilds the MeTTa
+            space from confirmed rows in the same request; <code className="font-mono">projected_rows</code> is the atom
+            count after the rebuild.
+          </p>
+        </div>
+        <span className="font-mono text-[12px] text-ink-3">
+          Showing <span className="font-medium text-ink">{total}</span> pending review
+        </span>
+      </header>
+
+      {loadError ? (
+        <p role="alert" className="rounded-card border border-danger/40 bg-surface-strong px-3 py-2 text-[13px] text-danger">
+          {loadError}
+        </p>
+      ) : null}
+      {queue === null && loadError === null ? (
+        <p aria-live="polite" className="text-sm text-ink-muted">
+          Loading the queue…
+        </p>
+      ) : null}
+
+      {last ? (
+        <p
+          role="status"
+          aria-label="Last decision"
+          className="rounded-card border border-accent-green/40 bg-surface-strong px-3 py-2 font-mono text-[13px] text-ink"
+        >
+          {last.decision.status === "confirmed" ? "Confirmed" : "Rejected"} {KIND_LABEL[last.decision.kind]} "{last.label}" ·
+          projected_rows: {last.decision.projectedRows}
+        </p>
+      ) : null}
+      {actionError ? (
+        <p role="alert" className="rounded-card border border-danger/40 bg-surface-strong px-3 py-2 text-[13px] text-danger">
+          {actionError}
+        </p>
+      ) : null}
+
+      {queue ? (
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_320px]">
+          <Tabs defaultValue="accounts" className="gap-4">
+            <TabsList variant="line" className="border-b border-border">
+              <TabsTrigger value="accounts" className="gap-2 px-3">
+                <span>Accounts</span>
+                <Count value={counts.accounts} />
+              </TabsTrigger>
+              <TabsTrigger value="credentials" className="gap-2 px-3">
+                <span>Credentials</span>
+                <Count value={counts.credentials} />
+              </TabsTrigger>
+              <TabsTrigger value="projects" className="gap-2 px-3">
+                <span>Projects</span>
+                <Count value={counts.projects} />
+              </TabsTrigger>
+            </TabsList>
+
+            <TabsContent value="accounts">
+              <QueueTable
+                caption="Pending accounts"
+                columns={["Name", "Role", "Cohort", "Submitted", "Actions"]}
+                empty="No pending accounts."
+                rows={queue.accounts.map((account) => (
+                  <QueueRow
+                    key={account.id}
+                    {...rowProps("account", account.id, account.displayName ?? account.email, accountPreview(account))}
+                    detail={<AccountDetail account={account} />}
+                    cells={[
+                      <RoleCell key="role" role={account.role} />,
+                      account.cohortId ?? "—",
+                      submitted(account.submittedAt),
+                    ]}
+                    sub={account.email}
+                  />
+                ))}
+              />
+            </TabsContent>
+            <TabsContent value="credentials">
+              <QueueTable
+                caption="Pending credentials"
+                columns={["Credential", "Builder", "Skill", "Submitted", "Actions"]}
+                empty="No pending credentials."
+                rows={queue.credentials.map((credential) => (
+                  <QueueRow
+                    key={credential.id}
+                    {...rowProps("credential", credential.id, credential.title, credentialPreview(credential))}
+                    detail={<CredentialDetail credential={credential} />}
+                    cells={[credential.displayName, SKILL_LABELS[credential.skillId], submitted(credential.submittedAt)]}
+                    sub={credential.issuer}
+                  />
+                ))}
+              />
+            </TabsContent>
+            <TabsContent value="projects">
+              <QueueTable
+                caption="Pending projects"
+                columns={["Project", "Builder", "Vertical", "Submitted", "Actions"]}
+                empty="No pending projects."
+                rows={queue.projects.map((project) => (
+                  <QueueRow
+                    key={project.id}
+                    {...rowProps("project", project.id, project.title, projectPreview(project))}
+                    detail={<ProjectDetail project={project} />}
+                    cells={[project.displayName, VERTICAL_LABELS[project.vertical], submitted(project.submittedAt)]}
+                    sub={project.licensable ? "Licensable as reusable IP" : "Not licensable"}
+                  />
+                ))}
+              />
+            </TabsContent>
+          </Tabs>
+
+          <aside className="flex flex-col gap-6">
+            <section aria-label="What confirming means" className="flex flex-col gap-3 rounded-card border border-border bg-surface p-6">
+              <h2 className="font-display text-xl font-semibold text-ink">What confirming means</h2>
+              <ul className="flex flex-col gap-2 text-[13px] leading-relaxed text-ink-2">
+                <li>
+                  <strong className="text-ink">Accounts:</strong> appear in routes and can bid on venture requests.
+                </li>
+                <li>
+                  <strong className="text-ink">Credentials:</strong> become proof for the skill they name (
+                  <code className="font-mono">verified-for-skill</code>, evidence credential).
+                </li>
+                <li>
+                  <strong className="text-ink">Projects:</strong> become proof for their skills and, if licensable, reusable IP (
+                  <code className="font-mono">reuse-fit</code>).
+                </li>
+              </ul>
+              <p className="border-t border-border pt-3 text-[12px] text-ink-3">
+                Every decision reprojects the graph; the same count is on <code className="font-mono">GET /health</code> as{" "}
+                <code className="font-mono">projected_rows</code>.
+              </p>
+            </section>
+          </aside>
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
+function Count({ value }: Readonly<{ value: number }>) {
+  return (
+    <span className="inline-flex h-5 min-w-5 items-center justify-center rounded-pill bg-surface-strong px-1.5 font-mono text-[11px] text-ink-2">
+      {value}
+    </span>
+  );
+}
+
+function RoleCell({ role }: Readonly<{ role: PendingAccount["role"] }>) {
+  return (
+    <span className="inline-flex h-6 items-center rounded-pill border border-border-strong px-2.5 text-[12px] text-ink-2">
+      {role === "builder" ? "Builder" : role === "founder" ? "Founder" : "No role yet"}
+    </span>
+  );
+}
+
+function QueueTable({
+  caption,
+  columns,
+  rows,
+  empty,
+}: Readonly<{ caption: string; columns: readonly string[]; rows: React.ReactNode[]; empty: string }>) {
+  return (
+    <div className="flex flex-col gap-3">
+      <div className="overflow-x-auto rounded-card border border-border bg-surface">
+        <table className="w-full text-sm">
+          <caption className="sr-only">{caption}</caption>
+          <thead>
+            <tr className="border-b border-border font-mono text-[11px] uppercase tracking-wider text-ink-3">
+              {columns.map((column) => (
+                <th key={column} scope="col" className="px-4 py-3 text-left font-medium">
+                  {column}
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-border">
+            {rows.length > 0 ? (
+              rows
+            ) : (
+              <tr>
+                <td colSpan={columns.length} className="px-4 py-6 text-center text-ink-muted">
+                  {empty}
+                </td>
+              </tr>
+            )}
+          </tbody>
+        </table>
+      </div>
+      <span className="font-mono text-[12px] text-ink-3">
+        {rows.length} of {rows.length} pending
+      </span>
+    </div>
+  );
+}
+
+function QueueRow({
+  id,
+  kind,
+  label,
+  sub,
+  cells,
+  detail,
+  preview,
+  busy,
+  expanded,
+  onToggle,
+  onDecide,
+}: Readonly<{
+  id: string;
+  kind: DecisionKind;
+  label: string;
+  sub: string;
+  cells: React.ReactNode[];
+  detail: React.ReactNode;
+  preview: ProjectionPreview;
+  busy: boolean;
+  expanded: boolean;
+  onToggle(): void;
+  onDecide(decision: Decision): void;
+}>) {
+  const panelId = `row-${id}`;
+  return (
+    <>
+      <tr aria-label={label} className="align-top">
+        <td className="px-4 py-3">
+          <div className="flex items-start gap-2">
+            <button
+              type="button"
+              aria-label={expanded ? "Collapse row" : "Expand row"}
+              aria-expanded={expanded}
+              aria-controls={panelId}
+              onClick={onToggle}
+              className="mt-0.5 inline-flex h-5 w-5 items-center justify-center rounded border border-border-strong font-mono text-[11px] text-ink-3 hover:border-accent-green"
+            >
+              <span aria-hidden="true">{expanded ? "−" : "+"}</span>
+            </button>
+            <div className="flex flex-col gap-1">
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="font-medium text-ink">{label}</span>
+                <DemoDataPill />
+              </div>
+              <span className="text-[12px] text-ink-3">{sub}</span>
+            </div>
+          </div>
+        </td>
+        {cells.map((cell, index) => (
+          <td key={index} className="px-4 py-3 text-ink-2">
+            {cell}
+          </td>
+        ))}
+        <td className="px-4 py-3">
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              disabled={busy}
+              onClick={() => onDecide("confirm")}
+              className="inline-flex h-8 items-center rounded-lg bg-accent-green px-3 text-[13px] font-medium text-white hover:bg-accent-green-hover disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              Confirm
+            </button>
+            <button
+              type="button"
+              disabled={busy}
+              onClick={() => onDecide("reject")}
+              className="inline-flex h-8 items-center rounded-lg border border-border-strong bg-surface-strong px-3 text-[13px] font-medium text-danger hover:border-danger disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              Reject
+            </button>
+          </div>
+        </td>
+      </tr>
+      {expanded ? (
+        <tr id={panelId}>
+          <td colSpan={cells.length + 2} className="bg-surface-strong px-4 py-4">
+            <div className="flex flex-col gap-4">
+              <span className="font-mono text-[11px] uppercase tracking-wider text-ink-3">
+                {KIND_LABEL[kind]} detail · submitted for confirmation
+              </span>
+              {detail}
+              <section
+                aria-label="Projection preview"
+                className="flex flex-col gap-2 rounded-card bg-dark p-4 font-mono text-[13px] text-accent-on-dark"
+              >
+                <div className="flex flex-wrap items-center justify-between gap-2 text-[11px] uppercase tracking-wider text-ledger-dim">
+                  <span>MeTTa fact projection · preview</span>
+                  <span>facts this row would add on confirmation</span>
+                </div>
+                {preview.facts.length > 0 ? (
+                  <ul translate="no" className="flex flex-col gap-0.5">
+                    {preview.facts.map((fact) => (
+                      <li key={fact}>{fact}</li>
+                    ))}
+                  </ul>
+                ) : (
+                  <p className="text-ledger-dim">(no facts)</p>
+                )}
+                <p className="text-[12px] text-ledger-dim">{preview.note}</p>
+              </section>
+            </div>
+          </td>
+        </tr>
+      ) : null}
+    </>
+  );
+}
+
+function DetailGrid({ items }: Readonly<{ items: readonly { label: string; value: React.ReactNode }[] }>) {
+  return (
+    <dl className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+      {items.map((item) => (
+        <div key={item.label} className="flex flex-col gap-0.5">
+          <dt className="font-mono text-[11px] uppercase tracking-wider text-ink-3">{item.label}</dt>
+          <dd className="text-sm text-ink">{item.value}</dd>
+        </div>
+      ))}
+    </dl>
+  );
+}
+
+function AccountDetail({ account }: Readonly<{ account: PendingAccount }>) {
+  return (
+    <DetailGrid
+      items={[
+        { label: "Email", value: account.email },
+        { label: "Clerk id", value: <span translate="no" className="font-mono text-[13px]">{account.clerkId}</span> },
+        { label: "Builder id", value: account.builderId ?? "—" },
+        { label: "Cohort", value: account.cohortId ?? "—" },
+      ]}
+    />
+  );
+}
+
+function CredentialDetail({ credential }: Readonly<{ credential: PendingCredential }>) {
+  return (
+    <DetailGrid
+      items={[
+        { label: "Credential", value: credential.title },
+        { label: "Issuer", value: credential.issuer },
+        { label: "Builder", value: `${credential.displayName} (${credential.builderId})` },
+        { label: "Skill", value: SKILL_LABELS[credential.skillId] },
+      ]}
+    />
+  );
+}
+
+function ProjectDetail({ project }: Readonly<{ project: PendingProject }>) {
+  return (
+    <DetailGrid
+      items={[
+        { label: "Project", value: project.title },
+        { label: "Builder", value: `${project.displayName} (${project.builderId})` },
+        { label: "Vertical", value: VERTICAL_LABELS[project.vertical] },
+        { label: "Completed", value: isoDate(project.completedOn) },
+        { label: "Skills", value: project.skillIds.map((skill) => SKILL_LABELS[skill]).join(", ") },
+        { label: "Licensable", value: project.licensable ? "Yes" : "No" },
+      ]}
+    />
+  );
+}

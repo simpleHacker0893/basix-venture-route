@@ -193,6 +193,14 @@ Append to P3 (deployment is the last two tickets):
 No new features. Order: regressions from earlier acceptance suites → single launch command and README → docs/DEMO.md script → Playwright CLI recording of demo.spec.ts to docs/demo/ (D-28) → docs/PITCH.md per-slide script and the Slides-artifact deck rebuilt from the existing pitch PDF with the video on the demo slide, team names as a placeholder → docs/DEPLOY.md wizard (D-27): Railway steps for services/engine (Dockerfile, release command, health check, env vars from .env.example, public domain), Vercel steps for apps/web with VITE_API_URL, Neon main as production DATABASE_URL and demo branch for resets — the Operator runs every railway and vercel command and pastes the URLs and /health 200s back → docs/SUBMISSION.md. Never run railway or vercel yourself. Freeze: tag v0.1.0-demo on the merged commit and write the SHA into STATE.md.
 ```
 
+### Sprint 006 — Chloe voice intake (post-demo; window per Q-13)
+Seams: rendered intake and route screens through React Testing Library with the fake voice provider injected via `renderApp(path, fetch, { voice })`, and Playwright flows against `vite preview` built with `VITE_VOICE_PROVIDER=fake` and the engine on `LLM_PROVIDER=null`; no component-internal tests; nothing in the engine.
+Skills: `stitch-build:react-components` (convert `design/stitch/batch-5/founder-intake-voice`), `stitch-build:shadcn-ui`, `ui-styling`, `vercel-react-best-practices`, `vercel-composition-patterns`, `web-design-guidelines` (final audit), `playwright-cli`.
+Append to P3:
+```text
+D-38 governs. POST /api/conversation and its contract do not change; no file under packages/contracts, services/engine/app/models, services/engine/app/conversation or services/engine/seed is touched. Chloe speaks only text templated from ChatResponse and VentureRoute; every request she causes goes through the existing sendTurn, and her "yes" posts { userMessage: "", currentBrief } exactly like the Find my route button. Push-to-talk only; greeting inside the toggle click handler; mic disabled while busy; keyless engine → one announcement then dictation only; no voice UI when VITE_OFFLINE_DEMO=1; unsupported browsers get the "Voice needs Chrome or Edge." caption. Ticket order: device layer → store and thread → script → conductor and UI from the batch-5 export → Playwright → docs.
+```
+
 ---
 
 ## Timeline recap (EAT)

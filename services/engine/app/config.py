@@ -17,6 +17,13 @@ PLACEHOLDER_ANTHROPIC_API_KEY = "sk-ant-replace-me"
 
 DEFAULT_CORS_ORIGINS = "http://localhost:5173,http://localhost:4173"
 
+# The host placeholder shipped in .env.example for every Postgres URL (D-17, D-26). A verbatim
+# copy of the example must behave as "no store", never as a doomed connection attempt.
+PLACEHOLDER_DATABASE_HOST = "USER:PASSWORD@HOST"
+# The Clerk placeholders shipped in .env.example (D-03, D-26).
+PLACEHOLDER_CLERK_HOST = "YOUR-INSTANCE"
+PLACEHOLDER_CLERK_SECRET_SUFFIX = "replace-me"
+
 
 class Settings(BaseSettings):
     """Reads the repo-root `.env` (where the Operator places every key, D-26), then an optional
@@ -43,6 +50,20 @@ class Settings(BaseSettings):
     # Browser origins allowed to call the engine, comma-separated (D-30). Credentials stay off
     # in Sprint 002; Sprint 005 adds the Vercel origin on the host.
     cors_origins: str = DEFAULT_CORS_ORIGINS
+    # Marketplace store (D-17): the pooled URL for the app, the direct (unpooled) URL for Alembic,
+    # the test URL for pytest, and an explicit override Alembic checks first. A placeholder from
+    # .env.example means "no store": routing runs from seed only and marketplace routes answer
+    # 503 (D-26). Compose and CI point these at a local postgres:18 (D-37).
+    database_url: str | None = None
+    database_url_direct: str | None = None
+    test_database_url: str | None = None
+    alembic_database_url: str | None = None
+    # Clerk (D-03). The JWKS URL also fixes the issuer (its origin). Placeholders mean "not
+    # configured": every gated route answers 401 and the webhook rejects every call (D-26).
+    clerk_jwks_url: str | None = None
+    clerk_secret_key: str | None = None
+    clerk_webhook_signing_secret: str | None = None
+    admin_emails: str = ""
 
     @field_validator("anthropic_api_key", mode="before")
     @classmethod
@@ -50,6 +71,53 @@ class Settings(BaseSettings):
         if isinstance(value, str) and value.strip() in ("", PLACEHOLDER_ANTHROPIC_API_KEY):
             return None
         return value
+
+    @field_validator(
+        "database_url",
+        "database_url_direct",
+        "test_database_url",
+        "alembic_database_url",
+        mode="before",
+    )
+    @classmethod
+    def _placeholder_url_means_unset(cls, value: object) -> object:
+        if isinstance(value, str) and (not value.strip() or PLACEHOLDER_DATABASE_HOST in value):
+            return None
+        return value
+
+    @field_validator("clerk_jwks_url", mode="before")
+    @classmethod
+    def _placeholder_jwks_means_unset(cls, value: object) -> object:
+        if isinstance(value, str) and (not value.strip() or PLACEHOLDER_CLERK_HOST in value):
+            return None
+        return value
+
+    @field_validator("clerk_secret_key", "clerk_webhook_signing_secret", mode="before")
+    @classmethod
+    def _placeholder_secret_means_unset(cls, value: object) -> object:
+        if isinstance(value, str) and (
+            not value.strip() or value.strip().endswith(PLACEHOLDER_CLERK_SECRET_SUFFIX)
+        ):
+            return None
+        return value
+
+    @property
+    def clerk_issuer(self) -> str | None:
+        """The JWT issuer Clerk uses: the origin of the JWKS URL (no path)."""
+        if self.clerk_jwks_url is None:
+            return None
+        scheme, _, rest = self.clerk_jwks_url.partition("://")
+        host = rest.split("/", 1)[0]
+        return f"{scheme}://{host}" if scheme and host else None
+
+    @property
+    def admin_email_list(self) -> list[str]:
+        return [email.strip().lower() for email in self.admin_emails.split(",") if email.strip()]
+
+    @property
+    def alembic_url(self) -> str | None:
+        """Alembic's URL: the explicit override, then the direct URL, then the pooled one."""
+        return self.alembic_database_url or self.database_url_direct or self.database_url
 
     @property
     def cors_origin_list(self) -> list[str]:

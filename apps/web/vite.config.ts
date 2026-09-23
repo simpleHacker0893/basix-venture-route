@@ -7,8 +7,12 @@ import { defineConfig, loadEnv } from "vite";
 import { VitePWA } from "vite-plugin-pwa";
 
 // https://vite.dev/config/
+// The repo-root `.env` is the single place for every variable (README, .env.example); Vite only
+// exposes the VITE_* subset to the browser, so pointing envDir at the root leaks nothing.
+const ENV_DIR = path.resolve(__dirname, "../..");
+
 export default defineConfig(({ mode }) => {
-  const env = loadEnv(mode, process.cwd(), "");
+  const env = loadEnv(mode, ENV_DIR, "");
   // Local development proxies the engine so the browser needs no CORS (D-30); `vite preview`
   // and production call VITE_API_URL directly, where the engine's allow-list applies.
   const apiUrl = env.VITE_API_URL || "http://localhost:8000";
@@ -51,6 +55,7 @@ export default defineConfig(({ mode }) => {
         devOptions: { enabled: false },
       }),
     ],
+    envDir: ENV_DIR,
     resolve: {
       alias: { "@": path.resolve(__dirname, "./src") },
     },
@@ -65,6 +70,9 @@ export default defineConfig(({ mode }) => {
     test: {
       environment: "jsdom",
       globals: true,
+      // The no-key seam (#44) must not depend on the developer's real .env now that envDir is
+      // the repo root: Vitest always runs without Clerk.
+      env: { VITE_CLERK_PUBLISHABLE_KEY: "pk_test_replace-me", VITE_OFFLINE_DEMO: "0" },
       setupFiles: ["./test/setup.ts"],
       include: ["test/**/*.test.{ts,tsx}"],
       css: false,

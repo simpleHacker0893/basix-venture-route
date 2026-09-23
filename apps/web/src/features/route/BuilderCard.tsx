@@ -1,4 +1,5 @@
 import type { RouteBuilder } from "@venture-route/contracts";
+import { Link } from "react-router";
 
 import { DemoDataPill } from "../../components/DemoDataPill";
 import { SKILL_LABELS } from "../../lib/brief";
@@ -35,15 +36,24 @@ export function BuilderCard({ builder, onViewEvidence }: BuilderCardProps) {
           </span>
         ))}
       </div>
-      {onViewEvidence && (
-        <button
-          type="button"
-          onClick={() => onViewEvidence(builder.builderId)}
-          className="self-start text-[13px] text-accent-green underline hover:text-accent-green-hover"
+      <div className="flex flex-wrap items-center gap-4">
+        {onViewEvidence && (
+          <button
+            type="button"
+            onClick={() => onViewEvidence(builder.builderId)}
+            className="text-[13px] text-accent-green underline hover:text-accent-green-hover"
+          >
+            View evidence path
+          </button>
+        )}
+        {/* Sprint 003 #46: the founder's candidate view; seed builders explain themselves there. */}
+        <Link
+          to={`/builders/${encodeURIComponent(builder.builderId)}`}
+          className="text-[13px] text-accent-green underline hover:text-accent-green-hover"
         >
-          View evidence path
-        </button>
-      )}
+          View profile
+        </Link>
+      </div>
     </article>
   );
 }

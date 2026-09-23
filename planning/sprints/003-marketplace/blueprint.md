@@ -3,12 +3,12 @@
 ## Inherited from Sprints 001–002 (read before slicing)
 - Engine: FastAPI app in `services/engine/app/main.py` with lifespan-created `MettaRouteEngine`, `Settings` in `app/config.py` (pydantic-settings, reads repo-root `.env` then `services/engine/.env`), CORS from `CORS_ORIGINS` (D-30), `POST /api/route`, `POST /api/conversation`, `GET /api/scenarios`, `GET /health`. Tests: pytest, ruff, `mypy .` strict over app, tests and scripts.
 - Web: `apps/web` React 19 + Vite + Tailwind v4 + shadcn (D-25), routes `/`, `/route`, `/handoff`, API client in `src/api/client.ts` (Zod-parses every response), state in `src/state/routing.ts`, features under `src/features/*`, Playwright suite in `apps/web/e2e` against `vite preview` + engine on `LLM_PROVIDER=null`, CI in `.github/workflows/ci.yml` (D-33). Stitch downloads under `design/stitch/` win over the prompt pack (D-36).
-- Compose today has only `engine`. This sprint adds `db` (postgres:16, healthcheck) and wires `DATABASE_URL` for compose.
+- Compose today has only `engine`. This sprint adds `db` (postgres:18, healthcheck) and wires `DATABASE_URL` for compose.
 - Store: Neon Postgres via SQLModel + Alembic + asyncpg (D-17). Roles from the Clerk JWT `metadata` claim (D-03; the Operator adds `{"metadata": "{{user.public_metadata}}"}` to the session token). Projection is an in-process full rebuild after every confirmation commit (D-15).
 
 ## Files
 ```
-docker-compose.yml                                   # + db service (postgres:16, healthcheck), engine depends_on db healthy
+docker-compose.yml                                   # + db service (postgres:18, healthcheck), engine depends_on db healthy
 .env.example                                         # DATABASE_URL / TEST_DATABASE_URL use ?ssl=require (asyncpg), plus DATABASE_URL_DIRECT for Alembic
 services/engine/pyproject.toml                       # + sqlmodel, sqlalchemy[asyncio], asyncpg, alembic, pyjwt[crypto], httpx (svix verification done by hand or `svix` package)
 services/engine/alembic.ini, alembic/env.py, alembic/versions/0001_marketplace.py
