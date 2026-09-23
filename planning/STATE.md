@@ -29,6 +29,7 @@
 2. Operator: Clerk Dashboard → Sessions → Customize session token → `{"metadata": "{{user.public_metadata}}"}` (D-03).
 3. Sprint 003 Builder continues the `sprint:003` frontier on `sprint/003-marketplace`; the webhook signing secret arrives from `clerk` local webhook forwarding in that sprint.
 4. Optional: #19 with the real `ANTHROPIC_API_KEY`; Codespaces `docker compose up engine` health check.
+5. **Planned, post-demo: Sprint 006 — Chloe voice intake (D-38).** Pack under `planning/sprints/006-chloe-voice/` (requirements, blueprint, acceptance, handoff prompt, operator checklist); Stitch prompt §5.1 and its export under `design/stitch/batch-5/founder-intake-voice/`. Operator sets the window (Q-13) and answers Q-14. Nothing voice-related ships before 1 Oct.
 
 ## Blockers
 - Sprint 003: Neon `DATABASE_URL` / `TEST_DATABASE_URL` still placeholders in `.env` (rotation first); Clerk session-token `metadata` claim (Dashboard step).

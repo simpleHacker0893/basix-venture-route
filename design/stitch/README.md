@@ -32,6 +32,7 @@ Stitch mapped the display font to **Newsreader** in its theme, but the exported 
 | 4.1 | Requests board | `batch-4/requests-board/` | `5c6059cb91f8463e8e834a1389274bda` | HTML + screenshot |
 | 4.2 | Founder dashboard | `batch-4/founder-dashboard/` | `9ff2a5631c114650989a9cc2ba45cb1a` | HTML + screenshot |
 | 4.3 | Interview booking | `batch-4/interview-booking/` | `9508082a093841d8b858b5b48caf8223` | HTML + screenshot |
+| 5.1 | Founder intake, voice state (Sprint 006, D-38) | `batch-5/founder-intake-voice/` | `3b2e359726a6488cbba3c5b7316fa329` | HTML + screenshot. Generated through the MCP on 2026-09-23 from pack prompt 5.1 (structure only; tokens from the project design system). Stitch added an "Attested voice session #092" label and a "Deterministic rule match" card that are not in the prompt; drop them in the React conversion (AGENTS.md rule 10). |
 
 The Stitch project also holds one uploaded reference image (`screens/2472352381923753264`, `image.png`)
 that is not a screen and is not exported here.

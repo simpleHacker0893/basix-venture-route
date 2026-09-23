@@ -1,0 +1,420 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Founder intake — Venture Route</title>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&amp;family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;1,6..72,400;1,6..72,500&amp;family=IBM+Plex+Mono:wght@400;500&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          "colors": {
+            "surface-container-low": "#f3f3f7",
+            "ink": "#16181b",
+            "tertiary-fixed-dim": "#ffb3ad",
+            "surface-strong": "#ffffff",
+            "on-secondary-container": "#333f88",
+            "ink-3": "#5c6169",
+            "accent": "#1e5a45",
+            "danger": "#8a2d2d",
+            "border-strong": "#c9c2b3",
+            "surface": "#fbf9f4",
+            "surface-container-lowest": "#ffffff",
+            "outline": "#707974",
+            "primary-fixed": "#b2f0d4",
+            "accent-on-dark": "#7fd1ac",
+            "on-secondary-fixed": "#000f5d",
+            "tertiary-fixed": "#ffdad7",
+            "primary-fixed-dim": "#97d3b8",
+            "surface-container": "#ededf2",
+            "secondary": "#4d58a3",
+            "surface-container-highest": "#e2e2e6",
+            "ink-2": "#3f4650",
+            "error": "#ba1a1a",
+            "on-error": "#ffffff",
+            "on-tertiary": "#ffffff",
+            "secondary-container": "#a2aeff",
+            "project": "#35418a",
+            "amber-ink": "#8a4b12",
+            "dark": "#16181b",
+            "primary": "#00422f",
+            "on-primary-container": "#93cfb4",
+            "inverse-surface": "#2f3034",
+            "background": "#f9f9fd",
+            "surface-bright": "#f9f9fd",
+            "on-primary": "#ffffff",
+            "inverse-on-surface": "#f0f0f4",
+            "ground": "#f4f1ea",
+            "inverse-primary": "#97d3b8",
+            "surface-container-high": "#e8e8ec",
+            "surface-tint": "#2e6953",
+            "on-secondary-fixed-variant": "#344089",
+            "tertiary": "#5d2a27",
+            "secondary-fixed": "#dee0ff",
+            "on-primary-fixed": "#002116",
+            "on-surface-variant": "#404944",
+            "amber-fill": "#e8c58f",
+            "on-tertiary-fixed-variant": "#6e3733",
+            "error-container": "#ffdad6",
+            "on-surface": "#1a1c1f",
+            "on-secondary": "#ffffff",
+            "on-tertiary-fixed": "#370d0b",
+            "border": "#e3ded3",
+            "tertiary-container": "#79403c",
+            "secondary-fixed-dim": "#bbc3ff",
+            "on-error-container": "#93000a",
+            "surface-variant": "#e2e2e6",
+            "on-primary-fixed-variant": "#11503c",
+            "on-background": "#1a1c1f",
+            "primary-container": "#1e5a45",
+            "on-tertiary-container": "#fdafa9",
+            "outline-variant": "#bfc9c2",
+            "surface-dim": "#d9dade"
+          },
+          "borderRadius": {
+            "DEFAULT": "0.25rem",
+            "lg": "0.5rem",
+            "xl": "0.75rem",
+            "full": "9999px"
+          },
+          "spacing": {
+            "gutter": "1.5rem",
+            "margin": "2rem",
+            "space-4xl": "4rem",
+            "space-sm": "0.5rem",
+            "space-md": "0.75rem",
+            "space-xs": "0.25rem",
+            "space-lg": "1rem",
+            "space-3xl": "3rem",
+            "space-xl": "1.5rem",
+            "space-2xl": "2rem"
+          },
+          "fontFamily": {
+            "mono-sm": ["IBM Plex Mono", "monospace"],
+            "label-regular": ["IBM Plex Sans", "sans-serif"],
+            "headline-md": ["Newsreader", "serif"],
+            "body-base": ["IBM Plex Sans", "sans-serif"],
+            "display": ["Newsreader", "serif"],
+            "headline-lg": ["Newsreader", "serif"],
+            "caption": ["IBM Plex Sans", "sans-serif"],
+            "body-medium": ["IBM Plex Sans", "sans-serif"],
+            "mono-base": ["IBM Plex Mono", "monospace"],
+            "title-card": ["IBM Plex Sans", "sans-serif"]
+          },
+          "fontSize": {
+            "mono-sm": ["13px", { "lineHeight": "18px", "fontWeight": "400" }],
+            "label-regular": ["13px", { "lineHeight": "18px", "fontWeight": "500" }],
+            "headline-md": ["28px", { "lineHeight": "36px", "letterSpacing": "-0.01em", "fontWeight": "500" }],
+            "body-base": ["16px", { "lineHeight": "24px", "fontWeight": "400" }],
+            "display": ["44px", { "lineHeight": "52px", "letterSpacing": "-0.02em", "fontWeight": "600" }],
+            "headline-lg": ["36px", { "lineHeight": "44px", "letterSpacing": "-0.015em", "fontWeight": "600" }],
+            "caption": ["13px", { "lineHeight": "18px", "fontWeight": "400" }],
+            "body-medium": ["16px", { "lineHeight": "24px", "fontWeight": "500" }],
+            "mono-base": ["14px", { "lineHeight": "20px", "fontWeight": "400" }],
+            "title-card": ["20px", { "lineHeight": "28px", "fontWeight": "600" }]
+          }
+        },
+      },
+    }
+  </script>
+<style>
+    .material-symbols-outlined {
+      font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 20;
+      line-height: 1;
+      display: inline-block;
+      vertical-align: middle;
+    }
+    @keyframes subtlePulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.35; }
+    }
+    .voice-pulse {
+      animation: subtlePulse 1.8s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+    }
+  </style>
+</head>
+<body class="bg-ground text-ink min-h-screen flex flex-col font-body-base text-body-base antialiased selection:bg-accent selection:text-surface-strong">
+<!-- Top Navigation Bar (Shared Component Anchor) -->
+<header class="w-full bg-ground border-b border-border h-16 sticky top-0 z-30">
+<div class="max-w-[1200px] mx-auto px-6 h-16 flex items-center justify-between w-full">
+<div class="flex items-center gap-3">
+<a class="font-display text-title-card text-ink tracking-tight font-semibold" href="#">
+          Venture Route
+        </a>
+<span class="inline-flex items-center px-2 py-0.5 rounded text-[10px] tracking-wider uppercase font-mono-sm bg-surface text-ink-2 border border-border">
+          Basix Edition
+        </span>
+</div>
+<div class="flex items-center gap-8">
+<nav class="flex items-center gap-6">
+<a class="text-ink-2 hover:text-ink transition-colors duration-150 font-label-regular text-label-regular" href="#">How it works</a>
+<a class="text-ink-2 hover:text-ink transition-colors duration-150 font-label-regular text-label-regular" href="#">For builders</a>
+</nav>
+<button class="h-10 px-4 rounded-lg bg-surface-strong border border-border-strong text-ink font-body-medium text-body-medium hover:border-ink transition-colors duration-150" type="button">
+          Sign in
+        </button>
+</div>
+</div>
+</header>
+<!-- Main Content Container: Centered at 1200px max width -->
+<main class="flex-1 w-full max-w-[1200px] mx-auto px-6 pt-8 pb-16">
+<div class="flex items-start gap-10">
+<!-- LEFT COLUMN: Chat thread, composer, voice status (760px) -->
+<section class="w-[760px] flex-shrink-0 flex flex-col">
+<!-- Left Column Header Row -->
+<div class="flex items-end justify-between pb-6 border-b border-border">
+<div>
+<h1 class="font-headline-lg text-headline-lg text-ink">
+              Describe your MVP
+            </h1>
+<p class="font-caption text-caption text-ink-2 mt-1">
+              Plain language is fine. We will ask for anything missing.
+            </p>
+</div>
+<!-- Voice: Chloe Switch (Active State) -->
+<div class="flex items-center gap-3 pb-1">
+<span class="font-label-regular text-label-regular text-ink">Voice: Chloe</span>
+<button aria-checked="true" class="w-11 h-6 bg-accent rounded-full relative p-0.5 transition-colors focus:outline-none focus:ring-1 focus:ring-accent" role="switch" type="button">
+<span class="block w-5 h-5 bg-surface-strong rounded-full shadow-none translate-x-5 transition-transform"></span>
+</button>
+</div>
+</div>
+<!-- Chat Thread (Four Messages / Turns) -->
+<div class="py-6 space-y-5">
+<!-- (a) Founder Message: White card bubble aligned right -->
+<div class="flex justify-end">
+<div class="max-w-[85%] bg-surface-strong border border-border rounded-lg p-6">
+<div class="flex items-center justify-between pb-2 mb-2 border-b border-border">
+<span class="font-mono-sm text-mono-sm text-ink-3 uppercase tracking-wider text-[11px]">Founder Transcript</span>
+<span class="font-mono-sm text-mono-sm text-ink-3 text-[11px]">Attested voice session #892</span>
+</div>
+<p class="font-body-base text-body-base text-ink leading-relaxed">
+                “I want to build a maternal health triage pilot for clinics in Nakuru. I need Python, AI with MeTTa and a UI designer, hybrid, this month, about 400 dollars a day.”
+              </p>
+</div>
+</div>
+<!-- (b) Assistant Message: Left-aligned structured card, no avatar -->
+<div class="flex justify-start">
+<div class="w-full bg-surface border border-border rounded-lg p-6">
+<div class="flex items-center gap-2 mb-3">
+<span class="font-mono-sm text-mono-sm text-ink-3 uppercase tracking-wider text-[11px]">Venture Route Evaluation Engine</span>
+</div>
+<p class="font-body-medium text-body-medium text-ink mb-3">
+                To route this brief I still need:
+              </p>
+<ul class="space-y-1.5 pl-4 border-l-2 border-border-strong font-mono-base text-mono-base text-ink-2">
+<li class="flex items-start gap-2">
+<span class="text-ink-3">—</span>
+<span><strong class="font-medium text-ink">vertical:</strong> health, agri or education?</span>
+</li>
+<li class="flex items-start gap-2">
+<span class="text-ink-3">—</span>
+<span><strong class="font-medium text-ink">maximumTeamSize:</strong> how many people at most (1 to 5)?</span>
+</li>
+</ul>
+</div>
+</div>
+<!-- (c) Chloe Voice Turn Card -->
+<div class="flex justify-start pl-4 border-l-2 border-accent">
+<div class="w-full bg-surface-strong border border-border rounded-lg p-5">
+<div class="flex items-center gap-2 mb-2">
+<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-label-regular bg-ground text-accent border border-border">
+<span class="material-symbols-outlined text-[14px]">volume_up</span>
+                  Chloe
+                </span>
+<span class="font-caption text-caption text-ink-3">Spoken query</span>
+</div>
+<p class="font-headline-md text-headline-md italic text-ink font-normal text-[22px] leading-[30px]">
+                “Which vertical is it for: health, agri, or education?”
+              </p>
+</div>
+</div>
+<!-- (d) Status Row Below Thread -->
+<div class="flex items-center justify-between px-2 pt-1 pb-2">
+<div class="flex items-center gap-2.5">
+<span class="w-2 h-2 rounded-full bg-accent voice-pulse inline-block"></span>
+<span class="font-caption text-caption text-ink-2">Chloe is speaking</span>
+</div>
+<button class="font-caption text-caption text-ink-2 hover:text-ink underline transition-colors" type="button">
+              Stop Chloe
+            </button>
+</div>
+</div>
+<!-- COMPOSER SECTION -->
+<div class="pt-4 border-t border-border mt-auto">
+<!-- Scenario Quick-Load Chips -->
+<div class="flex items-center gap-2 mb-4">
+<span class="font-mono-sm text-mono-sm text-ink-3 text-[11px] uppercase tracking-wider">Presets:</span>
+<button class="h-7 px-3 rounded-full bg-surface border border-border font-caption text-caption text-ink-2 hover:text-ink hover:border-border-strong transition-colors" type="button">
+              Load scenario: Health pilot
+            </button>
+<button class="h-7 px-3 rounded-full bg-surface border border-border font-caption text-caption text-ink-2 hover:text-ink hover:border-border-strong transition-colors" type="button">
+              Agri marketplace
+            </button>
+<button class="h-7 px-3 rounded-full bg-surface border border-border font-caption text-caption text-ink-2 hover:text-ink hover:border-border-strong transition-colors" type="button">
+              Constrained brief
+            </button>
+</div>
+<!-- Composer Bar -->
+<div class="bg-surface-strong border border-border rounded-lg p-4">
+<div class="flex items-start gap-4">
+<!-- 48px Mic Button in PRESSED State with outer ring -->
+<div class="flex flex-col items-center flex-shrink-0">
+<button aria-label="Hold to talk" class="w-12 h-12 rounded-full bg-accent text-surface-strong flex items-center justify-center ring-4 ring-accent/20 transition-all" type="button">
+<span class="material-symbols-outlined text-[24px]">mic</span>
+</button>
+<span class="font-caption text-caption text-[11px] text-ink-2 mt-1.5 font-medium">Hold to talk</span>
+</div>
+<!-- Interim Transcript Area -->
+<div class="flex-1 min-h-[56px] pt-1">
+<div class="w-full font-body-base text-body-base text-ink-3 italic leading-relaxed select-none">
+                  Health, for clinics in Nakuru, and three people at most…
+                </div>
+<div class="flex items-center justify-between mt-3 pt-3 border-t border-border">
+<a class="font-caption text-caption text-ink-3 hover:text-ink transition-colors underline" href="#">
+                    Use the form instead
+                  </a>
+<!-- The sole primary action on the page -->
+<button class="h-10 px-5 rounded-lg bg-accent text-surface-strong font-body-medium text-body-medium hover:bg-primary transition-colors duration-150" type="button">
+                    Send
+                  </button>
+</div>
+</div>
+</div>
+</div>
+<!-- Captions & Browser Notice Under Composer -->
+<div class="mt-4 space-y-2">
+<p class="font-caption text-caption text-ink-3">
+              Voice uses your browser's speech service: Chrome sends your audio to Google for transcription.
+            </p>
+<div class="p-3 bg-surface border border-border rounded-lg flex items-start gap-2.5">
+<span class="material-symbols-outlined text-ink-3 text-[18px] mt-0.5">info</span>
+<div>
+<span class="font-label-regular text-label-regular text-ink text-[12px] uppercase tracking-wider block mb-0.5">Unsupported browser</span>
+<p class="font-caption text-caption text-ink-2">
+                  Voice needs Chrome or Edge. In other browsers, the microphone button is absent and text composition is enabled automatically.
+                </p>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- RIGHT COLUMN: Sticky "Your brief so far" Panel (400px) -->
+<aside class="w-[400px] flex-shrink-0 sticky top-24">
+<!-- Panel Card -->
+<div class="bg-surface-strong border border-border rounded-lg p-6">
+<div class="flex items-center justify-between pb-4 border-b border-border mb-5">
+<h2 class="font-headline-md text-headline-md text-ink text-[22px] leading-7 font-semibold">
+              Your brief so far
+            </h2>
+<span class="font-mono-sm text-mono-sm text-ink-3 text-[11px]">3 of 6 captured</span>
+</div>
+<!-- Extracted Fields as Chips -->
+<div class="space-y-4">
+<div>
+<span class="font-mono-sm text-mono-sm text-ink-3 text-[11px] uppercase tracking-wider block mb-2">Resolved parameters</span>
+<div class="flex flex-wrap gap-2">
+<!-- Filled Chip: Skills -->
+<div class="inline-flex items-center gap-1.5 h-8 pl-3 pr-2 rounded-full bg-ground border border-border text-ink font-caption text-caption group cursor-pointer hover:border-border-strong">
+<span>Skills: Python, AI/MeTTa, UI/UX</span>
+<span class="material-symbols-outlined text-[14px] text-ink-3 group-hover:text-ink">edit</span>
+</div>
+<!-- Filled Chip: Mode -->
+<div class="inline-flex items-center gap-1.5 h-8 pl-3 pr-2 rounded-full bg-ground border border-border text-ink font-caption text-caption group cursor-pointer hover:border-border-strong">
+<span>Mode: Hybrid</span>
+<span class="material-symbols-outlined text-[14px] text-ink-3 group-hover:text-ink">edit</span>
+</div>
+<!-- Filled Chip: Budget -->
+<div class="inline-flex items-center gap-1.5 h-8 pl-3 pr-2 rounded-full bg-ground border border-border text-ink font-caption text-caption group cursor-pointer hover:border-border-strong">
+<span>Budget: USD 400 / day</span>
+<span class="material-symbols-outlined text-[14px] text-ink-3 group-hover:text-ink">edit</span>
+</div>
+</div>
+</div>
+<div class="pt-2">
+<span class="font-mono-sm text-mono-sm text-ink-3 text-[11px] uppercase tracking-wider block mb-2">Required missing parameters</span>
+<div class="flex flex-wrap gap-2">
+<!-- Dashed Outline Chip: Vertical -->
+<div class="inline-flex items-center h-8 px-3 rounded-full border border-dashed border-border-strong text-ink-3 font-caption text-caption bg-surface">
+                  Vertical: missing
+                </div>
+<!-- Dashed Outline Chip: Team size -->
+<div class="inline-flex items-center h-8 px-3 rounded-full border border-dashed border-border-strong text-ink-3 font-caption text-caption bg-surface">
+                  Team size: missing
+                </div>
+<!-- Dashed Outline Chip: Dates -->
+<div class="inline-flex items-center h-8 px-3 rounded-full border border-dashed border-border-strong text-ink-3 font-caption text-caption bg-surface">
+                  Dates: missing
+                </div>
+</div>
+</div>
+</div>
+<!-- Evaluation Rules Ledger Preview -->
+<div class="mt-6 pt-5 border-t border-border">
+<div class="p-3.5 bg-ground rounded border border-border font-mono-sm text-mono-sm text-[12px] space-y-1.5 text-ink-2">
+<div class="flex justify-between text-ink-3 text-[11px]">
+<span>Deterministic rule match</span>
+<span>Rule #MTR-04</span>
+</div>
+<p class="font-mono-sm text-ink">
+                (&gt;= team_size 1) &amp;&amp; (has_budget true)
+              </p>
+<div class="text-[11px] text-amber-ink flex items-center gap-1">
+<span class="material-symbols-outlined text-[13px]">hourglass_empty</span>
+<span>Evaluation blocked: 3 required inputs null</span>
+</div>
+</div>
+</div>
+<!-- Action Button (Disabled State) -->
+<div class="mt-6">
+<button class="w-full h-10 rounded-lg bg-surface-variant text-ink-3 border border-border font-body-medium text-body-medium cursor-not-allowed select-none" disabled="" type="button">
+              Find my route
+            </button>
+<p class="font-caption text-caption text-ink-3 text-center mt-2 text-[12px]">
+              Fill the missing fields to continue.
+            </p>
+</div>
+</div>
+<!-- Demo Data Disclaimer & Rule Provenance -->
+<div class="mt-4 px-2 space-y-2">
+<div class="flex items-center gap-2">
+<span class="inline-flex items-center h-5 px-2 rounded-full font-mono-sm text-[11px] font-medium bg-amber-fill/85 text-amber-ink">
+              Demo data
+            </span>
+<span class="font-mono-sm text-mono-sm text-ink-3 text-[11px]">Cryptographic verification active</span>
+</div>
+<p class="font-caption text-caption text-ink-3 leading-normal text-[12px]">
+            Routes are computed by MeTTa rules over demo records. The assistant only translates your words.
+          </p>
+</div>
+</aside>
+</div>
+</main>
+<!-- Footer (Shared Component Anchor) -->
+<footer class="w-full bg-ground border-t border-border mt-auto">
+<div class="max-w-[1200px] mx-auto px-6 py-12 flex flex-col md:flex-row justify-between items-start md:items-center w-full gap-6">
+<div>
+<div class="font-display text-title-card text-ink font-semibold tracking-tight">
+          Venture Route
+        </div>
+<p class="font-caption text-caption text-ink-3 mt-1 max-w-lg">
+          © 2024 Venture Route. All evaluations deterministic and inspectable via cryptographic ledger attestations.
+        </p>
+</div>
+<div class="flex flex-wrap items-center gap-6">
+<a class="font-label-regular text-label-regular text-ink-3 hover:text-ink underline transition-colors duration-150" href="#">Deterministic Rules</a>
+<a class="font-label-regular text-label-regular text-ink-3 hover:text-ink underline transition-colors duration-150" href="#">Evidence Registry</a>
+<a class="font-label-regular text-label-regular text-ink-3 hover:text-ink underline transition-colors duration-150" href="#">Methodology</a>
+<a class="font-label-regular text-label-regular text-ink-3 hover:text-ink underline transition-colors duration-150" href="#">Privacy</a>
+<a class="font-label-regular text-label-regular text-ink-3 hover:text-ink underline transition-colors duration-150" href="#">Terms</a>
+</div>
+</div>
+</footer>
+</body></html>
