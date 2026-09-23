@@ -1,6 +1,6 @@
 # STATE — rolling snapshot (edit in place, never append a log)
 
-**Updated:** 2026-09-23 · **Demo:** Thu 2026-10-01 · **Current sprint:** 002 — Founder UI: tickets #22–#32 closed with RED/GREEN evidence and CI URLs on `sprint/002-founder-ui`; draft PR #33 open; next `/code-review master`, P5 acceptance evidence and the completion report. Sprint 001: Architect verdict DONE_WITH_FOLLOW_UPS, PR #20 merged.
+**Updated:** 2026-09-23 (afternoon) · **Demo:** Thu 2026-10-01 · **Current sprint:** 003 — Marketplace, started on `sprint/003-marketplace` (first ticket #37, DB foundation, committed). Sprint 002: PR #33 merged at `9b388ad`; the review and audit follow-ups merged in PR #34 (`81fc24d`, CI green); all `sprint:002` issues closed.
 
 ## Where we are
 - Sprint 000 and Sprint 001 are merged into `master`: `services/engine` runs FastAPI with `hyperon==0.2.10` in-process (seven named rules over 181 seed atoms), the routing core (assembler, route service, LLM adapters, orchestrator, `POST /api/route`, `GET /api/scenarios`, `POST /api/conversation`) and `packages/contracts` (Zod 4 schemas with a Pydantic parity test).
@@ -9,11 +9,11 @@
 - CI (D-33): `.github/workflows/ci.yml` runs the `engine` job (uv sync, pytest, ruff, `mypy .`, both `--check` scripts) and the `web` job (build, typecheck, lint, Vitest, then the engine on `LLM_PROVIDER=null` and the Playwright suite against `vite preview`, HTML report as an artifact). Every push of the sprint branch has run green through draft PR #33; the last run with the e2e job: https://github.com/simpleHacker0893/basix-venture-route/actions/runs/35831344522.
 - Evidence at the branch head: engine 131 pytest, ruff, `mypy .` (55 files), schema and snapshot `--check`; contracts 7 Vitest; web 34 Vitest (RTL) and 11 Playwright (scenarios, gaps-first DOM order, drawer, budget change, form = chat, PWA per D-32, offline mode, landing at 1440 and 1024 px). Every DOMAIN.md scenario value rendered as the engine decided it.
 - Windows notes: pushes that touch `.github/workflows` go over SSH (`git push git@github.com:…`) because the `gh` OAuth token lacks the `workflow` scope; `pytest.exe` stubs outside the repo are blocked by Application Control (use `python -m pytest`); clean checkouts must live at a short path.
-- Operator provisioning done: Clerk application `venture_route` (`app_3JhCRjM1hxEOxLGT8WtytYs5nuI`); Neon project `venture_route` (`bold-credit-14500621`, `aws-us-east-2`) with `production`, `dev` and `test` branches; both CLIs installed and logged in; the Clerk and Neon keys are in the repo-root `.env` (D-26). The `neondb_owner` password was printed once into a Builder session log on 2026-09-23 and should be rotated before Sprint 003 uses it.
+- Operator provisioning, verified 2026-09-23 with a redacted connection check (`select 1` over asyncpg, Clerk Backend API and JWKS fetch; values never printed): **Clerk is connected** — `VITE_CLERK_PUBLISHABLE_KEY` and `CLERK_SECRET_KEY` in the repo-root `.env` are real (Backend API `GET /v1/users` → 200, 0 users yet), `CLERK_JWKS_URL` resolves to `pleasant-elephant-4999.clerk.accounts.dev` (JWKS → 200, 1 key), `ADMIN_EMAILS` set; `CLERK_WEBHOOK_SIGNING_SECRET` is still the placeholder (comes from local webhook forwarding in Sprint 003). **Neon is not connected yet**: `DATABASE_URL` and `TEST_DATABASE_URL` in `.env` are still the `.env.example` placeholders, which the Sprint 003 settings treat as "no store" (routing runs from seed, marketplace routes answer 503). Neon project `venture_route` (`bold-credit-14500621`, `aws-us-east-2`) has `production`, `dev` and `test` branches; the Neon CLI is logged in. The `neondb_owner` password was printed once into a Builder session log on 2026-09-23 and must be rotated before the URLs are pulled. Step-by-step CLI instructions were given in the Sprint 002 session (`neon connection-string <branch> --pooled --ssl omit`, converted to `postgresql+asyncpg://…?ssl=require`).
 - Prompt 0, D-17 (Neon), D-25 (React 19), D-26 (keys via `.env`), D-27 (Operator runs Railway/Vercel), D-28 (demo assets) stand. Docker is verified on GitHub Codespaces, not locally. Knowledge graph: `graphify-out/graph.json` and `GRAPH_REPORT.md` are not committed yet.
 
-## Not done in Sprint 002 (carry to the PR report)
-- Should line "web-design-guidelines audit run on the five screens; findings fixed or listed": the result goes into the #32 closing comment and the PR report.
+## Sprint 002 close-out
+- `/code-review master` findings (ten) were all fixed or listed in PR #34; the web-design-guidelines audit was run and its fixes landed in `8004cfc` (remaining items listed in the #32 closing comment).
 - The Sprint 001 follow-ups stay open: #19 (live-key Health pilot run) and the Codespaces `docker compose up engine` check.
 
 ## What Sprint 003 inherits
@@ -25,14 +25,13 @@
 - **Design**: convert `design/stitch/batch-3/*` exports faithfully per D-36; `styles/tokens.css` carries the Stitch tailwind.config colours (`ink-muted`, `ink-subtle`, `surface-dark-card`, `border-dark`, `ledger-dim`, `accent-green-hover`).
 
 ## Next
-1. Operator pastes P4 (`/code-review master`) in the Sprint 002 session, then P5 (acceptance evidence with the CI run URL and the Playwright report artifact, this file, PR #33 body as the completion report, mark ready).
-2. Architect Builder Review of PR #33; Operator merges; Sprint 003 P1 on `sprint/003-marketplace` from `origin/master`.
-3. Operator: rotate the `neondb_owner` password, then re-pull `DATABASE_URL` / `TEST_DATABASE_URL` into `.env` in the asyncpg `?ssl=require` form (operator-checklist.md §Neon).
+1. Operator: rotate the `neondb_owner` password on `dev` and `test` (Neon console), then write `DATABASE_URL` (dev, pooled) and `TEST_DATABASE_URL` (test) into `.env` in the asyncpg `?ssl=require` form and rerun the redacted connection check; Sprint 003 marketplace tests need `TEST_DATABASE_URL`.
+2. Operator: Clerk Dashboard → Sessions → Customize session token → `{"metadata": "{{user.public_metadata}}"}` (D-03).
+3. Sprint 003 Builder continues the `sprint:003` frontier on `sprint/003-marketplace`; the webhook signing secret arrives from `clerk` local webhook forwarding in that sprint.
 4. Optional: #19 with the real `ANTHROPIC_API_KEY`; Codespaces `docker compose up engine` health check.
 
 ## Blockers
-- None for finishing Sprint 002.
-- Sprint 003: Clerk session-token `metadata` claim (Dashboard step), and the Neon password rotation above.
+- Sprint 003: Neon `DATABASE_URL` / `TEST_DATABASE_URL` still placeholders in `.env` (rotation first); Clerk session-token `metadata` claim (Dashboard step).
 - Team member names for the pitch deck and README (Q-08) — "at the end".
 
 ## Scope floor (must be on screen on 1 Oct)
