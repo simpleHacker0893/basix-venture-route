@@ -7,7 +7,8 @@ import { TopNav } from "./components/TopNav";
 import { AdminHome } from "./features/admin/AdminHome";
 import { RoleSelect } from "./features/auth/RoleSelect";
 import { SignInScreen } from "./features/auth/SignInScreen";
-import { BuilderHome } from "./features/builder/BuilderHome";
+import { AddProjectPage } from "./features/builder/AddProjectPage";
+import { ProfilePage } from "./features/builder/ProfilePage";
 import { HandoffScreen } from "./features/handoff/HandoffScreen";
 import { LandingPage } from "./features/landing/LandingPage";
 import { RoutePage } from "./features/route/RoutePage";
@@ -43,7 +44,8 @@ export function AppRoutes() {
         <Route path="sign-up/*" element={<SignInScreen />} />
         <Route path="choose-role" element={<RoleSelect />} />
         <Route element={<RequireRole roles={["builder"]} />}>
-          <Route path="profile" element={<BuilderHome />} />
+          <Route path="profile" element={<ProfilePage />} />
+          <Route path="profile/projects/new" element={<AddProjectPage />} />
         </Route>
         <Route element={<RequireRole roles={["admin"]} />}>
           <Route path="admin" element={<AdminHome />} />

@@ -29,6 +29,14 @@ export class ApiUnreachableError extends Error {
   }
 }
 
+/** The engine answered 404: the record does not exist yet (`{"detail": "no profile yet"}`). */
+export class ApiNotFoundError extends ApiUnreachableError {
+  constructor(message = "The routing engine answered 404.", cause?: unknown) {
+    super(message, cause);
+    this.name = "ApiNotFoundError";
+  }
+}
+
 /** The engine rejected the input with the contract's validation-error shape (422). */
 export class ApiValidationError extends Error {
   readonly response: z.infer<typeof ValidationErrorResponse>;
@@ -57,6 +65,15 @@ export function needsBearer(path: string): boolean {
 export function jsonPost(body: unknown): RequestInit {
   return {
     method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify(body),
+  };
+}
+
+/** JSON PUT init for the request helper (create or replace). */
+export function jsonPut(body: unknown): RequestInit {
+  return {
+    method: "PUT",
     headers: { "content-type": "application/json" },
     body: JSON.stringify(body),
   };
@@ -91,6 +108,9 @@ export function createRequest(baseUrl: string, fetchLike: FetchLike = fetch, get
     if (response.status === 422) {
       const parsed = ValidationErrorResponse.safeParse(body);
       if (parsed.success) throw new ApiValidationError(parsed.data);
+    }
+    if (response.status === 404) {
+      throw new ApiNotFoundError("The routing engine answered 404.", body);
     }
     if (!response.ok) {
       throw new ApiUnreachableError(`The routing engine answered ${response.status}.`);

@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { MODES, MODE_LABELS, REQUIRED_FIELDS, SKILLS, SKILL_LABELS, VERTICALS, VERTICAL_LABELS, briefIdFor } from "../../lib/brief";
+import { DEMO_MONTH, fromIso, iso } from "../../lib/dates";
 import { dateRange } from "../../lib/format";
 import { FIELD_ALIASES, splitFieldMessages } from "../../lib/validationError";
 
@@ -32,21 +33,6 @@ type Draft = {
   dailyBudget: string;
   preferReusableIp: boolean;
 };
-
-/** Demo clock (D-14): the calendar opens on September 2026 where the seed availability lives. */
-const DEMO_MONTH = new Date(2026, 8, 1);
-
-function iso(date: Date): string {
-  const y = date.getFullYear();
-  const m = String(date.getMonth() + 1).padStart(2, "0");
-  const d = String(date.getDate()).padStart(2, "0");
-  return `${y}-${m}-${d}`;
-}
-
-function fromIso(value: string): Date {
-  const [y, m, d] = value.split("-").map(Number);
-  return new Date(y ?? 2026, (m ?? 1) - 1, d ?? 1);
-}
 
 function draftFrom(initial: PartialBriefInput | null | undefined): Draft {
   const b = initial ?? {};

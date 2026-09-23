@@ -13,6 +13,7 @@ import type { MarketplaceApi } from "../src/api/marketplace";
 import { App } from "../src/App";
 import type { AuthState, Role } from "../src/auth/authContext";
 import { createOfflineSource } from "../src/api/offline";
+import { fakeMarketplace as fakeApi } from "./fakeMarketplace";
 
 const source = createOfflineSource();
 
@@ -32,7 +33,7 @@ function authState(overrides: Partial<AuthState> = {}): AuthState {
 const signedIn = (role: Role | null) => authState({ isSignedIn: true, role });
 
 function fakeMarketplace(postRole: MarketplaceApi["postRole"]): MarketplaceApi {
-  return { postRole };
+  return fakeApi({ postRole });
 }
 
 describe("no-key mode", () => {
