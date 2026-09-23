@@ -15,6 +15,7 @@ from pydantic import ValidationError
 
 from app.api.admin import router as admin_router
 from app.api.bids import router as bids_router
+from app.api.bookings import router as bookings_router
 from app.api.builders import router as builders_router
 from app.api.conversation import router as conversation_router
 from app.api.health import router as health_router
@@ -120,6 +121,7 @@ def create_app(
     app.include_router(builders_router)
     app.include_router(requests_router)
     app.include_router(bids_router)
+    app.include_router(bookings_router)
     app.include_router(admin_router)
     app.include_router(webhooks_router)
 

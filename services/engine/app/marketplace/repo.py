@@ -19,6 +19,7 @@ from sqlmodel.sql.expression import Select
 from app.marketplace.models import (
     Availability,
     Bid,
+    Booking,
     Confirmation,
     Credential,
     Profile,
@@ -500,6 +501,68 @@ async def bids_for_request(session: AsyncSession, request: Request) -> list[tupl
         .order_by(col(Bid.created_at).desc(), col(Bid.id))
     )
     return [(row, profile) for row, profile in (await session.exec(statement)).all()]
+
+
+# -- bookings (spec #52 §Store, #64) --------------------------------------------------------------
+
+BookingRow = tuple[Booking, Profile, User, Request | None]
+
+
+def _bookings_upcoming_first() -> Select[tuple[Booking, Profile, User, Request]]:
+    """Soonest proposed start first. The request join is an OUTER join: the fourth column is
+    None for a booking made from a candidate profile (SQLAlchemy types it as non-null)."""
+    return (
+        select(Booking, Profile, User, Request)
+        .join(Profile, col(Profile.id) == col(Booking.profile_id))
+        .join(User, col(User.id) == col(Booking.founder_id))
+        .outerjoin(Request, col(Request.id) == col(Booking.request_id))
+        .order_by(col(Booking.proposed_start), col(Booking.created_at), col(Booking.id))
+    )
+
+
+async def add_booking(
+    session: AsyncSession,
+    founder: User,
+    profile: Profile,
+    request: Request | None,
+    *,
+    proposed_start: datetime,
+    duration_min: int,
+    note: str,
+    state: str,
+    history: list[dict[str, Any]],
+) -> Booking:
+    """Insert the founder's proposal with its first history entry, committed."""
+    row = Booking(
+        request_id=None if request is None else request.id,
+        founder_id=founder.id,
+        profile_id=profile.id,
+        proposed_start=proposed_start,
+        duration_min=duration_min,
+        state=state,
+        history=history,
+        note=note,
+    )
+    session.add(row)
+    await session.commit()
+    await session.refresh(row)
+    return row
+
+
+async def booking_by_id(session: AsyncSession, booking_id: UUID) -> BookingRow | None:
+    statement = _bookings_upcoming_first().where(Booking.id == booking_id)
+    found = (await session.exec(statement)).first()
+    return None if found is None else (found[0], found[1], found[2], found[3])
+
+
+async def bookings_for_founder(session: AsyncSession, founder_id: UUID) -> list[BookingRow]:
+    statement = _bookings_upcoming_first().where(Booking.founder_id == founder_id)
+    return [(b, p, u, r) for b, p, u, r in (await session.exec(statement)).all()]
+
+
+async def bookings_for_profile(session: AsyncSession, profile_id: UUID) -> list[BookingRow]:
+    statement = _bookings_upcoming_first().where(Booking.profile_id == profile_id)
+    return [(b, p, u, r) for b, p, u, r in (await session.exec(statement)).all()]
 
 
 async def bids_for_profile(session: AsyncSession, profile: Profile) -> list[tuple[Bid, Request]]:

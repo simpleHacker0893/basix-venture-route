@@ -339,6 +339,49 @@ account is confirmed again (DOMAIN.md §Marketplace rules).
 Role `builder`; `404 {"detail": "no profile yet"}` without a profile. The builder's own bids,
 newest first, each carrying `requestTitle` and `requestStatus` (`open` or `closed`).
 
+## Bookings (Sprint 004)
+
+An interview booking between a founder and a confirmed builder. Founder-owned machine
+(spec #52): the builder accepts or counters, the founder confirms or counters. Every time on the
+wire is ISO 8601: `proposedStart` in UTC (`…Z`) and `proposedStartLocal` the same instant in
+Africa/Nairobi (`…+03:00`), rendered by the engine so the browser does no zone arithmetic
+(D-16). History is a JSONB list written in the same UPDATE as the state.
+
+### POST /api/bookings
+
+Role `founder`. Body `BookingCreate`:
+
+```json
+{ "builderId": "naomi-chebet", "requestId": null, "proposedStart": "2026-09-24T07:30:00Z", "durationMin": 30, "note": "Intro call" }
+```
+
+`builderId` must be a confirmed builder (`404 {"detail": "no confirmed builder <slug>"}`
+otherwise, including seed builder ids); `requestId`, when given, must be the founder's own
+request (`404` otherwise). Slot rules (chosen by the Operator, no buffer): the start's date in
+Africa/Nairobi lies inside one of the builder's confirmed availability ranges, the start is on
+the 30-minute grid from 08:00 to 18:00 Africa/Nairobi (18:00 is the last start), and the
+duration is 30 or 45 minutes. A violation answers `422` with the reason, field-mapped like every
+validation error, e.g. `proposedStart: start is outside the builder's confirmed availability
+(2026-11-02 is in no range)` or `proposedStart: start must be on the 30-minute grid between
+08:00 and 18:00 Africa/Nairobi`. `proposedStart` must carry an offset. Response `201`
+`Booking` in state `proposed` with one history entry (`propose` by the `founder`):
+
+```json
+{ "id": "…", "requestId": null, "requestTitle": null, "founderId": "user_…",
+  "builderId": "naomi-chebet", "displayName": "Naomi Chebet", "state": "proposed",
+  "proposedStart": "2026-09-24T07:30:00Z", "proposedStartLocal": "2026-09-24T10:30:00+03:00",
+  "durationMin": 30, "note": "Intro call",
+  "history": [{ "action": "propose", "actor": "founder", "state": "proposed",
+                "proposedStart": "2026-09-24T07:30:00Z", "proposedStartLocal": "2026-09-24T10:30:00+03:00",
+                "durationMin": 30, "note": "Intro call", "at": "2026-09-23T10:00:00Z" }],
+  "createdAt": "2026-09-23T10:00:00Z", "demoData": true }
+```
+
+### GET /api/me/bookings
+
+Role `founder` or `builder`. Own bookings (the founder's, or the ones on the builder's profile),
+soonest proposed start first, each a `Booking` with both time fields on every row and entry.
+
 ## Admin: `/api/admin/*`
 
 Role `admin`. Admins are never user-chosen: the webhook assigns the role to emails in
