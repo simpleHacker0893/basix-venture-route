@@ -23,7 +23,10 @@ dist-ssr
 *.sln
 *.sw?
 
-# Playwright and the offline demo build
+# Playwright, the offline demo build and the Clerk suite build (#47)
 playwright-report
+playwright-report-clerk
 test-results
+test-results-clerk
 dist-offline
+dist-clerk

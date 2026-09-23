@@ -10,7 +10,8 @@
     "typecheck": "tsc -b --noEmit",
     "lint": "eslint .",
     "test": "vitest run",
-    "e2e": "playwright test"
+    "e2e": "playwright test",
+    "e2e:clerk": "playwright test -c playwright.clerk.config.ts"
   },
   "dependencies": {
     "@clerk/react": "^6.16.1",
@@ -35,6 +36,7 @@
     "zod": "^4.1.0"
   },
   "devDependencies": {
+    "@clerk/testing": "^2.2.36",
     "@eslint/js": "^10.0.1",
     "@playwright/test": "^1.63.0",
     "@tailwindcss/vite": "^4.1.0",
