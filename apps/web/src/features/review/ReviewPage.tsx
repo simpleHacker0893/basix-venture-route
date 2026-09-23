@@ -1,3 +1,4 @@
+import { ApiBanner } from "../../components/ApiBanner";
 import { DemoDataPill } from "../../components/DemoDataPill";
 import { useRouting } from "../../state/routingContext";
 import { BriefEditor } from "../brief/BriefEditor";
@@ -12,6 +13,7 @@ export function ReviewPage() {
 
   return (
     <section className="flex flex-col gap-6">
+      <ApiBanner />
       <div>
         <h1 className="font-display text-[36px] font-medium leading-tight">Confirm your brief</h1>
         <p className="text-ink-2">Edit anything that is wrong. Your latest correction wins.</p>

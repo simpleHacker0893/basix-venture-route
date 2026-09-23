@@ -5,9 +5,9 @@ import type { DateRange } from "react-day-picker";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { MODES, MODE_LABELS, SKILLS, SKILL_LABELS, VERTICALS, VERTICAL_LABELS, briefIdFor } from "../../lib/brief";
+import { MODES, MODE_LABELS, REQUIRED_FIELDS, SKILLS, SKILL_LABELS, VERTICALS, VERTICAL_LABELS, briefIdFor } from "../../lib/brief";
 import { dateRange } from "../../lib/format";
-import { splitFieldMessages } from "../../lib/validationError";
+import { FIELD_ALIASES, splitFieldMessages } from "../../lib/validationError";
 
 type BriefEditorProps = Readonly<{
   /** Pre-fills the editor (review) or starts empty (intake form). */
@@ -84,10 +84,8 @@ function toInput(draft: Draft): unknown {
   };
 }
 
-const ZOD_FIELD_ALIASES: Record<string, string> = { availabilityStart: "availability", availabilityEnd: "availability" };
-
-/** Field order for "focus the first error on submit"; radio and checkbox groups focus their first input. */
-const FIELD_ORDER = ["title", "vertical", "requiredSkills", "maximumTeamSize", "availability", "deliveryMode", "location", "dailyBudget"];
+/** Field order for "focus the first error on submit" (PRD §5.3 order, availability merged, location included). */
+const FIELD_ORDER = [...new Set([...REQUIRED_FIELDS.map((f) => FIELD_ALIASES[f] ?? f), "location"])];
 const FIELD_INPUT_ID: Record<string, string> = {
   title: "brief-title",
   vertical: "brief-vertical-0",
@@ -131,7 +129,7 @@ export function BriefEditor({ initial, busy, serverError, onSubmit, onBack, back
     if (!parsed.success) {
       for (const issue of parsed.error.issues) {
         const raw = String(issue.path[0] ?? "form");
-        const key = ZOD_FIELD_ALIASES[raw] ?? raw;
+        const key = FIELD_ALIASES[raw] ?? raw;
         if (!next[key]) next[key] = issue.message;
       }
     }

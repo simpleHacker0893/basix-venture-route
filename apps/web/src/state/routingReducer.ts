@@ -45,9 +45,9 @@ export function routingReducer(state: RoutingState, action: RoutingAction): Rout
     case "scenarios-loaded":
       return { ...state, scenarios: action.scenarios, unreachable: null };
     case "brief-changed":
-      return { ...state, currentBrief: action.brief };
+      return { ...state, currentBrief: action.brief, lastResponse: dropStaleError(state.lastResponse) };
     case "view-changed":
-      return { ...state, view: action.view };
+      return { ...state, view: action.view, lastResponse: dropStaleError(state.lastResponse) };
     case "founder-said":
       return { ...state, turns: [...state.turns, { role: "founder", text: action.text }] };
     case "request-started":
@@ -79,4 +79,9 @@ export function routingReducer(state: RoutingState, action: RoutingAction): Rout
     case "engine-unreachable":
       return { ...state, busy: false, unreachable: action.message };
   }
+}
+
+/** A validation-error belongs to the brief that was submitted; a new brief or step starts clean. */
+function dropStaleError(response: ChatResponse | null): ChatResponse | null {
+  return response?.type === "validation-error" ? null : response;
 }
