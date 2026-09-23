@@ -26,10 +26,10 @@ const COLUMNS: { heading: string; links: { label: string; to: string; external?:
   {
     heading: "Account",
     links: [
-      { label: "Sign in", to: "#signin" },
-      { label: "Create a founder account", to: "#founder" },
-      { label: "Create a builder profile", to: "#create-builder" },
-      { label: "Admin", to: "#admin" },
+      { label: "Sign in", to: "/sign-in" },
+      { label: "Create a founder account", to: "/sign-up" },
+      { label: "Create a builder profile", to: "/sign-up" },
+      { label: "Admin", to: "/admin" },
     ],
   },
 ];
