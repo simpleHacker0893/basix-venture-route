@@ -75,6 +75,13 @@
   --color-amber-fill: var(--vr-amber-fill);
   --color-danger: var(--vr-danger);
   --color-border-strong: var(--vr-border-strong);
+  /* Extra tokens the Stitch exports use (tailwind.config in each export, D-36). */
+  --color-ink-muted: #636059;
+  --color-ink-subtle: #8c887e;
+  --color-accent-green-hover: #164434;
+  --color-surface-dark-card: #212328;
+  --color-border-dark: #30333b;
+  --color-ledger-dim: #d9dade;
   --font-display: var(--vr-font-display);
   --font-sans: var(--vr-font-sans);
   --font-mono: var(--vr-font-mono);

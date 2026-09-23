@@ -12,7 +12,7 @@ function Layout() {
     <div className="flex min-h-screen flex-col bg-ground text-ink">
       <OfflineBanner />
       <TopNav />
-      <main className="mx-auto w-full max-w-[var(--vr-content-max)] flex-1 px-6 py-12">
+      <main className="flex-1">
         <Outlet />
       </main>
       <SiteFooter />

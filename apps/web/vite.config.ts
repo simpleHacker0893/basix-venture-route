@@ -68,6 +68,8 @@ export default defineConfig(({ mode }) => {
       setupFiles: ["./test/setup.ts"],
       include: ["test/**/*.test.{ts,tsx}"],
       css: false,
+      // Full-app renders (nav, footer, calendar) in jsdom are slow under parallel workers.
+      testTimeout: 20_000,
     },
   };
 });

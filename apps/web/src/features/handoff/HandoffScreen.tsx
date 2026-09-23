@@ -8,7 +8,7 @@ import { StatusBadge } from "../route/Badges";
 import { handoffFileName, handoffText } from "./handoffText";
 
 /** Screen 7 (venture-handoff export): the plain-text handoff with Copy and Download. */
-export function HandoffScreen() {
+function HandoffBody() {
   const { state } = useRouting();
   const [copied, setCopied] = useState(false);
   const response = state.lastResponse;
@@ -85,5 +85,13 @@ export function HandoffScreen() {
         </aside>
       </div>
     </section>
+  );
+}
+
+export function HandoffScreen() {
+  return (
+    <div className="mx-auto w-full max-w-[1200px] px-6 py-12">
+      <HandoffBody />
+    </div>
   );
 }

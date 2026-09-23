@@ -9,7 +9,7 @@ Every folder holds the Stitch HTML/Tailwind export as `index.html` and the Stitc
 `screenshot.jpg` or `screenshot.png` (whichever format Stitch served; 1280 px wide, captured at 2× so
 the raw file is 2560 px). The Builder converts
 `index.html` into React 19 components per the Return prompt at the end of the prompt pack; the
-screenshot is the visual reference when the export and the prompt disagree (the prompt pack wins).
+screenshot is the visual reference when the export and the prompt disagree (the Stitch export wins, D-36).
 
 The project design system in Stitch carries the DESIGN.md block from the prompt pack verbatim.
 Stitch mapped the display font to **Newsreader** in its theme, but the exported HTML still loads

@@ -9,7 +9,13 @@ import { RouteResultPage } from "./RouteResultPage";
 export function RoutePage() {
   const { state } = useRouting();
   const [params] = useSearchParams();
-  if (state.view === "review") return <ReviewPage />;
-  if (state.view === "result") return <RouteResultPage />;
-  return <IntakePage initialMode={params.get("mode") === "form" ? "form" : "chat"} />;
+  const page =
+    state.view === "review" ? (
+      <ReviewPage />
+    ) : state.view === "result" ? (
+      <RouteResultPage />
+    ) : (
+      <IntakePage initialMode={params.get("mode") === "form" ? "form" : "chat"} />
+    );
+  return <div className="mx-auto w-full max-w-[1200px] px-6 py-12">{page}</div>;
 }
