@@ -34,11 +34,3 @@ export const EVIDENCE_LABEL: Record<EvidenceType, string> = {
   both: "Both",
 };
 
-/** `amina-otieno` → `Amina Otieno`, for ids the route carries without a display name. */
-export function displayName(id: string): string {
-  return id
-    .split("-")
-    .filter(Boolean)
-    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
-    .join(" ");
-}
