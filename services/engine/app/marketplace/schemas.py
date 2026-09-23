@@ -10,7 +10,15 @@ from __future__ import annotations
 from datetime import date, datetime
 from typing import Annotated, Literal, Self
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
+from pydantic import (
+    BaseModel,
+    ConfigDict,
+    Field,
+    SerializerFunctionWrapHandler,
+    field_validator,
+    model_serializer,
+    model_validator,
+)
 
 from app.models.brief import JS_SAFE_INT, PositiveSafeInt, SkillId, Vertical
 
@@ -210,3 +218,37 @@ class AdminDecision(Wire):
     kind: Literal["account", "credential", "project"]
     status: Literal["confirmed", "rejected"]
     projected_rows: int = Field(alias="projectedRows", ge=0, le=JS_SAFE_INT)
+
+
+# -- candidate view (spec #35 §Marketplace API, #43) ---------------------------------------------
+
+
+class SharedContact(Wire):
+    """Only the contact keys whose sharing toggle is on; an unshared key is absent, never null."""
+
+    email: str | None = None
+    phone: str | None = None
+    linkedin: str | None = None
+
+    @model_serializer(mode="wrap")
+    def _drop_unshared(self, handler: SerializerFunctionWrapHandler) -> dict[str, str]:
+        serialized: dict[str, str | None] = handler(self)
+        return {key: value for key, value in serialized.items() if value is not None}
+
+
+class Candidate(Wire):
+    """A confirmed builder as a founder or admin sees them: proof only when confirmed."""
+
+    builder_id: str = Field(alias="builderId")
+    display_name: DisplayName = Field(alias="displayName")
+    headline: Headline
+    cohort_id: CohortId | None = Field(default=None, alias="cohortId")
+    location: Location
+    day_rate: PositiveSafeInt = Field(alias="dayRate")
+    modes: DeliveryModes
+    availability: list[AvailabilityRange]
+    skills: list[ProfileSkill]
+    projects: list[ProjectOut]
+    contact: SharedContact
+    confirmed: bool
+    demo_data: bool = Field(default=True, alias="demoData")

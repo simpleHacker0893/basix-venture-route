@@ -212,3 +212,30 @@ export const AdminDecision = z.strictObject({
   projectedRows: z.int().min(0),
 });
 export type AdminDecision = z.infer<typeof AdminDecision>;
+
+/** Candidate view (spec #35 §Marketplace API, #43): a confirmed builder as a founder sees them. */
+export const SharedContact = z.strictObject({
+  /** Only the keys whose sharing toggle is on are sent; an unshared key is absent, never null. */
+  email: z.string().nullable().default(null),
+  phone: z.string().nullable().default(null),
+  linkedin: z.string().nullable().default(null),
+});
+export type SharedContact = z.infer<typeof SharedContact>;
+
+export const Candidate = z.strictObject({
+  builderId: z.string(),
+  displayName: DisplayName,
+  headline: Headline,
+  cohortId: CohortId.nullable().default(null),
+  location: Location,
+  dayRate: DayRate,
+  modes: DeliveryModes,
+  availability: z.array(AvailabilityRange),
+  skills: z.array(ProfileSkill),
+  /** Confirmed projects only; pending and rejected proof never reaches a founder. */
+  projects: z.array(Project),
+  contact: SharedContact,
+  confirmed: z.boolean(),
+  demoData: z.boolean().default(true),
+});
+export type Candidate = z.infer<typeof Candidate>;

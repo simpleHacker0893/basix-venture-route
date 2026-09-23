@@ -23,6 +23,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from app.marketplace.schemas import (  # noqa: E402
     AdminDecision,
     BuilderProfile,
+    Candidate,
     CredentialInput,
     CredentialOut,
     PendingQueue,
@@ -101,6 +102,7 @@ def export() -> Json:
         "Project": model(ProjectOut),
         "PendingQueue": model(PendingQueue),
         "AdminDecision": model(AdminDecision),
+        "Candidate": model(Candidate),
     }
 
 

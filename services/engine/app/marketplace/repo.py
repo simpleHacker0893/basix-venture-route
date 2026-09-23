@@ -56,6 +56,20 @@ async def profile_for_user(session: AsyncSession, user_id: UUID) -> Profile | No
     return (await session.exec(select(Profile).where(Profile.user_id == user_id))).first()
 
 
+async def confirmed_profile_by_builder_id(
+    session: AsyncSession, builder_id: str
+) -> tuple[Profile, User] | None:
+    """The profile and account behind a builder slug, only once an admin confirmed the account
+    (DOMAIN.md §Marketplace rules); seed builder ids have no row and answer None too."""
+    statement = (
+        select(Profile, User)
+        .join(User, col(User.id) == col(Profile.user_id))
+        .where(Profile.builder_id == builder_id, User.status == "confirmed")
+    )
+    row = (await session.exec(statement)).first()
+    return None if row is None else (row[0], row[1])
+
+
 async def profile_by_builder_id(session: AsyncSession, builder_id: str) -> Profile | None:
     return (await session.exec(select(Profile).where(Profile.builder_id == builder_id))).first()
 

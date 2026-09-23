@@ -12,6 +12,7 @@ import { z } from "zod";
 import {
   AdminDecision,
   BuilderProfile,
+  Candidate,
   ChatResponse,
   ChatTurn,
   Credential,
@@ -78,6 +79,7 @@ const cases: [keyof typeof exported, z.ZodType][] = [
   ["Project", Project],
   ["PendingQueue", PendingQueue],
   ["AdminDecision", AdminDecision],
+  ["Candidate", Candidate],
 ];
 
 describe("Zod JSON Schema equals Pydantic JSON Schema", () => {

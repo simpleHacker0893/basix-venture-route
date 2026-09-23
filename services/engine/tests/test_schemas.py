@@ -32,6 +32,7 @@ def test_export_covers_the_shared_contracts() -> None:
     assert sorted(json.loads(render(export()))) == [
         "AdminDecision",
         "BuilderProfile",
+        "Candidate",
         "ChatResponse",
         "ChatTurn",
         "Credential",
