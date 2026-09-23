@@ -67,6 +67,8 @@ describe("/profile", () => {
     render(<App initialPath="/profile" source={source} auth={builderAuth} marketplace={marketplace} />);
 
     expect(await screen.findByText("Pending BASIX confirmation")).toBeInTheDocument();
+    expect(screen.getByText(/absent from routes and candidate views/)).toBeInTheDocument();
+    expect(screen.queryByText(/bids/)).not.toBeInTheDocument();
     const skills = screen.getByRole("list", { name: "Skills" });
     const python = within(skills).getByRole("listitem", { name: "Python" });
     expect(within(python).getByTestId("evidence-badge")).toHaveTextContent("Both");

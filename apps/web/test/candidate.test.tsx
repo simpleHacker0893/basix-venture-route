@@ -87,6 +87,9 @@ describe("/builders/:builderId", () => {
     );
     const uiux = within(skills).getByRole("listitem", { name: "UI/UX design" });
     expect(within(uiux).getByText("Self-described · display only")).toBeInTheDocument();
+    // The API derives the shape from the confirmed rows the engine projects (spec #35); it is not an engine report.
+    expect(screen.queryByText(/as the engine reports them/)).not.toBeInTheDocument();
+    expect(screen.getAllByText(/same confirmed rows the engine projects/).length).toBeGreaterThan(0);
     expect(within(uiux).queryByTestId("evidence-badge")).not.toBeInTheDocument();
 
     expect(screen.getByRole("heading", { level: 3, name: "Clinic triage intake flow" })).toBeInTheDocument();

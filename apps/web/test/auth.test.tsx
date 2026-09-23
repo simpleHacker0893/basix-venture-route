@@ -72,6 +72,9 @@ describe("RequireRole", () => {
 
     expect(screen.getByRole("button", { name: /I am a founder/ })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /I am a builder/ })).toBeInTheDocument();
+    // Requests, bids and interviews are Sprint 004: the cards describe only what ships (rule 10, D-36).
+    expect(screen.queryByText(/bid on requests|post requests|book interviews/i)).not.toBeInTheDocument();
+    expect(screen.getByText(/describe your MVP/i)).toBeInTheDocument();
   });
 
   it("sends a builder away from /admin to their profile", () => {

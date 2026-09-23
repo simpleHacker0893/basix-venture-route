@@ -2,7 +2,7 @@
  * /profile (screen 8, Stitch batch-3/builder-profile, D-36). Loads the builder's profile,
  * credentials and projects; a 404 on the profile means "create mode" with an empty form. The
  * "Pending BASIX confirmation" banner shows whenever the account is not confirmed: the builder
- * is absent from routes, bids and candidate lists until an admin confirms (DOMAIN.md §Marketplace).
+ * is absent from routes and candidate views until an admin confirms (DOMAIN.md §Marketplace).
  */
 import type { BuilderProfile, Credential, Project } from "@venture-route/contracts";
 import { useEffect, useState } from "react";
@@ -79,7 +79,7 @@ export function ProfilePage() {
         >
           <p className="text-sm font-semibold text-amber-ink">Pending BASIX confirmation</p>
           <p className="text-[13px] leading-relaxed text-ink-2">
-            You can edit your profile now, but you are absent from routes, bids and candidate lists until a BASIX admin
+            You can edit your profile now, but you are absent from routes and candidate views until a BASIX admin
             confirms your account.
           </p>
         </section>

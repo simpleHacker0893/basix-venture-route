@@ -195,8 +195,8 @@ function CandidateView({ candidate }: Readonly<{ candidate: Candidate }>) {
               </span>
             </div>
             <p className="text-[13px] leading-relaxed text-ink-muted">
-              Skills as the engine reports them. A skill is verified only when a confirmed credential or confirmed project
-              proves it; self-described skills are display only.
+              Skills from the same confirmed rows the engine projects. A skill is verified only when a confirmed credential or
+              confirmed project proves it; self-described skills are display only.
             </p>
             {candidate.skills.length > 0 ? (
               <ul aria-label="Verified skills" className="flex flex-col divide-y divide-border">
@@ -253,7 +253,7 @@ function CandidateView({ candidate }: Readonly<{ candidate: Candidate }>) {
           <section aria-label="Evidence summary" className="flex flex-col gap-4 rounded-card border border-border bg-surface p-6">
             <h2 className="font-display text-xl font-semibold text-ink">Evidence summary</h2>
             <p className="text-[13px] leading-relaxed text-ink-muted">
-              Verified skills with their evidence type and the confirmed projects, as the engine reports them.
+              Verified skills with their evidence type and the confirmed projects, from the same confirmed rows the engine projects.
             </p>
             {verified.length > 0 || candidate.projects.length > 0 ? (
               <ul

@@ -14,8 +14,9 @@ import { ROLE_HOME } from "../../auth/config";
 import { NotConfiguredPanel } from "./NotConfiguredPanel";
 
 const CHOICES: { role: UserRole; label: string; body: string }[] = [
-  { role: "founder", label: "I am a founder", body: "Post requests, inspect deterministic rules, and book interviews." },
-  { role: "builder", label: "I am a builder", body: "Verified profile, showcase projects, bid on requests." },
+  // Only what ships in Sprint 003: requests, bids and interviews arrive in Sprint 004 (rule 10, D-36).
+  { role: "founder", label: "I am a founder", body: "Describe your MVP, get a route decided by inspectable rules, and view confirmed builders." },
+  { role: "builder", label: "I am a builder", body: "Verified profile, availability and showcase projects that routes can include." },
 ];
 
 export function RoleSelect() {
