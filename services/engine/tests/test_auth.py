@@ -217,7 +217,7 @@ async def test_unknown_key_ids_refetch_the_jwks_at_most_once_per_interval(
     engine: object, session_factory: object, test_keys: SigningKeys, bearer: Bearer
 ) -> None:
     """A stream of tokens with bogus key ids must not become a fetch amplifier against Clerk:
-    the cache refetches once per interval, and every such token still answers 401 (review of #38)."""
+    the cache refetches once per interval and every such token still answers 401 (review, #38)."""
     from sqlalchemy.ext.asyncio import async_sessionmaker
 
     from app.engine.metta_engine import MettaRouteEngine
