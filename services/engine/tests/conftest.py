@@ -31,10 +31,23 @@ from app.main import create_app  # noqa: E402
 from app.models.brief import VentureBrief, load_seed_briefs  # noqa: E402
 from tests.auth_fixtures import (  # noqa: E402
     TEST_JWKS_URL,
+    TEST_WEBHOOK_SECRET,
     SigningKeys,
     generate_test_keys,
     sign_jwt,
 )
+
+TEST_ADMIN_EMAILS = "ops@basix.example, Admin@Example.org"
+
+
+class FakeClerkAdmin:
+    """Stands in for the Clerk Backend API (D-03): records every publicMetadata.role write."""
+
+    def __init__(self) -> None:
+        self.role_writes: list[tuple[str, str]] = []
+
+    async def set_role(self, clerk_id: str, role: str) -> None:
+        self.role_writes.append((clerk_id, role))
 
 
 @pytest.fixture(scope="session")
@@ -137,8 +150,18 @@ def test_keys() -> SigningKeys:
 
 @pytest.fixture
 def marketplace_settings() -> Settings:
-    """Settings for the app under test: the fake JWKS issuer, everything else from the env."""
-    return Settings(clerk_jwks_url=TEST_JWKS_URL)
+    """Settings for the app under test: the fake JWKS issuer, the test webhook secret and the
+    test admin emails; everything else from the env."""
+    return Settings(
+        clerk_jwks_url=TEST_JWKS_URL,
+        clerk_webhook_signing_secret=TEST_WEBHOOK_SECRET,
+        admin_emails=TEST_ADMIN_EMAILS,
+    )
+
+
+@pytest.fixture
+def clerk_admin() -> FakeClerkAdmin:
+    return FakeClerkAdmin()
 
 
 @pytest.fixture
@@ -147,14 +170,17 @@ def marketplace_app(
     marketplace_settings: Settings,
     test_keys: SigningKeys,
     session_factory: async_sessionmaker[AsyncSession],
+    clerk_admin: FakeClerkAdmin,
 ) -> FastAPI:
-    """The real app with the engine shared, the JWKS cache preloaded and the store bound to the
-    rolled-back test connection. Nothing is patched; every override enters through create_app."""
+    """The real app with the engine shared, the JWKS cache preloaded, the store bound to the
+    rolled-back test connection and a fake Clerk Backend client. Nothing is patched; every
+    override enters through create_app."""
     return create_app(
         marketplace_settings,
         engine=engine,
         jwks_cache=JwksCache.preloaded(test_keys.jwks),
         session_factory=session_factory,
+        clerk_admin=clerk_admin,
     )
 
 

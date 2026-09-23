@@ -19,7 +19,9 @@ from app.api.health import router as health_router
 from app.api.internal import router as internal_router
 from app.api.me import router as me_router
 from app.api.route import router as route_router
+from app.api.webhooks import router as webhooks_router
 from app.auth.clerk import JwksCache, fetch_jwks_over_http
+from app.auth.webhook import ClerkAdmin, HttpClerkAdmin, NullClerkAdmin
 from app.config import Settings, get_settings
 from app.db.session import SessionFactory, create_session_factory, create_store_engine
 from app.engine.errors import EngineError
@@ -39,6 +41,7 @@ def create_app(
     engine: MettaRouteEngine | None = None,
     jwks_cache: JwksCache | None = None,
     session_factory: SessionFactory | None | object = _UNSET,
+    clerk_admin: ClerkAdmin | None = None,
 ) -> FastAPI:
     resolved = settings or get_settings()
 
@@ -62,6 +65,13 @@ def create_app(
             await cache.refresh()
         app.state.jwks_cache = cache
         app.state.clerk_issuer = resolved.clerk_issuer
+        app.state.settings = resolved
+        # The one Clerk Backend API call (publicMetadata.role). Placeholder secret → no-op (D-26).
+        app.state.clerk_admin = clerk_admin or (
+            HttpClerkAdmin(resolved.clerk_secret_key)
+            if resolved.clerk_secret_key
+            else NullClerkAdmin()
+        )
 
         # Marketplace store (D-17). A placeholder DATABASE_URL means no store: routing runs from
         # seed only and every marketplace route answers 503 through get_session (D-26).
@@ -98,6 +108,7 @@ def create_app(
     app.include_router(conversation_router)
     app.include_router(me_router)
     app.include_router(admin_router)
+    app.include_router(webhooks_router)
 
     @app.exception_handler(EngineError)
     async def engine_error_handler(_: Request, exc: EngineError) -> JSONResponse:

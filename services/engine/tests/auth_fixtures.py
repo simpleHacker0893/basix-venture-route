@@ -6,6 +6,11 @@ signer that mints session tokens shaped like Clerk's: `sub`, `iss`, `exp`, `nbf`
 (`{"metadata": "{{user.public_metadata}}"}`). No network, no Clerk instance.
 """
 
+import base64
+import hashlib
+import hmac
+import json
+import time
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
 from typing import Any
@@ -16,6 +21,8 @@ from jwt.algorithms import RSAAlgorithm
 
 TEST_JWKS_URL = "https://test-instance.clerk.accounts.dev/.well-known/jwks.json"
 TEST_ISSUER = "https://test-instance.clerk.accounts.dev"
+# A Svix-style webhook secret: `whsec_` + base64 of 32 random-looking bytes. Test-only value.
+TEST_WEBHOOK_SECRET = "whsec_" + base64.b64encode(b"venture-route-test-webhook-key!!").decode()
 
 
 @dataclass(frozen=True)
@@ -56,3 +63,43 @@ def sign_jwt(
         algorithm="RS256",
         headers={"kid": kid or keys.kid},
     )
+
+
+def svix_headers(
+    body: bytes,
+    *,
+    secret: str = TEST_WEBHOOK_SECRET,
+    msg_id: str = "msg_test_1",
+    timestamp: int | None = None,
+) -> dict[str, str]:
+    """Sign `body` the way Svix (and therefore Clerk) does: HMAC-SHA256 over `id.ts.body` with
+    the base64-decoded secret, sent as `v1,<base64 signature>`."""
+    ts = str(timestamp if timestamp is not None else int(time.time()))
+    key = base64.b64decode(secret.removeprefix("whsec_"))
+    digest = hmac.new(key, f"{msg_id}.{ts}.".encode() + body, hashlib.sha256).digest()
+    return {
+        "svix-id": msg_id,
+        "svix-timestamp": ts,
+        "svix-signature": "v1," + base64.b64encode(digest).decode(),
+        "content-type": "application/json",
+    }
+
+
+def clerk_user_event(
+    event_type: str,
+    *,
+    clerk_id: str,
+    email: str,
+    role: str | None = None,
+) -> bytes:
+    """The parts of a Clerk `user.*` webhook payload the engine reads, as canonical bytes."""
+    data: dict[str, Any] = {
+        "id": clerk_id,
+        "primary_email_address_id": "idn_primary",
+        "email_addresses": [
+            {"id": "idn_other", "email_address": f"other-{email}"},
+            {"id": "idn_primary", "email_address": email},
+        ],
+        "public_metadata": {"role": role} if role else {},
+    }
+    return json.dumps({"type": event_type, "data": data, "object": "event"}).encode()
