@@ -15,7 +15,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 from app.api.deps import get_route_service
-from app.api.requests import eligibility_for
+from app.api.requests import eligibility_for, owned_or_visible
 from app.auth.clerk import CurrentUser, require_role
 from app.db.session import get_session
 from app.marketplace import repo
@@ -78,3 +78,34 @@ async def submit_bid(
     if row is None:
         raise HTTPException(status_code=409, detail="already bid")
     return bid_out(row, request, profile)
+
+
+@router.get("/api/requests/{request_id}/bids", response_model=list[BidOut])
+async def bids_on_request(
+    request_id: UUID,
+    user: Annotated[CurrentUser, Depends(require_role("founder"))],
+    session: Annotated[AsyncSession, Depends(get_session)],
+) -> list[BidOut]:
+    """The owning founder's view: bids from builders whose account is confirmed right now,
+    newest first (#63). A bid from a builder un-confirmed since is hidden, not deleted."""
+    request, _founder = await owned_or_visible(session, user, request_id)
+    return [
+        bid_out(row, request, profile)
+        for row, profile in await repo.bids_for_request(session, request)
+    ]
+
+
+@router.get("/api/me/bids", response_model=list[BidOut])
+async def my_bids(
+    user: Annotated[CurrentUser, Depends(require_role("builder"))],
+    session: Annotated[AsyncSession, Depends(get_session)],
+) -> list[BidOut]:
+    """The builder's own bids with each request's title and status, newest first (#63)."""
+    assert user.db_user is not None
+    profile = await repo.profile_for_user(session, user.db_user.id)
+    if profile is None:
+        raise HTTPException(status_code=404, detail="no profile yet")
+    return [
+        bid_out(row, request, profile)
+        for row, request in await repo.bids_for_profile(session, profile)
+    ]

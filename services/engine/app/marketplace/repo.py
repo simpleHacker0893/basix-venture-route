@@ -487,3 +487,27 @@ async def add_bid(
         return None
     await session.refresh(row)
     return row
+
+
+async def bids_for_request(session: AsyncSession, request: Request) -> list[tuple[Bid, Profile]]:
+    """The request's bids from builders whose account is confirmed right now, newest first. A
+    bid from a builder who was un-confirmed since is hidden, never deleted."""
+    statement = (
+        select(Bid, Profile)
+        .join(Profile, col(Profile.id) == col(Bid.profile_id))
+        .join(User, col(User.id) == col(Profile.user_id))
+        .where(Bid.request_id == request.id, User.status == "confirmed")
+        .order_by(col(Bid.created_at).desc(), col(Bid.id))
+    )
+    return [(row, profile) for row, profile in (await session.exec(statement)).all()]
+
+
+async def bids_for_profile(session: AsyncSession, profile: Profile) -> list[tuple[Bid, Request]]:
+    """The builder's own bids with their requests, newest first."""
+    statement = (
+        select(Bid, Request)
+        .join(Request, col(Request.id) == col(Bid.request_id))
+        .where(Bid.profile_id == profile.id)
+        .order_by(col(Bid.created_at).desc(), col(Bid.id))
+    )
+    return [(row, request) for row, request in (await session.exec(statement)).all()]

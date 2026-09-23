@@ -326,6 +326,19 @@ the builder's slug:
   "status": "submitted", "createdAt": "2026-09-23T07:30:00Z", "demoData": true }
 ```
 
+### GET /api/requests/{id}/bids
+
+Role `founder`, owner only (`404 {"detail": "no request <id>"}` otherwise; a `builder` session
+answers `403`). The request's bids from builders whose account is confirmed right now, newest
+first, each a `Bid` with the builder's slug and display name, `eligibleSkills` and `path`. A bid
+from a builder whose account was rejected since is hidden, never deleted, and returns when the
+account is confirmed again (DOMAIN.md §Marketplace rules).
+
+### GET /api/me/bids
+
+Role `builder`; `404 {"detail": "no profile yet"}` without a profile. The builder's own bids,
+newest first, each carrying `requestTitle` and `requestStatus` (`open` or `closed`).
+
 ## Admin: `/api/admin/*`
 
 Role `admin`. Admins are never user-chosen: the webhook assigns the role to emails in
