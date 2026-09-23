@@ -40,7 +40,9 @@ export default defineConfig({
       url: "http://localhost:4173",
       reuseExistingServer: !isCI,
       timeout: 180_000,
-      env: { VITE_API_URL: "http://localhost:8000", VITE_OFFLINE_DEMO: "0" },
+      // No-key run (D-33): the placeholder key keeps this suite deterministic on a machine
+      // whose root .env holds a real Clerk key; the Clerk smoke has its own config.
+      env: { VITE_API_URL: "http://localhost:8000", VITE_OFFLINE_DEMO: "0", VITE_CLERK_PUBLISHABLE_KEY: "pk_test_replace-me" },
     },
     {
       command:
@@ -48,7 +50,7 @@ export default defineConfig({
       url: "http://localhost:4174",
       reuseExistingServer: !isCI,
       timeout: 180_000,
-      env: { VITE_API_URL: "http://localhost:8000", VITE_OFFLINE_DEMO: "1" },
+      env: { VITE_API_URL: "http://localhost:8000", VITE_OFFLINE_DEMO: "1", VITE_CLERK_PUBLISHABLE_KEY: "pk_test_replace-me" },
     },
   ],
 });

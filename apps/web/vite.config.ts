@@ -70,6 +70,9 @@ export default defineConfig(({ mode }) => {
     test: {
       environment: "jsdom",
       globals: true,
+      // The no-key seam (#44) must not depend on the developer's real .env now that envDir is
+      // the repo root: Vitest always runs without Clerk.
+      env: { VITE_CLERK_PUBLISHABLE_KEY: "pk_test_replace-me", VITE_OFFLINE_DEMO: "0" },
       setupFiles: ["./test/setup.ts"],
       include: ["test/**/*.test.{ts,tsx}"],
       css: false,
