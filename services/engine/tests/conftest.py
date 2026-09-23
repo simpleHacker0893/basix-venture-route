@@ -11,19 +11,30 @@ tests skip, so the Sprint 001 and 002 suites still pass on a machine without a d
 
 import asyncio
 import os
-from collections.abc import AsyncIterator, Iterator
+from collections.abc import AsyncIterator, Callable, Iterator
+from typing import Any
 
 import pytest
+from fastapi import FastAPI
 from fastapi.testclient import TestClient
+from httpx import ASGITransport, AsyncClient
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncConnection, async_sessionmaker, create_async_engine
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 os.environ.setdefault("LLM_PROVIDER", "null")
 
-from app.config import PACKAGE_ROOT, get_settings  # noqa: E402
+from app.auth.clerk import JwksCache  # noqa: E402
+from app.config import PACKAGE_ROOT, Settings, get_settings  # noqa: E402
 from app.engine.metta_engine import MettaRouteEngine  # noqa: E402
+from app.main import create_app  # noqa: E402
 from app.models.brief import VentureBrief, load_seed_briefs  # noqa: E402
+from tests.auth_fixtures import (  # noqa: E402
+    TEST_JWKS_URL,
+    SigningKeys,
+    generate_test_keys,
+    sign_jwt,
+)
 
 
 @pytest.fixture(scope="session")
@@ -114,3 +125,55 @@ async def db_session(
 ) -> AsyncIterator[AsyncSession]:
     async with session_factory() as session:
         yield session
+
+
+# -- marketplace app: fake Clerk JWKS, injected store, no network (Sprint 003, D-19) ---------------
+
+
+@pytest.fixture(scope="session")
+def test_keys() -> SigningKeys:
+    return generate_test_keys()
+
+
+@pytest.fixture
+def marketplace_settings() -> Settings:
+    """Settings for the app under test: the fake JWKS issuer, everything else from the env."""
+    return Settings(clerk_jwks_url=TEST_JWKS_URL)
+
+
+@pytest.fixture
+def marketplace_app(
+    engine: MettaRouteEngine,
+    marketplace_settings: Settings,
+    test_keys: SigningKeys,
+    session_factory: async_sessionmaker[AsyncSession],
+) -> FastAPI:
+    """The real app with the engine shared, the JWKS cache preloaded and the store bound to the
+    rolled-back test connection. Nothing is patched; every override enters through create_app."""
+    return create_app(
+        marketplace_settings,
+        engine=engine,
+        jwks_cache=JwksCache.preloaded(test_keys.jwks),
+        session_factory=session_factory,
+    )
+
+
+@pytest.fixture
+async def api(marketplace_app: FastAPI) -> AsyncIterator[AsyncClient]:
+    async with (
+        marketplace_app.router.lifespan_context(marketplace_app),
+        AsyncClient(
+            transport=ASGITransport(app=marketplace_app), base_url="http://testserver"
+        ) as client,
+    ):
+        yield client
+
+
+@pytest.fixture
+def bearer(test_keys: SigningKeys) -> Callable[..., dict[str, str]]:
+    """`bearer(sub="user_1", role="builder")` → the Authorization header for that session."""
+
+    def _bearer(**kwargs: Any) -> dict[str, str]:
+        return {"Authorization": f"Bearer {sign_jwt(test_keys, **kwargs)}"}
+
+    return _bearer

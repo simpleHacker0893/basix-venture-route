@@ -20,6 +20,9 @@ DEFAULT_CORS_ORIGINS = "http://localhost:5173,http://localhost:4173"
 # The host placeholder shipped in .env.example for every Postgres URL (D-17, D-26). A verbatim
 # copy of the example must behave as "no store", never as a doomed connection attempt.
 PLACEHOLDER_DATABASE_HOST = "USER:PASSWORD@HOST"
+# The Clerk placeholders shipped in .env.example (D-03, D-26).
+PLACEHOLDER_CLERK_HOST = "YOUR-INSTANCE"
+PLACEHOLDER_CLERK_SECRET_SUFFIX = "replace-me"
 
 
 class Settings(BaseSettings):
@@ -55,6 +58,12 @@ class Settings(BaseSettings):
     database_url_direct: str | None = None
     test_database_url: str | None = None
     alembic_database_url: str | None = None
+    # Clerk (D-03). The JWKS URL also fixes the issuer (its origin). Placeholders mean "not
+    # configured": every gated route answers 401 and the webhook rejects every call (D-26).
+    clerk_jwks_url: str | None = None
+    clerk_secret_key: str | None = None
+    clerk_webhook_signing_secret: str | None = None
+    admin_emails: str = ""
 
     @field_validator("anthropic_api_key", mode="before")
     @classmethod
@@ -75,6 +84,35 @@ class Settings(BaseSettings):
         if isinstance(value, str) and (not value.strip() or PLACEHOLDER_DATABASE_HOST in value):
             return None
         return value
+
+    @field_validator("clerk_jwks_url", mode="before")
+    @classmethod
+    def _placeholder_jwks_means_unset(cls, value: object) -> object:
+        if isinstance(value, str) and (not value.strip() or PLACEHOLDER_CLERK_HOST in value):
+            return None
+        return value
+
+    @field_validator("clerk_secret_key", "clerk_webhook_signing_secret", mode="before")
+    @classmethod
+    def _placeholder_secret_means_unset(cls, value: object) -> object:
+        if isinstance(value, str) and (
+            not value.strip() or value.strip().endswith(PLACEHOLDER_CLERK_SECRET_SUFFIX)
+        ):
+            return None
+        return value
+
+    @property
+    def clerk_issuer(self) -> str | None:
+        """The JWT issuer Clerk uses: the origin of the JWKS URL (no path)."""
+        if self.clerk_jwks_url is None:
+            return None
+        scheme, _, rest = self.clerk_jwks_url.partition("://")
+        host = rest.split("/", 1)[0]
+        return f"{scheme}://{host}" if scheme and host else None
+
+    @property
+    def admin_email_list(self) -> list[str]:
+        return [email.strip().lower() for email in self.admin_emails.split(",") if email.strip()]
 
     @property
     def alembic_url(self) -> str | None:
