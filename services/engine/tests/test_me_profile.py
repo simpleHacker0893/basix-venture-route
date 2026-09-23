@@ -251,3 +251,34 @@ async def test_profile_routes_are_builder_only(
     )
 
     assert response.status_code == 403
+
+
+@pytest.mark.parametrize(
+    ("display_name", "expected"),
+    [
+        ("Python", "python-2"),  # a skill id
+        ("Remote", "remote-2"),  # a delivery mode
+        ("Nairobi", "nairobi-2"),  # a seed location slug
+        ("Credential", "credential-2"),  # an evidence symbol
+        ("2026", "b-2026"),  # a leading digit would parse as a MeTTa number
+    ],
+)
+async def test_slug_never_takes_a_seed_vocabulary_symbol(
+    api: AsyncClient,
+    bearer: Bearer,
+    db_session: AsyncSession,
+    display_name: str,
+    expected: str,
+) -> None:
+    """Builder slugs share one untyped atom namespace with skills, modes, locations and evidence
+    symbols; taking one would corrupt the projection (review of #40)."""
+    await _user(db_session, "user_v")
+
+    response = await api.put(
+        "/api/me/profile",
+        json=profile_input(displayName=display_name),
+        headers=bearer(sub="user_v", role="builder"),
+    )
+
+    assert response.status_code == 200
+    assert response.json()["builderId"] == expected

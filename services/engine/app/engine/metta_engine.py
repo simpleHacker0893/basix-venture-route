@@ -153,6 +153,15 @@ class MettaRouteEngine:
             rates[builder] = witnesses[0]
         return rates
 
+    def known_locations(self) -> frozenset[str]:
+        """Every location slug a `located-in` fact names. Symbols share one namespace with the
+        builders, so a user-entered builder slug must not collide with a location either."""
+        found: set[str] = set()
+        for witness in self._query("!(match &self (located-in $b $l) ($l))"):
+            for part in expect_list(witness, "location"):
+                found.add(expect_symbol(part, "location"))
+        return frozenset(found)
+
     def known_entities(self) -> frozenset[str]:
         """Every builder, cohort, university, partner and asset id in the space.
 
@@ -235,8 +244,10 @@ class MettaRouteEngine:
     def _brief_in_space(self, brief: VentureBrief) -> Iterator[None]:
         """Add the brief's facts for one query, then remove them. Serialised by a lock."""
         atoms = _brief_atoms(brief)
-        space = self._metta.space()
         with self._lock:
+            # Read the runtime only under the lock: replace_space() swaps it there, so the brief
+            # atoms and the query that follows always hit the same instance.
+            space = self._metta.space()
             for atom in atoms:
                 space.add_atom(atom)
             try:

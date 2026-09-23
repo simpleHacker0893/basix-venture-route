@@ -32,6 +32,25 @@ from app.marketplace.verification import (
 
 _NON_SLUG = re.compile(r"[^a-z0-9]+")
 
+# Symbols the seed vocabulary already uses in the one untyped atom namespace a builder slug
+# joins (modes, verticals, evidence types, the admin symbol). Skill ids come from the skills
+# table and seed entities and locations from the engine; a slug never equals any of them.
+RESERVED_SYMBOLS = frozenset(
+    {
+        "remote",
+        "hybrid",
+        "on-site",
+        "health",
+        "agri",
+        "education",
+        "credential",
+        "project",
+        "both",
+        "admin-basix",
+        "builder",
+    }
+)
+
 
 # -- users ----------------------------------------
 
@@ -79,13 +98,21 @@ def slugify(display_name: str) -> str:
     return slug or "builder"
 
 
+def builder_slug(display_name: str) -> str:
+    """A slug MeTTa reads as a symbol: a leading digit would parse as a number, so such names
+    get a `b-` prefix (`2026` → `b-2026`)."""
+    slug = slugify(display_name)
+    return slug if slug[0].isalpha() else f"b-{slug}"
+
+
 async def allocate_builder_id(
     session: AsyncSession, display_name: str, reserved: Iterable[str]
 ) -> str:
     """The graph id for a user-entered builder (D-24): the display-name slug, suffixed `-2`,
-    `-3`, ... when a profile or a seed entity already holds it. Assigned once, never changed."""
-    base = slugify(display_name)
-    taken = set(reserved)
+    `-3`, ... when a profile, a seed entity, a location or a fixed vocabulary symbol already
+    holds it. Assigned once, never changed."""
+    base = builder_slug(display_name)
+    taken = set(reserved) | RESERVED_SYMBOLS | set(await skill_names(session))
     taken.update(
         (
             await session.exec(

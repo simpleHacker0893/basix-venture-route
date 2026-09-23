@@ -134,7 +134,7 @@ async def put_profile(
     profile = await repo.profile_for_user(session, user.db_user.id)
     if profile is None:
         builder_id = await repo.allocate_builder_id(
-            session, body.display_name, engine.known_entities()
+            session, body.display_name, engine.known_entities() | engine.known_locations()
         )
         profile = Profile(
             user_id=user.db_user.id,
