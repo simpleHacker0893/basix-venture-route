@@ -1,4 +1,5 @@
-import { Outlet, Route, Routes } from "react-router";
+import { useEffect } from "react";
+import { Outlet, Route, Routes, useLocation } from "react-router";
 
 import { RequireRole } from "./auth/RequireRole";
 import { OfflineBanner } from "./components/OfflineBanner";
@@ -10,9 +11,32 @@ import { SignInScreen } from "./features/auth/SignInScreen";
 import { AddProjectPage } from "./features/builder/AddProjectPage";
 import { ProfilePage } from "./features/builder/ProfilePage";
 import { CandidatePage } from "./features/candidate/CandidatePage";
+import { EcosystemPage } from "./features/ecosystem/EcosystemPage";
 import { HandoffScreen } from "./features/handoff/HandoffScreen";
 import { LandingPage } from "./features/landing/LandingPage";
+import { PrivacyPage } from "./features/legal/PrivacyPage";
 import { RoutePage } from "./features/route/RoutePage";
+
+/**
+ * The header and footer link to landing and ecosystem sections by hash (`/#evidence`,
+ * `/ecosystem#partners`). A history push never scrolls on its own, so after every navigation
+ * with a hash the named element is scrolled into view; without one, a new path starts at the top.
+ */
+function ScrollToHash() {
+  const { pathname, hash } = useLocation();
+  useEffect(() => {
+    if (hash) {
+      document.getElementById(hash.slice(1))?.scrollIntoView({ block: "start" });
+    } else if (typeof window.scrollTo === "function") {
+      try {
+        window.scrollTo({ top: 0 });
+      } catch {
+        // jsdom and older browsers: nothing to restore
+      }
+    }
+  }, [pathname, hash]);
+  return null;
+}
 
 function Layout() {
   return (
@@ -25,6 +49,7 @@ function Layout() {
       </a>
       <OfflineBanner />
       <TopNav />
+      <ScrollToHash />
       <main id="main" tabIndex={-1} className="flex-1 outline-none">
         <Outlet />
       </main>
@@ -40,6 +65,9 @@ export function AppRoutes() {
         <Route index element={<LandingPage />} />
         <Route path="route" element={<RoutePage />} />
         <Route path="handoff" element={<HandoffScreen />} />
+        {/* Footer destinations (D-36): the Ecosystem column and Privacy. */}
+        <Route path="ecosystem" element={<EcosystemPage />} />
+        <Route path="privacy" element={<PrivacyPage />} />
         {/* Clerk's path routing owns the sub-paths (factor steps, SSO callback). */}
         <Route path="sign-in/*" element={<SignInScreen />} />
         <Route path="sign-up/*" element={<SignInScreen />} />

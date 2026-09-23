@@ -2,9 +2,11 @@ import { Link } from "react-router";
 
 /**
  * The Stitch footer (design/stitch/batch-2/landing-page, D-36), on every route: wordmark and
- * tagline, three link columns, the bottom links and the copyright line.
+ * tagline, three link columns, the bottom links and the copyright line. The export's Ecosystem
+ * and Privacy links were `#` placeholders; here every link lands on a real page (the landing
+ * sections, /ecosystem sections built from seed facts, /privacy).
  */
-const COLUMNS: { heading: string; links: { label: string; to: string; external?: boolean }[] }[] = [
+const COLUMNS: { heading: string; links: { label: string; to: string }[] }[] = [
   {
     heading: "Product",
     links: [
@@ -17,10 +19,10 @@ const COLUMNS: { heading: string; links: { label: string; to: string; external?:
   {
     heading: "Ecosystem",
     links: [
-      { label: "BASIX", to: "#basix" },
-      { label: "MeTTa OmniUniversity", to: "#omni" },
-      { label: "SingularityNET MeTTa", to: "#snet" },
-      { label: "Partners", to: "#partners" },
+      { label: "BASIX", to: "/ecosystem#basix" },
+      { label: "MeTTa OmniUniversity", to: "/ecosystem#omni" },
+      { label: "SingularityNET MeTTa", to: "/ecosystem#snet" },
+      { label: "Partners", to: "/ecosystem#partners" },
     ],
   },
   {
@@ -52,21 +54,13 @@ export function SiteFooter() {
             <nav key={column.heading} aria-label={column.heading}>
               <h2 className="mb-3 text-sm font-semibold text-white">{column.heading}</h2>
               <ul className="space-y-2 text-ink-subtle">
-                {column.links.map((link) =>
-                  link.to.startsWith("#") ? (
-                    <li key={link.label}>
-                      <a href={link.to} className="transition-colors hover:text-white">
-                        {link.label}
-                      </a>
-                    </li>
-                  ) : (
-                    <li key={link.label}>
-                      <Link to={link.to} className="transition-colors hover:text-white">
-                        {link.label}
-                      </Link>
-                    </li>
-                  ),
-                )}
+                {column.links.map((link) => (
+                  <li key={link.label}>
+                    <Link to={link.to} className="transition-colors hover:text-white">
+                      {link.label}
+                    </Link>
+                  </li>
+                ))}
               </ul>
             </nav>
           ))}
@@ -79,9 +73,9 @@ export function SiteFooter() {
             <a href={`${REPO}/blob/master/docs/PRD.md`} className="underline decoration-ink-subtle/40 underline-offset-4 hover:text-white">
               PRD
             </a>
-            <a href="#privacy" className="underline decoration-ink-subtle/40 underline-offset-4 hover:text-white">
+            <Link to="/privacy" className="underline decoration-ink-subtle/40 underline-offset-4 hover:text-white">
               Privacy
-            </a>
+            </Link>
           </div>
           <div className="font-mono text-xs text-ink-subtle">© 2026 Venture Route. Deterministic evaluation registry.</div>
         </div>
