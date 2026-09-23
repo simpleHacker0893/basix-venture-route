@@ -17,7 +17,7 @@ export function BuilderCard({ builder, onViewEvidence }: BuilderCardProps) {
       <div className="flex items-start justify-between gap-3">
         <div className="flex flex-col gap-1">
           <h3 className="text-xl font-semibold">{builder.name}</h3>
-          <span data-testid="builder-id" className="font-mono text-[13px] text-ink-3">
+          <span data-testid="builder-id" translate="no" className="font-mono text-[13px] text-ink-3">
             {builder.builderId}
           </span>
         </div>
@@ -39,7 +39,7 @@ export function BuilderCard({ builder, onViewEvidence }: BuilderCardProps) {
         <button
           type="button"
           onClick={() => onViewEvidence(builder.builderId)}
-          className="self-start text-[13px] text-accent-green underline"
+          className="self-start text-[13px] text-accent-green underline hover:text-accent-green-hover"
         >
           View evidence path
         </button>

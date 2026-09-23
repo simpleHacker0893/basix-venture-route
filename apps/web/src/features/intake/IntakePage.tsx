@@ -39,6 +39,11 @@ export function IntakePage({ initialMode = "chat" }: IntakePageProps) {
           ) : (
             <>
               <ChatThread turns={state.turns} />
+              {state.busy && (
+                <p role="status" className="text-[13px] text-ink-3">
+                  Assistant is thinking…
+                </p>
+              )}
               <div className="flex flex-col gap-4">
                 <ScenarioChips />
                 <Composer

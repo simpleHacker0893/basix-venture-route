@@ -50,7 +50,7 @@ export function SiteFooter() {
         <div className="grid grid-cols-2 gap-8 border-t border-[#26282d] py-8 text-sm md:grid-cols-3">
           {COLUMNS.map((column) => (
             <nav key={column.heading} aria-label={column.heading}>
-              <div className="mb-3 font-semibold text-white">{column.heading}</div>
+              <h2 className="mb-3 text-sm font-semibold text-white">{column.heading}</h2>
               <ul className="space-y-2 text-ink-subtle">
                 {column.links.map((link) =>
                   link.to.startsWith("#") ? (

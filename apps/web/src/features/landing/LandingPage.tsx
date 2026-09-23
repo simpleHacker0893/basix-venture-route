@@ -10,7 +10,7 @@ type SectionProps = Readonly<{ id: string; className?: string; children: React.R
 
 function Section({ id, className = "", children }: SectionProps) {
   return (
-    <section id={id} data-testid={`landing-section-${id}`} data-section={id} className={className}>
+    <section id={id} data-testid={`landing-section-${id}`} data-section={id} className={`scroll-mt-16 ${className}`}>
       {children}
     </section>
   );
@@ -38,16 +38,16 @@ function Hero() {
             </Link>
             <Link
               to="/route"
-              className="flex items-center gap-1.5 px-4 py-3 text-base font-medium text-ink underline decoration-ink-muted/40 underline-offset-4 transition-all hover:text-accent-green hover:decoration-accent-green"
+              className="flex items-center gap-1.5 px-4 py-3 text-base font-medium text-ink underline decoration-ink-muted/40 underline-offset-4 transition-[color,text-decoration-color] hover:text-accent-green hover:decoration-accent-green"
             >
               See a demo route
             </Link>
           </div>
           <div className="mt-8 flex items-center gap-2 font-mono text-xs tracking-wide text-ink-subtle">
             <span>DETERMINISTIC EVALUATION</span>
-            <span className="opacity-50">·</span>
+            <span aria-hidden="true" className="opacity-50">·</span>
             <span>INSPECTABLE EVIDENCE</span>
-            <span className="opacity-50">·</span>
+            <span aria-hidden="true" className="opacity-50">·</span>
             <span>MeTTa KNOWLEDGE GRAPH</span>
           </div>
         </div>
@@ -172,7 +172,7 @@ function Evidence() {
               "Full audit trail exportable for stakeholder handoff",
             ].map((item) => (
               <li key={item} className="flex items-start gap-2.5">
-                <span className="font-mono text-accent-on-dark">✓</span>
+                <span aria-hidden="true" className="font-mono text-accent-on-dark">✓</span>
                 <span>{item}</span>
               </li>
             ))}
@@ -198,7 +198,7 @@ function Evidence() {
               <div className="mb-1 text-[10px] font-semibold uppercase tracking-wider text-ink-subtle">MeTTa Execution Query:</div>
               <div className="font-mono text-[#e2e8f0]">!(eligible-builder brief-health-01 amina-otieno python)</div>
               <div className="mt-2 flex items-center gap-1.5 font-medium text-accent-on-dark">
-                <span>✓</span>
+                <span aria-hidden="true">✓</span>
                 <span>Rule eligible-builder holds by credential and verified calendar window.</span>
               </div>
             </div>

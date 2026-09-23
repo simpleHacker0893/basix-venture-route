@@ -32,7 +32,7 @@ export function GapsPanel({ gaps, onPatch }: GapsPanelProps) {
         {gaps.map((gap, index) => (
           <li key={`${gap.category}-${gap.affected.join("-")}-${index}`} data-testid="gap" className="flex flex-col gap-3 rounded-card border border-border bg-surface p-5">
             <div className="flex flex-wrap items-center gap-2 text-[13px]">
-              <span className="rounded-pill bg-dark px-2 py-0.5 font-mono text-[12px] text-accent-on-dark">{gap.rule}</span>
+              <span translate="no" className="rounded-pill bg-dark px-2 py-0.5 font-mono text-[12px] text-accent-on-dark">{gap.rule}</span>
               <span className="rounded-pill border border-amber-ink/40 px-2 py-0.5 capitalize text-amber-ink">{gap.category}</span>
               <span className="text-ink-2">
                 Affected: <span className="font-mono">{gap.affected.join(", ")}</span>
@@ -49,7 +49,14 @@ export function GapsPanel({ gaps, onPatch }: GapsPanelProps) {
                       {action}
                     </Button>
                   ) : (
-                    <Button key={action} type="button" variant="secondary" disabled title="Suggestion from the engine">
+                    <Button
+                      key={action}
+                      type="button"
+                      variant="secondary"
+                      aria-disabled="true"
+                      className="opacity-60"
+                      onClick={(event) => event.preventDefault()}
+                    >
                       {action}
                     </Button>
                   );

@@ -22,7 +22,7 @@ function HandoffBody() {
         <div>
           <Link
             to="/route"
-            className="inline-flex h-10 items-center rounded-card bg-accent-green px-5 font-medium text-white"
+            className="inline-flex h-10 items-center rounded-card bg-accent-green px-5 font-medium text-white hover:bg-accent-green-hover"
           >
             Find a route
           </Link>
@@ -43,7 +43,7 @@ function HandoffBody() {
   return (
     <section className="flex flex-col gap-6">
       <div className="flex flex-col gap-2">
-        <Link to="/route" className="text-[13px] text-ink-2 underline">
+        <Link to="/route" className="text-[13px] text-ink-2 underline hover:text-ink">
           Back to route
         </Link>
         <div className="flex flex-wrap items-center gap-3">

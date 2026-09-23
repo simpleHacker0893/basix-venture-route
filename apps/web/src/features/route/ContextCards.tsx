@@ -57,7 +57,7 @@ export function ContextCards({ route, vertical }: ContextCardsProps) {
         {partner && (
           <ContextCard testId="partner-card" kind="Partner" title={partner.partnerId}>
             <p className="font-mono text-[13px]">{partner.path.rule}</p>
-            <p>Supports the brief's vertical through the builder's university, four hops away.</p>
+            <p>Supports the brief’s vertical through the builder’s university, four hops away.</p>
           </ContextCard>
         )}
       </div>

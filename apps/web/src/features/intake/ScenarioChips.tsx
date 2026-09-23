@@ -6,7 +6,7 @@ export function ScenarioChips() {
   const { state, loadScenario } = useRouting();
   if (state.scenarios.length === 0) return null;
   return (
-    <div className="flex flex-wrap items-center gap-2" aria-label="Demo scenarios">
+    <div role="group" className="flex flex-wrap items-center gap-2" aria-label="Demo scenarios">
       <span className="mr-1 text-[13px] text-ink-3">Demo briefs:</span>
       {state.scenarios.map((brief) => (
         <button

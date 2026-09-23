@@ -29,7 +29,7 @@ export function WhyDrawer({ route, open, onOpenChange }: WhyDrawerProps) {
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent
         side="right"
-        className="w-full overflow-y-auto bg-surface-strong sm:max-w-[var(--vr-drawer-width)]"
+        className="w-full overflow-y-auto overscroll-contain bg-surface-strong motion-reduce:animate-none motion-reduce:transition-none sm:max-w-[var(--vr-drawer-width)]"
         aria-label="Why this route?"
       >
         <SheetHeader>
@@ -44,7 +44,7 @@ export function WhyDrawer({ route, open, onOpenChange }: WhyDrawerProps) {
             <TabsTrigger value="founder">Founder view</TabsTrigger>
             <TabsTrigger value="technical">Technical view</TabsTrigger>
           </TabsList>
-          <TabsContent value="founder" className="flex flex-col gap-4 pt-4">
+          <TabsContent value="founder" className="flex flex-col gap-4 pt-4" translate="no">
             {route.builders.map((builder) =>
               builder.evidencePaths.map((path, index) => {
                 const skill = builder.covers[index] ?? builder.covers[0] ?? "";
@@ -102,7 +102,7 @@ export function WhyDrawer({ route, open, onOpenChange }: WhyDrawerProps) {
               </section>
             )}
           </TabsContent>
-          <TabsContent value="technical" className="flex flex-col gap-4 pt-4">
+          <TabsContent value="technical" className="flex flex-col gap-4 pt-4" translate="no">
             {paths.map(({ key, title, path }) => (
               <section
                 key={key}
@@ -118,10 +118,10 @@ export function WhyDrawer({ route, open, onOpenChange }: WhyDrawerProps) {
                 </div>
                 <div className="flex gap-2 text-[13px]">
                   <span className="w-24 shrink-0 text-accent-on-dark/70">facts</span>
-                  <ol className="flex flex-col gap-0.5">
+                  <ol className="flex min-w-0 flex-col gap-0.5">
                     {path.facts.map((fact, index) => (
                       <li key={`${index}-${fact}`}>
-                        <code data-testid="fact" className="font-mono text-white">
+                        <code data-testid="fact" className="break-all font-mono text-white">
                           {fact}
                         </code>
                       </li>
@@ -130,7 +130,7 @@ export function WhyDrawer({ route, open, onOpenChange }: WhyDrawerProps) {
                 </div>
                 <div className="flex gap-2 text-[13px]">
                   <span className="w-24 shrink-0 text-accent-on-dark/70">conclusion</span>
-                  <code data-testid="technical-conclusion" className="font-mono text-white">
+                  <code data-testid="technical-conclusion" className="min-w-0 break-words font-mono text-white">
                     {path.conclusion}
                   </code>
                 </div>

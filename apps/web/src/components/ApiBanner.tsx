@@ -12,7 +12,7 @@ export function ApiBanner() {
       className="mb-6 flex flex-wrap items-center justify-between gap-3 rounded-card border border-amber-fill bg-amber-fill/40 px-4 py-3 text-sm text-amber-ink"
     >
       <span>{state.unreachable}</span>
-      <Link to="/route?mode=form" className="font-medium underline">
+      <Link to="/route?mode=form" className="font-medium underline hover:text-ink">
         Use the form instead
       </Link>
     </div>
