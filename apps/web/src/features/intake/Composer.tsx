@@ -24,6 +24,7 @@ export function Composer({ busy, onSend, onUseForm }: ComposerProps) {
     <div className="flex flex-col gap-3">
       <form
         onSubmit={submit}
+        aria-busy={busy}
         className="flex flex-col gap-3 rounded-card border border-border bg-surface-strong p-4 focus-within:border-accent-green"
       >
         <label htmlFor="founder-reply" className="sr-only">
@@ -31,6 +32,8 @@ export function Composer({ busy, onSend, onUseForm }: ComposerProps) {
         </label>
         <textarea
           id="founder-reply"
+          name="reply"
+          autoComplete="off"
           rows={2}
           value={text}
           onChange={(event) => setText(event.target.value)}
@@ -39,8 +42,8 @@ export function Composer({ busy, onSend, onUseForm }: ComposerProps) {
         />
         <div className="flex items-center justify-between border-t border-border pt-3">
           <span className="text-[13px] text-ink-3">Plain language: dates, budget, team roles.</span>
-          <Button type="submit" disabled={busy || text.trim().length === 0}>
-            Send
+          <Button type="submit" disabled={busy}>
+            {busy ? "Sending…" : "Send"}
           </Button>
         </div>
       </form>

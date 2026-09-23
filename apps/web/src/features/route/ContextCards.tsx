@@ -1,12 +1,8 @@
 import type { VentureRoute } from "@venture-route/contracts";
 
 import { DemoDataPill } from "../../components/DemoDataPill";
-import { SKILL_LABELS } from "../../lib/brief";
 
-type ContextCardsProps = Readonly<{
-  route: VentureRoute;
-  vertical: string;
-}>;
+type ContextCardsProps = Readonly<{ route: VentureRoute }>;
 
 function ContextCard({
   testId,
@@ -27,7 +23,7 @@ function ContextCard({
 }
 
 /** Reusable IP, cohort and partner: only what the route carries (D-23), each a demo-data card. */
-export function ContextCards({ route, vertical }: ContextCardsProps) {
+export function ContextCards({ route }: ContextCardsProps) {
   const { reusableIp, cohort, partner } = route;
   if (!reusableIp && !cohort && !partner) return null;
   return (
@@ -42,10 +38,7 @@ export function ContextCards({ route, vertical }: ContextCardsProps) {
         {reusableIp && (
           <ContextCard testId="ip-card" kind="Reusable IP" title={reusableIp.title}>
             <p className="font-mono text-[13px]">{reusableIp.assetId}</p>
-            <p>
-              Licensable in {vertical}; demonstrates{" "}
-              {reusableIp.path.conclusion.split("demonstrates ")[1]?.split(", ").map((s) => SKILL_LABELS[s as keyof typeof SKILL_LABELS] ?? s).join(", ") ?? "a required skill"}.
-            </p>
+            <p>{reusableIp.path.conclusion}</p>
           </ContextCard>
         )}
         {cohort && (
@@ -57,7 +50,7 @@ export function ContextCards({ route, vertical }: ContextCardsProps) {
         {partner && (
           <ContextCard testId="partner-card" kind="Partner" title={partner.partnerId}>
             <p className="font-mono text-[13px]">{partner.path.rule}</p>
-            <p>Supports the brief's vertical through the builder's university, four hops away.</p>
+            <p>Supports the brief’s vertical through the builder’s university, four hops away.</p>
           </ContextCard>
         )}
       </div>

@@ -21,7 +21,7 @@ describe("offline demonstration mode", () => {
     renderOffline();
     const user = userEvent.setup();
 
-    expect(await screen.findByRole("status", { name: "Offline demonstration mode" })).toBeInTheDocument();
+    expect(await screen.findByRole("status", { name: /Offline demonstration mode/ })).toBeInTheDocument();
     const expected: Record<string, string> = {
       "Health pilot": "Feasible",
       "Agri marketplace": "Feasible",
@@ -47,6 +47,6 @@ describe("offline demonstration mode", () => {
 
     const gaps = await screen.findByTestId("gaps-panel");
     expect(within(gaps).getAllByTestId("gap")).toHaveLength(1);
-    expect(screen.getByRole("status", { name: "Offline demonstration mode" })).toBeInTheDocument();
+    expect(screen.getByRole("status", { name: /Offline demonstration mode/ })).toBeInTheDocument();
   });
 });

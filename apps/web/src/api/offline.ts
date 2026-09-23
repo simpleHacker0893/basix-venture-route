@@ -6,6 +6,7 @@ import { VentureBrief, VentureRoute, type ChatResponse, type ChatTurnInput } fro
 import { z } from "zod";
 
 import snapshotJson from "../offline/snapshot.json";
+import { ApiValidationError } from "./client";
 import type { RouteSource } from "./source";
 
 const Snapshot = z.object({
@@ -15,14 +16,23 @@ const Snapshot = z.object({
 
 export const OFFLINE_BANNER = "Offline demonstration mode";
 
+function canonical(brief: z.infer<typeof VentureBrief>): unknown {
+  return Object.fromEntries(Object.entries(brief).sort(([a], [b]) => a.localeCompare(b)));
+}
+
 export function createOfflineSource(raw: unknown = snapshotJson): RouteSource {
   const snapshot = Snapshot.parse(raw);
   const briefs = Object.values(snapshot.briefs);
 
+  const ONLY_SEEDS =
+    "Offline demonstration mode only routes the five seed scenarios unchanged. Load one to continue.";
+
+  /** The snapshot answers only a brief MeTTa actually saw: the seed brief, byte for byte. */
   function routeFor(brief: z.infer<typeof VentureBrief>) {
+    const seed = snapshot.briefs[brief.id];
     const route = snapshot.routes[brief.id];
-    if (!route) {
-      throw new Error(`Offline mode has no route for ${brief.id}; load one of the five scenarios.`);
+    if (!seed || !route || JSON.stringify(canonical(seed)) !== JSON.stringify(canonical(brief))) {
+      throw new ApiValidationError({ type: "validation-error", message: ONLY_SEEDS });
     }
     return route;
   }
@@ -33,13 +43,13 @@ export function createOfflineSource(raw: unknown = snapshotJson): RouteSource {
     postRoute: async (brief) => routeFor(brief),
     postConversation: async (turn: ChatTurnInput): Promise<ChatResponse> => {
       const parsed = VentureBrief.safeParse({ ...(turn.currentBrief ?? {}), demoData: true });
-      if (!parsed.success) {
-        return {
-          type: "validation-error",
-          message: "Offline demonstration mode only routes the five seed scenarios. Load one to continue.",
-        };
+      if (!parsed.success) return { type: "validation-error", message: ONLY_SEEDS };
+      try {
+        return { type: "route", brief: parsed.data, route: routeFor(parsed.data), message: OFFLINE_BANNER };
+      } catch (error) {
+        if (error instanceof ApiValidationError) return error.response;
+        throw error;
       }
-      return { type: "route", brief: parsed.data, route: routeFor(parsed.data), message: OFFLINE_BANNER };
     },
   };
 }

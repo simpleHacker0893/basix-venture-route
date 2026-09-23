@@ -5,9 +5,9 @@ import type { DateRange } from "react-day-picker";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { MODES, MODE_LABELS, SKILLS, SKILL_LABELS, VERTICALS, VERTICAL_LABELS, briefIdFor } from "../../lib/brief";
+import { MODES, MODE_LABELS, REQUIRED_FIELDS, SKILLS, SKILL_LABELS, VERTICALS, VERTICAL_LABELS, briefIdFor } from "../../lib/brief";
 import { dateRange } from "../../lib/format";
-import { splitFieldMessages } from "../../lib/validationError";
+import { FIELD_ALIASES, splitFieldMessages } from "../../lib/validationError";
 
 type BriefEditorProps = Readonly<{
   /** Pre-fills the editor (review) or starts empty (intake form). */
@@ -84,7 +84,18 @@ function toInput(draft: Draft): unknown {
   };
 }
 
-const ZOD_FIELD_ALIASES: Record<string, string> = { availabilityStart: "availability", availabilityEnd: "availability" };
+/** Field order for "focus the first error on submit" (PRD §5.3 order, availability merged, location included). */
+const FIELD_ORDER = [...new Set([...REQUIRED_FIELDS.map((f) => FIELD_ALIASES[f] ?? f), "location"])];
+const FIELD_INPUT_ID: Record<string, string> = {
+  title: "brief-title",
+  vertical: "brief-vertical-0",
+  requiredSkills: "brief-skill-0",
+  maximumTeamSize: "brief-team-size",
+  availability: "brief-availability",
+  deliveryMode: "brief-mode-0",
+  location: "brief-location",
+  dailyBudget: "brief-budget",
+};
 
 /**
  * The venture brief as editable fields (screen 4 review and the screen 3 form fallback).
@@ -118,7 +129,7 @@ export function BriefEditor({ initial, busy, serverError, onSubmit, onBack, back
     if (!parsed.success) {
       for (const issue of parsed.error.issues) {
         const raw = String(issue.path[0] ?? "form");
-        const key = ZOD_FIELD_ALIASES[raw] ?? raw;
+        const key = FIELD_ALIASES[raw] ?? raw;
         if (!next[key]) next[key] = issue.message;
       }
     }
@@ -128,6 +139,8 @@ export function BriefEditor({ initial, busy, serverError, onSubmit, onBack, back
     if (draft.range?.from && !draft.range.to) next.availability = "Pick an end date";
     if (Object.keys(next).length > 0 || !parsed.success) {
       setClientErrors(next);
+      const first = FIELD_ORDER.find((field) => next[field]);
+      if (first) document.getElementById(FIELD_INPUT_ID[first] ?? "")?.focus();
       return;
     }
     setClientErrors({});
@@ -144,8 +157,10 @@ export function BriefEditor({ initial, busy, serverError, onSubmit, onBack, back
     ) : null;
 
   const pillClass = (selected: boolean) =>
-    `inline-flex h-8 cursor-pointer items-center rounded-pill border px-3 text-sm ${
-      selected ? "border-accent-green bg-accent-green text-white" : "border-border-strong bg-surface-strong"
+    `inline-flex h-8 cursor-pointer items-center rounded-pill border px-3 text-sm has-focus-visible:ring-2 has-focus-visible:ring-ring/50 has-focus-visible:ring-offset-1 ${
+      selected
+        ? "border-accent-green bg-accent-green text-white"
+        : "border-border-strong bg-surface-strong hover:border-accent-green"
     }`;
 
   const rangeLabel =
@@ -174,6 +189,8 @@ export function BriefEditor({ initial, busy, serverError, onSubmit, onBack, back
         </label>
         <input
           id="brief-title"
+          name="title"
+          autoComplete="off"
           value={draft.title}
           aria-invalid={invalid("title")}
           aria-describedby={describedBy("title")}
@@ -186,9 +203,10 @@ export function BriefEditor({ initial, busy, serverError, onSubmit, onBack, back
       <fieldset className="flex flex-col gap-2">
         <legend className="text-[13px] text-ink-2">Vertical</legend>
         <div className="flex gap-2" role="radiogroup" aria-label="Vertical">
-          {VERTICALS.map((vertical) => (
+          {VERTICALS.map((vertical, index) => (
             <label key={vertical} className={pillClass(draft.vertical === vertical)}>
               <input
+                id={`brief-vertical-${index}`}
                 type="radio"
                 name="vertical"
                 value={vertical}
@@ -206,11 +224,13 @@ export function BriefEditor({ initial, busy, serverError, onSubmit, onBack, back
       <fieldset className="flex flex-col gap-2">
         <legend className="text-[13px] text-ink-2">Required skills</legend>
         <div className="flex flex-wrap gap-2">
-          {SKILLS.map((skill) => {
+          {SKILLS.map((skill, index) => {
             const checked = draft.requiredSkills.includes(skill);
             return (
               <label key={skill} className={pillClass(checked)}>
                 <input
+                  id={`brief-skill-${index}`}
+                  name="requiredSkills"
                   type="checkbox"
                   checked={checked}
                   onChange={() =>
@@ -236,6 +256,8 @@ export function BriefEditor({ initial, busy, serverError, onSubmit, onBack, back
         </label>
         <input
           id="brief-team-size"
+          name="maximumTeamSize"
+          inputMode="numeric"
           type="number"
           min={1}
           max={5}
@@ -249,15 +271,18 @@ export function BriefEditor({ initial, busy, serverError, onSubmit, onBack, back
       </div>
 
       <div className="flex flex-col gap-1">
-        <span className="text-[13px] text-ink-2">Availability</span>
+        <label htmlFor="brief-availability" className="text-[13px] text-ink-2">
+          Availability
+        </label>
         <Popover open={calendarOpen} onOpenChange={setCalendarOpen}>
           <PopoverTrigger asChild>
             <button
+              id="brief-availability"
               type="button"
+              aria-invalid={invalid("availability")}
               aria-describedby={describedBy("availability")}
               className="flex h-10 items-center rounded-card border border-border-strong bg-surface-strong px-3 text-left font-mono text-sm"
             >
-              <span className="sr-only">Availability: </span>
               {rangeLabel}
             </button>
           </PopoverTrigger>
@@ -277,9 +302,10 @@ export function BriefEditor({ initial, busy, serverError, onSubmit, onBack, back
       <fieldset className="flex flex-col gap-2">
         <legend className="text-[13px] text-ink-2">Delivery mode</legend>
         <div className="flex gap-2" role="radiogroup" aria-label="Delivery mode">
-          {MODES.map((mode) => (
+          {MODES.map((mode, index) => (
             <label key={mode} className={pillClass(draft.deliveryMode === mode)}>
               <input
+                id={`brief-mode-${index}`}
                 type="radio"
                 name="deliveryMode"
                 value={mode}
@@ -300,6 +326,8 @@ export function BriefEditor({ initial, busy, serverError, onSubmit, onBack, back
         </label>
         <input
           id="brief-location"
+          name="location"
+          autoComplete="off"
           value={draft.location}
           disabled={draft.deliveryMode !== "on-site"}
           aria-invalid={invalid("location")}
@@ -316,13 +344,15 @@ export function BriefEditor({ initial, busy, serverError, onSubmit, onBack, back
           Daily budget
         </label>
         <div
-          className={`flex h-10 items-center rounded-card border bg-surface-strong px-3 font-mono ${
+          className={`flex h-10 items-center rounded-card border bg-surface-strong px-3 font-mono focus-within:border-accent-green focus-within:ring-2 focus-within:ring-ring/50 ${
             errors.dailyBudget ? "border-danger" : "border-border-strong"
           }`}
         >
           <span className="text-ink-3">USD</span>
           <input
             id="brief-budget"
+            name="dailyBudget"
+            inputMode="numeric"
             type="number"
             min={1}
             value={draft.dailyBudget}
@@ -339,6 +369,7 @@ export function BriefEditor({ initial, busy, serverError, onSubmit, onBack, back
       <div className="flex items-center gap-2">
         <input
           id="brief-ip"
+          name="preferReusableIp"
           type="checkbox"
           checked={draft.preferReusableIp}
           onChange={(e) => patch({ preferReusableIp: e.target.checked })}
@@ -353,8 +384,8 @@ export function BriefEditor({ initial, busy, serverError, onSubmit, onBack, back
         <Button type="button" variant="ghost" onClick={onBack}>
           {backLabel}
         </Button>
-        <Button type="submit" disabled={busy}>
-          Find my route
+        <Button type="submit" disabled={busy} aria-busy={busy}>
+          {busy ? "Finding your route…" : "Find my route"}
         </Button>
       </div>
     </form>

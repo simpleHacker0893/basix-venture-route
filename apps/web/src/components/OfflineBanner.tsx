@@ -8,10 +8,11 @@ export function OfflineBanner() {
   return (
     <div
       role="status"
-      aria-label={OFFLINE_BANNER}
+      aria-labelledby="offline-banner-title"
       className="border-b border-amber-fill bg-amber-fill/40 px-6 py-2 text-center text-[13px] text-amber-ink"
     >
-      {OFFLINE_BANNER}: the five demo routes come from a snapshot the engine generated; no network is used.
+      <strong id="offline-banner-title">{OFFLINE_BANNER}</strong>: the five demo routes come from a snapshot the
+      engine generated; no network is used.
     </div>
   );
 }
