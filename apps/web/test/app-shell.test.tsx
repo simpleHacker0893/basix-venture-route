@@ -12,7 +12,9 @@ describe("app shell", () => {
     render(<App initialPath="/" />);
 
     expect(screen.getByRole("link", { name: "Venture Route" })).toHaveAttribute("href", "/");
-    expect(screen.getByRole("link", { name: "Find a route" })).toHaveAttribute("href", "/route");
+    const ctas = screen.getAllByRole("link", { name: "Route my venture" });
+    expect(ctas.length).toBeGreaterThan(0);
+    for (const cta of ctas) expect(cta).toHaveAttribute("href", "/route");
   });
 
   it("renders the routing page at /route", () => {
