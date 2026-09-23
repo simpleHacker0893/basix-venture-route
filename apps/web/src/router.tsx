@@ -1,6 +1,7 @@
 import { Link, Outlet, Route, Routes } from "react-router";
 
 import { TopNav } from "./components/TopNav";
+import { HandoffScreen } from "./features/handoff/HandoffScreen";
 import { RoutePage } from "./features/route/RoutePage";
 
 function Layout() {
@@ -36,17 +37,13 @@ function LandingPlaceholder() {
   );
 }
 
-function HandoffPlaceholder() {
-  return <h1 className="font-display text-[36px] font-medium">Venture handoff</h1>;
-}
-
 export function AppRoutes() {
   return (
     <Routes>
       <Route element={<Layout />}>
         <Route index element={<LandingPlaceholder />} />
         <Route path="route" element={<RoutePage />} />
-        <Route path="handoff" element={<HandoffPlaceholder />} />
+        <Route path="handoff" element={<HandoffScreen />} />
       </Route>
     </Routes>
   );
