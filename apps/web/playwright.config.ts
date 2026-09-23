@@ -14,6 +14,9 @@ const isCI = !!process.env.CI;
 
 export default defineConfig({
   testDir: "./e2e",
+  // The Clerk three-role smoke (#47) has its own config and needs real keys; the no-key run
+  // in CI (D-33) must never collect it.
+  testIgnore: ["**/clerk/**"],
   fullyParallel: false,
   workers: 1,
   retries: isCI ? 1 : 0,
