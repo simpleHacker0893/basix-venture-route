@@ -264,6 +264,13 @@ inline, see below). `GET /api/requests/{id}` answers `200` to the owning founder
 and `404 {"detail": "no request <id>"}` to another founder, so ids leak nothing. A `builder`
 session on `POST` answers `403 {"detail": "role founder required"}`.
 
+### POST /api/requests/{id}/close
+
+Role `founder`, owner only (`404` otherwise). Sets `status: "closed"` and `closedAt` and answers
+`200` `Request`; a second close answers `409 {"detail": "request already closed"}`. A closed
+request no longer appears in the builders' list and refuses bids (`409`), but stays in the
+founder's list with its status.
+
 ## Admin: `/api/admin/*`
 
 Role `admin`. Admins are never user-chosen: the webhook assigns the role to emails in

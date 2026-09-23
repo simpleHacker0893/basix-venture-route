@@ -7,7 +7,7 @@ from __future__ import annotations
 
 import re
 from collections.abc import Iterable
-from datetime import date
+from datetime import date, datetime
 from typing import Any
 from uuid import UUID
 
@@ -436,3 +436,13 @@ async def request_by_id(session: AsyncSession, request_id: UUID) -> tuple[Reques
     statement = _requests_newest_first().where(Request.id == request_id)
     found = (await session.exec(statement)).first()
     return None if found is None else (found[0], found[1])
+
+
+async def close_request(session: AsyncSession, row: Request, now: datetime) -> Request:
+    """Status `closed` with `closed_at`, committed. The caller checks it was open."""
+    row.status = "closed"
+    row.closed_at = now
+    session.add(row)
+    await session.commit()
+    await session.refresh(row)
+    return row

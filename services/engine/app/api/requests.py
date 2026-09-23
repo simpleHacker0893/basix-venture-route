@@ -8,6 +8,7 @@ A request that is not the founder's answers 404 so ids leak nothing. Admins are 
 access this sprint.
 """
 
+from datetime import UTC, datetime
 from typing import Annotated
 from uuid import UUID
 
@@ -105,4 +106,19 @@ async def read_request(
     session: Annotated[AsyncSession, Depends(get_session)],
 ) -> RequestOut:
     row, founder = await owned_or_visible(session, user, request_id)
+    return request_out(row, founder)
+
+
+@router.post("/{request_id}/close", response_model=RequestOut)
+async def close_request(
+    request_id: UUID,
+    user: Annotated[CurrentUser, Depends(require_role("founder"))],
+    session: Annotated[AsyncSession, Depends(get_session)],
+) -> RequestOut:
+    """The owning founder closes the request: no further bids (#62 answers 409) and it leaves
+    the builders' board; it stays in the founder's list with its status."""
+    row, founder = await owned_or_visible(session, user, request_id)
+    if row.status == "closed":
+        raise HTTPException(status_code=409, detail="request already closed")
+    row = await repo.close_request(session, row, datetime.now(UTC))
     return request_out(row, founder)

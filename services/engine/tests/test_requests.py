@@ -208,3 +208,58 @@ async def test_unauthenticated_calls_are_401(api: AsyncClient, founder: Actor) -
     assert (await api.post("/api/requests", json={})).status_code == 401
     assert (await api.get("/api/requests")).status_code == 401
     assert (await api.get(f"/api/requests/{mine['id']}")).status_code == 401
+    assert (await api.post(f"/api/requests/{mine['id']}/close")).status_code == 401
+
+
+# -- close (#60): no further bids, gone from the builders' board -----------------------------------
+
+
+async def test_close_answers_200_then_409_and_leaves_the_builders_board(
+    api: AsyncClient, founder: Actor, unconfirmed_builder: Actor
+) -> None:
+    mine = await publish(api, founder)
+    still_open = await publish(api, founder, brief_id="brief-agri-01")
+
+    closed = await api.post(f"/api/requests/{mine['id']}/close", headers=founder.headers)
+    again = await api.post(f"/api/requests/{mine['id']}/close", headers=founder.headers)
+
+    assert closed.status_code == 200
+    assert closed.json()["status"] == "closed"
+    assert closed.json()["closedAt"] is not None
+    assert closed.json()["id"] == mine["id"]
+    assert again.status_code == 409
+    assert again.json()["detail"] == "request already closed"
+
+    founder_list = (await api.get("/api/requests", headers=founder.headers)).json()
+    builder_list = (await api.get("/api/requests", headers=unconfirmed_builder.headers)).json()
+    read = await api.get(f"/api/requests/{mine['id']}", headers=founder.headers)
+
+    assert [(r["id"], r["status"]) for r in founder_list] == [
+        (still_open["id"], "open"),
+        (mine["id"], "closed"),
+    ]
+    assert [r["id"] for r in builder_list] == [still_open["id"]]
+    assert read.json()["status"] == "closed"
+    assert read.json()["closedAt"] == closed.json()["closedAt"]
+
+
+async def test_only_the_owning_founder_may_close(
+    api: AsyncClient, founder: Actor, other_founder: Actor, unconfirmed_builder: Actor
+) -> None:
+    mine = await publish(api, founder)
+
+    other = await api.post(f"/api/requests/{mine['id']}/close", headers=other_founder.headers)
+    builder = await api.post(
+        f"/api/requests/{mine['id']}/close", headers=unconfirmed_builder.headers
+    )
+    unknown = await api.post(
+        "/api/requests/00000000-0000-0000-0000-000000000000/close", headers=founder.headers
+    )
+
+    assert other.status_code == 404
+    assert builder.status_code == 403
+    assert builder.json()["detail"] == "role founder required"
+    assert unknown.status_code == 404
+    assert (await api.get(f"/api/requests/{mine['id']}", headers=founder.headers)).json()[
+        "status"
+    ] == "open"
