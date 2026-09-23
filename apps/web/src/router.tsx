@@ -1,5 +1,6 @@
 import { Link, Outlet, Route, Routes } from "react-router";
 
+import { OfflineBanner } from "./components/OfflineBanner";
 import { TopNav } from "./components/TopNav";
 import { HandoffScreen } from "./features/handoff/HandoffScreen";
 import { RoutePage } from "./features/route/RoutePage";
@@ -7,6 +8,7 @@ import { RoutePage } from "./features/route/RoutePage";
 function Layout() {
   return (
     <div className="min-h-screen bg-ground text-ink">
+      <OfflineBanner />
       <TopNav />
       <main className="mx-auto w-full max-w-[var(--vr-content-max)] px-6 py-12">
         <Outlet />
