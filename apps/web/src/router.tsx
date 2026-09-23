@@ -1,6 +1,7 @@
 import { Link, Outlet, Route, Routes } from "react-router";
 
 import { TopNav } from "./components/TopNav";
+import { RoutePage } from "./features/route/RoutePage";
 
 function Layout() {
   return (
@@ -35,15 +36,6 @@ function LandingPlaceholder() {
   );
 }
 
-function RoutePlaceholder() {
-  return (
-    <section className="flex flex-col gap-2">
-      <h1 className="font-display text-[36px] font-medium leading-tight">Describe your MVP</h1>
-      <p className="text-ink-2">Plain language is fine. We will ask for anything missing.</p>
-    </section>
-  );
-}
-
 function HandoffPlaceholder() {
   return <h1 className="font-display text-[36px] font-medium">Venture handoff</h1>;
 }
@@ -53,7 +45,7 @@ export function AppRoutes() {
     <Routes>
       <Route element={<Layout />}>
         <Route index element={<LandingPlaceholder />} />
-        <Route path="route" element={<RoutePlaceholder />} />
+        <Route path="route" element={<RoutePage />} />
         <Route path="handoff" element={<HandoffPlaceholder />} />
       </Route>
     </Routes>
