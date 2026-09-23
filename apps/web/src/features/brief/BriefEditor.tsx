@@ -1,5 +1,5 @@
-import { VentureBrief, type SkillId, type VentureBrief as VentureBriefT } from "@venture-route/contracts";
-import { useState, type FormEvent } from "react";
+import { VentureBrief, type PartialBriefInput, type SkillId, type VentureBrief as VentureBriefT } from "@venture-route/contracts";
+import { useMemo, useState, type FormEvent } from "react";
 import type { DateRange } from "react-day-picker";
 
 import { Button } from "@/components/ui/button";
@@ -7,14 +7,21 @@ import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { MODES, MODE_LABELS, SKILLS, SKILL_LABELS, VERTICALS, VERTICAL_LABELS, briefIdFor } from "../../lib/brief";
 import { dateRange } from "../../lib/format";
+import { splitFieldMessages } from "../../lib/validationError";
 
-type BriefFormProps = Readonly<{
+type BriefEditorProps = Readonly<{
+  /** Pre-fills the editor (review) or starts empty (intake form). */
+  initial?: PartialBriefInput | null;
   busy: boolean;
+  /** An engine `validation-error` message; mapped to a field by its prefix. */
+  serverError?: string | null;
   onSubmit(brief: VentureBriefT): void;
   onBack(): void;
+  backLabel?: string;
 }>;
 
 type Draft = {
+  id: string | null;
   title: string;
   vertical: string;
   requiredSkills: SkillId[];
@@ -24,18 +31,6 @@ type Draft = {
   location: string;
   dailyBudget: string;
   preferReusableIp: boolean;
-};
-
-const EMPTY: Draft = {
-  title: "",
-  vertical: "",
-  requiredSkills: [],
-  maximumTeamSize: "3",
-  range: undefined,
-  deliveryMode: "",
-  location: "",
-  dailyBudget: "",
-  preferReusableIp: false,
 };
 
 /** Demo clock (D-14): the calendar opens on September 2026 where the seed availability lives. */
@@ -48,9 +43,33 @@ function iso(date: Date): string {
   return `${y}-${m}-${d}`;
 }
 
+function fromIso(value: string): Date {
+  const [y, m, d] = value.split("-").map(Number);
+  return new Date(y ?? 2026, (m ?? 1) - 1, d ?? 1);
+}
+
+function draftFrom(initial: PartialBriefInput | null | undefined): Draft {
+  const b = initial ?? {};
+  return {
+    id: b.id ?? null,
+    title: b.title ?? "",
+    vertical: b.vertical ?? "",
+    requiredSkills: b.requiredSkills ?? [],
+    maximumTeamSize: b.maximumTeamSize != null ? String(b.maximumTeamSize) : "3",
+    range:
+      b.availabilityStart && b.availabilityEnd
+        ? { from: fromIso(b.availabilityStart), to: fromIso(b.availabilityEnd) }
+        : undefined,
+    deliveryMode: b.deliveryMode ?? "",
+    location: b.location ?? "",
+    dailyBudget: b.dailyBudget != null ? String(b.dailyBudget) : "",
+    preferReusableIp: b.preferReusableIp ?? false,
+  };
+}
+
 function toInput(draft: Draft): unknown {
   return {
-    id: briefIdFor(draft.title),
+    id: draft.id ?? briefIdFor(draft.title),
     title: draft.title.trim(),
     vertical: draft.vertical || undefined,
     requiredSkills: draft.requiredSkills,
@@ -65,43 +84,69 @@ function toInput(draft: Draft): unknown {
   };
 }
 
-/** Structured-form fallback (requirements.md In scope 3): the full brief to POST /api/route. */
-export function BriefForm({ busy, onSubmit, onBack }: BriefFormProps) {
-  const [draft, setDraft] = useState<Draft>(EMPTY);
-  const [errors, setErrors] = useState<Record<string, string>>({});
-  const [calendarOpen, setCalendarOpen] = useState(false);
+const ZOD_FIELD_ALIASES: Record<string, string> = { availabilityStart: "availability", availabilityEnd: "availability" };
 
-  const patch = (changes: Partial<Draft>) => setDraft((current) => ({ ...current, ...changes }));
+/**
+ * The venture brief as editable fields (screen 4 review and the screen 3 form fallback).
+ * Re-validates with the VentureBrief Zod schema before submit; every error renders inline under
+ * its field with id `error-<field>` so the input can point at it.
+ */
+export function BriefEditor({ initial, busy, serverError, onSubmit, onBack, backLabel = "Back to chat" }: BriefEditorProps) {
+  const [draft, setDraft] = useState<Draft>(() => draftFrom(initial));
+  const [clientErrors, setClientErrors] = useState<Record<string, string>>({});
+  const [calendarOpen, setCalendarOpen] = useState(false);
+  const [dismissedServerError, setDismissedServerError] = useState<string | null>(null);
+
+  // A new `initial` remounts the editor through its `key` (see ReviewPage), so no effect here.
+  const serverErrors = useMemo(() => {
+    if (!serverError || serverError === dismissedServerError) return {};
+    return Object.fromEntries(splitFieldMessages(serverError).map((item) => [item.field, item.text]));
+  }, [serverError, dismissedServerError]);
+
+  const errors: Record<string, string> = { ...serverErrors, ...clientErrors };
+
+  const patch = (changes: Partial<Draft>) => {
+    setDraft((current) => ({ ...current, ...changes }));
+    setClientErrors({});
+    if (serverError) setDismissedServerError(serverError);
+  };
 
   function submit(event: FormEvent) {
     event.preventDefault();
     const parsed = VentureBrief.safeParse(toInput(draft));
+    const next: Record<string, string> = {};
     if (!parsed.success) {
-      const next: Record<string, string> = {};
       for (const issue of parsed.error.issues) {
-        const key = String(issue.path[0] ?? "form");
+        const raw = String(issue.path[0] ?? "form");
+        const key = ZOD_FIELD_ALIASES[raw] ?? raw;
         if (!next[key]) next[key] = issue.message;
       }
-      if (draft.deliveryMode === "on-site" && !draft.location.trim()) {
-        next.location = "Location is required for on-site delivery";
-      }
-      setErrors(next);
+    }
+    if (draft.deliveryMode === "on-site" && !draft.location.trim()) {
+      next.location = "Location is required for on-site delivery";
+    }
+    if (draft.range?.from && !draft.range.to) next.availability = "Pick an end date";
+    if (Object.keys(next).length > 0 || !parsed.success) {
+      setClientErrors(next);
       return;
     }
-    if (parsed.data.deliveryMode === "on-site" && !parsed.data.location) {
-      setErrors({ location: "Location is required for on-site delivery" });
-      return;
-    }
-    setErrors({});
+    setClientErrors({});
     onSubmit(parsed.data);
   }
 
+  const describedBy = (field: string) => (errors[field] ? `error-${field}` : undefined);
+  const invalid = (field: string) => (errors[field] ? true : undefined);
   const error = (field: string) =>
     errors[field] ? (
-      <p role="alert" className="text-[13px] text-danger">
+      <p id={`error-${field}`} role="alert" className="text-[13px] text-danger">
         {errors[field]}
       </p>
     ) : null;
+
+  const pillClass = (selected: boolean) =>
+    `inline-flex h-8 cursor-pointer items-center rounded-pill border px-3 text-sm ${
+      selected ? "border-accent-green bg-accent-green text-white" : "border-border-strong bg-surface-strong"
+    }`;
 
   const rangeLabel =
     draft.range?.from && draft.range.to
@@ -117,6 +162,12 @@ export function BriefForm({ busy, onSubmit, onBack }: BriefFormProps) {
       noValidate
       className="grid grid-cols-1 gap-6 rounded-card border border-border bg-surface p-6 md:grid-cols-2"
     >
+      {errors.form && (
+        <p id="error-form" role="alert" className="rounded-card border border-danger/40 bg-surface-strong px-3 py-2 text-[13px] text-danger md:col-span-2">
+          {errors.form}
+        </p>
+      )}
+
       <div className="flex flex-col gap-1 md:col-span-2">
         <label htmlFor="brief-title" className="text-[13px] text-ink-2">
           Title
@@ -124,6 +175,8 @@ export function BriefForm({ busy, onSubmit, onBack }: BriefFormProps) {
         <input
           id="brief-title"
           value={draft.title}
+          aria-invalid={invalid("title")}
+          aria-describedby={describedBy("title")}
           onChange={(e) => patch({ title: e.target.value })}
           className="h-10 rounded-card border border-border-strong bg-surface-strong px-3"
         />
@@ -134,12 +187,7 @@ export function BriefForm({ busy, onSubmit, onBack }: BriefFormProps) {
         <legend className="text-[13px] text-ink-2">Vertical</legend>
         <div className="flex gap-2" role="radiogroup" aria-label="Vertical">
           {VERTICALS.map((vertical) => (
-            <label
-              key={vertical}
-              className={`inline-flex h-8 cursor-pointer items-center rounded-pill border px-3 text-sm ${
-                draft.vertical === vertical ? "border-accent-green bg-accent-green text-white" : "border-border-strong bg-surface-strong"
-              }`}
-            >
+            <label key={vertical} className={pillClass(draft.vertical === vertical)}>
               <input
                 type="radio"
                 name="vertical"
@@ -161,12 +209,7 @@ export function BriefForm({ busy, onSubmit, onBack }: BriefFormProps) {
           {SKILLS.map((skill) => {
             const checked = draft.requiredSkills.includes(skill);
             return (
-              <label
-                key={skill}
-                className={`inline-flex h-8 cursor-pointer items-center rounded-pill border px-3 text-sm ${
-                  checked ? "border-accent-green bg-accent-green text-white" : "border-border-strong bg-surface-strong"
-                }`}
-              >
+              <label key={skill} className={pillClass(checked)}>
                 <input
                   type="checkbox"
                   checked={checked}
@@ -197,6 +240,8 @@ export function BriefForm({ busy, onSubmit, onBack }: BriefFormProps) {
           min={1}
           max={5}
           value={draft.maximumTeamSize}
+          aria-invalid={invalid("maximumTeamSize")}
+          aria-describedby={describedBy("maximumTeamSize")}
           onChange={(e) => patch({ maximumTeamSize: e.target.value })}
           className="h-10 w-24 rounded-card border border-border-strong bg-surface-strong px-3 font-mono"
         />
@@ -209,6 +254,7 @@ export function BriefForm({ busy, onSubmit, onBack }: BriefFormProps) {
           <PopoverTrigger asChild>
             <button
               type="button"
+              aria-describedby={describedBy("availability")}
               className="flex h-10 items-center rounded-card border border-border-strong bg-surface-strong px-3 text-left font-mono text-sm"
             >
               <span className="sr-only">Availability: </span>
@@ -219,25 +265,20 @@ export function BriefForm({ busy, onSubmit, onBack }: BriefFormProps) {
             <Calendar
               mode="range"
               numberOfMonths={2}
-              defaultMonth={DEMO_MONTH}
+              defaultMonth={draft.range?.from ?? DEMO_MONTH}
               selected={draft.range}
               onSelect={(range) => patch({ range })}
             />
           </PopoverContent>
         </Popover>
-        {error("availabilityStart") ?? error("availabilityEnd")}
+        {error("availability")}
       </div>
 
       <fieldset className="flex flex-col gap-2">
         <legend className="text-[13px] text-ink-2">Delivery mode</legend>
         <div className="flex gap-2" role="radiogroup" aria-label="Delivery mode">
           {MODES.map((mode) => (
-            <label
-              key={mode}
-              className={`inline-flex h-8 cursor-pointer items-center rounded-pill border px-3 text-sm ${
-                draft.deliveryMode === mode ? "border-accent-green bg-accent-green text-white" : "border-border-strong bg-surface-strong"
-              }`}
-            >
+            <label key={mode} className={pillClass(draft.deliveryMode === mode)}>
               <input
                 type="radio"
                 name="deliveryMode"
@@ -261,6 +302,8 @@ export function BriefForm({ busy, onSubmit, onBack }: BriefFormProps) {
           id="brief-location"
           value={draft.location}
           disabled={draft.deliveryMode !== "on-site"}
+          aria-invalid={invalid("location")}
+          aria-describedby={describedBy("location")}
           onChange={(e) => patch({ location: e.target.value })}
           className="h-10 rounded-card border border-border-strong bg-surface-strong px-3 disabled:opacity-60"
         />
@@ -272,13 +315,19 @@ export function BriefForm({ busy, onSubmit, onBack }: BriefFormProps) {
         <label htmlFor="brief-budget" className="text-[13px] text-ink-2">
           Daily budget
         </label>
-        <div className="flex h-10 items-center rounded-card border border-border-strong bg-surface-strong px-3 font-mono">
+        <div
+          className={`flex h-10 items-center rounded-card border bg-surface-strong px-3 font-mono ${
+            errors.dailyBudget ? "border-danger" : "border-border-strong"
+          }`}
+        >
           <span className="text-ink-3">USD</span>
           <input
             id="brief-budget"
             type="number"
             min={1}
             value={draft.dailyBudget}
+            aria-invalid={invalid("dailyBudget")}
+            aria-describedby={describedBy("dailyBudget")}
             onChange={(e) => patch({ dailyBudget: e.target.value })}
             className="w-24 bg-transparent px-2 focus:outline-none"
           />
@@ -300,10 +349,9 @@ export function BriefForm({ busy, onSubmit, onBack }: BriefFormProps) {
         </label>
       </div>
 
-      {error("form")}
       <div className="flex items-center justify-end gap-3 md:col-span-2">
         <Button type="button" variant="ghost" onClick={onBack}>
-          Back to chat
+          {backLabel}
         </Button>
         <Button type="submit" disabled={busy}>
           Find my route

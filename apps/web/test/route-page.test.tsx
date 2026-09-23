@@ -46,7 +46,10 @@ describe("/route: scenario chips, banner, validation", () => {
     await user.click(await screen.findByRole("button", { name: "Load scenario: Health pilot" }));
     await user.click(await screen.findByRole("button", { name: "Find my route" }));
 
-    expect(await screen.findByText(/dailyBudget: Input should be greater than 0/)).toBeInTheDocument();
-    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+    // The review screen maps the prefix to its field (#26); no engine-unreachable banner appears.
+    const alert = await screen.findByRole("alert");
+    expect(alert).toHaveAttribute("id", "error-dailyBudget");
+    expect(alert).toHaveTextContent("Input should be greater than 0");
+    expect(screen.queryByText(/Use the form instead/)).not.toBeInTheDocument();
   });
 });

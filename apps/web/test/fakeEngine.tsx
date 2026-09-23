@@ -46,13 +46,12 @@ export function clarificationFor(partial: Record<string, unknown>): ChatResponse
   };
 }
 
+/** The seed brief whose routing-relevant fields equal the posted brief's (ids may differ). */
 function routeForBrief(brief: Record<string, unknown>) {
-  const byId = snapshot.routes[brief.id as keyof typeof snapshot.routes];
-  if (byId) return byId;
-  const skills = JSON.stringify(brief.requiredSkills);
-  const match = SEED_BRIEFS.find(
-    (seed) => JSON.stringify(seed.requiredSkills) === skills && seed.vertical === brief.vertical,
-  );
+  const key = (b: Record<string, unknown>) =>
+    JSON.stringify([b.vertical, b.requiredSkills, b.deliveryMode, b.location ?? null, b.dailyBudget, b.maximumTeamSize]);
+  const wanted = key(brief);
+  const match = SEED_BRIEFS.find((seed) => key(seed as unknown as Record<string, unknown>) === wanted);
   if (!match) throw new Error(`fake engine has no route for ${JSON.stringify(brief)}`);
   return snapshot.routes[match.id as keyof typeof snapshot.routes];
 }

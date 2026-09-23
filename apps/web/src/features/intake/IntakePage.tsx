@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 
 import { ApiBanner } from "../../components/ApiBanner";
 import { useRouting } from "../../state/routingContext";
-import { BriefForm } from "./BriefForm";
+import { BriefEditor } from "../brief/BriefEditor";
 import { BriefPanel } from "./BriefPanel";
 import { ChatThread } from "./ChatThread";
 import { Composer } from "./Composer";
@@ -31,7 +31,7 @@ export function IntakePage({ initialMode = "chat" }: IntakePageProps) {
             <p className="text-ink-2">Plain language is fine. We will ask for anything missing.</p>
           </div>
           {mode === "form" ? (
-            <BriefForm
+            <BriefEditor
               busy={state.busy}
               onSubmit={(brief) => void routeBrief(brief)}
               onBack={() => setMode("chat")}
