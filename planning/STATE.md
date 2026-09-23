@@ -1,6 +1,6 @@
 # STATE — rolling snapshot (edit in place, never append a log)
 
-**Updated:** 2026-09-23 (evening) · **Demo:** Thu 2026-10-01 · **Current sprint:** 003 — Marketplace on `sprint/003-marketplace`, PR #48 open as a **draft** (acceptance Must lines 1–4 are ❌ until one Operator step, see Blockers). Sprint 002 merged at `c194b6f` (PR #33, #34).
+**Updated:** 2026-09-23 (evening) · **Demo:** Thu 2026-10-01 · **Current sprint:** 003 — Marketplace, PR #48 from `sprint/003-marketplace` **merged on the Operator's explicit instruction with acceptance Must lines 1–4 still ❌** ("commit and merge all branches for us to close sprint 003", 2026-09-23). AGENTS.md rule 9 and `planning/AUTOMATION.md` say a PR is ready only when every Must line has evidence; this merge is the Operator's override, recorded here so it stays visible. The four lines reopen on #47 with one Dashboard step (see Blockers). Sprint 002 merged at `c194b6f` (PR #33, #34).
 
 ## Where we are
 - Sprints 000–002 are on `master`: the FastAPI engine with `hyperon==0.2.10` in-process (seven named rules over 181 seed atoms), the routing core (`POST /api/route`, `GET /api/scenarios`, `POST /api/conversation`, LLM adapters with the null fallback), `packages/contracts` (Zod 4 with the Pydantic parity test) and the founder UI (`/`, `/route`, `/handoff`, Why this route? drawer, PWA, offline mode) replicating the Stitch exports (D-36).
