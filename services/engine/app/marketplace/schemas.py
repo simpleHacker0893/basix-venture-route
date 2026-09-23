@@ -11,6 +11,7 @@ from datetime import date, datetime
 from typing import Annotated, Literal, Self
 
 from pydantic import (
+    AwareDatetime,
     BaseModel,
     ConfigDict,
     Field,
@@ -20,7 +21,17 @@ from pydantic import (
     model_validator,
 )
 
-from app.models.brief import JS_SAFE_INT, PositiveSafeInt, SkillId, Vertical
+from app.models.brief import (
+    JS_SAFE_INT,
+    DeliveryMode,
+    PositiveSafeInt,
+    SafeInt,
+    SkillId,
+    VentureBrief,
+    Vertical,
+)
+from app.models.engine import ReasoningPath
+from app.models.route import RouteStatus
 
 Evidence = Literal["credential", "project", "both"]
 SkillStatus = Literal["verified", "self-described"]
@@ -252,3 +263,140 @@ class Candidate(Wire):
     contact: SharedContact
     confirmed: bool
     demo_data: bool = Field(default=True, alias="demoData")
+
+
+# -- Sprint 004 (spec #52 §HTTP API, #54): requests, bids, bookings, eligibility, dashboard -------
+# Nine shapes mirrored by Zod. Money is integer USD per day (D-16); `proposedStart` is ISO 8601
+# with offset in UTC and `proposedStartLocal` the same instant rendered in Africa/Nairobi.
+
+RequestStatus = Literal["open", "closed"]
+BidStatus = Literal["submitted"]
+BookingState = Literal["proposed", "accepted", "countered", "confirmed"]
+BookingAction = Literal["propose", "accept", "counter", "confirm"]
+BookingActor = Literal["founder", "builder"]
+DurationMin = Literal[30, 45]
+BidMessage = Annotated[str, Field(max_length=1000)]
+BookingNote = Annotated[str, Field(max_length=500)]
+Count = Annotated[int, Field(ge=0, le=JS_SAFE_INT)]
+
+
+class RouteSnapshot(Wire):
+    """What the founder saw when publishing; display-only, never an input to eligibility."""
+
+    status: RouteStatus
+    total_daily_rate: SafeInt = Field(alias="totalDailyRate")
+    builder_ids: list[str] = Field(alias="builderIds")
+
+
+class RequestCreate(Wire):
+    brief: VentureBrief
+    route: RouteSnapshot
+
+
+class Eligibility(Wire):
+    """The engine's verdict for one builder on one brief: `eligible-builder` witnesses only."""
+
+    eligible: bool
+    skills: list[SkillId]
+    path: ReasoningPath | None = None
+    reason: str | None = None
+
+
+class RequestOut(Wire):
+    id: str
+    founder_id: str = Field(alias="founderId")
+    brief: VentureBrief
+    route: RouteSnapshot
+    title: str
+    vertical: Vertical
+    delivery_mode: DeliveryMode = Field(alias="deliveryMode")
+    availability_start: date = Field(alias="availabilityStart")
+    availability_end: date = Field(alias="availabilityEnd")
+    daily_budget: PositiveSafeInt = Field(alias="dailyBudget")
+    route_status: RouteStatus = Field(alias="routeStatus")
+    status: RequestStatus
+    closed_at: datetime | None = Field(default=None, alias="closedAt")
+    created_at: datetime = Field(alias="createdAt")
+    eligibility: Eligibility | None = None
+    demo_data: bool = Field(default=True, alias="demoData")
+
+
+class BidCreate(Wire):
+    day_rate: PositiveSafeInt = Field(alias="dayRate")
+    message: BidMessage = ""
+
+
+class BidOut(Wire):
+    id: str
+    request_id: str = Field(alias="requestId")
+    request_title: str = Field(alias="requestTitle")
+    request_status: RequestStatus = Field(alias="requestStatus")
+    builder_id: str = Field(alias="builderId")
+    display_name: str = Field(alias="displayName")
+    day_rate: PositiveSafeInt = Field(alias="dayRate")
+    message: BidMessage
+    eligible_skills: list[SkillId] = Field(alias="eligibleSkills")
+    path: ReasoningPath
+    status: BidStatus
+    created_at: datetime = Field(alias="createdAt")
+    demo_data: bool = Field(default=True, alias="demoData")
+
+
+class BookingProposal(Wire):
+    proposed_start: AwareDatetime = Field(alias="proposedStart")
+    duration_min: DurationMin = Field(alias="durationMin")
+    note: BookingNote = ""
+
+
+class BookingCreate(BookingProposal):
+    builder_id: str = Field(alias="builderId")
+    request_id: str | None = Field(default=None, alias="requestId")
+
+
+class BookingHistoryEntry(Wire):
+    action: BookingAction
+    actor: BookingActor
+    state: BookingState
+    proposed_start: AwareDatetime = Field(alias="proposedStart")
+    proposed_start_local: str = Field(alias="proposedStartLocal")
+    duration_min: DurationMin = Field(alias="durationMin")
+    note: BookingNote
+    at: AwareDatetime
+
+
+class BookingOut(Wire):
+    id: str
+    request_id: str | None = Field(default=None, alias="requestId")
+    request_title: str | None = Field(default=None, alias="requestTitle")
+    founder_id: str = Field(alias="founderId")
+    builder_id: str = Field(alias="builderId")
+    display_name: str = Field(alias="displayName")
+    state: BookingState
+    proposed_start: AwareDatetime = Field(alias="proposedStart")
+    proposed_start_local: str = Field(alias="proposedStartLocal")
+    duration_min: DurationMin = Field(alias="durationMin")
+    note: BookingNote
+    history: list[BookingHistoryEntry]
+    created_at: datetime = Field(alias="createdAt")
+    demo_data: bool = Field(default=True, alias="demoData")
+
+
+class RouteCounts(Wire):
+    feasible: Count
+    partial: Count
+    infeasible: Count
+
+
+class DashboardCounts(Wire):
+    briefs: Count
+    routes: RouteCounts
+    open_requests: Count = Field(alias="openRequests")
+    bids_received: Count = Field(alias="bidsReceived")
+    bookings: Count
+
+
+class Dashboard(Wire):
+    counts: DashboardCounts
+    requests: list[RequestOut]
+    bids_received: list[BidOut] = Field(alias="bidsReceived")
+    upcoming_bookings: list[BookingOut] = Field(alias="upcomingBookings")

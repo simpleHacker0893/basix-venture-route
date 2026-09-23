@@ -34,6 +34,369 @@
     ],
     "type": "object"
   },
+  "Bid": {
+    "additionalProperties": false,
+    "properties": {
+      "builderId": {
+        "type": "string"
+      },
+      "createdAt": {
+        "format": "date-time",
+        "type": "string"
+      },
+      "dayRate": {
+        "exclusiveMinimum": 0,
+        "maximum": 9007199254740991,
+        "type": "integer"
+      },
+      "demoData": {
+        "default": true,
+        "type": "boolean"
+      },
+      "displayName": {
+        "type": "string"
+      },
+      "eligibleSkills": {
+        "items": {
+          "enum": [
+            "python",
+            "ai-metta",
+            "ui-ux",
+            "frontend",
+            "backend",
+            "domain-research",
+            "mobile",
+            "rust",
+            "data"
+          ],
+          "type": "string"
+        },
+        "type": "array"
+      },
+      "id": {
+        "type": "string"
+      },
+      "message": {
+        "maxLength": 1000,
+        "type": "string"
+      },
+      "path": {
+        "properties": {
+          "conclusion": {
+            "type": "string"
+          },
+          "facts": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "rule": {
+            "anyOf": [
+              {
+                "enum": [
+                  "verified-for-skill",
+                  "mode-compatible",
+                  "available-for-brief",
+                  "eligible-builder",
+                  "reuse-fit",
+                  "partner-fit",
+                  "route-gap",
+                  "assembler.team-size-fit",
+                  "assembler.budget-fit"
+                ],
+                "type": "string"
+              },
+              {
+                "enum": [
+                  "cohort-of"
+                ],
+                "type": "string"
+              }
+            ]
+          }
+        },
+        "required": [
+          "conclusion",
+          "facts",
+          "rule"
+        ],
+        "type": "object"
+      },
+      "requestId": {
+        "type": "string"
+      },
+      "requestStatus": {
+        "enum": [
+          "open",
+          "closed"
+        ],
+        "type": "string"
+      },
+      "requestTitle": {
+        "type": "string"
+      },
+      "status": {
+        "const": "submitted",
+        "type": "string"
+      }
+    },
+    "required": [
+      "builderId",
+      "createdAt",
+      "dayRate",
+      "displayName",
+      "eligibleSkills",
+      "id",
+      "message",
+      "path",
+      "requestId",
+      "requestStatus",
+      "requestTitle",
+      "status"
+    ],
+    "type": "object"
+  },
+  "BidCreate": {
+    "additionalProperties": false,
+    "properties": {
+      "dayRate": {
+        "exclusiveMinimum": 0,
+        "maximum": 9007199254740991,
+        "type": "integer"
+      },
+      "message": {
+        "default": "",
+        "maxLength": 1000,
+        "type": "string"
+      }
+    },
+    "required": [
+      "dayRate"
+    ],
+    "type": "object"
+  },
+  "Booking": {
+    "additionalProperties": false,
+    "properties": {
+      "builderId": {
+        "type": "string"
+      },
+      "createdAt": {
+        "format": "date-time",
+        "type": "string"
+      },
+      "demoData": {
+        "default": true,
+        "type": "boolean"
+      },
+      "displayName": {
+        "type": "string"
+      },
+      "durationMin": {
+        "enum": [
+          30,
+          45
+        ],
+        "type": "integer"
+      },
+      "founderId": {
+        "type": "string"
+      },
+      "history": {
+        "items": {
+          "additionalProperties": false,
+          "properties": {
+            "action": {
+              "enum": [
+                "propose",
+                "accept",
+                "counter",
+                "confirm"
+              ],
+              "type": "string"
+            },
+            "actor": {
+              "enum": [
+                "founder",
+                "builder"
+              ],
+              "type": "string"
+            },
+            "at": {
+              "format": "date-time",
+              "type": "string"
+            },
+            "durationMin": {
+              "enum": [
+                30,
+                45
+              ],
+              "type": "integer"
+            },
+            "note": {
+              "maxLength": 500,
+              "type": "string"
+            },
+            "proposedStart": {
+              "format": "date-time",
+              "type": "string"
+            },
+            "proposedStartLocal": {
+              "type": "string"
+            },
+            "state": {
+              "enum": [
+                "proposed",
+                "accepted",
+                "countered",
+                "confirmed"
+              ],
+              "type": "string"
+            }
+          },
+          "required": [
+            "action",
+            "actor",
+            "at",
+            "durationMin",
+            "note",
+            "proposedStart",
+            "proposedStartLocal",
+            "state"
+          ],
+          "type": "object"
+        },
+        "type": "array"
+      },
+      "id": {
+        "type": "string"
+      },
+      "note": {
+        "maxLength": 500,
+        "type": "string"
+      },
+      "proposedStart": {
+        "format": "date-time",
+        "type": "string"
+      },
+      "proposedStartLocal": {
+        "type": "string"
+      },
+      "requestId": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null
+      },
+      "requestTitle": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null
+      },
+      "state": {
+        "enum": [
+          "proposed",
+          "accepted",
+          "countered",
+          "confirmed"
+        ],
+        "type": "string"
+      }
+    },
+    "required": [
+      "builderId",
+      "createdAt",
+      "displayName",
+      "durationMin",
+      "founderId",
+      "history",
+      "id",
+      "note",
+      "proposedStart",
+      "proposedStartLocal",
+      "state"
+    ],
+    "type": "object"
+  },
+  "BookingCreate": {
+    "additionalProperties": false,
+    "properties": {
+      "builderId": {
+        "type": "string"
+      },
+      "durationMin": {
+        "enum": [
+          30,
+          45
+        ],
+        "type": "integer"
+      },
+      "note": {
+        "default": "",
+        "maxLength": 500,
+        "type": "string"
+      },
+      "proposedStart": {
+        "format": "date-time",
+        "type": "string"
+      },
+      "requestId": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null
+      }
+    },
+    "required": [
+      "builderId",
+      "durationMin",
+      "proposedStart"
+    ],
+    "type": "object"
+  },
+  "BookingProposal": {
+    "additionalProperties": false,
+    "properties": {
+      "durationMin": {
+        "enum": [
+          30,
+          45
+        ],
+        "type": "integer"
+      },
+      "note": {
+        "default": "",
+        "maxLength": 500,
+        "type": "string"
+      },
+      "proposedStart": {
+        "format": "date-time",
+        "type": "string"
+      }
+    },
+    "required": [
+      "durationMin",
+      "proposedStart"
+    ],
+    "type": "object"
+  },
   "BuilderProfile": {
     "additionalProperties": false,
     "properties": {
@@ -1553,6 +1916,778 @@
     ],
     "type": "object"
   },
+  "Dashboard": {
+    "additionalProperties": false,
+    "properties": {
+      "bidsReceived": {
+        "items": {
+          "additionalProperties": false,
+          "properties": {
+            "builderId": {
+              "type": "string"
+            },
+            "createdAt": {
+              "format": "date-time",
+              "type": "string"
+            },
+            "dayRate": {
+              "exclusiveMinimum": 0,
+              "maximum": 9007199254740991,
+              "type": "integer"
+            },
+            "demoData": {
+              "default": true,
+              "type": "boolean"
+            },
+            "displayName": {
+              "type": "string"
+            },
+            "eligibleSkills": {
+              "items": {
+                "enum": [
+                  "python",
+                  "ai-metta",
+                  "ui-ux",
+                  "frontend",
+                  "backend",
+                  "domain-research",
+                  "mobile",
+                  "rust",
+                  "data"
+                ],
+                "type": "string"
+              },
+              "type": "array"
+            },
+            "id": {
+              "type": "string"
+            },
+            "message": {
+              "maxLength": 1000,
+              "type": "string"
+            },
+            "path": {
+              "properties": {
+                "conclusion": {
+                  "type": "string"
+                },
+                "facts": {
+                  "items": {
+                    "type": "string"
+                  },
+                  "type": "array"
+                },
+                "rule": {
+                  "anyOf": [
+                    {
+                      "enum": [
+                        "verified-for-skill",
+                        "mode-compatible",
+                        "available-for-brief",
+                        "eligible-builder",
+                        "reuse-fit",
+                        "partner-fit",
+                        "route-gap",
+                        "assembler.team-size-fit",
+                        "assembler.budget-fit"
+                      ],
+                      "type": "string"
+                    },
+                    {
+                      "enum": [
+                        "cohort-of"
+                      ],
+                      "type": "string"
+                    }
+                  ]
+                }
+              },
+              "required": [
+                "conclusion",
+                "facts",
+                "rule"
+              ],
+              "type": "object"
+            },
+            "requestId": {
+              "type": "string"
+            },
+            "requestStatus": {
+              "enum": [
+                "open",
+                "closed"
+              ],
+              "type": "string"
+            },
+            "requestTitle": {
+              "type": "string"
+            },
+            "status": {
+              "const": "submitted",
+              "type": "string"
+            }
+          },
+          "required": [
+            "builderId",
+            "createdAt",
+            "dayRate",
+            "displayName",
+            "eligibleSkills",
+            "id",
+            "message",
+            "path",
+            "requestId",
+            "requestStatus",
+            "requestTitle",
+            "status"
+          ],
+          "type": "object"
+        },
+        "type": "array"
+      },
+      "counts": {
+        "additionalProperties": false,
+        "properties": {
+          "bidsReceived": {
+            "maximum": 9007199254740991,
+            "minimum": 0,
+            "type": "integer"
+          },
+          "bookings": {
+            "maximum": 9007199254740991,
+            "minimum": 0,
+            "type": "integer"
+          },
+          "briefs": {
+            "maximum": 9007199254740991,
+            "minimum": 0,
+            "type": "integer"
+          },
+          "openRequests": {
+            "maximum": 9007199254740991,
+            "minimum": 0,
+            "type": "integer"
+          },
+          "routes": {
+            "additionalProperties": false,
+            "properties": {
+              "feasible": {
+                "maximum": 9007199254740991,
+                "minimum": 0,
+                "type": "integer"
+              },
+              "infeasible": {
+                "maximum": 9007199254740991,
+                "minimum": 0,
+                "type": "integer"
+              },
+              "partial": {
+                "maximum": 9007199254740991,
+                "minimum": 0,
+                "type": "integer"
+              }
+            },
+            "required": [
+              "feasible",
+              "infeasible",
+              "partial"
+            ],
+            "type": "object"
+          }
+        },
+        "required": [
+          "bidsReceived",
+          "bookings",
+          "briefs",
+          "openRequests",
+          "routes"
+        ],
+        "type": "object"
+      },
+      "requests": {
+        "items": {
+          "additionalProperties": false,
+          "properties": {
+            "availabilityEnd": {
+              "format": "date",
+              "type": "string"
+            },
+            "availabilityStart": {
+              "format": "date",
+              "type": "string"
+            },
+            "brief": {
+              "additionalProperties": false,
+              "properties": {
+                "availabilityEnd": {
+                  "format": "date",
+                  "type": "string"
+                },
+                "availabilityStart": {
+                  "format": "date",
+                  "type": "string"
+                },
+                "dailyBudget": {
+                  "exclusiveMinimum": 0,
+                  "maximum": 9007199254740991,
+                  "type": "integer"
+                },
+                "deliveryMode": {
+                  "enum": [
+                    "remote",
+                    "hybrid",
+                    "on-site"
+                  ],
+                  "type": "string"
+                },
+                "demoData": {
+                  "default": true,
+                  "type": "boolean"
+                },
+                "id": {
+                  "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$",
+                  "type": "string"
+                },
+                "location": {
+                  "anyOf": [
+                    {
+                      "maxLength": 100,
+                      "minLength": 1,
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "default": null
+                },
+                "maximumTeamSize": {
+                  "maximum": 5,
+                  "minimum": 1,
+                  "type": "integer"
+                },
+                "preferReusableIp": {
+                  "type": "boolean"
+                },
+                "requiredSkills": {
+                  "items": {
+                    "enum": [
+                      "python",
+                      "ai-metta",
+                      "ui-ux",
+                      "frontend",
+                      "backend",
+                      "domain-research",
+                      "mobile",
+                      "rust",
+                      "data"
+                    ],
+                    "type": "string"
+                  },
+                  "minItems": 1,
+                  "type": "array"
+                },
+                "title": {
+                  "maxLength": 200,
+                  "minLength": 1,
+                  "type": "string"
+                },
+                "vertical": {
+                  "enum": [
+                    "health",
+                    "agri",
+                    "education"
+                  ],
+                  "type": "string"
+                }
+              },
+              "required": [
+                "availabilityEnd",
+                "availabilityStart",
+                "dailyBudget",
+                "deliveryMode",
+                "id",
+                "maximumTeamSize",
+                "preferReusableIp",
+                "requiredSkills",
+                "title",
+                "vertical"
+              ],
+              "type": "object"
+            },
+            "closedAt": {
+              "anyOf": [
+                {
+                  "format": "date-time",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null
+            },
+            "createdAt": {
+              "format": "date-time",
+              "type": "string"
+            },
+            "dailyBudget": {
+              "exclusiveMinimum": 0,
+              "maximum": 9007199254740991,
+              "type": "integer"
+            },
+            "deliveryMode": {
+              "enum": [
+                "remote",
+                "hybrid",
+                "on-site"
+              ],
+              "type": "string"
+            },
+            "demoData": {
+              "default": true,
+              "type": "boolean"
+            },
+            "eligibility": {
+              "anyOf": [
+                {
+                  "additionalProperties": false,
+                  "properties": {
+                    "eligible": {
+                      "type": "boolean"
+                    },
+                    "path": {
+                      "anyOf": [
+                        {
+                          "properties": {
+                            "conclusion": {
+                              "type": "string"
+                            },
+                            "facts": {
+                              "items": {
+                                "type": "string"
+                              },
+                              "type": "array"
+                            },
+                            "rule": {
+                              "anyOf": [
+                                {
+                                  "enum": [
+                                    "verified-for-skill",
+                                    "mode-compatible",
+                                    "available-for-brief",
+                                    "eligible-builder",
+                                    "reuse-fit",
+                                    "partner-fit",
+                                    "route-gap",
+                                    "assembler.team-size-fit",
+                                    "assembler.budget-fit"
+                                  ],
+                                  "type": "string"
+                                },
+                                {
+                                  "enum": [
+                                    "cohort-of"
+                                  ],
+                                  "type": "string"
+                                }
+                              ]
+                            }
+                          },
+                          "required": [
+                            "conclusion",
+                            "facts",
+                            "rule"
+                          ],
+                          "type": "object"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "default": null
+                    },
+                    "reason": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "default": null
+                    },
+                    "skills": {
+                      "items": {
+                        "enum": [
+                          "python",
+                          "ai-metta",
+                          "ui-ux",
+                          "frontend",
+                          "backend",
+                          "domain-research",
+                          "mobile",
+                          "rust",
+                          "data"
+                        ],
+                        "type": "string"
+                      },
+                      "type": "array"
+                    }
+                  },
+                  "required": [
+                    "eligible",
+                    "skills"
+                  ],
+                  "type": "object"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null
+            },
+            "founderId": {
+              "type": "string"
+            },
+            "id": {
+              "type": "string"
+            },
+            "route": {
+              "additionalProperties": false,
+              "properties": {
+                "builderIds": {
+                  "items": {
+                    "type": "string"
+                  },
+                  "type": "array"
+                },
+                "status": {
+                  "enum": [
+                    "feasible",
+                    "partial",
+                    "infeasible"
+                  ],
+                  "type": "string"
+                },
+                "totalDailyRate": {
+                  "maximum": 9007199254740991,
+                  "minimum": -9007199254740991,
+                  "type": "integer"
+                }
+              },
+              "required": [
+                "builderIds",
+                "status",
+                "totalDailyRate"
+              ],
+              "type": "object"
+            },
+            "routeStatus": {
+              "enum": [
+                "feasible",
+                "partial",
+                "infeasible"
+              ],
+              "type": "string"
+            },
+            "status": {
+              "enum": [
+                "open",
+                "closed"
+              ],
+              "type": "string"
+            },
+            "title": {
+              "type": "string"
+            },
+            "vertical": {
+              "enum": [
+                "health",
+                "agri",
+                "education"
+              ],
+              "type": "string"
+            }
+          },
+          "required": [
+            "availabilityEnd",
+            "availabilityStart",
+            "brief",
+            "createdAt",
+            "dailyBudget",
+            "deliveryMode",
+            "founderId",
+            "id",
+            "route",
+            "routeStatus",
+            "status",
+            "title",
+            "vertical"
+          ],
+          "type": "object"
+        },
+        "type": "array"
+      },
+      "upcomingBookings": {
+        "items": {
+          "additionalProperties": false,
+          "properties": {
+            "builderId": {
+              "type": "string"
+            },
+            "createdAt": {
+              "format": "date-time",
+              "type": "string"
+            },
+            "demoData": {
+              "default": true,
+              "type": "boolean"
+            },
+            "displayName": {
+              "type": "string"
+            },
+            "durationMin": {
+              "enum": [
+                30,
+                45
+              ],
+              "type": "integer"
+            },
+            "founderId": {
+              "type": "string"
+            },
+            "history": {
+              "items": {
+                "additionalProperties": false,
+                "properties": {
+                  "action": {
+                    "enum": [
+                      "propose",
+                      "accept",
+                      "counter",
+                      "confirm"
+                    ],
+                    "type": "string"
+                  },
+                  "actor": {
+                    "enum": [
+                      "founder",
+                      "builder"
+                    ],
+                    "type": "string"
+                  },
+                  "at": {
+                    "format": "date-time",
+                    "type": "string"
+                  },
+                  "durationMin": {
+                    "enum": [
+                      30,
+                      45
+                    ],
+                    "type": "integer"
+                  },
+                  "note": {
+                    "maxLength": 500,
+                    "type": "string"
+                  },
+                  "proposedStart": {
+                    "format": "date-time",
+                    "type": "string"
+                  },
+                  "proposedStartLocal": {
+                    "type": "string"
+                  },
+                  "state": {
+                    "enum": [
+                      "proposed",
+                      "accepted",
+                      "countered",
+                      "confirmed"
+                    ],
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "action",
+                  "actor",
+                  "at",
+                  "durationMin",
+                  "note",
+                  "proposedStart",
+                  "proposedStartLocal",
+                  "state"
+                ],
+                "type": "object"
+              },
+              "type": "array"
+            },
+            "id": {
+              "type": "string"
+            },
+            "note": {
+              "maxLength": 500,
+              "type": "string"
+            },
+            "proposedStart": {
+              "format": "date-time",
+              "type": "string"
+            },
+            "proposedStartLocal": {
+              "type": "string"
+            },
+            "requestId": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null
+            },
+            "requestTitle": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null
+            },
+            "state": {
+              "enum": [
+                "proposed",
+                "accepted",
+                "countered",
+                "confirmed"
+              ],
+              "type": "string"
+            }
+          },
+          "required": [
+            "builderId",
+            "createdAt",
+            "displayName",
+            "durationMin",
+            "founderId",
+            "history",
+            "id",
+            "note",
+            "proposedStart",
+            "proposedStartLocal",
+            "state"
+          ],
+          "type": "object"
+        },
+        "type": "array"
+      }
+    },
+    "required": [
+      "bidsReceived",
+      "counts",
+      "requests",
+      "upcomingBookings"
+    ],
+    "type": "object"
+  },
+  "Eligibility": {
+    "additionalProperties": false,
+    "properties": {
+      "eligible": {
+        "type": "boolean"
+      },
+      "path": {
+        "anyOf": [
+          {
+            "properties": {
+              "conclusion": {
+                "type": "string"
+              },
+              "facts": {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              "rule": {
+                "anyOf": [
+                  {
+                    "enum": [
+                      "verified-for-skill",
+                      "mode-compatible",
+                      "available-for-brief",
+                      "eligible-builder",
+                      "reuse-fit",
+                      "partner-fit",
+                      "route-gap",
+                      "assembler.team-size-fit",
+                      "assembler.budget-fit"
+                    ],
+                    "type": "string"
+                  },
+                  {
+                    "enum": [
+                      "cohort-of"
+                    ],
+                    "type": "string"
+                  }
+                ]
+              }
+            },
+            "required": [
+              "conclusion",
+              "facts",
+              "rule"
+            ],
+            "type": "object"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null
+      },
+      "reason": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null
+      },
+      "skills": {
+        "items": {
+          "enum": [
+            "python",
+            "ai-metta",
+            "ui-ux",
+            "frontend",
+            "backend",
+            "domain-research",
+            "mobile",
+            "rust",
+            "data"
+          ],
+          "type": "string"
+        },
+        "type": "array"
+      }
+    },
+    "required": [
+      "eligible",
+      "skills"
+    ],
+    "type": "object"
+  },
   "Gap": {
     "properties": {
       "affected": {
@@ -2142,6 +3277,468 @@
       "conclusion",
       "facts",
       "rule"
+    ],
+    "type": "object"
+  },
+  "Request": {
+    "additionalProperties": false,
+    "properties": {
+      "availabilityEnd": {
+        "format": "date",
+        "type": "string"
+      },
+      "availabilityStart": {
+        "format": "date",
+        "type": "string"
+      },
+      "brief": {
+        "additionalProperties": false,
+        "properties": {
+          "availabilityEnd": {
+            "format": "date",
+            "type": "string"
+          },
+          "availabilityStart": {
+            "format": "date",
+            "type": "string"
+          },
+          "dailyBudget": {
+            "exclusiveMinimum": 0,
+            "maximum": 9007199254740991,
+            "type": "integer"
+          },
+          "deliveryMode": {
+            "enum": [
+              "remote",
+              "hybrid",
+              "on-site"
+            ],
+            "type": "string"
+          },
+          "demoData": {
+            "default": true,
+            "type": "boolean"
+          },
+          "id": {
+            "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$",
+            "type": "string"
+          },
+          "location": {
+            "anyOf": [
+              {
+                "maxLength": 100,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null
+          },
+          "maximumTeamSize": {
+            "maximum": 5,
+            "minimum": 1,
+            "type": "integer"
+          },
+          "preferReusableIp": {
+            "type": "boolean"
+          },
+          "requiredSkills": {
+            "items": {
+              "enum": [
+                "python",
+                "ai-metta",
+                "ui-ux",
+                "frontend",
+                "backend",
+                "domain-research",
+                "mobile",
+                "rust",
+                "data"
+              ],
+              "type": "string"
+            },
+            "minItems": 1,
+            "type": "array"
+          },
+          "title": {
+            "maxLength": 200,
+            "minLength": 1,
+            "type": "string"
+          },
+          "vertical": {
+            "enum": [
+              "health",
+              "agri",
+              "education"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "availabilityEnd",
+          "availabilityStart",
+          "dailyBudget",
+          "deliveryMode",
+          "id",
+          "maximumTeamSize",
+          "preferReusableIp",
+          "requiredSkills",
+          "title",
+          "vertical"
+        ],
+        "type": "object"
+      },
+      "closedAt": {
+        "anyOf": [
+          {
+            "format": "date-time",
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null
+      },
+      "createdAt": {
+        "format": "date-time",
+        "type": "string"
+      },
+      "dailyBudget": {
+        "exclusiveMinimum": 0,
+        "maximum": 9007199254740991,
+        "type": "integer"
+      },
+      "deliveryMode": {
+        "enum": [
+          "remote",
+          "hybrid",
+          "on-site"
+        ],
+        "type": "string"
+      },
+      "demoData": {
+        "default": true,
+        "type": "boolean"
+      },
+      "eligibility": {
+        "anyOf": [
+          {
+            "additionalProperties": false,
+            "properties": {
+              "eligible": {
+                "type": "boolean"
+              },
+              "path": {
+                "anyOf": [
+                  {
+                    "properties": {
+                      "conclusion": {
+                        "type": "string"
+                      },
+                      "facts": {
+                        "items": {
+                          "type": "string"
+                        },
+                        "type": "array"
+                      },
+                      "rule": {
+                        "anyOf": [
+                          {
+                            "enum": [
+                              "verified-for-skill",
+                              "mode-compatible",
+                              "available-for-brief",
+                              "eligible-builder",
+                              "reuse-fit",
+                              "partner-fit",
+                              "route-gap",
+                              "assembler.team-size-fit",
+                              "assembler.budget-fit"
+                            ],
+                            "type": "string"
+                          },
+                          {
+                            "enum": [
+                              "cohort-of"
+                            ],
+                            "type": "string"
+                          }
+                        ]
+                      }
+                    },
+                    "required": [
+                      "conclusion",
+                      "facts",
+                      "rule"
+                    ],
+                    "type": "object"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null
+              },
+              "reason": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null
+              },
+              "skills": {
+                "items": {
+                  "enum": [
+                    "python",
+                    "ai-metta",
+                    "ui-ux",
+                    "frontend",
+                    "backend",
+                    "domain-research",
+                    "mobile",
+                    "rust",
+                    "data"
+                  ],
+                  "type": "string"
+                },
+                "type": "array"
+              }
+            },
+            "required": [
+              "eligible",
+              "skills"
+            ],
+            "type": "object"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null
+      },
+      "founderId": {
+        "type": "string"
+      },
+      "id": {
+        "type": "string"
+      },
+      "route": {
+        "additionalProperties": false,
+        "properties": {
+          "builderIds": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "status": {
+            "enum": [
+              "feasible",
+              "partial",
+              "infeasible"
+            ],
+            "type": "string"
+          },
+          "totalDailyRate": {
+            "maximum": 9007199254740991,
+            "minimum": -9007199254740991,
+            "type": "integer"
+          }
+        },
+        "required": [
+          "builderIds",
+          "status",
+          "totalDailyRate"
+        ],
+        "type": "object"
+      },
+      "routeStatus": {
+        "enum": [
+          "feasible",
+          "partial",
+          "infeasible"
+        ],
+        "type": "string"
+      },
+      "status": {
+        "enum": [
+          "open",
+          "closed"
+        ],
+        "type": "string"
+      },
+      "title": {
+        "type": "string"
+      },
+      "vertical": {
+        "enum": [
+          "health",
+          "agri",
+          "education"
+        ],
+        "type": "string"
+      }
+    },
+    "required": [
+      "availabilityEnd",
+      "availabilityStart",
+      "brief",
+      "createdAt",
+      "dailyBudget",
+      "deliveryMode",
+      "founderId",
+      "id",
+      "route",
+      "routeStatus",
+      "status",
+      "title",
+      "vertical"
+    ],
+    "type": "object"
+  },
+  "RequestCreate": {
+    "additionalProperties": false,
+    "properties": {
+      "brief": {
+        "additionalProperties": false,
+        "properties": {
+          "availabilityEnd": {
+            "format": "date",
+            "type": "string"
+          },
+          "availabilityStart": {
+            "format": "date",
+            "type": "string"
+          },
+          "dailyBudget": {
+            "exclusiveMinimum": 0,
+            "maximum": 9007199254740991,
+            "type": "integer"
+          },
+          "deliveryMode": {
+            "enum": [
+              "remote",
+              "hybrid",
+              "on-site"
+            ],
+            "type": "string"
+          },
+          "demoData": {
+            "default": true,
+            "type": "boolean"
+          },
+          "id": {
+            "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$",
+            "type": "string"
+          },
+          "location": {
+            "anyOf": [
+              {
+                "maxLength": 100,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null
+          },
+          "maximumTeamSize": {
+            "maximum": 5,
+            "minimum": 1,
+            "type": "integer"
+          },
+          "preferReusableIp": {
+            "type": "boolean"
+          },
+          "requiredSkills": {
+            "items": {
+              "enum": [
+                "python",
+                "ai-metta",
+                "ui-ux",
+                "frontend",
+                "backend",
+                "domain-research",
+                "mobile",
+                "rust",
+                "data"
+              ],
+              "type": "string"
+            },
+            "minItems": 1,
+            "type": "array"
+          },
+          "title": {
+            "maxLength": 200,
+            "minLength": 1,
+            "type": "string"
+          },
+          "vertical": {
+            "enum": [
+              "health",
+              "agri",
+              "education"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "availabilityEnd",
+          "availabilityStart",
+          "dailyBudget",
+          "deliveryMode",
+          "id",
+          "maximumTeamSize",
+          "preferReusableIp",
+          "requiredSkills",
+          "title",
+          "vertical"
+        ],
+        "type": "object"
+      },
+      "route": {
+        "additionalProperties": false,
+        "properties": {
+          "builderIds": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "status": {
+            "enum": [
+              "feasible",
+              "partial",
+              "infeasible"
+            ],
+            "type": "string"
+          },
+          "totalDailyRate": {
+            "maximum": 9007199254740991,
+            "minimum": -9007199254740991,
+            "type": "integer"
+          }
+        },
+        "required": [
+          "builderIds",
+          "status",
+          "totalDailyRate"
+        ],
+        "type": "object"
+      }
+    },
+    "required": [
+      "brief",
+      "route"
     ],
     "type": "object"
   },
