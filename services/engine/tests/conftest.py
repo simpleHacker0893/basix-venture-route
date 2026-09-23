@@ -2,17 +2,26 @@
 
 The suite runs with LLM_PROVIDER=null unless the environment says otherwise, so no test ever
 reaches a language model; the Anthropic adapter is exercised with a fake transport (#17).
+
+Marketplace tests (Sprint 003) run against TEST_DATABASE_URL: the schema is dropped and
+`alembic upgrade head` runs once per session, then every test gets a session inside an outer
+transaction that is rolled back at teardown. With TEST_DATABASE_URL unset or a placeholder those
+tests skip, so the Sprint 001 and 002 suites still pass on a machine without a database.
 """
 
+import asyncio
 import os
-from collections.abc import Iterator
+from collections.abc import AsyncIterator, Iterator
 
 import pytest
 from fastapi.testclient import TestClient
+from sqlalchemy import text
+from sqlalchemy.ext.asyncio import AsyncConnection, async_sessionmaker, create_async_engine
+from sqlmodel.ext.asyncio.session import AsyncSession
 
 os.environ.setdefault("LLM_PROVIDER", "null")
 
-from app.config import get_settings  # noqa: E402
+from app.config import PACKAGE_ROOT, get_settings  # noqa: E402
 from app.engine.metta_engine import MettaRouteEngine  # noqa: E402
 from app.models.brief import VentureBrief, load_seed_briefs  # noqa: E402
 
@@ -33,3 +42,75 @@ def client() -> Iterator[TestClient]:
 
     with TestClient(app) as test_client:
         yield test_client
+
+
+# -- marketplace store (Sprint 003) ---------------------------------------------------------------
+
+
+@pytest.fixture(scope="session")
+def anyio_backend() -> str:
+    return "asyncio"
+
+
+@pytest.fixture(scope="session")
+def test_database_url() -> str:
+    url = get_settings().test_database_url
+    if url is None:
+        pytest.skip("TEST_DATABASE_URL is unset or a placeholder; marketplace tests need Postgres")
+    return url
+
+
+async def _reset_schema(url: str) -> None:
+    engine = create_async_engine(url)
+    try:
+        async with engine.begin() as connection:
+            await connection.execute(text("DROP SCHEMA public CASCADE"))
+            await connection.execute(text("CREATE SCHEMA public"))
+    finally:
+        await engine.dispose()
+
+
+@pytest.fixture(scope="session")
+def migrated_database(test_database_url: str) -> str:
+    """Empty database → `alembic upgrade head`, once per session. Proves the clean upgrade."""
+    from alembic import command
+    from alembic.config import Config
+
+    asyncio.run(_reset_schema(test_database_url))
+    os.environ["ALEMBIC_DATABASE_URL"] = test_database_url
+    command.upgrade(Config(str(PACKAGE_ROOT / "alembic.ini")), "head")
+    return test_database_url
+
+
+@pytest.fixture
+async def db_connection(migrated_database: str) -> AsyncIterator[AsyncConnection]:
+    engine = create_async_engine(migrated_database)
+    try:
+        async with engine.connect() as connection:
+            transaction = await connection.begin()
+            try:
+                yield connection
+            finally:
+                await transaction.rollback()
+    finally:
+        await engine.dispose()
+
+
+@pytest.fixture
+def session_factory(db_connection: AsyncConnection) -> async_sessionmaker[AsyncSession]:
+    """Sessions bound to the test connection; commits become savepoints inside the outer
+    transaction, so route handlers can commit and the test still rolls everything back."""
+    return async_sessionmaker(
+        bind=db_connection,
+        class_=AsyncSession,
+        join_transaction_mode="create_savepoint",
+        expire_on_commit=False,
+    )
+
+
+@pytest.fixture
+async def db_session(
+    session_factory: async_sessionmaker[AsyncSession],
+) -> AsyncIterator[AsyncSession]:
+    async with session_factory() as session:
+        yield session

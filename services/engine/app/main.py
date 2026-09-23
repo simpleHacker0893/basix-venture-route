@@ -14,6 +14,7 @@ from app.api.health import router as health_router
 from app.api.internal import router as internal_router
 from app.api.route import router as route_router
 from app.config import get_settings
+from app.db.session import create_session_factory, create_store_engine
 from app.engine.errors import EngineError
 from app.engine.metta_engine import MettaRouteEngine
 from app.llm.factory import select_adapter
@@ -34,7 +35,16 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     app.state.route_service = RouteService(engine)
     app.state.known_entities = engine.known_entities()
     app.state.llm_adapter = select_adapter(settings)
-    yield
+    # Marketplace store (D-17). A placeholder DATABASE_URL means no store: routing runs from seed
+    # only and every marketplace route answers 503 through get_session (D-26).
+    store_engine = create_store_engine(settings.database_url) if settings.database_url else None
+    app.state.store_engine = store_engine
+    app.state.session_factory = create_session_factory(store_engine) if store_engine else None
+    try:
+        yield
+    finally:
+        if store_engine is not None:
+            await store_engine.dispose()
 
 
 app = FastAPI(title="Venture Route engine", version="0.0.1", lifespan=lifespan)

@@ -1,9 +1,33 @@
-# Local stack. Sprint 000/001 ship the engine service only; db and web arrive in later sprints (D-05).
-# Values come from the repo-root `.env` (copy `.env.example`); secrets are never written here.
+# Local stack (D-05, D-17). Sprint 003 adds `db`; `web` arrives later. Values come from the
+# repo-root `.env` (copy `.env.example`); secrets are never written here.
+#
+# The engine always talks to the compose `db`, never to Neon: DATABASE_URL below is built from
+# the POSTGRES_* variables, so the Neon URL in `.env` is only for the Operator's own runs.
+# Migrate once after the first `up`: `docker compose run --rm engine alembic upgrade head`.
 services:
+  db:
+    # The Postgres major follows the Neon project (PostgreSQL 18, D-37).
+    image: postgres:18
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      POSTGRES_DB: ${POSTGRES_DB:-venture_route}
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - db-data:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-venture_route}"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
   engine:
     build:
       context: ./services/engine
+    depends_on:
+      db:
+        condition: service_healthy
     ports:
       - "${ENGINE_PORT:-8000}:8000"
     environment:
@@ -13,8 +37,16 @@ services:
       LLM_PROVIDER: ${LLM_PROVIDER:-anthropic}
       ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
       CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:5173,http://localhost:4173}
+      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@db:5432/${POSTGRES_DB:-venture_route}
+      CLERK_JWKS_URL: ${CLERK_JWKS_URL:-}
+      CLERK_SECRET_KEY: ${CLERK_SECRET_KEY:-}
+      CLERK_WEBHOOK_SIGNING_SECRET: ${CLERK_WEBHOOK_SIGNING_SECRET:-}
+      ADMIN_EMAILS: ${ADMIN_EMAILS:-}
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:8000/health').status == 200 else 1)"]
       interval: 10s
       timeout: 3s
       retries: 5
+
+volumes:
+  db-data:
