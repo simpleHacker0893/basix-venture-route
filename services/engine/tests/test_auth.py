@@ -211,3 +211,46 @@ async def test_cors_allows_authorization_header_with_credentials(api: AsyncClien
     assert response.headers["access-control-allow-credentials"] == "true"
     assert "authorization" in response.headers["access-control-allow-headers"].lower()
     assert "PUT" in response.headers["access-control-allow-methods"]
+
+
+async def test_unknown_key_ids_refetch_the_jwks_at_most_once_per_interval(
+    engine: object, session_factory: object, test_keys: SigningKeys, bearer: Bearer
+) -> None:
+    """A stream of tokens with bogus key ids must not become a fetch amplifier against Clerk:
+    the cache refetches once per interval, and every such token still answers 401 (review of #38)."""
+    from sqlalchemy.ext.asyncio import async_sessionmaker
+
+    from app.engine.metta_engine import MettaRouteEngine
+
+    assert isinstance(engine, MettaRouteEngine)
+    assert isinstance(session_factory, async_sessionmaker)
+    fetches = 0
+
+    async def counting_fetch() -> dict[str, object]:
+        nonlocal fetches
+        fetches += 1
+        return test_keys.jwks
+
+    cache = JwksCache(fetch=counting_fetch)
+    app: FastAPI = create_app(
+        Settings(clerk_jwks_url=TEST_JWKS_URL),
+        engine=engine,
+        jwks_cache=cache,
+        session_factory=session_factory,
+    )
+    async with (
+        app.router.lifespan_context(app),
+        AsyncClient(transport=ASGITransport(app=app), base_url="http://testserver") as client,
+    ):
+        after_startup = fetches
+        statuses = [
+            (
+                await client.get(
+                    "/api/me/profile", headers=bearer(sub="u", role="builder", kid=f"bogus-{i}")
+                )
+            ).status_code
+            for i in range(5)
+        ]
+
+    assert statuses == [401] * 5
+    assert fetches - after_startup == 1

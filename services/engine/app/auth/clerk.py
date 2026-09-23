@@ -14,6 +14,7 @@
 from __future__ import annotations
 
 import asyncio
+import time
 from collections.abc import Awaitable, Callable
 from dataclasses import dataclass
 from typing import Annotated, Any
@@ -31,6 +32,9 @@ from app.marketplace.models import USER_ROLES, User
 INVALID_SESSION = "invalid session"
 LEEWAY_SECONDS = 30
 JWKS_TIMEOUT_SECONDS = 5.0
+# A miss refetches the JWKS at most this often, so a stream of tokens with bogus key ids
+# cannot turn the engine into a fetch amplifier against Clerk.
+JWKS_REFETCH_INTERVAL_SECONDS = 60.0
 
 Fetch = Callable[[], Awaitable[dict[str, Any]]]
 
@@ -51,12 +55,14 @@ def fetch_jwks_over_http(url: str) -> Fetch:
 
 
 class JwksCache:
-    """Public keys by `kid`. One fetch at start-up, one refetch on a miss, never on a schedule."""
+    """Public keys by `kid`. One fetch at start-up, a rate-limited refetch on a miss, never on a
+    schedule."""
 
     def __init__(self, fetch: Fetch | None) -> None:
         self._fetch = fetch
         self._keys: dict[str, PyJWK] = {}
         self._lock = asyncio.Lock()
+        self._last_miss_refetch = float("-inf")
 
     @classmethod
     def preloaded(cls, jwks: dict[str, Any]) -> JwksCache:
@@ -95,7 +101,12 @@ class JwksCache:
         if key is not None:
             return key
         async with self._lock:
-            if kid not in self._keys:
+            now = time.monotonic()
+            if (
+                kid not in self._keys
+                and now - self._last_miss_refetch >= JWKS_REFETCH_INTERVAL_SECONDS
+            ):
+                self._last_miss_refetch = now
                 await self.refresh()
         key = self._keys.get(kid)
         if key is None:
