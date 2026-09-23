@@ -131,8 +131,8 @@ test.describe("scenarios through the founder flow", () => {
     await page.goto("/route");
     await page.getByRole("button", { name: "Load scenario: Agri marketplace" }).click();
     await page.getByRole("button", { name: "Back to chat" }).click();
-    const panel = page.getByRole("complementary", { name: "Your brief so far" });
-    await panel.getByRole("button", { name: "Find my route" }).click();
+    await page.getByLabel("Reply to assistant").fill("Route this brief exactly as shown.");
+    await page.getByRole("button", { name: "Send" }).click();
     await expect(page.getByTestId("status-badge")).toHaveText("Feasible");
     const chatIds = await builderIds(page);
 

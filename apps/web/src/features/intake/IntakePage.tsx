@@ -1,6 +1,9 @@
-import { useEffect, useState } from "react";
+import { VentureBrief } from "@venture-route/contracts";
+import { useEffect } from "react";
+import { useSearchParams } from "react-router";
 
 import { ApiBanner } from "../../components/ApiBanner";
+import { toBriefInput } from "../../lib/brief";
 import { useRouting } from "../../state/routingContext";
 import { BriefEditor } from "../brief/BriefEditor";
 import { BriefPanel } from "./BriefPanel";
@@ -8,18 +11,26 @@ import { ChatThread } from "./ChatThread";
 import { Composer } from "./Composer";
 import { ScenarioChips } from "./ScenarioChips";
 
-type IntakePageProps = Readonly<{ initialMode?: "chat" | "form" }>;
-
 /** Screen 3: chat thread, scenario chips and the composer, with "Your brief so far" beside them. */
-export function IntakePage({ initialMode = "chat" }: IntakePageProps) {
-  const { state, loadScenarios, sendTurn, routeBrief } = useRouting();
-  const [mode, setMode] = useState<"chat" | "form">(initialMode);
+export function IntakePage() {
+  const { state, loadScenarios, sendTurn, routeBrief, showView } = useRouting();
+  const [params, setParams] = useSearchParams();
+  const mode = params.get("mode") === "form" ? "form" : "chat";
+  const serverError = state.lastResponse?.type === "validation-error" ? state.lastResponse.message : null;
 
   useEffect(() => {
     if (state.scenarios.length === 0) void loadScenarios();
     // Load once per mount; the store keeps the list afterwards.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  /** A complete brief is confirmed deterministically through POST /api/route (form path). */
+  function confirmBrief() {
+    const input = state.currentBrief ? toBriefInput(state.currentBrief) : null;
+    const parsed = input ? VentureBrief.safeParse(input) : null;
+    if (parsed?.success) void routeBrief(parsed.data);
+    else showView("review");
+  }
 
   return (
     <section className="flex flex-col gap-8">
@@ -32,9 +43,15 @@ export function IntakePage({ initialMode = "chat" }: IntakePageProps) {
           </div>
           {mode === "form" ? (
             <BriefEditor
+              key={JSON.stringify(state.currentBrief)}
+              initial={state.currentBrief}
               busy={state.busy}
-              onSubmit={(brief) => void routeBrief(brief)}
-              onBack={() => setMode("chat")}
+              serverError={serverError}
+              onSubmit={(brief) => {
+                setParams({});
+                void routeBrief(brief);
+              }}
+              onBack={() => setParams({})}
             />
           ) : (
             <>
@@ -44,6 +61,11 @@ export function IntakePage({ initialMode = "chat" }: IntakePageProps) {
                   Assistant is thinking…
                 </p>
               )}
+              {serverError && (
+                <p role="alert" className="rounded-card border border-danger/40 bg-surface-strong px-4 py-3 text-[13px] text-danger">
+                  {serverError}
+                </p>
+              )}
               <div className="flex flex-col gap-4">
                 <ScenarioChips />
                 <Composer
@@ -51,18 +73,14 @@ export function IntakePage({ initialMode = "chat" }: IntakePageProps) {
                   onSend={(text) =>
                     void sendTurn({ userMessage: text, currentBrief: state.currentBrief ?? null })
                   }
-                  onUseForm={() => setMode("form")}
+                  onUseForm={() => setParams({ mode: "form" })}
                 />
               </div>
             </>
           )}
         </div>
         <div className="col-span-12 lg:col-span-4">
-          {/* Chat path: a complete brief is confirmed through POST /api/conversation. */}
-          <BriefPanel
-            brief={state.currentBrief}
-            onFindRoute={() => void sendTurn({ userMessage: "", currentBrief: state.currentBrief ?? null })}
-          />
+          <BriefPanel brief={state.currentBrief} onFindRoute={confirmBrief} />
         </div>
       </div>
     </section>
