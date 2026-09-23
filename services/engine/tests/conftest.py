@@ -242,7 +242,7 @@ CONSTRAINED_BRIEF_ID = "brief-constrained-01"
 # Builders in the cast, display name → (clerk id, email). Slugs never collide with seed ids.
 BUILDER_CAST = {
     "Naomi Chebet": ("user_naomi", "naomi@example.com"),
-    "Kevin Mutua": ("user_kevin", "kevin@example.com"),
+    "Ali Hassan": ("user_ali", "ali@example.com"),
     "Esther Wanjala": ("user_esther", "esther@example.com"),
 }
 
@@ -383,8 +383,9 @@ async def confirmed_builder(unconfirmed_builder: Actor, decide: Decide) -> Actor
 async def pending_builder(
     api: AsyncClient, db_session: AsyncSession, bearer: Callable[..., dict[str, str]]
 ) -> Actor:
-    """Kevin Mutua, a second all-pending builder for tests that need two of them."""
-    return await _pending_builder(api, db_session, bearer, "Kevin Mutua")
+    """Ali Hassan, a second all-pending builder for tests that need two of them (the seed
+    already has a `kevin-mutua`, so the cast avoids that name)."""
+    return await _pending_builder(api, db_session, bearer, "Ali Hassan")
 
 
 @pytest.fixture
