@@ -264,6 +264,27 @@ inline, see below). `GET /api/requests/{id}` answers `200` to the owning founder
 and `404 {"detail": "no request <id>"}` to another founder, so ids leak nothing. A `builder`
 session on `POST` answers `403 {"detail": "role founder required"}`.
 
+### GET /api/requests/{id}/eligibility
+
+Role `builder`. The engine's verdict for the signed-in builder on the request's brief
+(`Eligibility`), computed by the route service's `eligibility(brief, builderId)` from
+`eligible-builder` witnesses only (AGENTS.md rule 1); the builder id is the profile slug, so an
+unconfirmed or rejected builder has no atoms and is never eligible. `404 {"detail": "no profile
+yet"}` until the builder has a profile; a `founder` session answers `403`.
+
+```json
+{ "eligible": true, "skills": ["mobile"],
+  "path": { "rule": "eligible-builder", "facts": ["(earned naomi-chebet cred-…)", "…", "(confirmed admin-basix naomi-chebet)"],
+            "conclusion": "naomi-chebet is eligible for mobile with both evidence" },
+  "reason": null }
+```
+
+When not eligible, `skills` is empty, `path` is `null` and `reason` is two-tier: the statement
+of the first `route-gap` the founder's route carries (sorted by skill id), so both sides read one
+sentence, else the template `eligible-builder does not hold for <builderId> on any of <required
+skills>.` The builder's `GET /api/requests` carries this verdict inline as `eligibility` on every
+item, so the board makes one call; the founder's list carries `eligibility: null`.
+
 ### POST /api/requests/{id}/close
 
 Role `founder`, owner only (`404` otherwise). Sets `status: "closed"` and `closedAt` and answers

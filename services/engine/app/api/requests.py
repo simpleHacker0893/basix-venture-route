@@ -13,8 +13,10 @@ from typing import Annotated
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException
+from fastapi.concurrency import run_in_threadpool
 from sqlmodel.ext.asyncio.session import AsyncSession
 
+from app.api.deps import get_route_service
 from app.auth.clerk import CurrentUser, require_role
 from app.db.session import get_session
 from app.marketplace import repo
@@ -22,6 +24,7 @@ from app.marketplace.models import Request as RequestRow
 from app.marketplace.models import User
 from app.marketplace.schemas import Eligibility, RequestCreate, RequestOut, RouteSnapshot
 from app.models.brief import VentureBrief
+from app.routing.route_service import RouteService
 
 router = APIRouter(
     prefix="/api/requests", dependencies=[Depends(require_role("founder", "builder"))]
@@ -86,17 +89,54 @@ async def publish(
     return request_out(row, user.db_user)
 
 
+async def _builder_slug(session: AsyncSession, user: CurrentUser) -> str:
+    """The signed-in builder's profile slug, the symbol the projection renders (#56)."""
+    assert user.db_user is not None
+    profile = await repo.profile_for_user(session, user.db_user.id)
+    if profile is None:
+        raise HTTPException(status_code=404, detail="no profile yet")
+    return profile.builder_id
+
+
+async def _eligibility(service: RouteService, row: RequestRow, builder_id: str) -> Eligibility:
+    """The engine's verdict for one builder on the request's brief, computed in a worker thread
+    under the engine lock like routing; never read from the stored route snapshot."""
+    brief = VentureBrief.model_validate(row.brief)
+    verdict = await run_in_threadpool(service.eligibility, brief, builder_id)
+    return Eligibility(
+        eligible=verdict.eligible,
+        skills=verdict.skills,
+        path=verdict.path,
+        reason=verdict.reason,
+    )
+
+
 @router.get("", response_model=list[RequestOut])
 async def list_requests(
     user: Annotated[CurrentUser, Depends(require_role("founder", "builder"))],
     session: Annotated[AsyncSession, Depends(get_session)],
+    service: Annotated[RouteService, Depends(get_route_service)],
 ) -> list[RequestOut]:
     assert user.db_user is not None
     if user.role == "founder":
         rows = await repo.requests_for_founder(session, user.db_user.id)
-    else:
-        rows = await repo.open_requests(session)
-    return [request_out(row, founder) for row, founder in rows]
+        return [request_out(row, founder) for row, founder in rows]
+    builder_id = await _builder_slug(session, user)
+    return [
+        request_out(row, founder, await _eligibility(service, row, builder_id))
+        for row, founder in await repo.open_requests(session)
+    ]
+
+
+@router.get("/{request_id}/eligibility", response_model=Eligibility)
+async def eligibility_for_me(
+    request_id: UUID,
+    user: Annotated[CurrentUser, Depends(require_role("builder"))],
+    session: Annotated[AsyncSession, Depends(get_session)],
+    service: Annotated[RouteService, Depends(get_route_service)],
+) -> Eligibility:
+    row, _founder = await owned_or_visible(session, user, request_id)
+    return await _eligibility(service, row, await _builder_slug(session, user))
 
 
 @router.get("/{request_id}", response_model=RequestOut)
