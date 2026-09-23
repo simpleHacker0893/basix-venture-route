@@ -15,6 +15,7 @@ import { EcosystemPage } from "./features/ecosystem/EcosystemPage";
 import { HandoffScreen } from "./features/handoff/HandoffScreen";
 import { LandingPage } from "./features/landing/LandingPage";
 import { PrivacyPage } from "./features/legal/PrivacyPage";
+import { RequestsBoard } from "./features/requests/RequestsBoard";
 import { RoutePage } from "./features/route/RoutePage";
 
 /**
@@ -75,6 +76,8 @@ export function AppRoutes() {
         <Route element={<RequireRole roles={["builder"]} />}>
           <Route path="profile" element={<ProfilePage />} />
           <Route path="profile/projects/new" element={<AddProjectPage />} />
+          {/* Sprint 004 screen 10: the requests board with the engine's eligibility verdicts. */}
+          <Route path="requests" element={<RequestsBoard />} />
         </Route>
         <Route element={<RequireRole roles={["founder", "admin"]} />}>
           <Route path="builders/:builderId" element={<CandidatePage />} />
