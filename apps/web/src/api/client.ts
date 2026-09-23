@@ -37,6 +37,21 @@ export class ApiNotFoundError extends ApiUnreachableError {
   }
 }
 
+/**
+ * The engine refused the action (403) and said why: `reason` is the `detail` string verbatim.
+ * For a bid it is the engine's eligibility sentence, which the board and the BidDialog show
+ * unchanged (Sprint 004, #67); for a role mismatch it is `role <r> required`.
+ */
+export class ApiForbiddenError extends ApiUnreachableError {
+  readonly reason: string;
+
+  constructor(reason: string, cause?: unknown) {
+    super(reason, cause);
+    this.name = "ApiForbiddenError";
+    this.reason = reason;
+  }
+}
+
 /** The engine rejected the input with the contract's validation-error shape (422). */
 export class ApiValidationError extends Error {
   readonly response: z.infer<typeof ValidationErrorResponse>;
@@ -53,12 +68,19 @@ export type GetToken = () => Promise<string | null>;
 export type Request = <T>(path: string, schema: z.ZodType<T>, init?: RequestInit) => Promise<T>;
 
 /** Only these prefixes carry the Clerk bearer header; /api/route, /api/conversation, /api/scenarios and /health never do. */
-const GUARDED_PREFIXES = ["/api/me", "/api/admin", "/api/builders"] as const;
+const GUARDED_PREFIXES = ["/api/me", "/api/admin", "/api/builders", "/api/requests", "/api/bookings"] as const;
 
 export function needsBearer(path: string): boolean {
   return GUARDED_PREFIXES.some(
     (prefix) => path === prefix || path.startsWith(`${prefix}/`) || path.startsWith(`${prefix}?`),
   );
+}
+
+/** The engine's `{"detail": "…"}` error body, or null when the body has another shape. */
+function detailOf(body: unknown): string | null {
+  if (typeof body !== "object" || body === null) return null;
+  const detail = (body as { detail?: unknown }).detail;
+  return typeof detail === "string" ? detail : null;
 }
 
 /** JSON POST init for the request helper. */
@@ -112,8 +134,13 @@ export function createRequest(baseUrl: string, fetchLike: FetchLike = fetch, get
     if (response.status === 404) {
       throw new ApiNotFoundError("The routing engine answered 404.", body);
     }
+    const detail = detailOf(body);
+    if (response.status === 403 && detail !== null) {
+      throw new ApiForbiddenError(detail, body);
+    }
     if (!response.ok) {
-      throw new ApiUnreachableError(`The routing engine answered ${response.status}.`);
+      const suffix = detail === null ? "" : ` ${detail}`;
+      throw new ApiUnreachableError(`The routing engine answered ${response.status}.${suffix}`);
     }
     const parsed = schema.safeParse(body);
     if (!parsed.success) {

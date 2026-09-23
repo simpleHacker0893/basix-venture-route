@@ -23,6 +23,21 @@ export function fakeMarketplace(overrides: Partial<MarketplaceApi> = {}): Market
     getPending: unexpected("getPending"),
     confirm: unexpected("confirm"),
     reject: unexpected("reject"),
+    // Sprint 004 (#67)
+    listRequests: unexpected("listRequests"),
+    getRequest: unexpected("getRequest"),
+    postRequest: unexpected("postRequest"),
+    closeRequest: unexpected("closeRequest"),
+    getEligibility: unexpected("getEligibility"),
+    postBid: unexpected("postBid"),
+    listBidsOnRequest: unexpected("listBidsOnRequest"),
+    listMyBids: unexpected("listMyBids"),
+    postBooking: unexpected("postBooking"),
+    acceptBooking: unexpected("acceptBooking"),
+    counterBooking: unexpected("counterBooking"),
+    confirmBooking: unexpected("confirmBooking"),
+    listMyBookings: unexpected("listMyBookings"),
+    getDashboard: unexpected("getDashboard"),
     ...overrides,
   };
 }
