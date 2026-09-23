@@ -549,6 +549,35 @@ async def add_booking(
     return row
 
 
+async def booking_for_update(session: AsyncSession, booking_id: UUID) -> Booking | None:
+    """The booking row locked FOR UPDATE, so a transition reads and writes one state."""
+    statement = select(Booking).where(Booking.id == booking_id).with_for_update()
+    return (await session.exec(statement)).first()
+
+
+async def apply_transition(
+    session: AsyncSession,
+    row: Booking,
+    *,
+    state: str,
+    history: list[dict[str, Any]],
+    proposed_start: datetime,
+    duration_min: int,
+    note: str,
+) -> Booking:
+    """State, history, proposed start, duration and note in one UPDATE, committed together, so
+    the row's state and its history can never disagree (spec #52 §Transaction shape)."""
+    row.state = state
+    row.history = history
+    row.proposed_start = proposed_start
+    row.duration_min = duration_min
+    row.note = note
+    session.add(row)
+    await session.commit()
+    await session.refresh(row)
+    return row
+
+
 async def booking_by_id(session: AsyncSession, booking_id: UUID) -> BookingRow | None:
     statement = _bookings_upcoming_first().where(Booking.id == booking_id)
     found = (await session.exec(statement)).first()

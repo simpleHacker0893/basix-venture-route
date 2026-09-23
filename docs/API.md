@@ -377,6 +377,30 @@ validation error, e.g. `proposedStart: start is outside the builder's confirmed 
   "createdAt": "2026-09-23T10:00:00Z", "demoData": true }
 ```
 
+### POST /api/bookings/{id}/accept, /counter, /confirm
+
+The founder-owned machine (spec #52), a pure function in `app/marketplace/booking.py`:
+
+| From | Action | Actor | To |
+|---|---|---|---|
+| proposed | accept | builder | accepted |
+| proposed | counter | builder | countered |
+| countered | confirm | founder | confirmed |
+| countered | counter | founder | proposed (new round) |
+| accepted | confirm | founder | confirmed |
+
+`accept` is builder-only, `confirm` founder-only, `counter` open to either party with a
+`BookingProposal` body (`proposedStart`, `durationMin`, `note`) validated by the same slot rules
+as creation (`422` with the reason). Each call locks the row, applies the machine, and writes
+state, history, proposed start and duration in one UPDATE. Every other cell answers `409
+{"detail": "<reason>"}`: `accept` by a founder, `confirm` by a builder, any action on a
+`confirmed` booking (`the booking is confirmed; no further action is possible`), a second
+counter by the same side in one round (`the builder already countered this round`). Anyone who
+is not the founder or the builder on the row gets `404 {"detail": "no booking <id>"}`. The
+founder's "Accept" on a counter is the `confirm` action; the screen maps it. The acceptance
+round-trip (founder proposes, builder counters, founder confirms) ends `confirmed` with three
+history entries: `propose`, `counter`, `confirm`, and `proposedStart` is the builder's counter.
+
 ### GET /api/me/bookings
 
 Role `founder` or `builder`. Own bookings (the founder's, or the ones on the builder's profile),

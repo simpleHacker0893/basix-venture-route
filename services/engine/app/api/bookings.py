@@ -19,10 +19,15 @@ from sqlmodel.ext.asyncio.session import AsyncSession
 from app.auth.clerk import CurrentUser, require_role
 from app.db.session import get_session
 from app.marketplace import repo
-from app.marketplace.booking import Proposal, start
+from app.marketplace.booking import IllegalTransition, Proposal, start, transition
 from app.marketplace.models import Booking, Profile, User
 from app.marketplace.models import Request as RequestRow
-from app.marketplace.schemas import BookingCreate, BookingHistoryEntry, BookingOut
+from app.marketplace.schemas import (
+    BookingCreate,
+    BookingHistoryEntry,
+    BookingOut,
+    BookingProposal,
+)
 from app.marketplace.slots import to_nairobi, valid_slot
 
 router = APIRouter(dependencies=[Depends(require_role("founder", "builder"))])
@@ -118,6 +123,97 @@ async def create_booking(
         history=history,
     )
     return booking_out(row, profile, user.db_user, request)
+
+
+# -- transitions (#65): accept (builder), counter (either party), confirm (founder) -------------
+
+
+async def _party_booking(session: AsyncSession, user: CurrentUser, booking_id: UUID) -> Booking:
+    """The locked booking row for one of its two parties; 404 for anyone else."""
+    assert user.db_user is not None
+    row = await repo.booking_for_update(session, booking_id)
+    if row is not None:
+        if user.role == "founder" and row.founder_id == user.db_user.id:
+            return row
+        if user.role == "builder":
+            profile = await repo.profile_for_user(session, user.db_user.id)
+            if profile is not None and profile.id == row.profile_id:
+                return row
+    raise HTTPException(status_code=404, detail=f"no booking {booking_id}")
+
+
+async def _transition(
+    session: AsyncSession,
+    user: CurrentUser,
+    booking_id: UUID,
+    action: str,
+    proposal_body: BookingProposal | None,
+) -> BookingOut:
+    """Lock the row, apply the pure machine, map IllegalTransition to 409, write state and
+    history together, commit, and answer the re-read row."""
+    row = await _party_booking(session, user, booking_id)
+    actor = str(user.role)
+    proposal: Proposal | None = None
+    if proposal_body is not None:
+        profile = await session.get(Profile, row.profile_id)
+        assert profile is not None  # the FK holds
+        proposal = await validated_proposal(
+            session,
+            profile,
+            proposal_body.proposed_start,
+            proposal_body.duration_min,
+            proposal_body.note,
+        )
+    try:
+        state, history = transition(
+            row.state, list(row.history), action, actor, proposal, datetime.now(UTC)
+        )
+    except IllegalTransition as exc:
+        raise HTTPException(status_code=409, detail=exc.reason) from exc
+    latest = history[-1]
+    await repo.apply_transition(
+        session,
+        row,
+        state=state,
+        history=history,
+        proposed_start=datetime.fromisoformat(str(latest["proposedStart"])),
+        duration_min=int(latest["durationMin"]),
+        note=str(latest.get("note", "")),
+    )
+    found = await repo.booking_by_id(session, row.id)
+    assert found is not None
+    booking, profile, founder, request = found
+    return booking_out(booking, profile, founder, request)
+
+
+@router.post("/api/bookings/{booking_id}/accept", response_model=BookingOut)
+async def accept_booking(
+    booking_id: UUID,
+    user: Annotated[CurrentUser, Depends(require_role("founder", "builder"))],
+    session: Annotated[AsyncSession, Depends(get_session)],
+) -> BookingOut:
+    """Both parties may call; the machine refuses a founder's accept with 409 (spec #52)."""
+    return await _transition(session, user, booking_id, "accept", None)
+
+
+@router.post("/api/bookings/{booking_id}/counter", response_model=BookingOut)
+async def counter_booking(
+    booking_id: UUID,
+    body: BookingProposal,
+    user: Annotated[CurrentUser, Depends(require_role("founder", "builder"))],
+    session: Annotated[AsyncSession, Depends(get_session)],
+) -> BookingOut:
+    return await _transition(session, user, booking_id, "counter", body)
+
+
+@router.post("/api/bookings/{booking_id}/confirm", response_model=BookingOut)
+async def confirm_booking(
+    booking_id: UUID,
+    user: Annotated[CurrentUser, Depends(require_role("founder", "builder"))],
+    session: Annotated[AsyncSession, Depends(get_session)],
+) -> BookingOut:
+    """Both parties may call; the machine refuses a builder's confirm with 409 (spec #52)."""
+    return await _transition(session, user, booking_id, "confirm", None)
 
 
 @router.get("/api/me/bookings", response_model=list[BookingOut])
