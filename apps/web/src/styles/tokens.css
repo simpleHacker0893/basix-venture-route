@@ -1,0 +1,92 @@
+/*
+ * Venture Route design tokens, from the DESIGN.md block in docs/design/stitch-prompts.md (D-35).
+ * The `--vr-*` variables are the pack's names; the shadcn variables below map onto them so the
+ * CLI components pick up the palette. Values are the exact hex values from the pack.
+ */
+:root {
+  /* Colour */
+  --vr-ground: #f4f1ea;
+  --vr-surface: #fbf9f4;
+  --vr-surface-strong: #ffffff;
+  --vr-dark: #16181b;
+  --vr-ink: #16181b;
+  --vr-ink-2: #3f4650;
+  --vr-ink-3: #5c6169;
+  --vr-accent: #1e5a45;
+  --vr-accent-on-dark: #7fd1ac;
+  --vr-project: #35418a;
+  --vr-amber-ink: #8a4b12;
+  --vr-amber-fill: #e8c58f;
+  --vr-danger: #8a2d2d;
+  --vr-border: #e3ded3;
+  --vr-border-strong: #c9c2b3;
+
+  /* Typography */
+  --vr-font-display: "Fraunces", Georgia, serif;
+  --vr-font-sans: "IBM Plex Sans", system-ui, sans-serif;
+  --vr-font-mono: "IBM Plex Mono", ui-monospace, monospace;
+
+  /* Layout */
+  --vr-content-max: 1200px;
+  --vr-nav-height: 64px;
+  --vr-drawer-width: 560px;
+  --vr-radius-card: 8px;
+  --vr-radius-pill: 999px;
+  --vr-shadow-drawer: 0 1px 2px rgba(22, 24, 27, 0.06);
+
+  /* shadcn/ui variables mapped onto the pack */
+  --background: var(--vr-ground);
+  --foreground: var(--vr-ink);
+  --card: var(--vr-surface);
+  --card-foreground: var(--vr-ink);
+  --popover: var(--vr-surface-strong);
+  --popover-foreground: var(--vr-ink);
+  --primary: var(--vr-accent);
+  --primary-foreground: #ffffff;
+  --secondary: var(--vr-surface-strong);
+  --secondary-foreground: var(--vr-ink);
+  --muted: var(--vr-surface);
+  --muted-foreground: var(--vr-ink-3);
+  --accent: var(--vr-surface);
+  --accent-foreground: var(--vr-ink);
+  --destructive: var(--vr-danger);
+  --destructive-foreground: #ffffff;
+  --border: var(--vr-border);
+  --input: var(--vr-border-strong);
+  --ring: var(--vr-accent);
+  --radius: var(--vr-radius-card);
+  --font-sans: var(--vr-font-sans);
+  --font-heading: var(--vr-font-display);
+  --font-mono: var(--vr-font-mono);
+}
+
+@theme inline {
+  --color-ground: var(--vr-ground);
+  --color-surface: var(--vr-surface);
+  --color-surface-strong: var(--vr-surface-strong);
+  --color-dark: var(--vr-dark);
+  --color-ink: var(--vr-ink);
+  --color-ink-2: var(--vr-ink-2);
+  --color-ink-3: var(--vr-ink-3);
+  --color-accent-green: var(--vr-accent);
+  --color-accent-on-dark: var(--vr-accent-on-dark);
+  --color-project: var(--vr-project);
+  --color-amber-ink: var(--vr-amber-ink);
+  --color-amber-fill: var(--vr-amber-fill);
+  --color-danger: var(--vr-danger);
+  --color-border-strong: var(--vr-border-strong);
+  --font-display: var(--vr-font-display);
+  --font-sans: var(--vr-font-sans);
+  --font-mono: var(--vr-font-mono);
+  --radius-card: var(--vr-radius-card);
+  --radius-pill: var(--vr-radius-pill);
+  --shadow-drawer: var(--vr-shadow-drawer);
+}
+
+html {
+  background: var(--vr-ground);
+  color: var(--vr-ink);
+  font-family: var(--vr-font-sans);
+  font-size: 16px;
+  line-height: 1.5;
+}

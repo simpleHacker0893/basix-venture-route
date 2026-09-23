@@ -1,0 +1,53 @@
+# D-33: CI on every pull request and push to master. No secrets: the engine runs with
+# LLM_PROVIDER=null and nothing calls Anthropic, Clerk or Neon.
+name: ci
+
+on:
+  pull_request:
+  push:
+    branches: [master]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  engine:
+    name: engine (pytest, ruff, mypy, schema and snapshot checks)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: services/engine
+    env:
+      LLM_PROVIDER: "null"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          python-version: "3.12"
+          enable-cache: true
+      - run: uv sync --frozen
+      - run: uv run pytest -q -p no:cacheprovider
+      - run: uv run ruff check .
+      - run: uv run ruff format --check .
+      - run: uv run mypy .
+      - run: uv run python scripts/export_schema.py --check
+      - run: uv run python scripts/export_offline_snapshot.py --check
+
+  web:
+    name: web (typecheck, lint, test)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9.12.0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm -r build
+      - run: pnpm -r typecheck
+      - run: pnpm -r lint
+      - run: pnpm -r test
