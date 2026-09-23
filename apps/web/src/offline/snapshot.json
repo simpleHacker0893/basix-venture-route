@@ -1,0 +1,544 @@
+{
+  "briefs": {
+    "brief-health-01": {
+      "id": "brief-health-01",
+      "title": "Health pilot: triage assistant for community clinics",
+      "vertical": "health",
+      "requiredSkills": [
+        "python",
+        "ai-metta",
+        "ui-ux"
+      ],
+      "maximumTeamSize": 3,
+      "availabilityStart": "2026-09-22",
+      "availabilityEnd": "2026-09-29",
+      "deliveryMode": "hybrid",
+      "location": null,
+      "dailyBudget": 400,
+      "preferReusableIp": true,
+      "demoData": true
+    },
+    "brief-agri-01": {
+      "id": "brief-agri-01",
+      "title": "Agri marketplace: produce listings for smallholder cooperatives",
+      "vertical": "agri",
+      "requiredSkills": [
+        "frontend",
+        "backend",
+        "domain-research"
+      ],
+      "maximumTeamSize": 3,
+      "availabilityStart": "2026-09-22",
+      "availabilityEnd": "2026-09-29",
+      "deliveryMode": "remote",
+      "location": null,
+      "dailyBudget": 350,
+      "preferReusableIp": true,
+      "demoData": true
+    },
+    "brief-constrained-01": {
+      "id": "brief-constrained-01",
+      "title": "Constrained brief: mobile field app with a Rust core",
+      "vertical": "agri",
+      "requiredSkills": [
+        "mobile",
+        "rust"
+      ],
+      "maximumTeamSize": 2,
+      "availabilityStart": "2026-09-22",
+      "availabilityEnd": "2026-10-06",
+      "deliveryMode": "remote",
+      "location": null,
+      "dailyBudget": 300,
+      "preferReusableIp": false,
+      "demoData": true
+    },
+    "brief-budget-01": {
+      "id": "brief-budget-01",
+      "title": "Budget challenge: health pilot at USD 250 per day",
+      "vertical": "health",
+      "requiredSkills": [
+        "python",
+        "ai-metta",
+        "ui-ux"
+      ],
+      "maximumTeamSize": 3,
+      "availabilityStart": "2026-09-22",
+      "availabilityEnd": "2026-09-29",
+      "deliveryMode": "hybrid",
+      "location": null,
+      "dailyBudget": 250,
+      "preferReusableIp": true,
+      "demoData": true
+    },
+    "brief-onsite-01": {
+      "id": "brief-onsite-01",
+      "title": "Delivery-mode challenge: health pilot on-site in Kisumu",
+      "vertical": "health",
+      "requiredSkills": [
+        "python",
+        "ai-metta",
+        "ui-ux"
+      ],
+      "maximumTeamSize": 3,
+      "availabilityStart": "2026-09-22",
+      "availabilityEnd": "2026-09-29",
+      "deliveryMode": "on-site",
+      "location": "Kisumu",
+      "dailyBudget": 400,
+      "preferReusableIp": true,
+      "demoData": true
+    }
+  },
+  "routes": {
+    "brief-health-01": {
+      "status": "feasible",
+      "builders": [
+        {
+          "builderId": "amina-otieno",
+          "name": "Amina Otieno",
+          "dayRate": 120,
+          "covers": [
+            "python"
+          ],
+          "evidenceType": "both",
+          "evidencePaths": [
+            {
+              "rule": "eligible-builder",
+              "facts": [
+                "(earned amina-otieno cred-py-201)",
+                "(proves cred-py-201 python)",
+                "(confirmed admin-basix cred-py-201)",
+                "(built amina-otieno proj-afya-bot)",
+                "(demonstrates proj-afya-bot python)",
+                "(confirmed admin-basix proj-afya-bot)",
+                "(brief-mode brief-health-01 hybrid)",
+                "(mode-accepts hybrid remote)",
+                "(supports-mode amina-otieno remote)",
+                "(mode-accepts hybrid hybrid)",
+                "(supports-mode amina-otieno hybrid)",
+                "(brief-window brief-health-01 2026-09-22 2026-09-29)",
+                "(available amina-otieno 2026-09-20 2026-10-10)",
+                "(min-overlap-days 2)",
+                "(confirmed admin-basix amina-otieno)"
+              ],
+              "conclusion": "amina-otieno is eligible for python with both evidence"
+            }
+          ]
+        },
+        {
+          "builderId": "daniel-kiptoo",
+          "name": "Daniel Kiptoo",
+          "dayRate": 150,
+          "covers": [
+            "ai-metta"
+          ],
+          "evidenceType": "both",
+          "evidencePaths": [
+            {
+              "rule": "eligible-builder",
+              "facts": [
+                "(earned daniel-kiptoo cred-metta-101)",
+                "(proves cred-metta-101 ai-metta)",
+                "(confirmed admin-basix cred-metta-101)",
+                "(built daniel-kiptoo proj-metta-tutor)",
+                "(demonstrates proj-metta-tutor ai-metta)",
+                "(confirmed admin-basix proj-metta-tutor)",
+                "(brief-mode brief-health-01 hybrid)",
+                "(mode-accepts hybrid hybrid)",
+                "(supports-mode daniel-kiptoo hybrid)",
+                "(brief-window brief-health-01 2026-09-22 2026-09-29)",
+                "(available daniel-kiptoo 2026-09-22 2026-10-03)",
+                "(min-overlap-days 2)",
+                "(confirmed admin-basix daniel-kiptoo)"
+              ],
+              "conclusion": "daniel-kiptoo is eligible for ai-metta with both evidence"
+            }
+          ]
+        },
+        {
+          "builderId": "grace-wambui",
+          "name": "Grace Wambui",
+          "dayRate": 100,
+          "covers": [
+            "ui-ux"
+          ],
+          "evidenceType": "credential",
+          "evidencePaths": [
+            {
+              "rule": "eligible-builder",
+              "facts": [
+                "(earned grace-wambui cred-ux-110)",
+                "(proves cred-ux-110 ui-ux)",
+                "(confirmed admin-basix cred-ux-110)",
+                "(brief-mode brief-health-01 hybrid)",
+                "(mode-accepts hybrid remote)",
+                "(supports-mode grace-wambui remote)",
+                "(mode-accepts hybrid hybrid)",
+                "(supports-mode grace-wambui hybrid)",
+                "(brief-window brief-health-01 2026-09-22 2026-09-29)",
+                "(available grace-wambui 2026-09-15 2026-09-30)",
+                "(min-overlap-days 2)",
+                "(confirmed admin-basix grace-wambui)"
+              ],
+              "conclusion": "grace-wambui is eligible for ui-ux with credential evidence"
+            }
+          ]
+        }
+      ],
+      "totalDailyRate": 370,
+      "reusableIp": {
+        "assetId": "asset-afya-triage",
+        "title": "Afya Triage",
+        "path": {
+          "rule": "reuse-fit",
+          "facts": [
+            "(brief-prefers-ip brief-health-01)",
+            "(licensable asset-afya-triage)",
+            "(vertical asset-afya-triage health)",
+            "(brief-skill brief-health-01 ai-metta)",
+            "(demonstrates asset-afya-triage ai-metta)",
+            "(brief-skill brief-health-01 python)",
+            "(demonstrates asset-afya-triage python)"
+          ],
+          "conclusion": "asset-afya-triage is licensable in the brief's vertical and demonstrates ai-metta, python"
+        }
+      },
+      "cohort": {
+        "cohortId": "cohort-2026a",
+        "universityId": "omni-university",
+        "path": {
+          "rule": "cohort-of",
+          "facts": [
+            "(belongs-to amina-otieno cohort-2026a)",
+            "(cohort-of cohort-2026a omni-university)"
+          ],
+          "conclusion": "amina-otieno belongs to cohort-2026a of omni-university"
+        }
+      },
+      "partner": {
+        "partnerId": "amani-health",
+        "path": {
+          "rule": "partner-fit",
+          "facts": [
+            "(supports-vertical amani-health health)",
+            "(partners-with amani-health omni-university)",
+            "(cohort-of cohort-2026a omni-university)",
+            "(belongs-to amina-otieno cohort-2026a)"
+          ],
+          "conclusion": "amani-health fits via omni-university and cohort-2026a of amina-otieno"
+        }
+      },
+      "gaps": [],
+      "rulesApplied": [
+        "cohort-of",
+        "eligible-builder",
+        "partner-fit",
+        "reuse-fit"
+      ],
+      "summary": "Feasible route: 3 builders (Amina Otieno, Daniel Kiptoo, Grace Wambui) cover ai-metta, python, ui-ux for USD 370 a day. Reusable IP: Afya Triage. Partner: amani-health."
+    },
+    "brief-agri-01": {
+      "status": "feasible",
+      "builders": [
+        {
+          "builderId": "fatuma-hassan",
+          "name": "Fatuma Hassan",
+          "dayRate": 80,
+          "covers": [
+            "domain-research"
+          ],
+          "evidenceType": "credential",
+          "evidencePaths": [
+            {
+              "rule": "eligible-builder",
+              "facts": [
+                "(earned fatuma-hassan cred-dr-140)",
+                "(proves cred-dr-140 domain-research)",
+                "(confirmed admin-basix cred-dr-140)",
+                "(brief-mode brief-agri-01 remote)",
+                "(mode-accepts remote remote)",
+                "(supports-mode fatuma-hassan remote)",
+                "(mode-accepts remote hybrid)",
+                "(supports-mode fatuma-hassan hybrid)",
+                "(brief-window brief-agri-01 2026-09-22 2026-09-29)",
+                "(available fatuma-hassan 2026-09-18 2026-10-02)",
+                "(min-overlap-days 2)",
+                "(confirmed admin-basix fatuma-hassan)"
+              ],
+              "conclusion": "fatuma-hassan is eligible for domain-research with credential evidence"
+            }
+          ]
+        },
+        {
+          "builderId": "lucy-achieng",
+          "name": "Lucy Achieng",
+          "dayRate": 95,
+          "covers": [
+            "backend"
+          ],
+          "evidenceType": "project",
+          "evidencePaths": [
+            {
+              "rule": "eligible-builder",
+              "facts": [
+                "(built lucy-achieng proj-farm-ledger)",
+                "(demonstrates proj-farm-ledger backend)",
+                "(confirmed admin-basix proj-farm-ledger)",
+                "(brief-mode brief-agri-01 remote)",
+                "(mode-accepts remote remote)",
+                "(supports-mode lucy-achieng remote)",
+                "(mode-accepts remote hybrid)",
+                "(supports-mode lucy-achieng hybrid)",
+                "(brief-window brief-agri-01 2026-09-22 2026-09-29)",
+                "(available lucy-achieng 2026-09-28 2026-10-05)",
+                "(min-overlap-days 2)",
+                "(confirmed admin-basix lucy-achieng)"
+              ],
+              "conclusion": "lucy-achieng is eligible for backend with project evidence"
+            }
+          ]
+        },
+        {
+          "builderId": "wanjiru-mwangi",
+          "name": "Wanjiru Mwangi",
+          "dayRate": 140,
+          "covers": [
+            "frontend"
+          ],
+          "evidenceType": "credential",
+          "evidencePaths": [
+            {
+              "rule": "eligible-builder",
+              "facts": [
+                "(earned wanjiru-mwangi cred-fe-120)",
+                "(proves cred-fe-120 frontend)",
+                "(confirmed admin-basix cred-fe-120)",
+                "(brief-mode brief-agri-01 remote)",
+                "(mode-accepts remote remote)",
+                "(supports-mode wanjiru-mwangi remote)",
+                "(mode-accepts remote hybrid)",
+                "(supports-mode wanjiru-mwangi hybrid)",
+                "(brief-window brief-agri-01 2026-09-22 2026-09-29)",
+                "(available wanjiru-mwangi 2026-09-22 2026-10-15)",
+                "(min-overlap-days 2)",
+                "(confirmed admin-basix wanjiru-mwangi)"
+              ],
+              "conclusion": "wanjiru-mwangi is eligible for frontend with credential evidence"
+            }
+          ]
+        }
+      ],
+      "totalDailyRate": 315,
+      "reusableIp": {
+        "assetId": "asset-shamba-records",
+        "title": "Shamba Records",
+        "path": {
+          "rule": "reuse-fit",
+          "facts": [
+            "(brief-prefers-ip brief-agri-01)",
+            "(licensable asset-shamba-records)",
+            "(vertical asset-shamba-records agri)",
+            "(brief-skill brief-agri-01 backend)",
+            "(demonstrates asset-shamba-records backend)"
+          ],
+          "conclusion": "asset-shamba-records is licensable in the brief's vertical and demonstrates backend"
+        }
+      },
+      "cohort": {
+        "cohortId": "cohort-2026b",
+        "universityId": "lakeside-university",
+        "path": {
+          "rule": "cohort-of",
+          "facts": [
+            "(belongs-to fatuma-hassan cohort-2026b)",
+            "(cohort-of cohort-2026b lakeside-university)"
+          ],
+          "conclusion": "fatuma-hassan belongs to cohort-2026b of lakeside-university"
+        }
+      },
+      "partner": {
+        "partnerId": "shamba-agri",
+        "path": {
+          "rule": "partner-fit",
+          "facts": [
+            "(supports-vertical shamba-agri agri)",
+            "(partners-with shamba-agri lakeside-university)",
+            "(cohort-of cohort-2026b lakeside-university)",
+            "(belongs-to fatuma-hassan cohort-2026b)"
+          ],
+          "conclusion": "shamba-agri fits via lakeside-university and cohort-2026b of fatuma-hassan"
+        }
+      },
+      "gaps": [],
+      "rulesApplied": [
+        "cohort-of",
+        "eligible-builder",
+        "partner-fit",
+        "reuse-fit"
+      ],
+      "summary": "Feasible route: 3 builders (Fatuma Hassan, Lucy Achieng, Wanjiru Mwangi) cover backend, domain-research, frontend for USD 315 a day. Reusable IP: Shamba Records. Partner: shamba-agri."
+    },
+    "brief-constrained-01": {
+      "status": "partial",
+      "builders": [
+        {
+          "builderId": "zawadi-njoroge",
+          "name": "Zawadi Njoroge",
+          "dayRate": 130,
+          "covers": [
+            "rust"
+          ],
+          "evidenceType": "credential",
+          "evidencePaths": [
+            {
+              "rule": "eligible-builder",
+              "facts": [
+                "(earned zawadi-njoroge cred-rust-150)",
+                "(proves cred-rust-150 rust)",
+                "(confirmed admin-basix cred-rust-150)",
+                "(brief-mode brief-constrained-01 remote)",
+                "(mode-accepts remote remote)",
+                "(supports-mode zawadi-njoroge remote)",
+                "(brief-window brief-constrained-01 2026-09-22 2026-10-06)",
+                "(available zawadi-njoroge 2026-09-22 2026-10-20)",
+                "(min-overlap-days 2)",
+                "(confirmed admin-basix zawadi-njoroge)"
+              ],
+              "conclusion": "zawadi-njoroge is eligible for rust with credential evidence"
+            }
+          ]
+        }
+      ],
+      "totalDailyRate": 130,
+      "reusableIp": null,
+      "cohort": {
+        "cohortId": "cohort-2025c",
+        "universityId": "savanna-institute",
+        "path": {
+          "rule": "cohort-of",
+          "facts": [
+            "(belongs-to zawadi-njoroge cohort-2025c)",
+            "(cohort-of cohort-2025c savanna-institute)"
+          ],
+          "conclusion": "zawadi-njoroge belongs to cohort-2025c of savanna-institute"
+        }
+      },
+      "partner": null,
+      "gaps": [
+        {
+          "category": "skill",
+          "statement": "No confirmed credential or completed project proves mobile for any builder.",
+          "affected": [
+            "mobile"
+          ],
+          "nextActions": [
+            "Ask BASIX to confirm a credential or project for mobile.",
+            "Remove mobile from the brief or replace it with a related skill."
+          ],
+          "rule": "route-gap"
+        }
+      ],
+      "rulesApplied": [
+        "cohort-of",
+        "eligible-builder",
+        "route-gap"
+      ],
+      "summary": "Partial route: 1 builder (Zawadi Njoroge) cover rust for USD 130 a day. Gaps: skill (mobile)."
+    },
+    "brief-budget-01": {
+      "status": "partial",
+      "builders": [],
+      "totalDailyRate": 0,
+      "reusableIp": {
+        "assetId": "asset-afya-triage",
+        "title": "Afya Triage",
+        "path": {
+          "rule": "reuse-fit",
+          "facts": [
+            "(brief-prefers-ip brief-budget-01)",
+            "(licensable asset-afya-triage)",
+            "(vertical asset-afya-triage health)",
+            "(brief-skill brief-budget-01 ai-metta)",
+            "(demonstrates asset-afya-triage ai-metta)",
+            "(brief-skill brief-budget-01 python)",
+            "(demonstrates asset-afya-triage python)"
+          ],
+          "conclusion": "asset-afya-triage is licensable in the brief's vertical and demonstrates ai-metta, python"
+        }
+      },
+      "cohort": null,
+      "partner": null,
+      "gaps": [
+        {
+          "category": "budget",
+          "statement": "Cheapest verified team costs USD 370 a day; budget is USD 250",
+          "affected": [
+            "amina-otieno",
+            "daniel-kiptoo",
+            "grace-wambui"
+          ],
+          "nextActions": [
+            "Raise daily budget to USD 370"
+          ],
+          "rule": "assembler.budget-fit"
+        }
+      ],
+      "rulesApplied": [
+        "assembler.budget-fit",
+        "reuse-fit"
+      ],
+      "summary": "Partial route: Reusable IP: Afya Triage. Gaps: budget (amina-otieno, daniel-kiptoo, grace-wambui)."
+    },
+    "brief-onsite-01": {
+      "status": "infeasible",
+      "builders": [],
+      "totalDailyRate": 0,
+      "reusableIp": null,
+      "cohort": null,
+      "partner": null,
+      "gaps": [
+        {
+          "category": "location",
+          "statement": "Builders verified for ai-metta are available and support on-site delivery, but none is located in Kisumu.",
+          "affected": [
+            "ai-metta"
+          ],
+          "nextActions": [
+            "Change the location or switch to hybrid delivery.",
+            "Ask a verified ai-metta builder located in Kisumu to support on-site delivery."
+          ],
+          "rule": "route-gap"
+        },
+        {
+          "category": "location",
+          "statement": "Builders verified for python are available and support on-site delivery, but none is located in Kisumu.",
+          "affected": [
+            "python"
+          ],
+          "nextActions": [
+            "Change the location or switch to hybrid delivery.",
+            "Ask a verified python builder located in Kisumu to support on-site delivery."
+          ],
+          "rule": "route-gap"
+        },
+        {
+          "category": "location",
+          "statement": "Builders verified for ui-ux are available and support on-site delivery, but none is located in Kisumu.",
+          "affected": [
+            "ui-ux"
+          ],
+          "nextActions": [
+            "Change the location or switch to hybrid delivery.",
+            "Ask a verified ui-ux builder located in Kisumu to support on-site delivery."
+          ],
+          "rule": "route-gap"
+        }
+      ],
+      "rulesApplied": [
+        "route-gap"
+      ],
+      "summary": "No eligible builder for ai-metta, python, ui-ux (3 location gaps). Review the next actions on each gap."
+    }
+  }
+}

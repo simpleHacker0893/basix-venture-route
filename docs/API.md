@@ -3,6 +3,14 @@
 Base URL locally: `http://localhost:8000` (`docker compose up engine` or
 `uv run uvicorn app.main:app --reload` inside `services/engine`).
 
+## Cross-origin calls (D-30)
+
+The engine allows browser origins listed in `CORS_ORIGINS` (comma-separated; default
+`http://localhost:5173,http://localhost:4173`, the Vite dev and preview servers). Methods `GET`
+and `POST`, header `content-type`, credentials off. A preflight from a listed origin answers
+`200` with `access-control-allow-origin`; an origin outside the list gets no allow-origin header.
+The Vite dev server also proxies `/api` and `/health`, so local development needs no CORS.
+
 ## GET /health
 
 Always on. Confirms the Hyperon runtime loaded the seed graph in-process.
