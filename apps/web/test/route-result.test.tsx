@@ -30,6 +30,8 @@ describe("route result: badge, cost strip, gaps first, cards", () => {
     ]);
     expect(cards.map((c) => within(c).getByTestId("evidence-badge").textContent)).toEqual(["Both", "Both", "Credential"]);
     for (const card of cards) expect(within(card).getByText("Demo data")).toBeInTheDocument();
+    // Sprint 003 #46: each card links to the founder's candidate view.
+    expect(within(cards[0]!).getByRole("link", { name: "View profile" })).toHaveAttribute("href", "/builders/amina-otieno");
     const strip = screen.getByTestId("cost-strip");
     expect(strip).toHaveTextContent("USD 370 / day");
     expect(strip).toHaveTextContent("USD 400 / day");

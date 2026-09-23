@@ -20,6 +20,18 @@ from pydantic import BaseModel, TypeAdapter
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
+from app.marketplace.schemas import (  # noqa: E402
+    AdminDecision,
+    BuilderProfile,
+    Candidate,
+    CredentialInput,
+    CredentialOut,
+    PendingQueue,
+    ProfileInput,
+    ProjectInput,
+    ProjectOut,
+    RoleResponse,
+)
 from app.models.brief import VentureBrief  # noqa: E402
 from app.models.chat import ChatResponse, ChatTurn  # noqa: E402
 from app.models.engine import Gap, ReasoningPath  # noqa: E402
@@ -80,6 +92,17 @@ def export() -> Json:
         "ChatResponse": canonical(TypeAdapter(ChatResponse).json_schema(mode="validation")),
         "ReasoningPath": model(ReasoningPath),
         "Gap": model(Gap),
+        # Sprint 003 marketplace (spec #35): the web client Zod-parses these too.
+        "ProfileInput": model(ProfileInput),
+        "BuilderProfile": model(BuilderProfile),
+        "RoleResponse": model(RoleResponse),
+        "CredentialInput": model(CredentialInput),
+        "Credential": model(CredentialOut),
+        "ProjectInput": model(ProjectInput),
+        "Project": model(ProjectOut),
+        "PendingQueue": model(PendingQueue),
+        "AdminDecision": model(AdminDecision),
+        "Candidate": model(Candidate),
     }
 
 

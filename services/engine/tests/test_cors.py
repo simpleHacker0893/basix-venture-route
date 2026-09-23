@@ -45,7 +45,8 @@ def test_actual_post_from_an_allowed_origin_carries_the_allow_origin_header(
 
     assert response.status_code == 200
     assert response.headers["access-control-allow-origin"] == "http://localhost:5173"
-    assert "access-control-allow-credentials" not in response.headers
+    # D-30: credentials are on from Sprint 003 for the Clerk bearer header (#38).
+    assert response.headers["access-control-allow-credentials"] == "true"
 
 
 def test_cors_origins_env_is_a_comma_separated_list() -> None:

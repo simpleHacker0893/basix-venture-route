@@ -21,6 +21,12 @@ export function dateRange(startIso: string, endIso: string): string {
   return `${start} – ${b.day} ${b.month} ${b.year}`;
 }
 
+/** `31 Aug 2026` (date-only, Africa/Nairobi). */
+export function isoDate(iso: string): string {
+  const a = parts(iso);
+  return `${a.day} ${a.month} ${a.year}`;
+}
+
 export const STATUS_LABEL: Record<RouteStatus, string> = {
   feasible: "Feasible",
   partial: "Partial",

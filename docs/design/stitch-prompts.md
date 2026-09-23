@@ -333,6 +333,28 @@ Also show, smaller and below, the builder's counter-propose variant of the summa
 
 ---
 
+## Batch 5 — Chloe voice intake (Sprint 006, D-38)
+
+### 5.1 Founder intake, voice state (screen 3, voice variant)
+
+```text
+Design the "Founder intake" screen for Venture Route at 1440 px desktop in its VOICE state, following the project design system exactly. Calm, editorial, trustworthy. No illustrations, gradients or emoji. No waveform graphics.
+
+Same layout as the intake screen (1.1): navigation, a 1200 px container, left column 760 px chat thread, right column 400 px sticky "Your brief so far" panel.
+
+Left column header row: title "Describe your MVP", caption "Plain language is fine. We will ask for anything missing.", and on the right a toggle switch labelled "Voice: Chloe" in the ON state.
+
+Chat thread with four messages: (1) founder message in a surface-strong bubble aligned right: "I want to build a maternal health triage pilot for clinics in Nakuru. I need Python, AI with MeTTa and a UI designer, hybrid, this month, about 400 dollars a day." (2) assistant message aligned left in a surface card, no avatar: "To route this brief I still need:" followed by "- vertical: health, agri or education?" and "- maximumTeamSize: how many people at most (1 to 5)?" (3) directly under it a Chloe turn: a small accent label "Chloe" and italic text "Which vertical is it for: health, agri, or education?" (4) a status row below the thread: a small pulsing dot, "Chloe is speaking", and a ghost button "Stop Chloe".
+
+Composer: a round 48 px microphone button on the left in the PRESSED state (accent fill, subtle outer ring) with the label "Hold to talk" under it; a 2-line text area showing an interim transcript in ink-3 italics "Health, for clinics in Nakuru, and three people at most…"; a primary button "Send"; a ghost link "Use the form instead". Above the composer the three scenario chips from 1.1.
+
+Under the composer two 13 px captions in ink-3: "Voice uses your browser's speech service: Chrome sends your audio to Google for transcription." and, in a small inset labelled "Unsupported browser", the variant "Voice needs Chrome or Edge." with no microphone button.
+
+Right panel as in 1.1 with filled chips "Skills: Python, AI/MeTTa, UI/UX", "Mode: Hybrid", "Budget: USD 400 / day", dashed missing chips "Vertical: missing", "Team size: missing", "Dates: missing", the disabled "Find my route" button with helper "Fill the missing fields to continue.", the amber "Demo data" pill and the caption "Routes are computed by MeTTa rules over demo records. The assistant only translates your words."
+```
+
+---
+
 ## Return prompt for Claude Code (paste after exports are committed)
 
 ```text

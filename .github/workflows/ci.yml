@@ -1,5 +1,6 @@
 # D-33: CI on every pull request and push to master. No secrets: the engine runs with
-# LLM_PROVIDER=null and nothing calls Anthropic, Clerk or Neon.
+# LLM_PROVIDER=null and nothing calls Anthropic, Clerk or Neon. Sprint 003 adds a Postgres
+# service container (postgres:18, the Neon major, D-37) for the marketplace tests.
 name: ci
 
 on:
@@ -20,6 +21,21 @@ jobs:
         working-directory: services/engine
     env:
       LLM_PROVIDER: "null"
+      TEST_DATABASE_URL: postgresql+asyncpg://postgres:postgres@localhost:5432/venture_route_test
+    services:
+      postgres:
+        image: postgres:18
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: venture_route_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d venture_route_test"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 10
     steps:
       - uses: actions/checkout@v4
       - uses: astral-sh/setup-uv@v6
@@ -27,6 +43,10 @@ jobs:
           python-version: "3.12"
           enable-cache: true
       - run: uv sync --frozen
+      # Acceptance: `alembic upgrade head` runs clean on an empty database (spec #35, D-17).
+      - run: uv run alembic upgrade head
+        env:
+          ALEMBIC_DATABASE_URL: ${{ env.TEST_DATABASE_URL }}
       - run: uv run pytest -q -p no:cacheprovider
       - run: uv run ruff check .
       - run: uv run ruff format --check .

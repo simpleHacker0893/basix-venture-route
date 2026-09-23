@@ -61,15 +61,36 @@ class MettaRouteEngine:
     def __init__(self, settings: Settings) -> None:
         self._settings = settings
         self._lock = threading.Lock()
+        self.projected_rows = 0
+        self._metta, self.facts_loaded = self._build_runtime()
+        self.rules_loaded = self._count_named_rules_in_space()
+
+    def _build_runtime(self) -> tuple[MeTTa, int]:
+        """A fresh Hyperon runtime holding the seed facts, the rules and the overlap constant."""
         try:
-            self._metta = MeTTa()
+            metta = MeTTa()
         except Exception as exc:  # pragma: no cover - only when the native runtime is broken
             raise EngineError("Hyperon runtime failed to start") from exc
-        register_grounded_atoms(self._metta)
-        self.facts_loaded = self._add_program(settings.seed_dir / "facts.metta")
-        self._add_program(settings.seed_dir / "rules.metta")
-        self.rules_loaded = self._count_named_rules_in_space()
-        self._metta.run(f"(min-overlap-days {settings.min_overlap_days})")
+        register_grounded_atoms(metta)
+        facts_loaded = self._add_program(metta, self._settings.seed_dir / "facts.metta")
+        self._add_program(metta, self._settings.seed_dir / "rules.metta")
+        metta.run(f"(min-overlap-days {self._settings.min_overlap_days})")
+        return metta, facts_loaded
+
+    def replace_space(self, program: str) -> int:
+        """Full rebuild (D-15): seed files plus `program` (marketplace facts in seed syntax) in a
+        fresh runtime. Build and swap both run under the engine lock (spec #35 §Projection), so
+        rebuilds are serialised in call order and a query never straddles two runtimes.
+        Returns the number of projected atoms; `facts_loaded` keeps counting seed atoms."""
+        with self._lock:
+            if not program.strip() and self.projected_rows == 0:
+                return 0  # already seed-only: nothing to rebuild
+            metta, facts_loaded = self._build_runtime()
+            projected = self._add_text(metta, program) if program.strip() else 0
+            self._metta = metta
+            self.facts_loaded = facts_loaded
+            self.projected_rows = projected
+        return projected
 
     @property
     def hyperon_version(self) -> str:
@@ -133,6 +154,15 @@ class MettaRouteEngine:
             rates[builder] = witnesses[0]
         return rates
 
+    def known_locations(self) -> frozenset[str]:
+        """Every location slug a `located-in` fact names. Symbols share one namespace with the
+        builders, so a user-entered builder slug must not collide with a location either."""
+        found: set[str] = set()
+        for witness in self._query("!(match &self (located-in $b $l) ($l))"):
+            for part in expect_list(witness, "location"):
+                found.add(expect_symbol(part, "location"))
+        return frozenset(found)
+
     def known_entities(self) -> frozenset[str]:
         """Every builder, cohort, university, partner and asset id in the space.
 
@@ -153,6 +183,14 @@ class MettaRouteEngine:
                 )
         return frozenset(found)
 
+    def cohorts(self) -> frozenset[str]:
+        """Every cohort id in the space, from `cohort-of` facts. A profile may only name one of
+        these (Sprint 003 spec #35 §Marketplace API)."""
+        found: set[str] = set()
+        for witness in self._query("!(match &self (cohort-of $c $u) ($c))"):
+            found.update(expect_symbol(part, "cohort id") for part in expect_list(witness, "ids"))
+        return frozenset(found)
+
     def gaps(self, brief: VentureBrief) -> list[Gap]:
         """skill / availability / mode / location gaps per required skill from `route-gap`."""
         with self._brief_in_space(brief):
@@ -162,15 +200,22 @@ class MettaRouteEngine:
 
     # -- loading ---------------------------------------------------------------------------------
 
-    def _add_program(self, path: Path) -> int:
+    def _add_program(self, metta: MeTTa, path: Path) -> int:
         """Parse a seed file and add every atom to the space; returns the atom count."""
         if not path.exists():
             raise EngineError(f"seed file missing: {path}")
         try:
-            atoms = self._metta.parse_all(path.read_text(encoding="utf-8"))
-        except Exception as exc:
+            return self._add_text(metta, path.read_text(encoding="utf-8"))
+        except EngineError as exc:
             raise EngineError(f"cannot parse {path.name}") from exc
-        space = self._metta.space()
+
+    @staticmethod
+    def _add_text(metta: MeTTa, text: str) -> int:
+        try:
+            atoms = metta.parse_all(text)
+        except Exception as exc:
+            raise EngineError("cannot parse facts") from exc
+        space = metta.space()
         for atom in atoms:
             space.add_atom(atom)
         return len(atoms)
@@ -200,8 +245,10 @@ class MettaRouteEngine:
     def _brief_in_space(self, brief: VentureBrief) -> Iterator[None]:
         """Add the brief's facts for one query, then remove them. Serialised by a lock."""
         atoms = _brief_atoms(brief)
-        space = self._metta.space()
         with self._lock:
+            # Read the runtime only under the lock: replace_space() swaps it there, so the brief
+            # atoms and the query that follows always hit the same instance.
+            space = self._metta.space()
             for atom in atoms:
                 space.add_atom(atom)
             try:

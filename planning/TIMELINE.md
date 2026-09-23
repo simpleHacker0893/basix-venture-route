@@ -15,6 +15,7 @@ Demo: **Thursday 1 October 2026**. Nine calendar days. Sprints are gated by **ti
 | 005 Demo hardening | Wed 30 Sep 08:00 → Wed 30 Sep 20:00 | G5 (freeze) Wed 30 Sep 22:00 | `docker compose up` clean run of all five scenarios; README; `docs/DEPLOY.md` wizard handed to the Operator, who runs Railway + Vercel (D-27); Playwright demo video saved; pitch deck + `docs/PITCH.md` (D-28) | Demo from laptop only; recording still mandatory |
 | Rehearsal | Wed 30 Sep 20:00 → 22:00 | — | Operator runs the demo script twice from a clean launch | — |
 | **Demo** | **Thu 1 Oct** | — | — | Play the recording if live fails |
+| 006 Chloe voice intake (post-demo, D-38) | Operator sets the window (Q-13) | G6 | Voice path route deep-equals the form path; conversation contract untouched; PR merged | Reopens as a Sprint 005 stretch only if 003 and 004 both merge on time; otherwise stays after the demo |
 
 ## Daily rhythm
 - 08:00 Builder session starts (Routine or Operator-launched). Reads `STATE.md`, the sprint folder, and yesterday's PR comments.
