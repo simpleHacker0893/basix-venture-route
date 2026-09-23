@@ -176,6 +176,8 @@ SQLModel + Alembic + asyncpg only (D-17); never the Convex skill. Migration 0001
 ```
 
 ### Sprint 004 — Requests and interviews (Tue 29 Sep 08:00 → 22:00)
+Read `planning/sprints/003-marketplace/review.md` §What Sprint 004 inherits and `planning/sprints/004-requests-interviews/blueprint.md` before slicing. Eligibility for one builder is a function on the route service built from `eligible_builders` and `gaps` (never a new matcher); the booking state machine is a pure function; every new table carries `demo_data` default true with a check constraint; contracts get Zod mirrors with the parity test.
+<!-- Inherited (Sprint 003 review) -->
 Seams: HTTP endpoints `/api/requests*`, `/api/me/bids`, `/api/bookings*`, `/api/me/dashboard` against `TEST_DATABASE_URL`; booking state machine as a pure function; Playwright request → bid → booking round-trip.
 Skills: `neon-postgres`, `clerk-testing`, `playwright-cli`.
 Append to P3:
