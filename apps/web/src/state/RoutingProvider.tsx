@@ -33,6 +33,10 @@ export function RoutingProvider({ source, children }: { source: RouteSource; chi
           dispatch({ type: "engine-unreachable", message: describe(error) });
         }
       },
+      loadScenario: (brief) => {
+        dispatch({ type: "brief-changed", brief });
+        dispatch({ type: "view-changed", view: "review" });
+      },
       routeBrief: (brief) =>
         run(async () => ({
           type: "route",
@@ -45,6 +49,7 @@ export function RoutingProvider({ source, children }: { source: RouteSource; chi
         return run(() => source.postConversation(turn));
       },
       setBrief: (brief) => dispatch({ type: "brief-changed", brief }),
+      showView: (view) => dispatch({ type: "view-changed", view }),
     }),
     [state, source, run],
   );
