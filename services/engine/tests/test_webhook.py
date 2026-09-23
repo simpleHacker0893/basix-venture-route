@@ -183,3 +183,23 @@ async def test_placeholder_secret_rejects_every_call(
         response = await client.post(WEBHOOK, content=body, headers=svix_headers(body))
 
     assert response.status_code == 400
+
+
+async def test_admin_bootstrap_survives_a_failed_clerk_role_write(
+    api: AsyncClient, db_session: AsyncSession, clerk_admin: FakeClerkAdmin
+) -> None:
+    """The row is committed before Clerk is called; a Backend API failure must answer 200 so
+    Clerk's replay retries the role write instead of duplicating the event (review of #39)."""
+
+    async def failing(clerk_id: str, role: str) -> None:
+        raise RuntimeError("clerk backend unavailable")
+
+    clerk_admin.set_role = failing  # type: ignore[method-assign]
+    body = clerk_user_event("user.created", clerk_id="user_ops", email="admin@example.org")
+
+    response = await api.post(WEBHOOK, content=body, headers=svix_headers(body))
+
+    assert response.status_code == 200
+    assert response.json()["confirmed"] is True
+    (user,) = await _users(db_session)
+    assert (user.role, user.status) == ("admin", "confirmed")

@@ -17,6 +17,7 @@ import base64
 import binascii
 import hashlib
 import hmac
+import logging
 import time
 from collections.abc import Mapping
 from dataclasses import dataclass
@@ -28,6 +29,8 @@ from sqlmodel.ext.asyncio.session import AsyncSession
 
 from app.config import Settings
 from app.marketplace.models import USER_ROLES, User
+
+logger = logging.getLogger(__name__)
 
 INVALID_SIGNATURE = "invalid webhook signature"
 TIMESTAMP_TOLERANCE_SECONDS = 5 * 60
@@ -178,5 +181,12 @@ async def upsert_clerk_user(
         user.status = "confirmed"
     await session.commit()
     if is_admin:
-        await clerk_admin.set_role(event.clerk_id, "admin")
+        # The row is committed; a Clerk Backend API failure must not turn the webhook into a
+        # 500 after the fact. Clerk retries the event, and the replay writes the role again.
+        try:
+            await clerk_admin.set_role(event.clerk_id, "admin")
+        except Exception:
+            logger.warning(
+                "admin role write to Clerk failed for %s; the replay will retry", event.clerk_id
+            )
     return user
