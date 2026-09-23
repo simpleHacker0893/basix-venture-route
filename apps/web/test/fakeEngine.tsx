@@ -71,6 +71,9 @@ type Overrides = Partial<Record<"scenarios" | "route" | "conversation", (init?: 
 export function engineFetch(overrides: Overrides = {}): FetchLike {
   return async (input, init) => {
     const url = typeof input === "string" ? input : input instanceof URL ? input.href : input.url;
+    if (url.endsWith("/api/ecosystem")) {
+      return jsonResponse(snapshot.ecosystem);
+    }
     if (url.endsWith("/api/scenarios")) {
       return overrides.scenarios?.(init) ?? jsonResponse(SEED_BRIEFS);
     }

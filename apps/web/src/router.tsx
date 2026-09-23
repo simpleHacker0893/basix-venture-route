@@ -1,4 +1,5 @@
-import { Outlet, Route, Routes } from "react-router";
+import { useEffect } from "react";
+import { Outlet, Route, Routes, useLocation } from "react-router";
 
 import { RequireRole } from "./auth/RequireRole";
 import { OfflineBanner } from "./components/OfflineBanner";
@@ -10,9 +11,26 @@ import { SignInScreen } from "./features/auth/SignInScreen";
 import { AddProjectPage } from "./features/builder/AddProjectPage";
 import { ProfilePage } from "./features/builder/ProfilePage";
 import { CandidatePage } from "./features/candidate/CandidatePage";
+import { PartnersPage } from "./features/ecosystem/PartnersPage";
 import { HandoffScreen } from "./features/handoff/HandoffScreen";
 import { LandingPage } from "./features/landing/LandingPage";
+import { PrivacyPage } from "./features/privacy/PrivacyPage";
 import { RoutePage } from "./features/route/RoutePage";
+
+/**
+ * React Router does not scroll to a hash (#79): the header and footer section links target
+ * landing sections, so after every navigation the hashed section scrolls into view, otherwise
+ * the page starts at the top.
+ */
+function ScrollToHash() {
+  const { pathname, hash } = useLocation();
+  useEffect(() => {
+    const target = hash ? document.getElementById(hash.slice(1)) : null;
+    if (target) target.scrollIntoView({ block: "start" });
+    else window.scrollTo(0, 0);
+  }, [pathname, hash]);
+  return null;
+}
 
 function Layout() {
   return (
@@ -23,6 +41,7 @@ function Layout() {
       >
         Skip to main content
       </a>
+      <ScrollToHash />
       <OfflineBanner />
       <TopNav />
       <main id="main" tabIndex={-1} className="flex-1 outline-none">
@@ -40,6 +59,8 @@ export function AppRoutes() {
         <Route index element={<LandingPage />} />
         <Route path="route" element={<RoutePage />} />
         <Route path="handoff" element={<HandoffScreen />} />
+        <Route path="partners" element={<PartnersPage />} />
+        <Route path="privacy" element={<PrivacyPage />} />
         {/* Clerk's path routing owns the sub-paths (factor steps, SSO callback). */}
         <Route path="sign-in/*" element={<SignInScreen />} />
         <Route path="sign-up/*" element={<SignInScreen />} />
