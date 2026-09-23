@@ -13,8 +13,12 @@ import {
   BuilderProfile,
   ChatResponse,
   ChatTurn,
+  Credential,
+  CredentialInput,
   Gap,
   ProfileInput,
+  Project,
+  ProjectInput,
   ReasoningPath,
   RoleResponse,
   VentureBrief,
@@ -66,6 +70,10 @@ const cases: [keyof typeof exported, z.ZodType][] = [
   ["ProfileInput", ProfileInput],
   ["BuilderProfile", BuilderProfile],
   ["RoleResponse", RoleResponse],
+  ["CredentialInput", CredentialInput],
+  ["Credential", Credential],
+  ["ProjectInput", ProjectInput],
+  ["Project", Project],
 ];
 
 describe("Zod JSON Schema equals Pydantic JSON Schema", () => {

@@ -145,3 +145,76 @@ async def confirmed_rows_for(session: AsyncSession, profile_id: UUID) -> Confirm
             for row in projects
         ),
     )
+
+
+# -- proof rows a builder owns ------------------------------------------------
+
+
+async def credentials_for(session: AsyncSession, profile_id: UUID) -> list[Credential]:
+    statement = (
+        select(Credential)
+        .where(Credential.profile_id == profile_id)
+        .order_by(col(Credential.created_at), col(Credential.id))
+    )
+    return list((await session.exec(statement)).all())
+
+
+async def projects_for(session: AsyncSession, profile_id: UUID) -> list[tuple[Project, list[str]]]:
+    """Each project with its demonstrated skill ids, in seed skill order."""
+    statement = (
+        select(Project)
+        .where(Project.profile_id == profile_id)
+        .order_by(col(Project.created_at), col(Project.id))
+    )
+    projects = list((await session.exec(statement)).all())
+    if not projects:
+        return []
+    links = (
+        await session.exec(
+            select(ProjectSkill).where(col(ProjectSkill.project_id).in_([p.id for p in projects]))
+        )
+    ).all()
+    order = {skill: index for index, skill in enumerate(await skill_names(session))}
+    by_project: dict[UUID, list[str]] = {}
+    for link in links:
+        by_project.setdefault(link.project_id, []).append(link.skill_id)
+    return [
+        (project, sorted(by_project.get(project.id, []), key=lambda s: order.get(s, 99)))
+        for project in projects
+    ]
+
+
+async def add_credential(
+    session: AsyncSession, profile_id: UUID, *, title: str, issuer: str, skill_id: str
+) -> Credential:
+    row = Credential(profile_id=profile_id, title=title, issuer=issuer, skill_id=skill_id)
+    session.add(row)
+    await session.commit()
+    await session.refresh(row)
+    return row
+
+
+async def add_project(
+    session: AsyncSession,
+    profile_id: UUID,
+    *,
+    title: str,
+    vertical: str,
+    licensable: bool,
+    completed_on: date,
+    skill_ids: Iterable[str],
+) -> Project:
+    row = Project(
+        profile_id=profile_id,
+        title=title,
+        vertical=vertical,
+        licensable=licensable,
+        completed_on=completed_on,
+    )
+    session.add(row)
+    await session.flush()
+    for skill_id in dict.fromkeys(skill_ids):
+        session.add(ProjectSkill(project_id=row.id, skill_id=skill_id))
+    await session.commit()
+    await session.refresh(row)
+    return row

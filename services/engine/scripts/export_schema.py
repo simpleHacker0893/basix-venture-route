@@ -20,7 +20,15 @@ from pydantic import BaseModel, TypeAdapter
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from app.marketplace.schemas import BuilderProfile, ProfileInput, RoleResponse  # noqa: E402
+from app.marketplace.schemas import (  # noqa: E402
+    BuilderProfile,
+    CredentialInput,
+    CredentialOut,
+    ProfileInput,
+    ProjectInput,
+    ProjectOut,
+    RoleResponse,
+)
 from app.models.brief import VentureBrief  # noqa: E402
 from app.models.chat import ChatResponse, ChatTurn  # noqa: E402
 from app.models.engine import Gap, ReasoningPath  # noqa: E402
@@ -85,6 +93,10 @@ def export() -> Json:
         "ProfileInput": model(ProfileInput),
         "BuilderProfile": model(BuilderProfile),
         "RoleResponse": model(RoleResponse),
+        "CredentialInput": model(CredentialInput),
+        "Credential": model(CredentialOut),
+        "ProjectInput": model(ProjectInput),
+        "Project": model(ProjectOut),
     }
 
 

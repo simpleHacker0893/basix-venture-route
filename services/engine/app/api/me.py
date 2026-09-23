@@ -15,14 +15,18 @@ from app.auth.webhook import ClerkAdmin
 from app.db.session import get_session
 from app.engine.metta_engine import MettaRouteEngine
 from app.marketplace import repo
-from app.marketplace.models import Profile, User
+from app.marketplace.models import Credential, Profile, Project, User
 from app.marketplace.schemas import (
     AvailabilityRange,
     BuilderProfile,
     Contact,
     ContactSharing,
+    CredentialInput,
+    CredentialOut,
     DeliveryModes,
     ProfileInput,
+    ProjectInput,
+    ProjectOut,
     RoleChoice,
     RoleResponse,
 )
@@ -161,6 +165,93 @@ async def put_profile(
     await session.commit()
     await session.refresh(profile)
     return await _render(session, user.db_user, profile)
+
+
+# -- credentials and projects: proof, pending until an admin confirms it (#42) -------------------
+
+
+async def _own_profile(session: AsyncSession, user: CurrentUser) -> Profile:
+    assert user.db_user is not None
+    profile = await repo.profile_for_user(session, user.db_user.id)
+    if profile is None:
+        raise HTTPException(status_code=404, detail="no profile yet")
+    return profile
+
+
+def _credential_out(row: Credential) -> CredentialOut:
+    return CredentialOut(
+        id=str(row.id),
+        title=row.title,
+        issuer=row.issuer,
+        skill_id=row.skill_id,
+        status=row.status,
+        demo_data=row.demo_data,
+    )
+
+
+def _project_out(row: Project, skill_ids: list[str]) -> ProjectOut:
+    return ProjectOut(
+        id=str(row.id),
+        title=row.title,
+        vertical=row.vertical,
+        licensable=row.licensable,
+        completed_on=row.completed_on,
+        skill_ids=skill_ids,
+        status=row.status,
+        demo_data=row.demo_data,
+    )
+
+
+@builder_router.get("/credentials", response_model=list[CredentialOut])
+async def list_credentials(
+    user: Annotated[CurrentUser, Depends(require_role("builder"))],
+    session: Annotated[AsyncSession, Depends(get_session)],
+) -> list[CredentialOut]:
+    profile = await _own_profile(session, user)
+    return [_credential_out(row) for row in await repo.credentials_for(session, profile.id)]
+
+
+@builder_router.post("/credentials", response_model=CredentialOut, status_code=201)
+async def create_credential(
+    body: CredentialInput,
+    user: Annotated[CurrentUser, Depends(require_role("builder"))],
+    session: Annotated[AsyncSession, Depends(get_session)],
+) -> CredentialOut:
+    profile = await _own_profile(session, user)
+    row = await repo.add_credential(
+        session, profile.id, title=body.title, issuer=body.issuer, skill_id=body.skill_id
+    )
+    return _credential_out(row)
+
+
+@builder_router.get("/projects", response_model=list[ProjectOut])
+async def list_projects(
+    user: Annotated[CurrentUser, Depends(require_role("builder"))],
+    session: Annotated[AsyncSession, Depends(get_session)],
+) -> list[ProjectOut]:
+    profile = await _own_profile(session, user)
+    return [
+        _project_out(row, skills) for row, skills in await repo.projects_for(session, profile.id)
+    ]
+
+
+@builder_router.post("/projects", response_model=ProjectOut, status_code=201)
+async def create_project(
+    body: ProjectInput,
+    user: Annotated[CurrentUser, Depends(require_role("builder"))],
+    session: Annotated[AsyncSession, Depends(get_session)],
+) -> ProjectOut:
+    profile = await _own_profile(session, user)
+    row = await repo.add_project(
+        session,
+        profile.id,
+        title=body.title,
+        vertical=body.vertical,
+        licensable=body.licensable,
+        completed_on=body.completed_on,
+        skill_ids=body.skill_ids,
+    )
+    return _project_out(row, list(dict.fromkeys(body.skill_ids)))
 
 
 router.include_router(builder_router)

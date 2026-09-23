@@ -12,7 +12,7 @@ from typing import Annotated, Literal, Self
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
-from app.models.brief import PositiveSafeInt, SkillId
+from app.models.brief import PositiveSafeInt, SkillId, Vertical
 
 Evidence = Literal["credential", "project", "both"]
 SkillStatus = Literal["verified", "self-described"]
@@ -24,6 +24,8 @@ Headline = Annotated[str, Field(max_length=200)]
 Location = Annotated[str, Field(min_length=1, max_length=100)]
 ContactField = Annotated[str, Field(max_length=100)]
 CohortId = Annotated[str, Field(min_length=1, max_length=40)]
+Title = Annotated[str, Field(min_length=1, max_length=120)]
+Issuer = Annotated[str, Field(min_length=1, max_length=120)]
 
 
 class Wire(BaseModel):
@@ -118,4 +120,41 @@ class BuilderProfile(Wire):
     skills: list[ProfileSkill]
     account_status: AccountStatus = Field(alias="accountStatus")
     confirmed: bool
+    demo_data: bool = Field(default=True, alias="demoData")
+
+
+# -- proof: credentials and projects (pending until an admin confirms them, #42) -------------------
+
+
+class CredentialInput(Wire):
+    title: Title
+    issuer: Issuer
+    skill_id: SkillId = Field(alias="skillId")
+
+
+class CredentialOut(Wire):
+    id: str
+    title: Title
+    issuer: Issuer
+    skill_id: SkillId = Field(alias="skillId")
+    status: AccountStatus
+    demo_data: bool = Field(default=True, alias="demoData")
+
+
+class ProjectInput(Wire):
+    title: Title
+    vertical: Vertical
+    licensable: bool
+    completed_on: date = Field(alias="completedOn")
+    skill_ids: list[SkillId] = Field(alias="skillIds", min_length=1, max_length=5)
+
+
+class ProjectOut(Wire):
+    id: str
+    title: Title
+    vertical: Vertical
+    licensable: bool
+    completed_on: date = Field(alias="completedOn")
+    skill_ids: list[SkillId] = Field(alias="skillIds", min_length=1, max_length=5)
+    status: AccountStatus
     demo_data: bool = Field(default=True, alias="demoData")

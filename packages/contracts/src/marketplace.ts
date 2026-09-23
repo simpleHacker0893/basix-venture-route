@@ -7,7 +7,7 @@
  */
 import { z } from "zod";
 
-import { DailyBudget, IsoDate, Location, SkillId } from "./brief.js";
+import { DailyBudget, IsoDate, Location, SkillId, Vertical } from "./brief.js";
 
 export const Evidence = z.enum(["credential", "project", "both"]);
 export type Evidence = z.infer<typeof Evidence>;
@@ -109,3 +109,45 @@ export const BuilderProfile = z.strictObject({
   demoData: z.boolean().default(true),
 });
 export type BuilderProfile = z.infer<typeof BuilderProfile>;
+
+/** Proof a builder submits; pending until a BASIX admin confirms it (DOMAIN.md §Marketplace). */
+export const Title = z.string().min(1).max(120);
+export const Issuer = z.string().min(1).max(120);
+
+export const CredentialInput = z.strictObject({
+  title: Title,
+  issuer: Issuer,
+  skillId: SkillId,
+});
+export type CredentialInput = z.infer<typeof CredentialInput>;
+
+export const Credential = z.strictObject({
+  id: z.string(),
+  title: Title,
+  issuer: Issuer,
+  skillId: SkillId,
+  status: AccountStatus,
+  demoData: z.boolean().default(true),
+});
+export type Credential = z.infer<typeof Credential>;
+
+export const ProjectInput = z.strictObject({
+  title: Title,
+  vertical: Vertical,
+  licensable: z.boolean(),
+  completedOn: IsoDate,
+  skillIds: z.array(SkillId).min(1).max(5),
+});
+export type ProjectInput = z.infer<typeof ProjectInput>;
+
+export const Project = z.strictObject({
+  id: z.string(),
+  title: Title,
+  vertical: Vertical,
+  licensable: z.boolean(),
+  completedOn: IsoDate,
+  skillIds: z.array(SkillId).min(1).max(5),
+  status: AccountStatus,
+  demoData: z.boolean().default(true),
+});
+export type Project = z.infer<typeof Project>;

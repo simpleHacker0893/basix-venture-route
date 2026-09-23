@@ -1164,6 +1164,93 @@
     ],
     "type": "object"
   },
+  "Credential": {
+    "additionalProperties": false,
+    "properties": {
+      "demoData": {
+        "default": true,
+        "type": "boolean"
+      },
+      "id": {
+        "type": "string"
+      },
+      "issuer": {
+        "maxLength": 120,
+        "minLength": 1,
+        "type": "string"
+      },
+      "skillId": {
+        "enum": [
+          "python",
+          "ai-metta",
+          "ui-ux",
+          "frontend",
+          "backend",
+          "domain-research",
+          "mobile",
+          "rust",
+          "data"
+        ],
+        "type": "string"
+      },
+      "status": {
+        "enum": [
+          "pending",
+          "confirmed",
+          "rejected"
+        ],
+        "type": "string"
+      },
+      "title": {
+        "maxLength": 120,
+        "minLength": 1,
+        "type": "string"
+      }
+    },
+    "required": [
+      "id",
+      "issuer",
+      "skillId",
+      "status",
+      "title"
+    ],
+    "type": "object"
+  },
+  "CredentialInput": {
+    "additionalProperties": false,
+    "properties": {
+      "issuer": {
+        "maxLength": 120,
+        "minLength": 1,
+        "type": "string"
+      },
+      "skillId": {
+        "enum": [
+          "python",
+          "ai-metta",
+          "ui-ux",
+          "frontend",
+          "backend",
+          "domain-research",
+          "mobile",
+          "rust",
+          "data"
+        ],
+        "type": "string"
+      },
+      "title": {
+        "maxLength": 120,
+        "minLength": 1,
+        "type": "string"
+      }
+    },
+    "required": [
+      "issuer",
+      "skillId",
+      "title"
+    ],
+    "type": "object"
+  },
   "Gap": {
     "properties": {
       "affected": {
@@ -1365,6 +1452,127 @@
       "modes",
       "selfDescribedSkills",
       "sharing"
+    ],
+    "type": "object"
+  },
+  "Project": {
+    "additionalProperties": false,
+    "properties": {
+      "completedOn": {
+        "format": "date",
+        "type": "string"
+      },
+      "demoData": {
+        "default": true,
+        "type": "boolean"
+      },
+      "id": {
+        "type": "string"
+      },
+      "licensable": {
+        "type": "boolean"
+      },
+      "skillIds": {
+        "items": {
+          "enum": [
+            "python",
+            "ai-metta",
+            "ui-ux",
+            "frontend",
+            "backend",
+            "domain-research",
+            "mobile",
+            "rust",
+            "data"
+          ],
+          "type": "string"
+        },
+        "maxItems": 5,
+        "minItems": 1,
+        "type": "array"
+      },
+      "status": {
+        "enum": [
+          "pending",
+          "confirmed",
+          "rejected"
+        ],
+        "type": "string"
+      },
+      "title": {
+        "maxLength": 120,
+        "minLength": 1,
+        "type": "string"
+      },
+      "vertical": {
+        "enum": [
+          "health",
+          "agri",
+          "education"
+        ],
+        "type": "string"
+      }
+    },
+    "required": [
+      "completedOn",
+      "id",
+      "licensable",
+      "skillIds",
+      "status",
+      "title",
+      "vertical"
+    ],
+    "type": "object"
+  },
+  "ProjectInput": {
+    "additionalProperties": false,
+    "properties": {
+      "completedOn": {
+        "format": "date",
+        "type": "string"
+      },
+      "licensable": {
+        "type": "boolean"
+      },
+      "skillIds": {
+        "items": {
+          "enum": [
+            "python",
+            "ai-metta",
+            "ui-ux",
+            "frontend",
+            "backend",
+            "domain-research",
+            "mobile",
+            "rust",
+            "data"
+          ],
+          "type": "string"
+        },
+        "maxItems": 5,
+        "minItems": 1,
+        "type": "array"
+      },
+      "title": {
+        "maxLength": 120,
+        "minLength": 1,
+        "type": "string"
+      },
+      "vertical": {
+        "enum": [
+          "health",
+          "agri",
+          "education"
+        ],
+        "type": "string"
+      }
+    },
+    "required": [
+      "completedOn",
+      "licensable",
+      "skillIds",
+      "title",
+      "vertical"
     ],
     "type": "object"
   },
