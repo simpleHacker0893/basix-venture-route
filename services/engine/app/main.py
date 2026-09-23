@@ -18,6 +18,7 @@ from app.api.bids import router as bids_router
 from app.api.bookings import router as bookings_router
 from app.api.builders import router as builders_router
 from app.api.conversation import router as conversation_router
+from app.api.dashboard import router as dashboard_router
 from app.api.health import router as health_router
 from app.api.internal import router as internal_router
 from app.api.me import router as me_router
@@ -122,6 +123,7 @@ def create_app(
     app.include_router(requests_router)
     app.include_router(bids_router)
     app.include_router(bookings_router)
+    app.include_router(dashboard_router)
     app.include_router(admin_router)
     app.include_router(webhooks_router)
 

@@ -12,11 +12,12 @@ from typing import Any
 from uuid import UUID
 
 from sqlalchemy.exc import IntegrityError
-from sqlmodel import col, select
+from sqlmodel import col, func, select
 from sqlmodel.ext.asyncio.session import AsyncSession
 from sqlmodel.sql.expression import Select
 
 from app.marketplace.models import (
+    ROUTE_STATUSES,
     Availability,
     Bid,
     Booking,
@@ -591,6 +592,84 @@ async def bookings_for_founder(session: AsyncSession, founder_id: UUID) -> list[
 
 async def bookings_for_profile(session: AsyncSession, profile_id: UUID) -> list[BookingRow]:
     statement = _bookings_upcoming_first().where(Booking.profile_id == profile_id)
+    return [(b, p, u, r) for b, p, u, r in (await session.exec(statement)).all()]
+
+
+# -- dashboard (spec #52 §Dashboard response, #66): counts from SQL, never from the engine ------
+
+
+async def dashboard_counts(session: AsyncSession, founder_id: UUID) -> dict[str, Any]:
+    """`briefs` counts the founder's requests, `routes` groups them by route_status,
+    `openRequests`, `bidsReceived` (bids on the founder's requests from confirmed builders) and
+    `bookings` (the founder's bookings in every state)."""
+    briefs = (
+        await session.exec(
+            select(func.count()).select_from(Request).where(Request.founder_id == founder_id)
+        )
+    ).one()
+    by_status = dict(
+        (
+            await session.exec(
+                select(Request.route_status, func.count())
+                .where(Request.founder_id == founder_id)
+                .group_by(Request.route_status)
+            )
+        ).all()
+    )
+    open_requests = (
+        await session.exec(
+            select(func.count())
+            .select_from(Request)
+            .where(Request.founder_id == founder_id, Request.status == "open")
+        )
+    ).one()
+    bids_received = (
+        await session.exec(
+            select(func.count())
+            .select_from(Bid)
+            .join(Request, col(Request.id) == col(Bid.request_id))
+            .join(Profile, col(Profile.id) == col(Bid.profile_id))
+            .join(User, col(User.id) == col(Profile.user_id))
+            .where(Request.founder_id == founder_id, User.status == "confirmed")
+        )
+    ).one()
+    bookings = (
+        await session.exec(
+            select(func.count()).select_from(Booking).where(Booking.founder_id == founder_id)
+        )
+    ).one()
+    return {
+        "briefs": briefs,
+        "routes": {status: by_status.get(status, 0) for status in ROUTE_STATUSES},
+        "open_requests": open_requests,
+        "bids_received": bids_received,
+        "bookings": bookings,
+    }
+
+
+async def bids_received(
+    session: AsyncSession, founder_id: UUID, limit: int = 10
+) -> list[tuple[Bid, Request, Profile]]:
+    """Bids on the founder's requests from currently confirmed builders, newest first, capped."""
+    statement = (
+        select(Bid, Request, Profile)
+        .join(Request, col(Request.id) == col(Bid.request_id))
+        .join(Profile, col(Profile.id) == col(Bid.profile_id))
+        .join(User, col(User.id) == col(Profile.user_id))
+        .where(Request.founder_id == founder_id, User.status == "confirmed")
+        .order_by(col(Bid.created_at).desc(), col(Bid.id))
+        .limit(limit)
+    )
+    return [(b, r, p) for b, r, p in (await session.exec(statement)).all()]
+
+
+async def upcoming_bookings(
+    session: AsyncSession, founder_id: UUID, now: datetime
+) -> list[BookingRow]:
+    """The founder's bookings whose proposed start is at or after `now`, soonest first."""
+    statement = _bookings_upcoming_first().where(
+        Booking.founder_id == founder_id, Booking.proposed_start >= now
+    )
     return [(b, p, u, r) for b, p, u, r in (await session.exec(statement)).all()]
 
 

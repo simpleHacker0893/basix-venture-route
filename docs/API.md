@@ -406,6 +406,25 @@ history entries: `propose`, `counter`, `confirm`, and `proposedStart` is the bui
 Role `founder` or `builder`. Own bookings (the founder's, or the ones on the builder's profile),
 soonest proposed start first, each a `Booking` with both time fields on every row and entry.
 
+## Founder dashboard: GET /api/me/dashboard (Sprint 004)
+
+Role `founder`. One call whose numbers come from SQL, never from the engine (D-17); the tiles
+map one-to-one onto `counts`:
+
+```json
+{ "counts": { "briefs": 3, "routes": { "feasible": 2, "partial": 1, "infeasible": 0 },
+              "openRequests": 2, "bidsReceived": 1, "bookings": 2 },
+  "requests": [ { "…": "Request, newest first, every status, eligibility null" } ],
+  "bidsReceived": [ { "…": "Bid, newest first, confirmed builders only, at most ten" } ],
+  "upcomingBookings": [ { "…": "Booking with proposedStart at or after now, soonest first" } ] }
+```
+
+`briefs` counts the founder's requests; `routes` groups them by `routeStatus`; `openRequests`
+counts the open ones; `bidsReceived` counts bids on the founder's requests from builders whose
+account is confirmed right now (the list shows the newest ten of them); `bookings` counts the
+founder's bookings in every state. A `builder` or `admin` session answers `403`; a founder with
+nothing gets zeros and empty lists.
+
 ## Admin: `/api/admin/*`
 
 Role `admin`. Admins are never user-chosen: the webhook assigns the role to emails in
