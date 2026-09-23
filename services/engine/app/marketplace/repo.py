@@ -6,7 +6,7 @@ Routes and the projection never write SQL themselves; they call these functions 
 from __future__ import annotations
 
 import re
-from collections.abc import Iterable
+from collections.abc import Iterable, Sequence
 from datetime import date, datetime
 from typing import Any
 from uuid import UUID
@@ -466,7 +466,7 @@ async def add_bid(
     *,
     day_rate: int,
     message: str,
-    eligible_skills: list[str],
+    eligible_skills: Sequence[str],
     path: dict[str, Any],
 ) -> Bid | None:
     """Insert and commit one bid; None when the (request, profile) UNIQUE already holds, so a
@@ -476,7 +476,7 @@ async def add_bid(
         profile_id=profile.id,
         day_rate=day_rate,
         message=message,
-        eligible_skills=eligible_skills,
+        eligible_skills=list(eligible_skills),
         path=path,
     )
     session.add(row)
