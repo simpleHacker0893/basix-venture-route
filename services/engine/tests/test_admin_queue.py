@@ -8,11 +8,11 @@ Should: "Reprojection latency < 3 s on demo-size data (pasted timing)."
 
 The brief is the seed Constrained brief (mobile + rust, remote, team ≤ 2, USD 300): no seed
 builder is verified for `mobile`, so a confirmed user-entered builder with a mobile credential
-and a mobile project is the only way that gap can close.
+and a mobile project is the only way that gap can close. The cast (admin, founder, the pending
+Naomi Chebet, the confirmed one) comes from the shared conftest fixtures (Sprint 004, #55).
 """
 
 import time
-from collections.abc import Callable
 from typing import Any
 
 import pytest
@@ -20,61 +20,12 @@ from httpx import AsyncClient
 from sqlmodel import col, select
 from sqlmodel.ext.asyncio.session import AsyncSession
 
-from app.marketplace.models import Confirmation, User
-from tests.test_me_profile import profile_input
-from tests.test_projects import credential_input, project_input
+from app.marketplace.models import Confirmation
+from tests.conftest import Actor
 
 pytestmark = pytest.mark.anyio
 
-Bearer = Callable[..., dict[str, str]]
 CONSTRAINED = "brief-constrained-01"
-
-
-async def _admin(session: AsyncSession, bearer: Bearer) -> dict[str, str]:
-    session.add(
-        User(clerk_id="user_admin", email="ops@basix.example", role="admin", status="confirmed")
-    )
-    await session.commit()
-    return bearer(sub="user_admin", role="admin")
-
-
-async def _mobile_builder(
-    api: AsyncClient, session: AsyncSession, bearer: Bearer
-) -> tuple[dict[str, str], dict[str, str]]:
-    """A pending builder verified for nothing yet: profile, one mobile credential, one mobile
-    project. Returns the builder's headers and the ids of the rows an admin must act on."""
-    session.add(User(clerk_id="user_mob", email="mob@example.com", role="builder"))
-    await session.commit()
-    headers = bearer(sub="user_mob", role="builder")
-    profile = await api.put(
-        "/api/me/profile",
-        json=profile_input(
-            displayName="Naomi Chebet",
-            dayRate=120,
-            modes={"remote": True, "hybrid": False, "onSite": False},
-            selfDescribedSkills=["mobile"],
-            availability=[{"start": "2026-09-22", "end": "2026-10-20"}],
-        ),
-        headers=headers,
-    )
-    assert profile.status_code == 200
-    credential = await api.post(
-        "/api/me/credentials",
-        json=credential_input(title="Mobile 301", skillId="mobile"),
-        headers=headers,
-    )
-    project = await api.post(
-        "/api/me/projects",
-        json=project_input(title="Field survey app", vertical="agri", skillIds=["mobile"]),
-        headers=headers,
-    )
-    assert (credential.status_code, project.status_code) == (201, 201)
-    user = (await session.exec(select(User).where(User.clerk_id == "user_mob"))).one()
-    return headers, {
-        "account": str(user.id),
-        "credential": credential.json()["id"],
-        "project": project.json()["id"],
-    }
 
 
 async def _route(api: AsyncClient) -> dict[str, Any]:
@@ -98,12 +49,11 @@ def _evidence(route: dict[str, Any], builder_id: str) -> str | None:
 
 
 async def test_pending_queue_lists_the_builder_account_credential_and_project(
-    api: AsyncClient, bearer: Bearer, db_session: AsyncSession
+    api: AsyncClient, admin: Actor, unconfirmed_builder: Actor
 ) -> None:
-    admin = await _admin(db_session, bearer)
-    _, ids = await _mobile_builder(api, db_session, bearer)
+    ids = unconfirmed_builder.ids
 
-    response = await api.get("/api/admin/pending", headers=admin)
+    response = await api.get("/api/admin/pending", headers=admin.headers)
 
     assert response.status_code == 200
     body = response.json()
@@ -119,13 +69,8 @@ async def test_pending_queue_lists_the_builder_account_credential_and_project(
     assert all(row["demoData"] is True for rows in body.values() for row in rows)
 
 
-async def test_queue_is_admin_only(
-    api: AsyncClient, bearer: Bearer, db_session: AsyncSession
-) -> None:
-    db_session.add(User(clerk_id="user_f", email="f@example.com", role="founder"))
-    await db_session.commit()
-
-    response = await api.get("/api/admin/pending", headers=bearer(sub="user_f", role="founder"))
+async def test_queue_is_admin_only(api: AsyncClient, founder: Actor) -> None:
+    response = await api.get("/api/admin/pending", headers=founder.headers)
 
     assert response.status_code == 403
 
@@ -134,10 +79,9 @@ async def test_queue_is_admin_only(
 
 
 async def test_confirm_then_reject_flows_into_the_route(
-    api: AsyncClient, bearer: Bearer, db_session: AsyncSession
+    api: AsyncClient, admin: Actor, unconfirmed_builder: Actor
 ) -> None:
-    admin = await _admin(db_session, bearer)
-    builder, ids = await _mobile_builder(api, db_session, bearer)
+    builder, ids = unconfirmed_builder.headers, unconfirmed_builder.ids
     before_health = (await api.get("/health")).json()
     before_route = await _route(api)
     assert before_health["projected_rows"] == 0
@@ -145,10 +89,12 @@ async def test_confirm_then_reject_flows_into_the_route(
     assert any(gap["category"] == "skill" for gap in before_route["gaps"])
 
     started = time.perf_counter()
-    account = await api.post(f"/api/admin/confirm/account/{ids['account']}", headers=admin)
+    account = await api.post(f"/api/admin/confirm/account/{ids['account']}", headers=admin.headers)
     elapsed_account = time.perf_counter() - started
-    credential = await api.post(f"/api/admin/confirm/credential/{ids['credential']}", headers=admin)
-    project = await api.post(f"/api/admin/confirm/project/{ids['project']}", headers=admin)
+    credential = await api.post(
+        f"/api/admin/confirm/credential/{ids['credential']}", headers=admin.headers
+    )
+    project = await api.post(f"/api/admin/confirm/project/{ids['project']}", headers=admin.headers)
     print(f"\nreprojection (confirm account): {elapsed_account * 1000:.0f} ms")
 
     assert account.status_code == 200
@@ -170,7 +116,7 @@ async def test_confirm_then_reject_flows_into_the_route(
     assert [s["evidence"] for s in profile.json()["skills"] if s["id"] == "mobile"] == ["both"]
     assert elapsed_account < 3.0, "Should: reprojection latency < 3 s"
 
-    rejected = await api.post(f"/api/admin/reject/project/{ids['project']}", headers=admin)
+    rejected = await api.post(f"/api/admin/reject/project/{ids['project']}", headers=admin.headers)
 
     assert rejected.status_code == 200
     assert rejected.json()["status"] == "rejected"
@@ -183,15 +129,13 @@ async def test_confirm_then_reject_flows_into_the_route(
 
 
 async def test_rejecting_the_account_removes_the_builder_from_the_graph(
-    api: AsyncClient, bearer: Bearer, db_session: AsyncSession
+    api: AsyncClient, admin: Actor, confirmed_builder: Actor
 ) -> None:
-    admin = await _admin(db_session, bearer)
-    _, ids = await _mobile_builder(api, db_session, bearer)
-    for kind in ("account", "credential", "project"):
-        await api.post(f"/api/admin/confirm/{kind}/{ids[kind]}", headers=admin)
     assert _evidence(await _route(api), "naomi-chebet") == "both"
 
-    response = await api.post(f"/api/admin/reject/account/{ids['account']}", headers=admin)
+    response = await api.post(
+        f"/api/admin/reject/account/{confirmed_builder.ids['account']}", headers=admin.headers
+    )
 
     assert response.status_code == 200
     assert response.json()["projectedRows"] == 0
@@ -200,16 +144,15 @@ async def test_rejecting_the_account_removes_the_builder_from_the_graph(
 
 
 async def test_decisions_can_be_reversed_and_are_logged(
-    api: AsyncClient, bearer: Bearer, db_session: AsyncSession
+    api: AsyncClient, admin: Actor, unconfirmed_builder: Actor, db_session: AsyncSession
 ) -> None:
-    admin = await _admin(db_session, bearer)
-    _, ids = await _mobile_builder(api, db_session, bearer)
+    credential_id = unconfirmed_builder.ids["credential"]
 
-    first = await api.post(f"/api/admin/reject/credential/{ids['credential']}", headers=admin)
-    second = await api.post(f"/api/admin/confirm/credential/{ids['credential']}", headers=admin)
+    first = await api.post(f"/api/admin/reject/credential/{credential_id}", headers=admin.headers)
+    second = await api.post(f"/api/admin/confirm/credential/{credential_id}", headers=admin.headers)
 
     assert (first.json()["status"], second.json()["status"]) == ("rejected", "confirmed")
-    pending = (await api.get("/api/admin/pending", headers=admin)).json()
+    pending = (await api.get("/api/admin/pending", headers=admin.headers)).json()
     assert pending["credentials"] == []
     log = (await db_session.exec(select(Confirmation).order_by(col(Confirmation.created_at)))).all()
     assert [(row.kind, row.decision) for row in log] == [
@@ -219,15 +162,13 @@ async def test_decisions_can_be_reversed_and_are_logged(
 
 
 async def test_unknown_target_is_404_and_unknown_kind_is_422(
-    api: AsyncClient, bearer: Bearer, db_session: AsyncSession
+    api: AsyncClient, admin: Actor
 ) -> None:
-    admin = await _admin(db_session, bearer)
-
     missing = await api.post(
-        "/api/admin/confirm/project/00000000-0000-0000-0000-000000000000", headers=admin
+        "/api/admin/confirm/project/00000000-0000-0000-0000-000000000000", headers=admin.headers
     )
     bad_kind = await api.post(
-        "/api/admin/confirm/booking/00000000-0000-0000-0000-000000000000", headers=admin
+        "/api/admin/confirm/booking/00000000-0000-0000-0000-000000000000", headers=admin.headers
     )
 
     assert missing.status_code == 404
