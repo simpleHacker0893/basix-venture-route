@@ -19,6 +19,7 @@ from app.api.conversation import router as conversation_router
 from app.api.health import router as health_router
 from app.api.internal import router as internal_router
 from app.api.me import router as me_router
+from app.api.requests import router as requests_router
 from app.api.route import router as route_router
 from app.api.webhooks import router as webhooks_router
 from app.auth.clerk import JwksCache, fetch_jwks_over_http
@@ -116,6 +117,7 @@ def create_app(
     app.include_router(conversation_router)
     app.include_router(me_router)
     app.include_router(builders_router)
+    app.include_router(requests_router)
     app.include_router(admin_router)
     app.include_router(webhooks_router)
 

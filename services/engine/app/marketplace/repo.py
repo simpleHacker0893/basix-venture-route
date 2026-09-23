@@ -8,10 +8,12 @@ from __future__ import annotations
 import re
 from collections.abc import Iterable
 from datetime import date
+from typing import Any
 from uuid import UUID
 
 from sqlmodel import col, select
 from sqlmodel.ext.asyncio.session import AsyncSession
+from sqlmodel.sql.expression import Select
 
 from app.marketplace.models import (
     Availability,
@@ -20,6 +22,7 @@ from app.marketplace.models import (
     Profile,
     Project,
     ProjectSkill,
+    Request,
     Skill,
     User,
 )
@@ -369,3 +372,67 @@ async def decide(
     )
     await session.commit()
     return True
+
+
+# -- requests (Sprint 004, spec #52 §Store, #59) --------------------------------------------------
+# A request is a founder's published brief. Rows never become atoms (D-15).
+
+
+async def create_request(
+    session: AsyncSession,
+    founder: User,
+    *,
+    brief: dict[str, Any],
+    route: dict[str, Any],
+    title: str,
+    vertical: str,
+    delivery_mode: str,
+    availability_start: date,
+    availability_end: date,
+    daily_budget: int,
+    route_status: str,
+) -> Request:
+    row = Request(
+        founder_id=founder.id,
+        brief=brief,
+        route=route,
+        title=title,
+        vertical=vertical,
+        delivery_mode=delivery_mode,
+        availability_start=availability_start,
+        availability_end=availability_end,
+        daily_budget=daily_budget,
+        route_status=route_status,
+    )
+    session.add(row)
+    await session.commit()
+    await session.refresh(row)
+    return row
+
+
+def _requests_newest_first() -> Select[tuple[Request, User]]:
+    return (
+        select(Request, User)
+        .join(User, col(User.id) == col(Request.founder_id))
+        .order_by(col(Request.created_at).desc(), col(Request.id))
+    )
+
+
+async def requests_for_founder(
+    session: AsyncSession, founder_id: UUID
+) -> list[tuple[Request, User]]:
+    """The founder's own requests in every status, newest first."""
+    statement = _requests_newest_first().where(Request.founder_id == founder_id)
+    return [(row, user) for row, user in (await session.exec(statement)).all()]
+
+
+async def open_requests(session: AsyncSession) -> list[tuple[Request, User]]:
+    """Every open request, newest first: what a builder's board lists."""
+    statement = _requests_newest_first().where(Request.status == "open")
+    return [(row, user) for row, user in (await session.exec(statement)).all()]
+
+
+async def request_by_id(session: AsyncSession, request_id: UUID) -> tuple[Request, User] | None:
+    statement = _requests_newest_first().where(Request.id == request_id)
+    found = (await session.exec(statement)).first()
+    return None if found is None else (found[0], found[1])

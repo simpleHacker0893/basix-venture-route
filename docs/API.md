@@ -229,6 +229,41 @@ rules). `projects` lists confirmed projects only. Unconfirmed, rejected and unkn
 seed builder ids that have no account, answer `404 {"detail": "no confirmed builder <id>"}`; a
 `builder` session answers `403`.
 
+## Requests: `/api/requests` (Sprint 004)
+
+A request is a founder's published brief: the exact `VentureBrief` the engine routed plus a
+`route` snapshot `{ "status", "totalDailyRate", "builderIds" }` of what the founder saw. The
+snapshot is display-only; every eligibility question is answered by the engine again, never read
+from it. Requests, bids and bookings never become atoms (D-15). Admins have no access this sprint.
+
+### POST /api/requests
+
+Role `founder`. Body `RequestCreate`:
+
+```json
+{ "brief": { "id": "brief-constrained-01", "title": "…", "vertical": "health", "requiredSkills": ["mobile", "rust"], "maximumTeamSize": 2, "availabilityStart": "2026-09-22", "availabilityEnd": "2026-10-06", "deliveryMode": "remote", "location": null, "dailyBudget": 300, "preferReusableIp": false, "demoData": true },
+  "route": { "status": "partial", "totalDailyRate": 130, "builderIds": ["zawadi-njoroge"] } }
+```
+
+The brief is validated as a `VentureBrief` (`422` names the field, e.g. `brief.requiredSkills:
+…`, `brief: availabilityEnd must not precede availabilityStart`, `brief: location is required
+when deliveryMode is on-site`). Response `201` `Request`:
+
+```json
+{ "id": "…", "founderId": "user_…", "brief": { … }, "route": { … },
+  "title": "…", "vertical": "health", "deliveryMode": "remote", "availabilityStart": "2026-09-22",
+  "availabilityEnd": "2026-10-06", "dailyBudget": 300, "routeStatus": "partial",
+  "status": "open", "closedAt": null, "createdAt": "2026-09-23T07:30:00Z", "eligibility": null, "demoData": true }
+```
+
+### GET /api/requests, GET /api/requests/{id}
+
+Role `founder` or `builder`. A founder lists their own requests in every status, newest first;
+a builder lists every `open` request, newest first (the builder's list carries `eligibility`
+inline, see below). `GET /api/requests/{id}` answers `200` to the owning founder or any builder
+and `404 {"detail": "no request <id>"}` to another founder, so ids leak nothing. A `builder`
+session on `POST` answers `403 {"detail": "role founder required"}`.
+
 ## Admin: `/api/admin/*`
 
 Role `admin`. Admins are never user-chosen: the webhook assigns the role to emails in
