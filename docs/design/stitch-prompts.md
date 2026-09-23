@@ -3,6 +3,8 @@
 Copy-paste prompts for Google Stitch. One screen per prompt, generated in the batch order below.
 Source of truth for tokens and screens: the PRD (sections 4.2 and 4.3). If Stitch output and this file disagree, this file wins.
 
+> **Status (2026-09-22):** executed. Stitch project "Venture Route Design System" (`projects/14240170250148839149`) holds the DESIGN.md block as its design system and all 15 screens below. Exports live under `design/stitch/batch-{1,2,3,4}/<screen-slug>/`; `design/stitch/README.md` maps each prompt to its folder and Stitch screen ID and documents how 2.2 and 3.3 were generated through the MCP from Claude Code.
+
 ## How to use this pack
 
 1. Create one Stitch project called **Venture Route**. Target: **Web, desktop, 1440 px wide**.

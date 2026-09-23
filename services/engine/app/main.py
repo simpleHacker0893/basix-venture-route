@@ -5,6 +5,7 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from pydantic import ValidationError
 
@@ -37,6 +38,15 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
 
 
 app = FastAPI(title="Venture Route engine", version="0.0.1", lifespan=lifespan)
+# D-30: the browser calls the engine across origins. Allow-list from CORS_ORIGINS, GET and
+# POST only, credentials off until Sprint 003 adds the Clerk bearer header.
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=get_settings().cors_origin_list,
+    allow_methods=["GET", "POST"],
+    allow_headers=["content-type"],
+    allow_credentials=False,
+)
 app.include_router(health_router)
 app.include_router(internal_router)
 app.include_router(route_router)

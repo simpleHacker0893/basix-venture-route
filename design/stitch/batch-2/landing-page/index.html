@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Venture Route — Deterministic Ledger for BASIX</title>
+<!-- Google Fonts: Fraunces, IBM Plex Sans, IBM Plex Mono -->
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300..900;1,9..144,300..900&amp;family=IBM+Plex+Mono:ital,wght@0,400;0,500;0,600;1,400&amp;family=IBM+Plex+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&amp;display=swap" rel="stylesheet"/>
+<!-- Tailwind CSS v3 with Plugins -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<!-- Tailwind Configuration matching Editorial Research Ledger -->
+<script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            ground: '#f4f1ea',
+            'surface-dark': '#16181b',
+            'surface-dark-card': '#212328',
+            'border-dark': '#30333b',
+            'ink-primary': '#16181b',
+            'ink-muted': '#636059',
+            'ink-subtle': '#8c887e',
+            'accent-green': '#1e5a45',
+            'accent-green-hover': '#164434',
+            'proof-green': '#7fd1ac',
+            'hairline-border': '#e3ded3',
+            'ledger-dim': '#d9dade'
+          },
+          fontFamily: {
+            serif: ['Fraunces', 'serif'],
+            sans: ['"IBM Plex Sans"', 'sans-serif'],
+            mono: ['"IBM Plex Mono"', 'monospace']
+          }
+        }
+      }
+    }
+  </script>
+<!-- Custom Document Layout Styles -->
+<style data-purpose="base-typography">
+    body {
+      background-color: #f4f1ea;
+      color: #16181b;
+      font-family: 'IBM Plex Sans', sans-serif;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+    ::selection {
+      background-color: #1e5a45;
+      color: #ffffff;
+    }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col bg-ground text-ink-primary">
+<!-- BEGIN: Navigation -->
+<header class="sticky top-0 z-50 h-16 bg-ground/95 backdrop-blur-sm border-b border-hairline-border transition-colors">
+<div class="max-w-[1200px] mx-auto h-full px-6 flex items-center justify-between">
+<!-- Brand & Ledger Version Pill -->
+<div class="flex items-center gap-3">
+<a class="font-serif font-bold text-xl tracking-tight text-ink-primary hover:opacity-90" href="#">
+          Venture Route
+        </a>
+<span class="font-mono text-[11px] tracking-wider uppercase px-2 py-0.5 rounded border border-ink-subtle/30 bg-surface-dark/5 text-ink-muted">
+          BASIX Edition
+        </span>
+</div>
+<!-- Center Nav Links -->
+<nav class="hidden md:flex items-center gap-8 text-sm font-medium text-ink-primary">
+<a class="hover:text-accent-green transition-colors" href="#how-it-works">How it works</a>
+<a class="hover:text-accent-green transition-colors" href="#evidence">Evidence</a>
+<a class="hover:text-accent-green transition-colors" href="#for-builders">For builders</a>
+</nav>
+<!-- Action Buttons -->
+<div class="flex items-center gap-3">
+<a class="border border-[#2a2825] text-[#2a2825] px-4 py-2 text-sm font-medium rounded-md hover:bg-black/5 transition-colors" href="#signin">
+          Sign in
+        </a>
+<a class="bg-accent-green text-white px-4 py-2 text-sm font-medium rounded-md hover:bg-accent-green-hover transition-colors shadow-sm" href="#route">
+          Route my venture
+        </a>
+</div>
+</div>
+</header>
+<!-- END: Navigation -->
+<!-- BEGIN: HeroSection -->
+<section class="max-w-[1200px] mx-auto pt-16 pb-20 px-6 w-full" data-purpose="hero-section">
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
+<!-- Left Column: Editorial Manifesto -->
+<div class="lg:col-span-7">
+<h1 class="font-serif text-5xl font-normal tracking-tight text-ink-primary leading-[1.15]">
+          The smallest credible route through BASIX.
+        </h1>
+<p class="font-sans text-lg text-ink-muted mt-6 max-w-xl leading-relaxed">
+          Describe your MVP. Get a verified team, reusable IP, a cohort and a partner, with the evidence to trust it. Honest gaps when it cannot be done.
+        </p>
+<!-- Call to Actions -->
+<div class="mt-8 flex flex-wrap items-center gap-4">
+<a class="bg-accent-green text-white px-6 py-3 rounded-md font-medium text-base hover:bg-accent-green-hover transition-colors" href="#route">
+            Route my venture
+          </a>
+<a class="text-ink-primary hover:text-accent-green px-4 py-3 font-medium text-base flex items-center gap-1.5 underline underline-offset-4 decoration-ink-muted/40 hover:decoration-accent-green transition-all" href="#demo">
+            See a demo route
+          </a>
+</div>
+<!-- Ledger Integrity Strip -->
+<div class="mt-8 font-mono text-xs text-ink-subtle tracking-wide flex items-center gap-2">
+<span>DETERMINISTIC EVALUATION</span>
+<span class="opacity-50">·</span>
+<span>CRYPTOGRAPHIC PROOFS</span>
+<span class="opacity-50">·</span>
+<span>MeTTa KNOWLEDGE GRAPH</span>
+</div>
+</div>
+<!-- Right Column: Framed Evidence Card Preview -->
+<div class="lg:col-span-5 w-full">
+<div class="relative bg-white border border-ledger-dim rounded-lg shadow-sm p-5 overflow-hidden">
+<!-- Demo Data Watermark Tag -->
+<div class="absolute top-4 right-4 bg-[#fef3c7] text-[#92400e] border border-[#fde68a] text-xs font-mono px-2 py-0.5 rounded font-semibold tracking-wider">
+            Demo data
+          </div>
+<!-- Card Header -->
+<div class="pb-3 border-b border-[#ece8df]">
+<div class="flex items-center gap-2">
+<span class="font-serif font-bold text-base text-ink-primary">Your route through BASIX</span>
+<span class="bg-[#e7f5ee] text-[#1e5a45] border border-[#1e5a45]/30 text-[11px] font-mono font-medium px-2 py-0.2 rounded">
+                Feasible
+              </span>
+</div>
+<div class="text-xs font-mono text-ink-muted mt-1">
+              USD 370 / day <span class="text-ink-subtle">(Budget ceiling USD 400)</span>
+</div>
+</div>
+<!-- Matched Builder List -->
+<div class="py-3 space-y-2.5">
+<div class="flex items-center justify-between text-xs py-1 px-2 rounded bg-ground/50 border border-hairline-border/60">
+<span class="font-medium text-ink-primary">Amina Otieno</span>
+<span class="font-mono text-ink-muted">Python · API Ledger</span>
+</div>
+<div class="flex items-center justify-between text-xs py-1 px-2 rounded bg-ground/50 border border-hairline-border/60">
+<span class="font-medium text-ink-primary">Tendai Moyo</span>
+<span class="font-mono text-ink-muted">AI · MeTTa Engine</span>
+</div>
+<div class="flex items-center justify-between text-xs py-1 px-2 rounded bg-ground/50 border border-hairline-border/60">
+<span class="font-medium text-ink-primary">Wanjiru Kamau</span>
+<span class="font-mono text-ink-muted">UI/UX · Editorial Spec</span>
+</div>
+</div>
+<!-- Inspection Rule Micro-Strip -->
+<div class="pt-3 border-t border-[#ece8df] flex items-center gap-2 flex-wrap">
+<span class="font-mono text-[10px] text-ink-muted bg-[#212328] text-white px-2 py-0.5 rounded">
+              verified-for-skill
+            </span>
+<span class="font-mono text-[10px] text-ink-muted bg-[#212328] text-white px-2 py-0.5 rounded">
+              eligible-builder
+            </span>
+<span class="font-mono text-[10px] text-[#1e5a45] bg-[#1e5a45]/10 px-2 py-0.5 rounded ml-auto">
+              3/3 Grounded
+            </span>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- END: HeroSection -->
+<!-- BEGIN: HowItWorks -->
+<section class="max-w-[1200px] mx-auto py-20 px-6 border-t border-hairline-border w-full" data-purpose="how-it-works-section" id="how-it-works">
+<!-- Header Block -->
+<div class="mb-10">
+<span class="font-mono text-xs uppercase tracking-wider text-ink-subtle">WORKFLOW</span>
+<h2 class="font-serif text-3xl text-ink-primary mt-1">How it works</h2>
+</div>
+<!-- 3-Column Card Grid -->
+<div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+<!-- Step 1 -->
+<article class="bg-white border border-hairline-border rounded-lg p-6 shadow-sm hover:border-accent-green/40 transition-colors flex flex-col justify-between">
+<div>
+<div class="font-mono text-xs text-ink-subtle uppercase tracking-widest mb-4">Stage 01</div>
+<h3 class="font-semibold text-lg text-ink-primary mb-3">1. Describe your MVP in plain language</h3>
+<p class="text-ink-muted text-sm leading-relaxed">
+            Tell the intake assistant what you are building, your budget ceiling, and target timeline in ordinary founder words.
+          </p>
+</div>
+<div class="mt-6 pt-4 border-t border-hairline-border/60 font-mono text-[11px] text-ink-subtle">
+          Plain language parsed into facts
+        </div>
+</article>
+<!-- Step 2 -->
+<article class="bg-white border border-hairline-border rounded-lg p-6 shadow-sm hover:border-accent-green/40 transition-colors flex flex-col justify-between">
+<div>
+<div class="font-mono text-xs text-ink-subtle uppercase tracking-widest mb-4">Stage 02</div>
+<h3 class="font-semibold text-lg text-ink-primary mb-3">2. Confirm the brief we extracted</h3>
+<p class="text-ink-muted text-sm leading-relaxed">
+            Review the structured scope, required technical skills, and constraints before any evaluation rule runs.
+          </p>
+</div>
+<div class="mt-6 pt-4 border-t border-hairline-border/60 font-mono text-[11px] text-ink-subtle">
+          Deterministic constraint confirmation
+        </div>
+</article>
+<!-- Step 3 -->
+<article class="bg-white border border-hairline-border rounded-lg p-6 shadow-sm hover:border-accent-green/40 transition-colors flex flex-col justify-between">
+<div>
+<div class="font-mono text-xs text-ink-subtle uppercase tracking-widest mb-4">Stage 03</div>
+<h3 class="font-semibold text-lg text-ink-primary mb-3">3. Get a route decided by MeTTa rules, with evidence</h3>
+<p class="text-ink-muted text-sm leading-relaxed">
+            Receive deterministic builder matches, cohort links, and reusable assets—or clear, actionable gaps if unfeasible.
+          </p>
+</div>
+<div class="mt-6 pt-4 border-t border-hairline-border/60 font-mono text-[11px] text-ink-subtle">
+          Zero hallucinations · Full audit ledger
+        </div>
+</article>
+</div>
+</section>
+<!-- END: HowItWorks -->
+<!-- BEGIN: EvidenceSection -->
+<section class="w-full bg-surface-dark text-white py-20 px-6 my-8" data-purpose="evidence-rules-section" id="evidence">
+<div class="max-w-[1200px] mx-auto grid grid-cols-1 lg:grid-cols-12 gap-10 items-center">
+<!-- Explanatory Narrative Column -->
+<div class="lg:col-span-5">
+<span class="font-mono text-xs text-proof-green tracking-widest uppercase mb-3 block">
+          DETERMINISTIC VERIFICATION
+        </span>
+<h2 class="font-serif text-3xl lg:text-4xl text-white font-normal leading-tight mb-4">
+          Every recommendation names its rule and its facts.
+        </h2>
+<p class="text-[#a3a29e] text-base leading-relaxed mb-6">
+          No black-box hallucinations. Every match and recommendation is justified by inspectable first-order logic over verified credentials, project records, and cohort registries.
+        </p>
+<!-- Bullet List -->
+<ul class="space-y-3 font-sans text-sm text-[#cbd5e1]">
+<li class="flex items-start gap-2.5">
+<span class="text-proof-green font-mono">―</span>
+<span>Inspectable multi-hop proof chains</span>
+</li>
+<li class="flex items-start gap-2.5">
+<span class="text-proof-green font-mono">―</span>
+<span>Explicit gaps when skills or availability fall short</span>
+</li>
+<li class="flex items-start gap-2.5">
+<span class="text-proof-green font-mono">―</span>
+<span>Full audit trail exportable for stakeholder handoff</span>
+</li>
+</ul>
+</div>
+<!-- MeTTa Evidence Drawer Preview -->
+<div class="lg:col-span-7">
+<div class="bg-surface-dark-card border border-border-dark rounded-lg p-6 font-mono text-xs leading-relaxed shadow-lg">
+<!-- Terminal / Drawer Header -->
+<div class="flex items-center justify-between pb-3 border-b border-border-dark">
+<span class="text-proof-green font-bold tracking-wider">
+              RULE EVALUATION: verified-for-skill
+            </span>
+<span class="text-proof-green bg-accent-green/40 px-2.5 py-0.5 rounded border border-proof-green/30 text-[11px]">
+              Pass · Grounded
+            </span>
+</div>
+<!-- Fact Assertions -->
+<div class="mt-4 space-y-1.5 text-[#cbd5e1]">
+<div class="text-[#8c887e] uppercase text-[10px] tracking-wider mb-2 font-semibold">Asserted Ledger Facts:</div>
+<div class="text-[#e2e8f0] font-mono">1. (earned amina-otieno cred-py-201)</div>
+<div class="text-[#e2e8f0] font-mono">2. (proves cred-py-201 python)</div>
+<div class="text-[#e2e8f0] font-mono">3. (available amina-otieno 2026-09-15 2026-10-20)</div>
+</div>
+<!-- Query Execution & Conclusion -->
+<div class="mt-4 pt-3 border-t border-border-dark text-[#cbd5e1]">
+<div class="text-[#8c887e] uppercase text-[10px] tracking-wider mb-1 font-semibold">MeTTa Execution Query:</div>
+<div class="text-[#e2e8f0] font-mono">!(eligible-builder brief-health-01 amina-otieno python)</div>
+<div class="text-proof-green font-medium mt-2 flex items-center gap-1.5">
+<span>⇒</span>
+<span>Rule eligible-builder holds by credential and verified calendar window.</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- END: EvidenceSection -->
+<!-- BEGIN: ForBuilders -->
+<section class="max-w-[1200px] mx-auto py-20 px-6 w-full" data-purpose="for-builders-section" id="for-builders">
+<!-- Header Block -->
+<div class="mb-8">
+<span class="font-mono text-xs uppercase tracking-wider text-ink-subtle">ECOSYSTEM TALENT</span>
+<h2 class="font-serif text-3xl text-ink-primary mt-1">For builders</h2>
+</div>
+<!-- Cards Grid -->
+<div class="grid grid-cols-1 md:grid-cols-2 gap-8 mb-10">
+<!-- Card 1 -->
+<div class="bg-white border border-hairline-border rounded-lg p-8 shadow-sm flex flex-col justify-between">
+<div>
+<div class="flex items-center justify-between mb-4">
+<h3 class="font-semibold text-xl text-ink-primary">Verified profile</h3>
+<span class="font-mono text-xs bg-ground text-ink-muted border border-hairline-border px-2.5 py-1 rounded">
+              Credential-backed
+            </span>
+</div>
+<p class="text-ink-muted text-base leading-relaxed">
+            Ground your skills in accredited university cohorts, verified credentials, and completed open projects. No exaggerated resumes—only verifiable work.
+          </p>
+</div>
+</div>
+<!-- Card 2 -->
+<div class="bg-white border border-hairline-border rounded-lg p-8 shadow-sm flex flex-col justify-between">
+<div>
+<div class="flex items-center justify-between mb-4">
+<h3 class="font-semibold text-xl text-ink-primary">Bid where you are eligible</h3>
+<span class="font-mono text-xs bg-ground text-ink-muted border border-hairline-border px-2.5 py-1 rounded">
+              Deterministic match
+            </span>
+</div>
+<p class="text-ink-muted text-base leading-relaxed">
+            Discover venture briefs where deterministic rules confirm you meet the stack requirements, day rate, and delivery timeframe without speculative proposals.
+          </p>
+</div>
+</div>
+</div>
+<!-- Call to Action Banner -->
+<div class="flex flex-col sm:flex-row sm:items-center gap-5 pt-2">
+<a class="border border-accent-green text-accent-green hover:bg-accent-green hover:text-white px-6 py-3 rounded-md font-medium text-base transition-colors text-center" href="#create-builder">
+        Create a builder profile
+      </a>
+<span class="text-sm text-ink-muted">
+        Are you an ecosystem institution or university? Inquire about cohort registry integration.
+      </span>
+</div>
+</section>
+<!-- END: ForBuilders -->
+<!-- BEGIN: MainFooter -->
+<footer class="bg-surface-dark text-[#a3a29e] py-14 px-6 border-t border-[#26282d] mt-auto" data-purpose="site-footer">
+<div class="max-w-[1200px] mx-auto">
+<!-- Top Section -->
+<div class="pb-10">
+<div class="font-serif font-bold text-white text-xl">
+          Venture Route
+        </div>
+<p class="text-sm text-ink-subtle mt-2 max-w-xl leading-relaxed">
+          Built for the BASIX hackathon, SingularityNET MeTTa track. All records are fictional demo data.
+        </p>
+</div>
+<!-- Registry Directory Navigation (from Snapshot Reference) -->
+<div class="grid grid-cols-2 md:grid-cols-3 gap-8 py-8 border-t border-[#26282d] text-sm">
+<div>
+<div class="font-semibold text-white mb-3">Product</div>
+<ul class="space-y-2 text-[#8c887e]">
+<li><a class="hover:text-white transition-colors" href="#how-it-works">How it works</a></li>
+<li><a class="hover:text-white transition-colors" href="#evidence">Evidence &amp; rules</a></li>
+<li><a class="hover:text-white transition-colors" href="#for-builders">For builders</a></li>
+<li><a class="hover:text-white transition-colors" href="#demo">Demo scenarios</a></li>
+</ul>
+</div>
+<div>
+<div class="font-semibold text-white mb-3">Ecosystem</div>
+<ul class="space-y-2 text-[#8c887e]">
+<li><a class="hover:text-white transition-colors" href="#basix">BASIX</a></li>
+<li><a class="hover:text-white transition-colors" href="#omni">MeTTa OmniUniversity</a></li>
+<li><a class="hover:text-white transition-colors" href="#snet">SingularityNET MeTTa</a></li>
+<li><a class="hover:text-white transition-colors" href="#partners">Partners</a></li>
+</ul>
+</div>
+<div>
+<div class="font-semibold text-white mb-3">Account</div>
+<ul class="space-y-2 text-[#8c887e]">
+<li><a class="hover:text-white transition-colors" href="#signin">Sign in</a></li>
+<li><a class="hover:text-white transition-colors" href="#founder">Create a founder account</a></li>
+<li><a class="hover:text-white transition-colors" href="#create-builder">Create a builder profile</a></li>
+<li><a class="hover:text-white transition-colors" href="#admin">Admin</a></li>
+</ul>
+</div>
+</div>
+<!-- Bottom Metadata & Policy Row -->
+<div class="flex flex-col sm:flex-row justify-between items-start sm:items-center pt-8 border-t border-[#26282d] text-sm gap-4">
+<div class="flex items-center gap-6">
+<a class="hover:text-white underline underline-offset-4 decoration-ink-subtle/40" href="#github">GitHub</a>
+<a class="hover:text-white underline underline-offset-4 decoration-ink-subtle/40" href="#prd">PRD</a>
+<a class="hover:text-white underline underline-offset-4 decoration-ink-subtle/40" href="#privacy">Privacy</a>
+</div>
+<div class="font-mono text-xs text-ink-subtle">
+          © 2026 Venture Route. Deterministic evaluation registry.
+        </div>
+</div>
+</div>
+</footer>
+<!-- END: MainFooter -->
+</body></html>

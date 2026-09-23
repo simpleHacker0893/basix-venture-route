@@ -33,6 +33,11 @@ The Builder never asks for a key in chat (D-26). Everything below is the Operato
 | Railway project + public URL | 005 (a smoke deploy in 002 is optional) | railway.com | n/a |
 | Vercel project + URL | 005 (an offline-mode preview in 002 is optional) | vercel.com | n/a |
 
+## Provisioned on 2026-09-22 (identifiers only, no secrets)
+
+- **Clerk**: application `venture_route`, id `app_3JhCRjM1hxEOxLGT8WtytYs5nuI`. The Clerk CLI 3.3.0 is installed and logged in on the Builder machine. `clerk init --app app_3JhCRjM1hxEOxLGT8WtytYs5nuI` runs inside `apps/web` in the Sprint 003 first ticket, after Sprint 002 creates the app (Sprint 002 has no Clerk).
+- **Neon**: project `venture_route`, id `bold-credit-14500621`, org `org-floral-bird-33863487`, region `aws-us-east-2` (Operator 2026-09-23: keep it; Railway goes to a US region to match). Branches: `production` (default, `br-noisy-field-b5vn5q77`), `dev` (`br-winter-hill-b58k1q2l`) and `test` (`br-weathered-smoke-b5qjh3hg`), the last two created from `production` on 2026-09-23. `production` plays the role the plan below calls `main`. The Neon CLI 4.18 is installed and logged in; the Neon MCP is connected. `neon link --project-id bold-credit-14500621 --branch production -y` writes `.neon` and `.env.local` (libpq URLs with `sslmode`/`channel_binding`, which the asyncpg form must drop, see §Neon step 3) and appends both to `.gitignore`; `neon config init` and `neon deploy` add a `neon.ts` policy and the `@neon/config` packages, which D-17 does not use, so they stay unrun until a decision says otherwise.
+
 ## Clerk (needed by Sat 26 Sep 20:00 for Sprint 003)
 Skills that will use it: `clerk-setup`, `clerk-react-patterns` (`@clerk/react`, Vite), `clerk-cli`, `clerk-webhooks`, `clerk-testing`, `clerk-backend-api`, and `fastapi-clean-architecture` (Clerk JWT section). Unused: every other `clerk-*` platform skill and `clerk-billing`/`clerk-orgs`.
 
@@ -53,17 +58,17 @@ Use the clerk-cli skill. Log in to Clerk and select the "Venture Route" applicat
 ## Neon (needed by Sat 26 Sep 20:00 for Sprint 003)
 Skills: `neon-postgres` (connections, pooled vs direct, branches, migrations). The Neon MCP is connected in Claude sessions. Never the Convex skill (D-17).
 
-1. Create the project `venture-route`: Postgres 17, region **AWS eu-central-1 (Frankfurt)**. Put Railway in an EU region to match (step 3 of Railway).
-2. Branches: `main` (production, Sprint 005), plus `dev` (Sprint 003–004 `DATABASE_URL`) and `test` (`TEST_DATABASE_URL`) created from `main`. Sprint 005 creates `demo` from `main` for resets.
+1. Project `venture_route` exists (`bold-credit-14500621`, region **AWS us-east-2 (Ohio)**). Put Railway in a US region to match (step 3 of Railway).
+2. Branches: `production` (Sprint 005), plus `dev` (Sprint 003–004 `DATABASE_URL`) and `test` (`TEST_DATABASE_URL`), both created from `production` on 2026-09-23. Sprint 005 creates `demo` from `production` for resets.
 3. Connection strings: use **Pooled** (host contains `-pooler`) for the app. Convert Neon's default string to the SQLAlchemy asyncpg form:
-   - Neon gives `postgresql://neondb_owner:PASS@ep-xxx-pooler.eu-central-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require`
-   - `.env` gets `postgresql+asyncpg://neondb_owner:PASS@ep-xxx-pooler.eu-central-1.aws.neon.tech/neondb?ssl=require`
+   - Neon gives `postgresql://neondb_owner:PASS@ep-xxx-pooler.c-7.us-east-2.aws.neon.tech/neondb?sslmode=require&channel_binding=require`
+   - `.env` gets `postgresql+asyncpg://neondb_owner:PASS@ep-xxx-pooler.c-7.us-east-2.aws.neon.tech/neondb?ssl=require`
    - Reason: the asyncpg driver behind SQLAlchemy rejects `sslmode`/`channel_binding` query arguments. The current `.env.example` placeholder shows `sslmode=require`; the Sprint 003 first ticket must prove the connection and fix the example.
 4. Also keep the **direct** (non-pooler) string for `dev`. Alembic migrations should run over the direct connection. The Sprint 003 blueprint decides the variable name.
 
 Paste-ready **Operator** prompt:
 ```text
-Use the neon-postgres skill and the Neon MCP. Create project "venture-route" (Postgres 17, aws-eu-central-1) unless it exists. From main, create branches "dev" and "test". For dev and test, fetch the pooled connection string for database neondb. Convert each to postgresql+asyncpg://…?ssl=require (drop sslmode and channel_binding). Write DATABASE_URL (dev) and TEST_DATABASE_URL (test) into the repo-root .env. Never echo passwords in chat; show only the branch names and host names. Then prove each URL with one `select 1` over asyncpg (uv run python -c ... from services/engine) and paste the result. Do not touch any tracked file.
+Use the neon-postgres skill and the Neon MCP. Project "venture_route" (bold-credit-14500621, aws-us-east-2) already has branches production, dev and test. For dev and test, fetch the pooled connection string for database neondb. Convert each to postgresql+asyncpg://…?ssl=require (drop sslmode and channel_binding). Write DATABASE_URL (dev) and TEST_DATABASE_URL (test) into the repo-root .env. Never echo passwords in chat; show only the branch names and host names. Then prove each URL with one `select 1` over asyncpg (uv run python -c ... from services/engine) and paste the result. Do not touch any tracked file.
 ```
 
 ## Railway (engine, Sprint 005; optional smoke deploy in Sprint 002)
@@ -72,11 +77,11 @@ Skill: `use-railway`. D-27: you run the `railway` commands; the Builder only wri
 - Now: create an account and install the CLI (`npm i -g @railway/cli`, `railway login`).
 - Facts the Sprint 005 wizard will need:
   - The image is `services/engine/Dockerfile`, listening on **port 8000** (hard-coded CMD). Set the variable `PORT=8000`, or pick 8000 as the domain's target port.
-  - Health check path is `/health`. Region: EU West.
+  - Health check path is `/health`. Region: US East, to sit near the Neon project in us-east-2.
   - Variables: `LLM_PROVIDER`, `ANTHROPIC_API_KEY`, `DEMO_TODAY=2026-09-22`, `MIN_OVERLAP_DAYS=2`, `ENGINE_DEV_QUERY=0`, `CORS_ORIGINS=<vercel url>`. From 003 also `DATABASE_URL`, `CLERK_*` and `ADMIN_EMAILS`.
 - *(Optional de-risk, end of Sprint 002, ~20 min)* Paste-ready prompt:
 ```text
-Use the use-railway skill. Walk me through deploying services/engine to Railway as service "engine" in a new project "venture-route" (EU West), from its Dockerfile, with PORT=8000, LLM_PROVIDER=null, DEMO_TODAY=2026-09-22, MIN_OVERLAP_DAYS=2, ENGINE_DEV_QUERY=0 and health check path /health. Give me each railway command to run myself; do not run railway yourself (D-27). After I paste the domain, curl /health and /api/scenarios and report.
+Use the use-railway skill. Walk me through deploying services/engine to Railway as service "engine" in a new project "venture-route" (US East, matching Neon us-east-2), from its Dockerfile, with PORT=8000, LLM_PROVIDER=null, DEMO_TODAY=2026-09-22, MIN_OVERLAP_DAYS=2, ENGINE_DEV_QUERY=0 and health check path /health. Give me each railway command to run myself; do not run railway yourself (D-27). After I paste the domain, curl /health and /api/scenarios and report.
 ```
 
 ## Render (fallback only, D-05)

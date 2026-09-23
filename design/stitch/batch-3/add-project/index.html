@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+
+<html lang="en"><head><meta charset="utf-8"/><meta content="width=device-width, initial-scale=1.0" name="viewport"/><meta content="web_standard" name="shell-type"/><title>Venture Route</title><link href="https://fonts.googleapis.com" rel="preconnect"/><link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/><link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400..700;1,9..144,400..700&amp;family=IBM+Plex+Sans:wght@400;500;600&amp;family=Newsreader:ital,opsz,wght@0,6..72,400..600;1,6..72,400..600&amp;display=swap" rel="stylesheet"/><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/><style>@layer base { html, body { margin: 0; padding: 0; } body { overscroll-behavior: none; } main > :first-child { margin-top: 0 !important; } main > :last-child { margin-bottom: 0 !important; } } ::-webkit-scrollbar { display: none; } .font-fraunces { font-family: 'Fraunces', serif; }</style><script src="https://cdn.tailwindcss.com"></script><script id="tailwind-config">tailwind.config = { darkMode: "class", theme: { extend: { "colors": { "project": "#35418a", "ground": "#f4f1ea", "surface-bright": "#f9f9fd", "on-tertiary-fixed": "#370d0b", "amber-ink": "#8a4b12", "surface-container-highest": "#e2e2e6", "on-error": "#ffffff", "outline": "#707974", "on-error-container": "#93000a", "error": "#ba1a1a", "surface-container-high": "#e8e8ec", "surface-variant": "#e2e2e6", "on-secondary-fixed": "#000f5d", "secondary-fixed-dim": "#bbc3ff", "tertiary": "#5d2a27", "surface": "#fbf9f4", "primary-container": "#1e5a45", "secondary": "#4d58a3", "surface-dim": "#d9dade", "accent-on-dark": "#7fd1ac", "accent": "#1e5a45", "on-primary": "#ffffff", "outline-variant": "#bfc9c2", "ink": "#16181b", "error-container": "#ffdad6", "amber-fill": "#e8c58f", "tertiary-container": "#79403c", "tertiary-fixed-dim": "#ffb3ad", "tertiary-fixed": "#ffdad7", "on-secondary": "#ffffff", "on-primary-fixed": "#002116", "primary-fixed": "#b2f0d4", "danger": "#8a2d2d", "on-tertiary": "#ffffff", "secondary-fixed": "#dee0ff", "on-primary-fixed-variant": "#11503c", "on-tertiary-container": "#fdafa9", "border-strong": "#c9c2b3", "on-surface-variant": "#404944", "inverse-surface": "#2f3034", "inverse-primary": "#97d3b8", "on-tertiary-fixed-variant": "#6e3733", "inverse-on-surface": "#f0f0f4", "secondary-container": "#a2aeff", "on-secondary-fixed-variant": "#344089", "surface-container-low": "#f3f3f7", "primary-fixed-dim": "#97d3b8", "surface-tint": "#2e6953", "surface-strong": "#ffffff", "border": "#e3ded3", "background": "#f9f9fd", "ink-3": "#5c6169", "on-primary-container": "#93cfb4", "on-secondary-container": "#333f88", "surface-container-lowest": "#ffffff", "dark": "#16181b", "primary": "#00422f", "surface-container": "#ededf2", "on-background": "#1a1c1f", "on-surface": "#1a1c1f", "ink-2": "#3f4650" }, "borderRadius": { "DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px" }, "spacing": { "gutter": "1.5rem", "space-3xl": "3rem", "space-2xl": "2rem", "space-sm": "0.5rem", "space-lg": "1rem", "space-xl": "1.5rem", "margin": "2rem", "space-md": "0.75rem", "space-4xl": "4rem", "space-xs": "0.25rem" }, "fontFamily": { "mono-sm": ["IBM Plex Sans"], "title-card": ["IBM Plex Sans"], "headline-md": ["Newsreader"], "mono-base": ["IBM Plex Sans"], "label-regular": ["IBM Plex Sans"], "body-base": ["IBM Plex Sans"], "headline-lg": ["Newsreader"], "display": ["Newsreader"], "caption": ["IBM Plex Sans"], "body-medium": ["IBM Plex Sans"] }, "fontSize": { "mono-sm": ["13px", { "lineHeight": "18px", "fontWeight": "400" }], "title-card": ["20px", { "lineHeight": "28px", "fontWeight": "600" }], "headline-md": ["28px", { "lineHeight": "36px", "letterSpacing": "-0.01em", "fontWeight": "500" }], "mono-base": ["14px", { "lineHeight": "20px", "fontWeight": "400" }], "label-regular": ["13px", { "lineHeight": "18px", "fontWeight": "500" }], "body-base": ["16px", { "lineHeight": "24px", "fontWeight": "400" }], "headline-lg": ["36px", { "lineHeight": "44px", "letterSpacing": "-0.015em", "fontWeight": "600" }], "display": ["44px", { "lineHeight": "52px", "letterSpacing": "-0.02em", "fontWeight": "600" }], "caption": ["13px", { "lineHeight": "18px", "fontWeight": "400" }], "body-medium": ["16px", { "lineHeight": "24px", "fontWeight": "500" }] } } } };</script></head><body class="bg-surface font-body-base text-ink"><header class="fixed top-0 left-0 right-0 z-50 h-16 bg-ground border-b border-border"><div class="max-w-[1200px] h-16 mx-auto px-gutter flex items-center justify-between"><div class="flex items-center gap-space-lg"><a class="flex items-center gap-space-md" data-path="overview" href="#"><span class="font-fraunces text-title-card font-semibold tracking-tight text-ink">Venture Route</span></a><span class="h-4 w-px bg-border-strong"></span><span class="px-2 py-0.5 border border-border text-ink-3 font-caption text-caption rounded-full uppercase tracking-wider bg-surface-strong">BASIX EDITION</span></div><nav class="flex items-center gap-space-xl" data-active-classes="text-ink border-b-2 border-accent font-body-medium"><a class="text-ink-2 hover:text-ink font-body-medium text-body-medium transition-colors py-5" data-path="how-it-works" href="#">How it works</a><a class="text-ink-2 hover:text-ink font-body-medium text-body-medium transition-colors py-5" data-path="for-builders" href="#">For builders</a><a class="text-ink-2 hover:text-ink font-body-medium text-body-medium transition-colors py-5" data-path="evidence-and-rules" href="#">Evidence &amp; rules</a></nav><div class="flex items-center gap-space-lg"><button class="flex items-center gap-space-xs text-ink-2 hover:text-ink py-1 px-2 rounded transition-colors" type="button"><span class="font-label-regular text-label-regular text-ink">Amina Otieno</span><span class="material-symbols-outlined text-[18px] text-ink-3">keyboard_arrow_down</span></button><div class="w-8 h-8 rounded-full bg-primary flex items-center justify-center"><span class="material-symbols-outlined text-on-primary text-[18px]">person</span></div></div></div></header><main class="w-full pt-16 bg-surface min-h-[calc(100vh-64px)]"><div class="flex flex-col w-full">
+<div class="w-full pb-space-4xl pt-space-xl">
+<div class="max-w-[760px] mx-auto px-gutter flex flex-col gap-space-xl">
+<!-- Breadcrumb Context & Ledger Status Indicator -->
+<div class="flex items-center justify-between text-ink-3">
+<a class="inline-flex items-center gap-space-xs text-ink-2 hover:text-ink transition-colors font-mono-base text-mono-sm group" href="#">
+<span class="material-symbols-outlined text-[16px] transition-transform group-hover:-translate-x-0.5">arrow_back</span>
+<span>Back to builder profile</span>
+</a>
+<div class="flex items-center gap-space-sm font-mono-base text-mono-sm">
+<span class="inline-block w-2 h-2 rounded-full bg-accent animate-pulse"></span>
+<span class="text-ink-3 tracking-tight">Ledger registry node / builder draft</span>
+</div>
+</div>
+<!-- Main Showcase Project Card -->
+<div class="bg-surface-strong rounded-lg p-space-2xl md:p-[40px] shadow-sm flex flex-col gap-space-2xl">
+<!-- Header inside Card -->
+<div class="flex flex-col gap-space-sm pb-space-lg">
+<div class="flex items-center justify-between gap-space-md flex-wrap">
+<span class="inline-flex items-center px-2 py-0.5 rounded-full bg-amber-fill/85 text-amber-ink font-mono-sm text-mono-sm font-medium tracking-wide">
+              DEMO RECORD · EVIDENCE PROVENANCE TIER 1
+            </span>
+<span class="font-mono-base text-mono-sm text-ink-3">ID: VR-PRJ-8842</span>
+</div>
+<h1 class="font-headline-md text-headline-md md:text-headline-lg font-headline-lg text-ink font-serif tracking-tight mt-space-xs">
+            Add a showcase project
+          </h1>
+<p class="font-body-base text-body-base text-ink-2 max-w-[620px] leading-relaxed">
+            Projects become deterministic facts the graph reasons over once an ecosystem administrator confirms primary source artifacts.
+          </p>
+</div>
+<!-- Form Body -->
+<form class="flex flex-col gap-space-2xl" id="project-form" onsubmit="event.preventDefault();">
+<!-- Field 1: Title -->
+<div class="flex flex-col gap-space-xs">
+<div class="flex justify-between items-baseline">
+<label class="font-label-regular text-label-regular text-ink" for="project-title">
+                Project title <span class="text-danger">*</span>
+</label>
+<span class="font-mono-base text-mono-sm text-ink-3">Canonical identifier</span>
+</div>
+<input class="w-full h-10 px-space-md bg-surface-container-low rounded-lg text-ink font-body-base text-body-base transition-colors focus:bg-surface-strong focus:outline-none focus:ring-1 focus:ring-accent" id="project-title" placeholder="e.g. Clinic triage intake flow" type="text" value="Clinic triage intake flow"/>
+<p class="font-caption text-caption text-ink-3 mt-space-xs">
+              Clear descriptive noun-phrase identifying the architectural system or artifact.
+            </p>
+</div>
+<!-- Field 2: Vertical Segmented Control -->
+<div class="flex flex-col gap-space-xs">
+<label class="font-label-regular text-label-regular text-ink">
+              Vertical sector <span class="text-danger">*</span>
+</label>
+<div class="grid grid-cols-2 sm:grid-cols-5 gap-space-xs p-1 bg-surface-container-low rounded-lg">
+<button class="sector-btn py-1.5 px-space-sm rounded font-label-regular text-label-regular text-center transition-all bg-accent text-on-primary font-medium" data-sector="health" type="button">
+                Health
+              </button>
+<button class="sector-btn py-1.5 px-space-sm rounded font-label-regular text-label-regular text-center transition-all text-ink-2 hover:text-ink hover:bg-surface-strong/70" data-sector="fintech" type="button">
+                Fintech
+              </button>
+<button class="sector-btn py-1.5 px-space-sm rounded font-label-regular text-label-regular text-center transition-all text-ink-2 hover:text-ink hover:bg-surface-strong/70" data-sector="climate" type="button">
+                Climate
+              </button>
+<button class="sector-btn py-1.5 px-space-sm rounded font-label-regular text-label-regular text-center transition-all text-ink-2 hover:text-ink hover:bg-surface-strong/70" data-sector="education" type="button">
+                Education
+              </button>
+<button class="sector-btn py-1.5 px-space-sm rounded font-label-regular text-label-regular text-center transition-all text-ink-2 hover:text-ink hover:bg-surface-strong/70" data-sector="other" type="button">
+                Other
+              </button>
+</div>
+</div>
+<!-- Field 3: Skills Demonstrated -->
+<div class="flex flex-col gap-space-xs">
+<div class="flex justify-between items-baseline">
+<label class="font-label-regular text-label-regular text-ink">
+                Skills demonstrated <span class="text-danger">*</span>
+</label>
+<span class="font-mono-base text-mono-sm text-ink-3">Max 5 verified competencies</span>
+</div>
+<p class="font-caption text-caption text-ink-3">
+              Tagged skills are verified by reviewer against project artifacts and MeTTa rule conditions.
+            </p>
+<div class="flex flex-wrap items-center gap-space-sm mt-space-xs" id="skills-container">
+<!-- Python Chip -->
+<span class="inline-flex items-center gap-1.5 h-8 px-3 rounded-full bg-primary-container/10 text-primary-container font-mono-base text-mono-sm font-medium">
+<span class="material-symbols-outlined text-[16px] text-accent">check_circle</span>
+                Python
+                <button aria-label="Remove Python skill" class="hover:text-danger ml-1 p-0.5 rounded-full flex items-center" type="button">
+<span class="material-symbols-outlined text-[14px]">close</span>
+</button>
+</span>
+<!-- UI/UX Chip -->
+<span class="inline-flex items-center gap-1.5 h-8 px-3 rounded-full bg-primary-container/10 text-primary-container font-mono-base text-mono-sm font-medium">
+<span class="material-symbols-outlined text-[16px] text-accent">check_circle</span>
+                UI/UX
+                <button aria-label="Remove UI/UX skill" class="hover:text-danger ml-1 p-0.5 rounded-full flex items-center" type="button">
+<span class="material-symbols-outlined text-[14px]">close</span>
+</button>
+</span>
+<!-- Add Skill Button -->
+<button class="inline-flex items-center gap-1 h-8 px-3 rounded-full bg-surface-container-low text-ink-2 hover:text-ink hover:bg-surface-container font-mono-base text-mono-sm transition-colors" id="add-skill-btn" type="button">
+<span class="material-symbols-outlined text-[16px]">add</span>
+<span>Add skill</span>
+</button>
+</div>
+</div>
+<!-- Field 4: Summary -->
+<div class="flex flex-col gap-space-xs">
+<div class="flex justify-between items-baseline">
+<label class="font-label-regular text-label-regular text-ink" for="project-summary">
+                Summary &amp; architectural scope <span class="text-danger">*</span>
+</label>
+<span class="font-mono-base text-mono-sm text-ink-3">128 / 500 chars</span>
+</div>
+<textarea class="w-full p-space-md bg-surface-container-low rounded-lg text-ink font-body-base text-body-base transition-colors focus:bg-surface-strong focus:outline-none focus:ring-1 focus:ring-accent min-h-[96px] leading-relaxed resize-y" id="project-summary" placeholder="Describe constraints, domain complexities, and deterministic outcomes..." rows="3">Automated triage intake system adapting rural clinical workflows to mobile-first low-bandwidth environments, integrating validation rules and offline queue sync.</textarea>
+<p class="font-caption text-caption text-ink-3">
+              Focus on technical implementation boundaries, architectural compromises, and observable operational impact.
+            </p>
+</div>
+<!-- Field 5: Links -->
+<div class="flex flex-col gap-space-xs">
+<div class="flex justify-between items-baseline">
+<label class="font-label-regular text-label-regular text-ink">
+                Inspectable links &amp; artifacts <span class="text-danger">*</span>
+</label>
+<span class="font-mono-base text-mono-sm text-ink-3">Primary sources</span>
+</div>
+<p class="font-caption text-caption text-ink-3">
+              Code repository, live deployment, or peer-reviewed research deck for deterministic ledger grounding.
+            </p>
+<div class="flex flex-col gap-space-sm mt-space-xs" id="links-container">
+<!-- URL 1: GitHub -->
+<div class="relative flex items-center">
+<span class="material-symbols-outlined absolute left-3 text-[18px] text-ink-3">terminal</span>
+<input class="w-full h-10 pl-10 pr-space-md bg-surface-container-low rounded-lg text-ink font-mono-base text-mono-sm transition-colors focus:bg-surface-strong focus:outline-none focus:ring-1 focus:ring-accent" placeholder="https://github.com/..." type="url" value="https://github.com/lakeview-cohort/clinic-triage"/>
+</div>
+<!-- URL 2: Live Demo -->
+<div class="relative flex items-center">
+<span class="material-symbols-outlined absolute left-3 text-[18px] text-ink-3">link</span>
+<input class="w-full h-10 pl-10 pr-space-md bg-surface-container-low rounded-lg text-ink font-mono-base text-mono-sm transition-colors focus:bg-surface-strong focus:outline-none focus:ring-1 focus:ring-accent" placeholder="https://demo..." type="url" value="https://triage-demo.lakeview.health"/>
+</div>
+</div>
+<div class="pt-space-xs">
+<button class="inline-flex items-center gap-1.5 text-accent hover:text-ink font-label-regular text-label-regular py-1 px-1 transition-colors" id="add-link-btn" type="button">
+<span class="material-symbols-outlined text-[18px]">add_circle</span>
+<span>Add another artifact URL</span>
+</button>
+</div>
+</div>
+<!-- Field 6: Reusable IP Toggle -->
+<div class="p-space-lg rounded-lg bg-surface-container-low/70 flex items-start justify-between gap-space-lg">
+<div class="flex flex-col gap-space-xs">
+<span class="font-label-regular text-label-regular text-ink flex items-center gap-2">
+<span>Licensable as reusable IP</span>
+<span class="inline-flex items-center px-1.5 py-0.2 rounded text-[11px] font-mono-base uppercase tracking-wider bg-project/10 text-project font-semibold">
+                  Modular Asset
+                </span>
+</span>
+<p class="font-caption text-caption text-ink-2 max-w-[500px]">
+                Founders may be deterministically routed to this asset when it satisfies their technical brief. This assertion serves as an ecosystem routing signal.
+              </p>
+</div>
+<!-- Custom Switch Control -->
+<label class="relative inline-flex items-center cursor-pointer shrink-0 mt-0.5">
+<input checked="" class="sr-only peer" id="ip-toggle" type="checkbox"/>
+<div class="w-11 h-6 bg-surface-container peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-surface-strong after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-accent"></div>
+</label>
+</div>
+<!-- Field 7: Completion Date -->
+<div class="flex flex-col gap-space-xs max-w-[320px]">
+<label class="font-label-regular text-label-regular text-ink" for="completion-date">
+              Completion date <span class="text-danger">*</span>
+</label>
+<div class="relative flex items-center">
+<span class="material-symbols-outlined absolute left-3 text-[18px] text-ink-3">calendar_today</span>
+<input class="w-full h-10 pl-10 pr-space-md bg-surface-container-low rounded-lg text-ink font-mono-base text-mono-sm transition-colors focus:bg-surface-strong focus:outline-none focus:ring-1 focus:ring-accent" id="completion-date" type="text" value="12 Aug 2026"/>
+</div>
+<p class="font-caption text-caption text-ink-3">
+              Must precede or align with evaluation epoch timeline.
+            </p>
+</div>
+<!-- Form Actions Footer -->
+<div class="pt-space-xl mt-space-md flex flex-col-reverse sm:flex-row items-center justify-between gap-space-md">
+<a class="w-full sm:w-auto h-10 px-space-lg rounded-lg text-ink-2 hover:text-ink font-body-medium text-body-medium flex items-center justify-center transition-colors hover:bg-surface-container-low" href="#">
+              Cancel
+            </a>
+<div class="w-full sm:w-auto flex items-center gap-space-md justify-end">
+<button class="w-full sm:w-auto h-10 px-space-xl rounded-lg bg-accent text-on-primary font-body-medium text-body-medium flex items-center justify-center gap-2 hover:bg-primary transition-all group" id="submit-btn" type="submit">
+<span>Submit for confirmation</span>
+<span class="material-symbols-outlined text-[18px] transition-transform group-hover:translate-x-0.5">arrow_forward</span>
+</button>
+</div>
+</div>
+</form>
+</div>
+<!-- What Happens Next Progression Card -->
+<div class="bg-surface-strong rounded-lg p-space-xl shadow-sm flex flex-col gap-space-lg">
+<div class="flex items-center justify-between">
+<span class="font-mono-base text-[11px] tracking-wider uppercase text-ink-3 font-semibold">
+            WHAT HAPPENS NEXT
+          </span>
+<span class="font-caption text-caption text-ink-3 flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px]">verified_user</span>
+            Deterministic graph assurance
+          </span>
+</div>
+<!-- 3-Step Horizontal Timeline -->
+<div class="grid grid-cols-1 sm:grid-cols-3 gap-space-lg relative">
+<!-- Step 1: Active -->
+<div class="flex items-start gap-space-md p-space-md rounded bg-surface-container-low/60">
+<div class="w-6 h-6 rounded-full bg-accent flex items-center justify-center text-on-primary shrink-0 mt-0.5">
+<span class="font-mono-base text-[11px] font-bold">1</span>
+</div>
+<div class="flex flex-col">
+<div class="flex items-center gap-1.5">
+<span class="font-body-medium text-body-medium text-ink font-semibold">Submitted</span>
+<span class="inline-block w-1.5 h-1.5 rounded-full bg-accent"></span>
+</div>
+<p class="font-caption text-caption text-ink-3 mt-0.5">
+                Primary artifacts stored in cryptographic ledger holding pool.
+              </p>
+</div>
+</div>
+<!-- Step 2: Review -->
+<div class="flex items-start gap-space-md p-space-md rounded bg-surface-container-low/30">
+<div class="w-6 h-6 rounded-full bg-surface-container-high flex items-center justify-center text-ink-3 shrink-0 mt-0.5 font-mono-base text-[11px]">
+              2
+            </div>
+<div class="flex flex-col">
+<span class="font-body-medium text-body-medium text-ink-2 font-medium">Admin review</span>
+<p class="font-caption text-caption text-ink-3 mt-0.5">
+                BASIX auditor checks code and repo commits against claimed skills.
+              </p>
+</div>
+</div>
+<!-- Step 3: Graph Assertion -->
+<div class="flex items-start gap-space-md p-space-md rounded bg-surface-container-low/30">
+<div class="w-6 h-6 rounded-full bg-surface-container-high flex items-center justify-center text-ink-3 shrink-0 mt-0.5 font-mono-base text-[11px]">
+              3
+            </div>
+<div class="flex flex-col">
+<span class="font-body-medium text-body-medium text-ink-2 font-medium">Live in graph</span>
+<p class="font-caption text-caption text-ink-3 mt-0.5">
+                MeTTa inference engine references validated facts for cohort assembly.
+              </p>
+</div>
+</div>
+</div>
+<!-- Note / Policy Subtext -->
+<div class="pt-space-sm flex items-start gap-space-sm text-ink-3 font-caption text-caption">
+<span class="material-symbols-outlined text-[16px] text-ink-3 shrink-0 mt-0.5">info</span>
+<p class="leading-relaxed">
+            BASIX ecosystem administrators confirm proof artifacts within 48 hours before asserting facts into the MeTTa knowledge graph. Incomplete or speculative repositories will be returned for revision.
+          </p>
+</div>
+</div>
+<!-- Provenance Ledger Meta Summary -->
+<div class="px-space-md py-space-sm flex items-center justify-between font-mono-base text-[12px] text-ink-3">
+<span>SCHEMA: BASIX-PROJECT-EVIDENCE-V2.1</span>
+<span>PEER ATTESTATION PROTOCOL 0x48a...e7</span>
+</div>
+</div>
+</div>
+</div>
+<script>
+  (function() {
+    // Sector Segmented Control Toggle logic
+    const sectorButtons = document.querySelectorAll('.sector-btn');
+    sectorButtons.forEach(btn => {
+      btn.addEventListener('click', () => {
+        sectorButtons.forEach(b => {
+          b.classList.remove('bg-accent', 'text-on-primary', 'font-medium');
+          b.classList.add('text-ink-2', 'hover:text-ink', 'hover:bg-surface-strong/70');
+        });
+        btn.classList.add('bg-accent', 'text-on-primary', 'font-medium');
+        btn.classList.remove('text-ink-2', 'hover:text-ink', 'hover:bg-surface-strong/70');
+      });
+    });
+
+    // Interactive helper: add simple skill mockup
+    const addSkillBtn = document.getElementById('add-skill-btn');
+    const skillsContainer = document.getElementById('skills-container');
+    if (addSkillBtn && skillsContainer) {
+      addSkillBtn.addEventListener('click', () => {
+        const skillName = prompt('Enter demonstrated technical skill (e.g. MeTTa, Rust, WebAssembly):', '');
+        if (skillName && skillName.trim() !== '') {
+          const span = document.createElement('span');
+          span.className = 'inline-flex items-center gap-1.5 h-8 px-3 rounded-full bg-primary-container/10 text-primary-container font-mono-base text-mono-sm font-medium';
+          span.innerHTML = `
+            <span class="material-symbols-outlined text-[16px] text-accent">check_circle</span>
+            ${skillName.trim()}
+            <button type="button" class="hover:text-danger ml-1 p-0.5 rounded-full flex items-center" aria-label="Remove skill">
+              <span class="material-symbols-outlined text-[14px]">close</span>
+            </button>
+          `;
+          skillsContainer.insertBefore(span, addSkillBtn);
+          
+          span.querySelector('button').addEventListener('click', () => {
+            span.remove();
+          });
+        }
+      });
+    }
+
+    // Interactive helper: remove existing default skills
+    const defaultChips = skillsContainer?.querySelectorAll('span button');
+    defaultChips?.forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.currentTarget.closest('span').remove();
+      });
+    });
+
+    // Interactive helper: add artifact link row
+    const addLinkBtn = document.getElementById('add-link-btn');
+    const linksContainer = document.getElementById('links-container');
+    if (addLinkBtn && linksContainer) {
+      addLinkBtn.addEventListener('click', () => {
+        const linkWrapper = document.createElement('div');
+        linkWrapper.className = 'relative flex items-center';
+        linkWrapper.innerHTML = `
+          <span class="material-symbols-outlined absolute left-3 text-[18px] text-ink-3">link</span>
+          <input 
+            type="url" 
+            placeholder="https://..."
+            class="w-full h-10 pl-10 pr-space-md bg-surface-container-low rounded-lg text-ink font-mono-base text-mono-sm transition-colors focus:bg-surface-strong focus:outline-none focus:ring-1 focus:ring-accent"
+          />
+        `;
+        linksContainer.appendChild(linkWrapper);
+      });
+    }
+
+    // Submit state feedback simulation
+    const submitBtn = document.getElementById('submit-btn');
+    const projectForm = document.getElementById('project-form');
+    if (submitBtn && projectForm) {
+      projectForm.addEventListener('submit', () => {
+        const originalText = submitBtn.innerHTML;
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = `
+          <span class="inline-block w-4 h-4 border-2 border-on-primary border-t-transparent rounded-full animate-spin"></span>
+          <span>Asserting fact...</span>
+        `;
+        setTimeout(() => {
+          submitBtn.innerHTML = `
+            <span class="material-symbols-outlined text-[18px]">done</span>
+            <span>Recorded in draft registry</span>
+          `;
+          submitBtn.classList.remove('bg-accent', 'hover:bg-primary');
+          submitBtn.classList.add('bg-project', 'text-on-primary');
+        }, 800);
+      });
+    }
+  })();
+</script></main><footer class="w-full bg-ground border-t border-border mt-space-4xl"><div class="max-w-[1200px] mx-auto px-gutter py-space-3xl"><div class="grid grid-cols-1 md:grid-cols-3 gap-space-2xl pb-space-2xl border-b border-border"><div class="flex flex-col gap-space-md"><span class="font-label-regular text-label-regular text-ink-3 uppercase tracking-wider">Product</span><ul class="flex flex-col gap-space-sm"><li class="leading-none"><a class="font-body-base text-body-base text-ink-2 hover:text-ink transition-colors" data-path="how-it-works" href="#">How it works</a></li><li class="leading-none"><a class="font-body-base text-body-base text-ink-2 hover:text-ink transition-colors" data-path="evidence-and-rules" href="#">Evidence &amp; rules</a></li><li class="leading-none"><a class="font-body-base text-body-base text-ink-2 hover:text-ink transition-colors" data-path="for-builders" href="#">For builders</a></li><li class="leading-none"><a class="font-body-base text-body-base text-ink-2 hover:text-ink transition-colors" data-path="demo-scenarios" href="#">Demo scenarios</a></li></ul></div><div class="flex flex-col gap-space-md"><span class="font-label-regular text-label-regular text-ink-3 uppercase tracking-wider">Ecosystem</span><ul class="flex flex-col gap-space-sm"><li class="leading-none"><a class="font-body-base text-body-base text-ink-2 hover:text-ink transition-colors" data-path="ecosystem-basix" href="#">BASIX</a></li><li class="leading-none"><a class="font-body-base text-body-base text-ink-2 hover:text-ink transition-colors" data-path="ecosystem-metta-omniuniversity" href="#">MeTTa OmniUniversity</a></li><li class="leading-none"><a class="font-body-base text-body-base text-ink-2 hover:text-ink transition-colors" data-path="ecosystem-singularitynet-metta" href="#">SingularityNET MeTTa</a></li><li class="leading-none"><a class="font-body-base text-body-base text-ink-2 hover:text-ink transition-colors" data-path="ecosystem-partners" href="#">Partners</a></li></ul></div><div class="flex flex-col gap-space-md"><span class="font-label-regular text-label-regular text-ink-3 uppercase tracking-wider">Account</span><ul class="flex flex-col gap-space-sm"><li class="leading-none"><a class="font-body-base text-body-base text-ink-2 hover:text-ink transition-colors" data-path="auth-login" href="#">Sign in</a></li><li class="leading-none"><a class="font-body-base text-body-base text-ink-2 hover:text-ink transition-colors" data-path="auth-founder-register" href="#">Create a founder account</a></li><li class="leading-none"><a class="font-body-base text-body-base text-ink-2 hover:text-ink transition-colors" data-path="auth-builder-register" href="#">Create a builder profile</a></li><li class="leading-none"><a class="font-body-base text-body-base text-ink-2 hover:text-ink transition-colors" data-path="admin-portal" href="#">Admin</a></li></ul></div></div><div class="pt-space-2xl flex flex-col md:flex-row md:items-center justify-between gap-space-lg text-ink-3 font-caption text-caption"><p class="text-ink-2">Venture Route — A deterministic evaluation registry and research ledger for ecosystem founders.</p><p class="text-ink-3">Inspectable rules and cryptographically grounded evidence. Demo data flagged.</p></div></div></footer></body></html>

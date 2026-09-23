@@ -1,0 +1,428 @@
+<!DOCTYPE html>
+
+<html lang="en"><head><meta charset="utf-8"/><meta content="width=device-width, initial-scale=1.0" name="viewport"/><meta content="web_standard" name="shell-type"/><title>Venture Route</title><link href="https://fonts.googleapis.com" rel="preconnect"/><link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/><link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400..700;1,9..144,400..700&amp;family=IBM+Plex+Sans:wght@400;500;600&amp;family=Newsreader:ital,opsz,wght@0,6..72,400..600;1,6..72,400..600&amp;display=swap" rel="stylesheet"/><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/><style>@layer base { html, body { margin: 0; padding: 0; } body { overscroll-behavior: none; } main > :first-child { margin-top: 0 !important; } main > :last-child { margin-bottom: 0 !important; } } ::-webkit-scrollbar { display: none; } .font-fraunces { font-family: 'Fraunces', serif; }</style><script src="https://cdn.tailwindcss.com"></script><script id="tailwind-config">tailwind.config = { darkMode: "class", theme: { extend: { "colors": { "project": "#35418a", "ground": "#f4f1ea", "surface-bright": "#f9f9fd", "on-tertiary-fixed": "#370d0b", "amber-ink": "#8a4b12", "surface-container-highest": "#e2e2e6", "on-error": "#ffffff", "outline": "#707974", "on-error-container": "#93000a", "error": "#ba1a1a", "surface-container-high": "#e8e8ec", "surface-variant": "#e2e2e6", "on-secondary-fixed": "#000f5d", "secondary-fixed-dim": "#bbc3ff", "tertiary": "#5d2a27", "surface": "#fbf9f4", "primary-container": "#1e5a45", "secondary": "#4d58a3", "surface-dim": "#d9dade", "accent-on-dark": "#7fd1ac", "accent": "#1e5a45", "on-primary": "#ffffff", "outline-variant": "#bfc9c2", "ink": "#16181b", "error-container": "#ffdad6", "amber-fill": "#e8c58f", "tertiary-container": "#79403c", "tertiary-fixed-dim": "#ffb3ad", "tertiary-fixed": "#ffdad7", "on-secondary": "#ffffff", "on-primary-fixed": "#002116", "primary-fixed": "#b2f0d4", "danger": "#8a2d2d", "on-tertiary": "#ffffff", "secondary-fixed": "#dee0ff", "on-primary-fixed-variant": "#11503c", "on-tertiary-container": "#fdafa9", "border-strong": "#c9c2b3", "on-surface-variant": "#404944", "inverse-surface": "#2f3034", "inverse-primary": "#97d3b8", "on-tertiary-fixed-variant": "#6e3733", "inverse-on-surface": "#f0f0f4", "secondary-container": "#a2aeff", "on-secondary-fixed-variant": "#344089", "surface-container-low": "#f3f3f7", "primary-fixed-dim": "#97d3b8", "surface-tint": "#2e6953", "surface-strong": "#ffffff", "border": "#e3ded3", "background": "#f9f9fd", "ink-3": "#5c6169", "on-primary-container": "#93cfb4", "on-secondary-container": "#333f88", "surface-container-lowest": "#ffffff", "dark": "#16181b", "primary": "#00422f", "surface-container": "#ededf2", "on-background": "#1a1c1f", "on-surface": "#1a1c1f", "ink-2": "#3f4650" }, "borderRadius": { "DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px" }, "spacing": { "gutter": "1.5rem", "space-3xl": "3rem", "space-2xl": "2rem", "space-sm": "0.5rem", "space-lg": "1rem", "space-xl": "1.5rem", "margin": "2rem", "space-md": "0.75rem", "space-4xl": "4rem", "space-xs": "0.25rem" }, "fontFamily": { "mono-sm": ["IBM Plex Sans"], "title-card": ["IBM Plex Sans"], "headline-md": ["Newsreader"], "mono-base": ["IBM Plex Sans"], "label-regular": ["IBM Plex Sans"], "body-base": ["IBM Plex Sans"], "headline-lg": ["Newsreader"], "display": ["Newsreader"], "caption": ["IBM Plex Sans"], "body-medium": ["IBM Plex Sans"] }, "fontSize": { "mono-sm": ["13px", { "lineHeight": "18px", "fontWeight": "400" }], "title-card": ["20px", { "lineHeight": "28px", "fontWeight": "600" }], "headline-md": ["28px", { "lineHeight": "36px", "letterSpacing": "-0.01em", "fontWeight": "500" }], "mono-base": ["14px", { "lineHeight": "20px", "fontWeight": "400" }], "label-regular": ["13px", { "lineHeight": "18px", "fontWeight": "500" }], "body-base": ["16px", { "lineHeight": "24px", "fontWeight": "400" }], "headline-lg": ["36px", { "lineHeight": "44px", "letterSpacing": "-0.015em", "fontWeight": "600" }], "display": ["44px", { "lineHeight": "52px", "letterSpacing": "-0.02em", "fontWeight": "600" }], "caption": ["13px", { "lineHeight": "18px", "fontWeight": "400" }], "body-medium": ["16px", { "lineHeight": "24px", "fontWeight": "500" }] } } } };</script></head><body class="bg-surface font-body-base text-ink"><header class="fixed top-0 left-0 right-0 z-50 h-16 bg-ground border-b border-border"><div class="max-w-[1200px] h-16 mx-auto px-gutter flex items-center justify-between"><div class="flex items-center gap-space-lg"><a class="flex items-center gap-space-md" data-path="overview" href="#"><span class="font-fraunces text-title-card font-semibold tracking-tight text-ink">Venture Route</span></a><span class="h-4 w-px bg-border-strong"></span><span class="px-2 py-0.5 border border-border text-ink-3 font-caption text-caption rounded-full uppercase tracking-wider bg-surface-strong">BASIX EDITION</span></div><nav class="flex items-center gap-space-xl" data-active-classes="text-ink border-b-2 border-accent font-body-medium"><a class="text-ink-2 hover:text-ink font-body-medium text-body-medium transition-colors py-5" data-path="how-it-works" href="#">How it works</a><a aria-current="page" class="transition-colors py-5 text-ink border-b-2 border-accent font-body-medium" data-path="for-builders" href="#">For builders</a><a class="text-ink-2 hover:text-ink font-body-medium text-body-medium transition-colors py-5" data-path="evidence-and-rules" href="#">Evidence &amp; rules</a></nav><div class="flex items-center gap-space-lg"><button class="flex items-center gap-space-xs text-ink-2 hover:text-ink py-1 px-2 rounded transition-colors" type="button"><span class="font-label-regular text-label-regular text-ink">Amina Otieno</span><span class="material-symbols-outlined text-[18px] text-ink-3">keyboard_arrow_down</span></button><div class="w-8 h-8 rounded-full bg-primary flex items-center justify-center"><span class="material-symbols-outlined text-on-primary text-[18px]">person</span></div></div></div></header><main class="w-full pt-16 bg-surface min-h-[calc(100vh-64px)]"><div class="max-w-[1200px] mx-auto px-gutter py-space-3xl"><div class="flex flex-col w-full">
+<!-- Page Header -->
+<section class="pb-space-2xl border-b border-border mb-space-2xl">
+<div class="flex flex-col md:flex-row md:items-end justify-between gap-space-lg">
+<div class="space-y-space-xs max-w-[780px]">
+<div class="flex items-center gap-space-sm text-ink-3 font-caption text-caption mb-space-xs">
+<span class="font-mono-sm uppercase tracking-wider text-ink-3">Registry Profile</span>
+<span class="inline-block w-1 h-1 rounded-full bg-border-strong"></span>
+<span class="font-mono-sm text-ink-2">Seed Attestation Node</span>
+</div>
+<h1 class="font-fraunces text-display text-ink font-semibold tracking-tight">Your profile</h1>
+<p class="font-body-base text-body-base text-ink-2 leading-relaxed">
+          Founders see this. Skills show as verified only when a credential or completed project proves them and an admin confirms it.
+        </p>
+</div>
+<div class="flex items-center gap-space-sm shrink-0">
+<span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-fill/20 border border-amber-fill text-amber-ink font-mono-sm text-mono-sm font-medium">
+<span class="w-1.5 h-1.5 rounded-full bg-amber-ink"></span>
+          Demo record
+        </span>
+<button class="h-10 px-4 rounded-lg bg-surface-strong border border-border-strong text-ink font-body-medium text-label-regular hover:bg-ground transition-colors flex items-center gap-1.5" type="button">
+<span class="material-symbols-outlined text-[18px] text-ink-2">visibility</span>
+<span>Founder preview</span>
+</button>
+</div>
+</div>
+</section>
+<!-- Two Column Layout: 760px / 400px split at 1200px container -->
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-space-2xl items-start">
+<!-- Left Column (approx 760px equivalent in 12-col: 8 cols = 784px) -->
+<div class="lg:col-span-8 flex flex-col gap-space-2xl">
+<!-- 1. Skills Card -->
+<section class="bg-surface-strong border border-border rounded-lg p-space-2xl">
+<div class="flex items-center justify-between pb-space-lg border-b border-border">
+<div>
+<h2 class="font-fraunces text-title-card text-ink font-semibold">Skills</h2>
+<p class="font-caption text-caption text-ink-3 mt-0.5">Deterministic ledger verification mapping</p>
+</div>
+<span class="font-mono-sm text-mono-sm text-ink-3 uppercase tracking-wider">3 verified · 1 pending</span>
+</div>
+<!-- Skills List -->
+<div class="divide-y divide-border">
+<!-- Skill: Python -->
+<div class="py-space-lg flex flex-col md:flex-row md:items-start justify-between gap-space-md">
+<div class="space-y-1">
+<div class="flex items-center gap-space-md">
+<span class="font-body-medium text-body-medium text-ink font-semibold">Python</span>
+<span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-primary-fixed/30 border border-primary-fixed text-primary font-mono-sm text-mono-sm font-medium">
+<span class="w-1.5 h-1.5 rounded-full bg-primary"></span>
+                  Verified (Both)
+                </span>
+</div>
+<p class="font-mono-sm text-mono-sm text-ink-2 flex items-center gap-1.5">
+<span class="material-symbols-outlined text-[15px] text-primary">verified</span>
+                Credential: <span class="text-ink font-medium">cred-py-201</span>
+<span class="text-border-strong">·</span>
+                Project: <span class="text-ink font-medium">Clinic triage intake flow</span>
+</p>
+</div>
+<div class="flex items-center gap-space-xs text-ink-3">
+<button class="p-1 hover:text-ink transition-colors" title="Inspect verification chain" type="button">
+<span class="material-symbols-outlined text-[18px]">account_tree</span>
+</button>
+</div>
+</div>
+<!-- Skill: AI/MeTTa -->
+<div class="py-space-lg flex flex-col md:flex-row md:items-start justify-between gap-space-md">
+<div class="space-y-1">
+<div class="flex items-center gap-space-md">
+<span class="font-body-medium text-body-medium text-ink font-semibold">AI/MeTTa</span>
+<span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-primary-fixed/30 border border-primary-fixed text-primary font-mono-sm text-mono-sm font-medium">
+<span class="w-1.5 h-1.5 rounded-full bg-primary"></span>
+                  Verified (Credential)
+                </span>
+</div>
+<p class="font-mono-sm text-mono-sm text-ink-2 flex items-center gap-1.5">
+<span class="material-symbols-outlined text-[15px] text-primary">school</span>
+                Credential: <span class="text-ink font-medium">cred-metta-104</span>
+<span class="text-ink-3">(Knowledge graph reasoning)</span>
+</p>
+</div>
+<div class="flex items-center gap-space-xs text-ink-3">
+<button class="p-1 hover:text-ink transition-colors" title="Inspect verification chain" type="button">
+<span class="material-symbols-outlined text-[18px]">account_tree</span>
+</button>
+</div>
+</div>
+<!-- Skill: UI/UX -->
+<div class="py-space-lg flex flex-col md:flex-row md:items-start justify-between gap-space-md">
+<div class="space-y-1">
+<div class="flex items-center gap-space-md">
+<span class="font-body-medium text-body-medium text-ink font-semibold">UI/UX</span>
+<span class="inline-flex items-center px-2.5 py-0.5 rounded-full border border-border-strong text-ink-3 font-mono-sm text-mono-sm">
+                  Self-described
+                </span>
+</div>
+<p class="font-caption text-caption text-ink-3">
+                Display only. Not used for routing.
+              </p>
+</div>
+<div class="flex items-center gap-space-xs text-ink-3">
+<button class="p-1 hover:text-danger transition-colors" title="Remove skill" type="button">
+<span class="material-symbols-outlined text-[18px]">close</span>
+</button>
+</div>
+</div>
+<!-- Skill: Rust -->
+<div class="py-space-lg flex flex-col md:flex-row md:items-start justify-between gap-space-md">
+<div class="space-y-1">
+<div class="flex items-center gap-space-md">
+<span class="font-body-medium text-body-medium text-ink font-semibold">Rust</span>
+<span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-amber-fill/25 border border-amber-fill text-amber-ink font-mono-sm text-mono-sm font-medium">
+<span class="material-symbols-outlined text-[14px]">schedule</span>
+                  Pending admin confirmation
+                </span>
+</div>
+<p class="font-caption text-caption text-ink-3">
+                Awaiting BASIX ecosystem validator review
+              </p>
+</div>
+<div class="flex items-center gap-space-xs text-ink-3">
+<button class="p-1 hover:text-ink transition-colors" title="Audit request" type="button">
+<span class="material-symbols-outlined text-[18px]">help_outline</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Add Skill Trigger -->
+<button class="w-full mt-space-md border border-dashed border-border-strong hover:border-ink hover:bg-ground text-ink-2 hover:text-ink font-label-regular text-label-regular py-2.5 px-4 rounded-lg flex items-center justify-center gap-2 transition-colors" type="button">
+<span class="material-symbols-outlined text-[18px]">add</span>
+<span>Add skill or submit external attestation</span>
+</button>
+</section>
+<!-- 2. Availability Card -->
+<section class="bg-surface-strong border border-border rounded-lg p-space-2xl">
+<div class="pb-space-lg border-b border-border">
+<h2 class="font-fraunces text-title-card text-ink font-semibold">Availability</h2>
+<p class="font-body-base text-body-base text-ink-2 mt-0.5">
+            Specify your active work window and standard rate for evaluation matches
+          </p>
+</div>
+<div class="pt-space-xl space-y-space-2xl">
+<!-- Side-by-side Range Calendar (Editorial / Shadcn-style) -->
+<div class="border border-border rounded-lg p-space-xl bg-surface">
+<div class="flex items-center justify-between mb-space-lg pb-space-sm border-b border-border">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-accent text-[20px]">calendar_month</span>
+<span class="font-body-medium text-body-medium text-ink font-semibold">Selected Window:</span>
+<span class="font-mono-base text-mono-base font-medium text-primary">15 Sep 2026 – 20 Oct 2026</span>
+</div>
+<div class="flex items-center gap-1 text-ink-3">
+<button class="p-1 rounded hover:bg-surface-strong text-ink hover:text-ink border border-transparent hover:border-border" type="button">
+<span class="material-symbols-outlined text-[18px]">chevron_left</span>
+</button>
+<button class="p-1 rounded hover:bg-surface-strong text-ink hover:text-ink border border-transparent hover:border-border" type="button">
+<span class="material-symbols-outlined text-[18px]">chevron_right</span>
+</button>
+</div>
+</div>
+<!-- Two Month Dual Grid -->
+<div class="grid grid-cols-1 md:grid-cols-2 gap-space-2xl">
+<!-- Month 1: September 2026 -->
+<div class="flex flex-col">
+<div class="text-center font-body-medium text-body-medium text-ink font-semibold mb-space-md">
+                  September 2026
+                </div>
+<div class="grid grid-cols-7 text-center font-mono-sm text-mono-sm text-ink-3 mb-2 font-medium">
+<div>Su</div><div>Mo</div><div>Tu</div><div>We</div><div>Th</div><div>Fr</div><div>Sa</div>
+</div>
+<div class="grid grid-cols-7 gap-y-1 font-mono-sm text-mono-sm text-center">
+<!-- Week 1: Sep starts on Tuesday -->
+<div class="py-1.5 text-ink-3/40">30</div>
+<div class="py-1.5 text-ink-3/40">31</div>
+<div class="py-1.5 text-ink">1</div>
+<div class="py-1.5 text-ink">2</div>
+<div class="py-1.5 text-ink">3</div>
+<div class="py-1.5 text-ink">4</div>
+<div class="py-1.5 text-ink">5</div>
+<!-- Week 2 -->
+<div class="py-1.5 text-ink">6</div>
+<div class="py-1.5 text-ink">7</div>
+<div class="py-1.5 text-ink">8</div>
+<div class="py-1.5 text-ink">9</div>
+<div class="py-1.5 text-ink">10</div>
+<div class="py-1.5 text-ink">11</div>
+<div class="py-1.5 text-ink">12</div>
+<!-- Week 3: 15 starts range -->
+<div class="py-1.5 text-ink">13</div>
+<div class="py-1.5 text-ink">14</div>
+<div class="py-1.5 bg-accent text-on-primary font-semibold rounded-l-md">15</div>
+<div class="py-1.5 bg-primary-fixed/40 text-primary font-medium">16</div>
+<div class="py-1.5 bg-primary-fixed/40 text-primary font-medium">17</div>
+<div class="py-1.5 bg-primary-fixed/40 text-primary font-medium">18</div>
+<div class="py-1.5 bg-primary-fixed/40 text-primary font-medium">19</div>
+<!-- Week 4: range continues -->
+<div class="py-1.5 bg-primary-fixed/40 text-primary font-medium">20</div>
+<div class="py-1.5 bg-primary-fixed/40 text-primary font-medium">21</div>
+<div class="py-1.5 bg-primary-fixed/40 text-primary font-medium">22</div>
+<div class="py-1.5 bg-primary-fixed/40 text-primary font-medium">23</div>
+<div class="py-1.5 bg-primary-fixed/40 text-primary font-medium">24</div>
+<div class="py-1.5 bg-primary-fixed/40 text-primary font-medium">25</div>
+<div class="py-1.5 bg-primary-fixed/40 text-primary font-medium">26</div>
+<!-- Week 5 -->
+<div class="py-1.5 bg-primary-fixed/40 text-primary font-medium">27</div>
+<div class="py-1.5 bg-primary-fixed/40 text-primary font-medium">28</div>
+<div class="py-1.5 bg-primary-fixed/40 text-primary font-medium">29</div>
+<div class="py-1.5 bg-primary-fixed/40 text-primary font-medium">30</div>
+<div class="py-1.5 text-ink-3/40">1</div>
+<div class="py-1.5 text-ink-3/40">2</div>
+<div class="py-1.5 text-ink-3/40">3</div>
+</div>
+</div>
+<!-- Month 2: October 2026 -->
+<div class="flex flex-col">
+<div class="text-center font-body-medium text-body-medium text-ink font-semibold mb-space-md">
+                  October 2026
+                </div>
+<div class="grid grid-cols-7 text-center font-mono-sm text-mono-sm text-ink-3 mb-2 font-medium">
+<div>Su</div><div>Mo</div><div>Tu</div><div>We</div><div>Th</div><div>Fr</div><div>Sa</div>
+</div>
+<div class="grid grid-cols-7 gap-y-1 font-mono-sm text-mono-sm text-center">
+<!-- Week 1: Oct starts on Thursday -->
+<div class="py-1.5 text-ink-3/40">27</div>
+<div class="py-1.5 text-ink-3/40">28</div>
+<div class="py-1.5 text-ink-3/40">29</div>
+<div class="py-1.5 text-ink-3/40">30</div>
+<div class="py-1.5 bg-primary-fixed/40 text-primary font-medium">1</div>
+<div class="py-1.5 bg-primary-fixed/40 text-primary font-medium">2</div>
+<div class="py-1.5 bg-primary-fixed/40 text-primary font-medium">3</div>
+<!-- Week 2 -->
+<div class="py-1.5 bg-primary-fixed/40 text-primary font-medium">4</div>
+<div class="py-1.5 bg-primary-fixed/40 text-primary font-medium">5</div>
+<div class="py-1.5 bg-primary-fixed/40 text-primary font-medium">6</div>
+<div class="py-1.5 bg-primary-fixed/40 text-primary font-medium">7</div>
+<div class="py-1.5 bg-primary-fixed/40 text-primary font-medium">8</div>
+<div class="py-1.5 bg-primary-fixed/40 text-primary font-medium">9</div>
+<div class="py-1.5 bg-primary-fixed/40 text-primary font-medium">10</div>
+<!-- Week 3 -->
+<div class="py-1.5 bg-primary-fixed/40 text-primary font-medium">11</div>
+<div class="py-1.5 bg-primary-fixed/40 text-primary font-medium">12</div>
+<div class="py-1.5 bg-primary-fixed/40 text-primary font-medium">13</div>
+<div class="py-1.5 bg-primary-fixed/40 text-primary font-medium">14</div>
+<div class="py-1.5 bg-primary-fixed/40 text-primary font-medium">15</div>
+<div class="py-1.5 bg-primary-fixed/40 text-primary font-medium">16</div>
+<div class="py-1.5 bg-primary-fixed/40 text-primary font-medium">17</div>
+<!-- Week 4: 20 ends range -->
+<div class="py-1.5 bg-primary-fixed/40 text-primary font-medium">18</div>
+<div class="py-1.5 bg-primary-fixed/40 text-primary font-medium">19</div>
+<div class="py-1.5 bg-accent text-on-primary font-semibold rounded-r-md">20</div>
+<div class="py-1.5 text-ink">21</div>
+<div class="py-1.5 text-ink">22</div>
+<div class="py-1.5 text-ink">23</div>
+<div class="py-1.5 text-ink">24</div>
+<!-- Week 5 -->
+<div class="py-1.5 text-ink">25</div>
+<div class="py-1.5 text-ink">26</div>
+<div class="py-1.5 text-ink">27</div>
+<div class="py-1.5 text-ink">28</div>
+<div class="py-1.5 text-ink">29</div>
+<div class="py-1.5 text-ink">30</div>
+<div class="py-1.5 text-ink">31</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Day Rate Field -->
+<div class="space-y-space-xs">
+<label class="block font-label-regular text-label-regular text-ink-2" for="day-rate">
+              Day rate (ceiling for routing)
+            </label>
+<div class="relative max-w-sm">
+<span class="absolute inset-y-0 left-0 flex items-center pl-3 text-ink-3 font-mono-base text-mono-base pointer-events-none">$</span>
+<input class="w-full h-10 pl-7 pr-3 rounded-lg bg-surface-strong border border-border focus:border-accent focus:outline-none text-ink font-mono-base text-mono-base tracking-tight" id="day-rate" type="text" value="USD 140 / day"/>
+</div>
+<p class="font-caption text-caption text-ink-3">
+              Evaluated by MeTTa rate-fit rule against founder budget ceiling.
+            </p>
+</div>
+</div>
+</section>
+<!-- 3. Delivery Card -->
+<section class="bg-surface-strong border border-border rounded-lg p-space-2xl">
+<div class="pb-space-lg border-b border-border">
+<h2 class="font-fraunces text-title-card text-ink font-semibold">Delivery modes &amp; location</h2>
+<p class="font-caption text-caption text-ink-3 mt-0.5">Structural prerequisites for deterministic team deployment</p>
+</div>
+<div class="pt-space-xl space-y-space-xl">
+<!-- Modes -->
+<div>
+<span class="block font-label-regular text-label-regular text-ink-2 mb-space-sm">Accepted engagement models</span>
+<div class="flex flex-wrap items-center gap-space-xl">
+<!-- Checkbox Remote -->
+<label class="flex items-center gap-2 cursor-pointer select-none">
+<span class="w-5 h-5 rounded bg-primary flex items-center justify-center text-on-primary">
+<span class="material-symbols-outlined text-[16px]">check</span>
+</span>
+<span class="font-body-medium text-body-medium text-ink">Remote</span>
+</label>
+<!-- Checkbox Hybrid -->
+<label class="flex items-center gap-2 cursor-pointer select-none">
+<span class="w-5 h-5 rounded bg-primary flex items-center justify-center text-on-primary">
+<span class="material-symbols-outlined text-[16px]">check</span>
+</span>
+<span class="font-body-medium text-body-medium text-ink">Hybrid</span>
+</label>
+<!-- Checkbox On-site -->
+<label class="flex items-center gap-2 cursor-pointer select-none">
+<span class="w-5 h-5 rounded border border-border-strong bg-surface-strong flex items-center justify-center"></span>
+<span class="font-body-medium text-body-medium text-ink-3">On-site</span>
+</label>
+</div>
+</div>
+<!-- Location -->
+<div class="space-y-space-xs max-w-md">
+<label class="block font-label-regular text-label-regular text-ink-2" for="base-location">
+              Primary location / base
+            </label>
+<input class="w-full h-10 px-3 rounded-lg bg-surface-strong border border-border focus:border-accent focus:outline-none text-ink font-body-base text-body-base" id="base-location" type="text" value="Nakuru, Kenya"/>
+<p class="font-caption text-caption text-ink-3">
+              Matched against project jurisdiction constraints &amp; timezone overlaps.
+            </p>
+</div>
+</div>
+</section>
+</div>
+<!-- Right Column (approx 400px equivalent in 12-col: 4 cols = 384px) -->
+<div class="lg:col-span-4 flex flex-col gap-space-2xl">
+<!-- 1. Account Status Card -->
+<section class="bg-surface-strong border border-border rounded-lg p-space-xl relative">
+<div class="flex items-start justify-between gap-space-sm mb-space-md">
+<h3 class="font-fraunces text-title-card text-ink font-semibold">Account status</h3>
+<span class="inline-flex items-center px-2 py-0.5 rounded-full bg-amber-fill/25 border border-amber-fill text-amber-ink font-mono-sm text-mono-sm font-medium">
+            Demo data
+          </span>
+</div>
+<div class="space-y-space-md">
+<div>
+<span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-primary-fixed/30 border border-primary-fixed text-primary font-label-regular text-label-regular font-medium">
+<span class="material-symbols-outlined text-[16px] text-primary">verified_user</span>
+              Confirmed by BASIX admin
+            </span>
+</div>
+<div class="pt-space-sm border-t border-border">
+<p class="font-body-base text-body-base text-ink-2 font-medium">
+              Lakeview cohort 2026 · Nairobi Technical University
+            </p>
+</div>
+<div class="pt-space-sm border-t border-border space-y-1">
+<div class="flex items-center justify-between font-mono-sm text-mono-sm">
+<span class="text-ink-3">Registry ID:</span>
+<span class="text-ink font-medium">BLD-8492-NAI</span>
+</div>
+<div class="flex items-center justify-between font-mono-sm text-mono-sm">
+<span class="text-ink-3">Ledger Block:</span>
+<span class="text-ink font-medium">#4419208</span>
+</div>
+<div class="flex items-center justify-between font-mono-sm text-mono-sm">
+<span class="text-ink-3">Attestation State:</span>
+<span class="text-primary font-medium">Immutable Record</span>
+</div>
+</div>
+</div>
+</section>
+<!-- 2. Contact Sharing Card -->
+<section class="bg-surface-strong border border-border rounded-lg p-space-xl">
+<div class="pb-space-md border-b border-border">
+<h3 class="font-fraunces text-title-card text-ink font-semibold">Contact sharing</h3>
+<p class="font-caption text-caption text-ink-3 mt-0.5">Founders only see what you switch on.</p>
+</div>
+<div class="pt-space-lg space-y-space-lg divide-y divide-border">
+<!-- Toggle 1: Email ON -->
+<div class="pt-space-md first:pt-0 flex items-start justify-between gap-space-sm">
+<div class="space-y-0.5">
+<span class="font-body-medium text-body-medium text-ink font-medium">Share email</span>
+<p class="font-mono-sm text-mono-sm text-primary">amina.otieno@lakeview.edu</p>
+</div>
+<button aria-checked="true" class="relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full bg-accent transition-colors duration-200 ease-in-out focus:outline-none" role="switch" type="button">
+<span class="translate-x-6 inline-block h-4 w-4 transform rounded-full bg-surface-strong shadow-none mt-1 transition duration-200 ease-in-out"></span>
+</button>
+</div>
+<!-- Toggle 2: Phone OFF -->
+<div class="pt-space-md flex items-start justify-between gap-space-sm">
+<div class="space-y-0.5">
+<span class="font-body-medium text-body-medium text-ink font-medium">Share phone</span>
+<p class="font-caption text-caption text-ink-3">+254 700 ••• ••• (Hidden)</p>
+</div>
+<button aria-checked="false" class="relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full bg-surface-container-highest transition-colors duration-200 ease-in-out focus:outline-none" role="switch" type="button">
+<span class="translate-x-1 inline-block h-4 w-4 transform rounded-full bg-surface-strong shadow-none mt-1 transition duration-200 ease-in-out"></span>
+</button>
+</div>
+<!-- Toggle 3: LinkedIn OFF -->
+<div class="pt-space-md flex items-start justify-between gap-space-sm">
+<div class="space-y-0.5">
+<span class="font-body-medium text-body-medium text-ink font-medium">Share LinkedIn</span>
+<p class="font-caption text-caption text-ink-3">linkedin.com/in/amina-otieno (Hidden)</p>
+</div>
+<button aria-checked="false" class="relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full bg-surface-container-highest transition-colors duration-200 ease-in-out focus:outline-none" role="switch" type="button">
+<span class="translate-x-1 inline-block h-4 w-4 transform rounded-full bg-surface-strong shadow-none mt-1 transition duration-200 ease-in-out"></span>
+</button>
+</div>
+</div>
+</section>
+<!-- 3. Actions Area -->
+<div class="space-y-space-sm">
+<button class="w-full h-12 rounded-lg bg-accent hover:bg-primary-container text-on-primary font-body-medium text-body-medium font-semibold tracking-wide transition-colors flex items-center justify-center gap-2" type="button">
+<span class="material-symbols-outlined text-[20px]">save</span>
+<span>Save profile</span>
+</button>
+<p class="text-center font-caption text-caption text-ink-3 px-space-sm">
+          Changes take effect immediately across deterministic routing runs.
+        </p>
+</div>
+<!-- MeTTa Ledger Context Box -->
+<div class="p-space-lg rounded-lg bg-surface border border-border">
+<div class="flex items-center gap-2 text-ink-2 font-mono-sm text-mono-sm font-semibold mb-1">
+<span class="material-symbols-outlined text-[16px] text-accent">rule</span>
+          Evaluation Ledger Rule 4A
+        </div>
+<p class="font-caption text-caption text-ink-3 leading-normal">
+          Any edit made to rate ceiling or calendar span resets existing soft-reservations within 48 hours unless validated by bilateral hash exchange.
+        </p>
+</div>
+</div>
+</div>
+</div></div></main><footer class="w-full bg-ground border-t border-border mt-space-4xl"><div class="max-w-[1200px] mx-auto px-gutter py-space-3xl"><div class="grid grid-cols-1 md:grid-cols-3 gap-space-2xl pb-space-2xl border-b border-border"><div class="flex flex-col gap-space-md"><span class="font-label-regular text-label-regular text-ink-3 uppercase tracking-wider">Product</span><ul class="flex flex-col gap-space-sm"><li class="leading-none"><a class="font-body-base text-body-base text-ink-2 hover:text-ink transition-colors" data-path="how-it-works" href="#">How it works</a></li><li class="leading-none"><a class="font-body-base text-body-base text-ink-2 hover:text-ink transition-colors" data-path="evidence-and-rules" href="#">Evidence &amp; rules</a></li><li class="leading-none"><a class="font-body-base text-body-base text-ink-2 hover:text-ink transition-colors" data-path="for-builders" href="#">For builders</a></li><li class="leading-none"><a class="font-body-base text-body-base text-ink-2 hover:text-ink transition-colors" data-path="demo-scenarios" href="#">Demo scenarios</a></li></ul></div><div class="flex flex-col gap-space-md"><span class="font-label-regular text-label-regular text-ink-3 uppercase tracking-wider">Ecosystem</span><ul class="flex flex-col gap-space-sm"><li class="leading-none"><a class="font-body-base text-body-base text-ink-2 hover:text-ink transition-colors" data-path="ecosystem-basix" href="#">BASIX</a></li><li class="leading-none"><a class="font-body-base text-body-base text-ink-2 hover:text-ink transition-colors" data-path="ecosystem-metta-omniuniversity" href="#">MeTTa OmniUniversity</a></li><li class="leading-none"><a class="font-body-base text-body-base text-ink-2 hover:text-ink transition-colors" data-path="ecosystem-singularitynet-metta" href="#">SingularityNET MeTTa</a></li><li class="leading-none"><a class="font-body-base text-body-base text-ink-2 hover:text-ink transition-colors" data-path="ecosystem-partners" href="#">Partners</a></li></ul></div><div class="flex flex-col gap-space-md"><span class="font-label-regular text-label-regular text-ink-3 uppercase tracking-wider">Account</span><ul class="flex flex-col gap-space-sm"><li class="leading-none"><a class="font-body-base text-body-base text-ink-2 hover:text-ink transition-colors" data-path="auth-login" href="#">Sign in</a></li><li class="leading-none"><a class="font-body-base text-body-base text-ink-2 hover:text-ink transition-colors" data-path="auth-founder-register" href="#">Create a founder account</a></li><li class="leading-none"><a class="font-body-base text-body-base text-ink-2 hover:text-ink transition-colors" data-path="auth-builder-register" href="#">Create a builder profile</a></li><li class="leading-none"><a class="font-body-base text-body-base text-ink-2 hover:text-ink transition-colors" data-path="admin-portal" href="#">Admin</a></li></ul></div></div><div class="pt-space-2xl flex flex-col md:flex-row md:items-center justify-between gap-space-lg text-ink-3 font-caption text-caption"><p class="text-ink-2">Venture Route — A deterministic evaluation registry and research ledger for ecosystem founders.</p><p class="text-ink-3">Inspectable rules and cryptographically grounded evidence. Demo data flagged.</p></div></div></footer></body></html>

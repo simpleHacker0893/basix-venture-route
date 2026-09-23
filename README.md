@@ -145,6 +145,7 @@ services/engine/        FastAPI + Hyperon engine (uv, Python 3.12)
 packages/contracts/     Zod schemas (Sprint 001)
 apps/web/               React client (Sprint 002)
 docs/                   API.md, PRD.md, ADRs, Stitch prompts, screenshots
+design/stitch/          Stitch HTML/Tailwind exports + screenshots per batch (see its README)
 planning/               Operating pack: STATE, DECISIONS, DOMAIN, TIMELINE, sprints
 docker-compose.yml      engine service (db and web arrive with later sprints)
 ```
