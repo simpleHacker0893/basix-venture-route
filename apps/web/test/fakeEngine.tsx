@@ -46,14 +46,24 @@ export function clarificationFor(partial: Record<string, unknown>): ChatResponse
   };
 }
 
-/** The seed brief whose routing-relevant fields equal the posted brief's (ids may differ). */
+/**
+ * The seed route whose brief matches the posted brief's routing fields (ids may differ). On
+ * budget it behaves like the assembler: a feasible seed route whose total fits the posted budget
+ * wins, otherwise the seed with the budget gap.
+ */
 function routeForBrief(brief: Record<string, unknown>) {
   const key = (b: Record<string, unknown>) =>
-    JSON.stringify([b.vertical, b.requiredSkills, b.deliveryMode, b.location ?? null, b.dailyBudget, b.maximumTeamSize]);
+    JSON.stringify([b.vertical, b.requiredSkills, b.deliveryMode, b.location ?? null, b.maximumTeamSize]);
   const wanted = key(brief);
-  const match = SEED_BRIEFS.find((seed) => key(seed as unknown as Record<string, unknown>) === wanted);
-  if (!match) throw new Error(`fake engine has no route for ${JSON.stringify(brief)}`);
-  return snapshot.routes[match.id as keyof typeof snapshot.routes];
+  const candidates = SEED_BRIEFS.filter((seed) => key(seed as unknown as Record<string, unknown>) === wanted)
+    .map((seed) => ({ seed, route: snapshot.routes[seed.id as keyof typeof snapshot.routes] }))
+    .sort((a, b) => b.seed.dailyBudget - a.seed.dailyBudget);
+  if (candidates.length === 0) throw new Error(`fake engine has no route for ${JSON.stringify(brief)}`);
+  const budget = Number(brief.dailyBudget);
+  const fits = candidates.find((c) => c.route.status !== "partial" || c.route.builders.length > 0)
+  ;
+  if (fits && fits.route.totalDailyRate <= budget) return fits.route;
+  return candidates[candidates.length - 1]!.route;
 }
 
 type Overrides = Partial<Record<"scenarios" | "route" | "conversation", (init?: RequestInit) => Response>>;

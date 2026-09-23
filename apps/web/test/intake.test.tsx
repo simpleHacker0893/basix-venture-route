@@ -35,7 +35,7 @@ describe("intake: chat, scenario chips, the form", () => {
     expect(await screen.findByRole("heading", { level: 1, name: "Confirm your brief" })).toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: "Find my route" }));
 
-    expect(await screen.findByText("feasible")).toBeInTheDocument();
+    expect(await screen.findByTestId("status-badge")).toHaveTextContent("Feasible");
   });
 
   it("routes the Agri marketplace values through the form path with the calendar range", async () => {
@@ -64,9 +64,13 @@ describe("intake: chat, scenario chips, the form", () => {
 
     await user.click(within(form).getByRole("button", { name: "Find my route" }));
 
-    expect(await screen.findByText("feasible")).toBeInTheDocument();
+    expect(await screen.findByTestId("status-badge")).toHaveTextContent("Feasible");
     // The engine lists the team in builder-id order; the chat path shows the same order (#32).
-    expect(screen.getByText("fatuma-hassan, lucy-achieng, wanjiru-mwangi")).toBeInTheDocument();
+    expect(screen.getAllByTestId("builder-card").map((c) => within(c).getByRole("heading", { level: 3 }).textContent)).toEqual([
+      "Fatuma Hassan",
+      "Lucy Achieng",
+      "Wanjiru Mwangi",
+    ]);
   }, 20000);
 
   it("keeps the location field for on-site only and refuses to submit an invalid form", async () => {
@@ -82,6 +86,6 @@ describe("intake: chat, scenario chips, the form", () => {
     await user.click(within(form).getByRole("button", { name: "Find my route" }));
 
     expect(await within(form).findAllByRole("alert")).not.toHaveLength(0);
-    expect(screen.queryByText("feasible")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("status-badge")).not.toBeInTheDocument();
   });
 });

@@ -42,7 +42,7 @@ describe("review: editable chips with inline errors", () => {
     const budget = within(form).getByLabelText("Daily budget");
     expect(budget).toHaveAttribute("aria-invalid", "true");
     expect(within(form).getByRole("alert")).toHaveAttribute("id", "error-dailyBudget");
-    expect(screen.queryByText("feasible")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("status-badge")).not.toBeInTheDocument();
   });
 
   it("renders a server validation-error on the field named by the message prefix", async () => {
@@ -88,6 +88,6 @@ describe("review: editable chips with inline errors", () => {
     await user.type(within(form).getByLabelText("Daily budget"), "250");
     await user.click(within(form).getByRole("button", { name: "Find my route" }));
 
-    expect(await screen.findByText("partial")).toBeInTheDocument();
+    expect(await screen.findByTestId("status-badge")).toHaveTextContent("Partial");
   });
 });
