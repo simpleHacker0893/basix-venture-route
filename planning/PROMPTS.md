@@ -20,6 +20,26 @@ Create GitHub labels sprint:000, sprint:001, sprint:002, sprint:003, sprint:004,
 
 ---
 
+## Spec-first variant (Sprint 003 onward): S0 → S1 → P2 → P3 → P4 → P5
+
+From Sprint 003 the Operator asked for a written spec before tickets. The chain becomes: **P1 Orient → S0 `brainstorming` (superpowers, architectural path) → S1 `/to-spec` (Matt Pocock, publishes the spec as a GitHub issue labelled `ready-for-agent`) → P2 `/to-tickets <spec issue>` → P3 `/implement` → P4 `/code-review master` → P5 evidence + PR**. The sprint `requirements.md` and `blueprint.md` stay the Architect's input; the spec issue is the Builder's synthesis of them plus the seams, and it becomes the Spec source for `/code-review`.
+
+### S0 — Brainstorm the design (superpowers `brainstorming`, one question per message)
+
+```text
+Use the brainstorming skill. This is an architectural change: classify it so out loud. Ground everything in planning/sprints/NNN-<slug>/requirements.md, blueprint.md, acceptance.md, CONTEXT.md, docs/adr/ and the decisions I name in P1. Write back your understanding first, separating what the pack says from what you assume. Ask me one question at a time, only where the pack is silent; prefer multiple choice. Propose 2 to 3 approaches only where the blueprint leaves a choice open, with your recommendation. Present the design in sections and stop for my approval after each. Do not write the spec file yet; when I approve the last section, stop and wait for /to-spec.
+```
+
+### S1 — Publish the spec (Matt Pocock `to-spec`)
+
+```text
+/to-spec
+
+Synthesize the approved design from this conversation plus planning/sprints/NNN-<slug>/requirements.md and blueprint.md into the spec template. Seams are the ones fixed in planning/PROMPTS.md §Sprint NNN; confirm them with me before writing. User stories come from requirements.md and PRD §3; Implementation Decisions cite D-numbers; Testing Decisions cite the seams and the acceptance.md lines; Out of Scope copies requirements.md §Out of scope. Publish as one GitHub issue titled "Spec: Sprint NNN — <name>" labelled sprint:NNN and ready-for-agent. Give me the issue number.
+```
+
+Then P2 becomes `/to-tickets #<spec issue>` (the parent reference is the spec issue; every ticket links it), and P4's Spec source is that issue.
+
 ## The five prompts you paste in every sprint
 
 Replace `NNN` and `<slug>` with the sprint (`000-metta-spike`, `001-routing-core`, `002-founder-ui`, `003-marketplace`, `004-requests-interviews`, `005-demo-hardening`). Sprint-specific lines to append are in the next section.
