@@ -79,13 +79,14 @@ class MettaRouteEngine:
 
     def replace_space(self, program: str) -> int:
         """Full rebuild (D-15): seed files plus `program` (marketplace facts in seed syntax) in a
-        fresh runtime, swapped in under the lock so queries in flight finish on the old one.
+        fresh runtime. Build and swap both run under the engine lock (spec #35 §Projection), so
+        rebuilds are serialised in call order and a query never straddles two runtimes.
         Returns the number of projected atoms; `facts_loaded` keeps counting seed atoms."""
-        if not program.strip() and self.projected_rows == 0:
-            return 0  # already seed-only: nothing to rebuild
-        metta, facts_loaded = self._build_runtime()
-        projected = self._add_text(metta, program) if program.strip() else 0
         with self._lock:
+            if not program.strip() and self.projected_rows == 0:
+                return 0  # already seed-only: nothing to rebuild
+            metta, facts_loaded = self._build_runtime()
+            projected = self._add_text(metta, program) if program.strip() else 0
             self._metta = metta
             self.facts_loaded = facts_loaded
             self.projected_rows = projected

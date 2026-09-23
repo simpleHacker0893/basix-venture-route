@@ -9,6 +9,8 @@ symbol is the seed's `admin-basix`; the confirmations table records which admin 
 
 from __future__ import annotations
 
+import asyncio
+
 from fastapi.concurrency import run_in_threadpool
 from sqlmodel.ext.asyncio.session import AsyncSession
 
@@ -57,8 +59,14 @@ def render_program(builders: list[ConfirmedBuilder]) -> list[str]:
     return lines
 
 
+# One reprojection at a time, in arrival order: the row read and the rebuild stay together, so
+# two admin decisions in flight cannot swap an older row set in after a newer one.
+_REPROJECT_LOCK = asyncio.Lock()
+
+
 async def reproject(engine: MettaRouteEngine, session: AsyncSession) -> int:
     """Rebuild the space from seed facts plus confirmed rows; returns the projected atom count."""
-    builders = await repo.confirmed_builders(session)
-    program = render_program(builders)
-    return await run_in_threadpool(engine.replace_space, "\n".join(program))
+    async with _REPROJECT_LOCK:
+        builders = await repo.confirmed_builders(session)
+        program = render_program(builders)
+        return await run_in_threadpool(engine.replace_space, "\n".join(program))
