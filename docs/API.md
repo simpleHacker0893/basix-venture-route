@@ -292,6 +292,40 @@ Role `founder`, owner only (`404` otherwise). Sets `status: "closed"` and `close
 request no longer appears in the builders' list and refuses bids (`409`), but stays in the
 founder's list with its status.
 
+## Bids (Sprint 004)
+
+A bid is allowed only where `eligible-builder` holds for the request's brief and the bidding
+builder (DOMAIN.md §Marketplace rules). The gate is the engine's verdict above, never a Python
+check; the stored bid carries the skills and the reasoning path the engine returned.
+
+### POST /api/requests/{id}/bids
+
+Role `builder`; `404 {"detail": "no profile yet"}` without a profile. Body `BidCreate`:
+
+```json
+{ "dayRate": 120, "message": "The field survey app demonstrates mobile." }
+```
+
+`dayRate` is a positive integer USD per day (D-16), `message` up to 1000 characters and
+optional. The request is locked, checked open, and the route service computes eligibility for
+the builder's slug:
+
+| Status | Body | When |
+|---|---|---|
+| `201` | `Bid` (below) | `eligible-builder` holds; `eligibleSkills` and `path` are the engine's |
+| `403` | `{"detail": "<reason>"}` | not eligible; `reason` is the same text `GET …/eligibility` answers (a `route-gap` statement or the template) |
+| `409` | `{"detail": "request closed"}` | the founder closed the request |
+| `409` | `{"detail": "already bid"}` | the builder already has a bid on this request (UNIQUE, so a race still ends in one bid) |
+| `404` | `{"detail": "no request <id>"}` | unknown request |
+
+```json
+{ "id": "…", "requestId": "…", "requestTitle": "…", "requestStatus": "open",
+  "builderId": "naomi-chebet", "displayName": "Naomi Chebet", "dayRate": 120,
+  "message": "…", "eligibleSkills": ["mobile"],
+  "path": { "rule": "eligible-builder", "facts": ["…"], "conclusion": "naomi-chebet is eligible for mobile with both evidence" },
+  "status": "submitted", "createdAt": "2026-09-23T07:30:00Z", "demoData": true }
+```
+
 ## Admin: `/api/admin/*`
 
 Role `admin`. Admins are never user-chosen: the webhook assigns the role to emails in

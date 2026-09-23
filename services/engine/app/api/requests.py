@@ -98,7 +98,7 @@ async def _builder_slug(session: AsyncSession, user: CurrentUser) -> str:
     return profile.builder_id
 
 
-async def _eligibility(service: RouteService, row: RequestRow, builder_id: str) -> Eligibility:
+async def eligibility_for(service: RouteService, row: RequestRow, builder_id: str) -> Eligibility:
     """The engine's verdict for one builder on the request's brief, computed in a worker thread
     under the engine lock like routing; never read from the stored route snapshot."""
     brief = VentureBrief.model_validate(row.brief)
@@ -123,7 +123,7 @@ async def list_requests(
         return [request_out(row, founder) for row, founder in rows]
     builder_id = await _builder_slug(session, user)
     return [
-        request_out(row, founder, await _eligibility(service, row, builder_id))
+        request_out(row, founder, await eligibility_for(service, row, builder_id))
         for row, founder in await repo.open_requests(session)
     ]
 
@@ -136,7 +136,7 @@ async def eligibility_for_me(
     service: Annotated[RouteService, Depends(get_route_service)],
 ) -> Eligibility:
     row, _founder = await owned_or_visible(session, user, request_id)
-    return await _eligibility(service, row, await _builder_slug(session, user))
+    return await eligibility_for(service, row, await _builder_slug(session, user))
 
 
 @router.get("/{request_id}", response_model=RequestOut)

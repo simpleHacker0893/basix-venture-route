@@ -11,12 +11,14 @@ from datetime import date, datetime
 from typing import Any
 from uuid import UUID
 
+from sqlalchemy.exc import IntegrityError
 from sqlmodel import col, select
 from sqlmodel.ext.asyncio.session import AsyncSession
 from sqlmodel.sql.expression import Select
 
 from app.marketplace.models import (
     Availability,
+    Bid,
     Confirmation,
     Credential,
     Profile,
@@ -444,5 +446,44 @@ async def close_request(session: AsyncSession, row: Request, now: datetime) -> R
     row.closed_at = now
     session.add(row)
     await session.commit()
+    await session.refresh(row)
+    return row
+
+
+async def request_for_update(session: AsyncSession, request_id: UUID) -> Request | None:
+    """The request row locked FOR UPDATE, so a bid's open check and insert see one status."""
+    statement = select(Request).where(Request.id == request_id).with_for_update()
+    return (await session.exec(statement)).first()
+
+
+# -- bids (spec #52 §Store, #62) ------------------------------------------------------------------
+
+
+async def add_bid(
+    session: AsyncSession,
+    request: Request,
+    profile: Profile,
+    *,
+    day_rate: int,
+    message: str,
+    eligible_skills: list[str],
+    path: dict[str, Any],
+) -> Bid | None:
+    """Insert and commit one bid; None when the (request, profile) UNIQUE already holds, so a
+    race between two identical bids still ends in one row (the caller answers 409)."""
+    row = Bid(
+        request_id=request.id,
+        profile_id=profile.id,
+        day_rate=day_rate,
+        message=message,
+        eligible_skills=eligible_skills,
+        path=path,
+    )
+    session.add(row)
+    try:
+        await session.commit()
+    except IntegrityError:
+        await session.rollback()
+        return None
     await session.refresh(row)
     return row
