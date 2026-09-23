@@ -15,6 +15,7 @@ from sqlmodel.ext.asyncio.session import AsyncSession
 
 from app.marketplace.models import (
     Availability,
+    Confirmation,
     Credential,
     Profile,
     Project,
@@ -22,7 +23,12 @@ from app.marketplace.models import (
     Skill,
     User,
 )
-from app.marketplace.verification import ConfirmedCredential, ConfirmedProject, ConfirmedRows
+from app.marketplace.verification import (
+    ConfirmedBuilder,
+    ConfirmedCredential,
+    ConfirmedProject,
+    ConfirmedRows,
+)
 
 _NON_SLUG = re.compile(r"[^a-z0-9]+")
 
@@ -218,3 +224,107 @@ async def add_project(
     await session.commit()
     await session.refresh(row)
     return row
+
+
+# -- projection input: every builder whose account is confirmed ---------------
+
+
+async def confirmed_builders(session: AsyncSession) -> list[ConfirmedBuilder]:
+    statement = (
+        select(Profile, User)
+        .join(User, col(User.id) == col(Profile.user_id))
+        .where(User.status == "confirmed", User.role == "builder")
+        .order_by(col(Profile.builder_id))
+    )
+    out: list[ConfirmedBuilder] = []
+    for profile, _user in (await session.exec(statement)).all():
+        modes = tuple(
+            mode
+            for mode, on in (
+                ("remote", profile.supports_remote),
+                ("hybrid", profile.supports_hybrid),
+                ("on-site", profile.supports_onsite),
+            )
+            if on
+        )
+        availability = tuple(
+            (row.start_date, row.end_date) for row in await availability_for(session, profile.id)
+        )
+        out.append(
+            ConfirmedBuilder(
+                builder_id=profile.builder_id,
+                day_rate=profile.day_rate,
+                location=profile.location,
+                modes=modes,
+                availability=availability,
+                cohort_id=profile.cohort_id,
+                self_described=tuple(profile.self_described_skills),
+                rows=await confirmed_rows_for(session, profile.id),
+            )
+        )
+    return out
+
+
+# -- admin queue ----------------------------------------------------------------
+
+
+async def pending_accounts(session: AsyncSession) -> list[tuple[User, Profile | None]]:
+    statement = (
+        select(User)
+        # Admins are bootstrapped confirmed (D-03) and never queue; founders and builders do.
+        .where(User.status == "pending", col(User.role).in_(["founder", "builder"]))
+        .order_by(col(User.created_at), col(User.id))
+    )
+    users = (await session.exec(statement)).all()
+    return [(user, await profile_for_user(session, user.id)) for user in users]
+
+
+async def pending_credentials(session: AsyncSession) -> list[tuple[Credential, Profile]]:
+    statement = (
+        select(Credential, Profile)
+        .join(Profile, col(Profile.id) == col(Credential.profile_id))
+        .where(Credential.status == "pending")
+        .order_by(col(Credential.created_at), col(Credential.id))
+    )
+    return [(row, profile) for row, profile in (await session.exec(statement)).all()]
+
+
+async def pending_projects(session: AsyncSession) -> list[tuple[Project, Profile, list[str]]]:
+    statement = (
+        select(Project, Profile)
+        .join(Profile, col(Profile.id) == col(Project.profile_id))
+        .where(Project.status == "pending")
+        .order_by(col(Project.created_at), col(Project.id))
+    )
+    pairs = (await session.exec(statement)).all()
+    out: list[tuple[Project, Profile, list[str]]] = []
+    for row, profile in pairs:
+        skills = [s for p, s in await projects_for(session, profile.id) if p.id == row.id]
+        out.append((row, profile, skills[0] if skills else []))
+    return out
+
+
+async def decide(
+    session: AsyncSession,
+    kind: str,
+    target_id: UUID,
+    decision: str,
+    admin_user_id: UUID,
+) -> bool:
+    """Set the target's status, log the decision, commit. False when the target is unknown.
+    Any transition is allowed so an admin can reverse a mistake; the log keeps every step."""
+    target: User | Credential | Project | None
+    if kind == "account":
+        target = await session.get(User, target_id)
+    elif kind == "credential":
+        target = await session.get(Credential, target_id)
+    else:
+        target = await session.get(Project, target_id)
+    if target is None:
+        return False
+    target.status = decision
+    session.add(
+        Confirmation(kind=kind, target_id=target_id, decision=decision, admin_user_id=admin_user_id)
+    )
+    await session.commit()
+    return True

@@ -21,9 +21,11 @@ from pydantic import BaseModel, TypeAdapter
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from app.marketplace.schemas import (  # noqa: E402
+    AdminDecision,
     BuilderProfile,
     CredentialInput,
     CredentialOut,
+    PendingQueue,
     ProfileInput,
     ProjectInput,
     ProjectOut,
@@ -97,6 +99,8 @@ def export() -> Json:
         "Credential": model(CredentialOut),
         "ProjectInput": model(ProjectInput),
         "Project": model(ProjectOut),
+        "PendingQueue": model(PendingQueue),
+        "AdminDecision": model(AdminDecision),
     }
 
 

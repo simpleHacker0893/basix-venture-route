@@ -10,12 +10,14 @@ import { describe, expect, it } from "vitest";
 import { z } from "zod";
 
 import {
+  AdminDecision,
   BuilderProfile,
   ChatResponse,
   ChatTurn,
   Credential,
   CredentialInput,
   Gap,
+  PendingQueue,
   ProfileInput,
   Project,
   ProjectInput,
@@ -45,8 +47,8 @@ function canonical(schema: unknown): unknown {
   for (const key of Object.keys(source).sort()) {
     const value = source[key];
     if (DECORATION_KEYWORDS.has(key)) continue;
-    // Zod restates `format: "date"` as a regex; the format keyword is the contract.
-    if (key === "pattern" && source["format"] === "date") continue;
+    // Zod restates `format: "date"` / `"date-time"` as a regex; the format keyword is the contract.
+    if (key === "pattern" && (source["format"] === "date" || source["format"] === "date-time")) continue;
     if (key === "properties") {
       const props: Json = {};
       for (const name of Object.keys(value as Json).sort()) props[name] = canonical((value as Json)[name]);
@@ -74,6 +76,8 @@ const cases: [keyof typeof exported, z.ZodType][] = [
   ["Credential", Credential],
   ["ProjectInput", ProjectInput],
   ["Project", Project],
+  ["PendingQueue", PendingQueue],
+  ["AdminDecision", AdminDecision],
 ];
 
 describe("Zod JSON Schema equals Pydantic JSON Schema", () => {

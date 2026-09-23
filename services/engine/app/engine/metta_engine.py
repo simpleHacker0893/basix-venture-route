@@ -61,15 +61,35 @@ class MettaRouteEngine:
     def __init__(self, settings: Settings) -> None:
         self._settings = settings
         self._lock = threading.Lock()
+        self.projected_rows = 0
+        self._metta, self.facts_loaded = self._build_runtime()
+        self.rules_loaded = self._count_named_rules_in_space()
+
+    def _build_runtime(self) -> tuple[MeTTa, int]:
+        """A fresh Hyperon runtime holding the seed facts, the rules and the overlap constant."""
         try:
-            self._metta = MeTTa()
+            metta = MeTTa()
         except Exception as exc:  # pragma: no cover - only when the native runtime is broken
             raise EngineError("Hyperon runtime failed to start") from exc
-        register_grounded_atoms(self._metta)
-        self.facts_loaded = self._add_program(settings.seed_dir / "facts.metta")
-        self._add_program(settings.seed_dir / "rules.metta")
-        self.rules_loaded = self._count_named_rules_in_space()
-        self._metta.run(f"(min-overlap-days {settings.min_overlap_days})")
+        register_grounded_atoms(metta)
+        facts_loaded = self._add_program(metta, self._settings.seed_dir / "facts.metta")
+        self._add_program(metta, self._settings.seed_dir / "rules.metta")
+        metta.run(f"(min-overlap-days {self._settings.min_overlap_days})")
+        return metta, facts_loaded
+
+    def replace_space(self, program: str) -> int:
+        """Full rebuild (D-15): seed files plus `program` (marketplace facts in seed syntax) in a
+        fresh runtime, swapped in under the lock so queries in flight finish on the old one.
+        Returns the number of projected atoms; `facts_loaded` keeps counting seed atoms."""
+        if not program.strip() and self.projected_rows == 0:
+            return 0  # already seed-only: nothing to rebuild
+        metta, facts_loaded = self._build_runtime()
+        projected = self._add_text(metta, program) if program.strip() else 0
+        with self._lock:
+            self._metta = metta
+            self.facts_loaded = facts_loaded
+            self.projected_rows = projected
+        return projected
 
     @property
     def hyperon_version(self) -> str:
@@ -170,15 +190,22 @@ class MettaRouteEngine:
 
     # -- loading ---------------------------------------------------------------------------------
 
-    def _add_program(self, path: Path) -> int:
+    def _add_program(self, metta: MeTTa, path: Path) -> int:
         """Parse a seed file and add every atom to the space; returns the atom count."""
         if not path.exists():
             raise EngineError(f"seed file missing: {path}")
         try:
-            atoms = self._metta.parse_all(path.read_text(encoding="utf-8"))
-        except Exception as exc:
+            return self._add_text(metta, path.read_text(encoding="utf-8"))
+        except EngineError as exc:
             raise EngineError(f"cannot parse {path.name}") from exc
-        space = self._metta.space()
+
+    @staticmethod
+    def _add_text(metta: MeTTa, text: str) -> int:
+        try:
+            atoms = metta.parse_all(text)
+        except Exception as exc:
+            raise EngineError("cannot parse facts") from exc
+        space = metta.space()
         for atom in atoms:
             space.add_atom(atom)
         return len(atoms)

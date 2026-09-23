@@ -7,12 +7,12 @@ Aliases are camelCase on the wire like every Sprint 001 contract. One skill shap
 
 from __future__ import annotations
 
-from datetime import date
+from datetime import date, datetime
 from typing import Annotated, Literal, Self
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
-from app.models.brief import PositiveSafeInt, SkillId, Vertical
+from app.models.brief import JS_SAFE_INT, PositiveSafeInt, SkillId, Vertical
 
 Evidence = Literal["credential", "project", "both"]
 SkillStatus = Literal["verified", "self-described"]
@@ -158,3 +158,55 @@ class ProjectOut(Wire):
     skill_ids: list[SkillId] = Field(alias="skillIds", min_length=1, max_length=5)
     status: AccountStatus
     demo_data: bool = Field(default=True, alias="demoData")
+
+
+# -- admin queue (spec #35 §Admin) ---------------------------------------------------------
+
+
+class PendingAccount(Wire):
+    id: str
+    clerk_id: str = Field(alias="clerkId")
+    email: str
+    role: UserRole | None = None
+    builder_id: str | None = Field(default=None, alias="builderId")
+    display_name: str | None = Field(default=None, alias="displayName")
+    cohort_id: str | None = Field(default=None, alias="cohortId")
+    submitted_at: datetime = Field(alias="submittedAt")
+    demo_data: bool = Field(default=True, alias="demoData")
+
+
+class PendingCredential(Wire):
+    id: str
+    builder_id: str = Field(alias="builderId")
+    display_name: str = Field(alias="displayName")
+    title: Title
+    issuer: Issuer
+    skill_id: SkillId = Field(alias="skillId")
+    submitted_at: datetime = Field(alias="submittedAt")
+    demo_data: bool = Field(default=True, alias="demoData")
+
+
+class PendingProject(Wire):
+    id: str
+    builder_id: str = Field(alias="builderId")
+    display_name: str = Field(alias="displayName")
+    title: Title
+    vertical: Vertical
+    licensable: bool
+    completed_on: date = Field(alias="completedOn")
+    skill_ids: list[SkillId] = Field(alias="skillIds")
+    submitted_at: datetime = Field(alias="submittedAt")
+    demo_data: bool = Field(default=True, alias="demoData")
+
+
+class PendingQueue(Wire):
+    accounts: list[PendingAccount]
+    credentials: list[PendingCredential]
+    projects: list[PendingProject]
+
+
+class AdminDecision(Wire):
+    id: str
+    kind: Literal["account", "credential", "project"]
+    status: Literal["confirmed", "rejected"]
+    projected_rows: int = Field(alias="projectedRows", ge=0, le=JS_SAFE_INT)

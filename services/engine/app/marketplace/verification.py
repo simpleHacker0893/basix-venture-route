@@ -9,6 +9,7 @@ A self-described skill that is also proven renders as verified.
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+from datetime import date
 from typing import Literal
 
 from app.marketplace.schemas import Evidence, ProfileSkill, SkillStatus
@@ -36,6 +37,20 @@ class ConfirmedRows:
 
     credentials: tuple[ConfirmedCredential, ...] = field(default_factory=tuple)
     projects: tuple[ConfirmedProject, ...] = field(default_factory=tuple)
+
+
+@dataclass(frozen=True)
+class ConfirmedBuilder:
+    """A builder whose account is confirmed, with everything the projection emits for them."""
+
+    builder_id: str
+    day_rate: int
+    location: str
+    modes: tuple[str, ...]
+    availability: tuple[tuple[date, date], ...]
+    cohort_id: str | None
+    self_described: tuple[str, ...]
+    rows: ConfirmedRows
 
 
 def verified_skills(rows: ConfirmedRows) -> dict[SkillId, Evidence]:

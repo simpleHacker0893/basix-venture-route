@@ -26,6 +26,7 @@ from app.config import Settings, get_settings
 from app.db.session import SessionFactory, create_session_factory, create_store_engine
 from app.engine.errors import EngineError
 from app.engine.metta_engine import MettaRouteEngine
+from app.engine.projection import reproject
 from app.llm.factory import select_adapter
 from app.models.brief import load_seed_briefs
 from app.models.chat import ValidationErrorResponse
@@ -86,6 +87,12 @@ def create_app(
         else:
             app.state.session_factory = session_factory
         app.state.store_engine = store_engine
+        # Projection at start-up (D-15): confirmed rows survive a restart. Skipped without a store.
+        factory = app.state.session_factory
+        if factory is not None:
+            async with factory() as session:
+                await reproject(route_engine, session)
+            app.state.known_entities = route_engine.known_entities()
         try:
             yield
         finally:

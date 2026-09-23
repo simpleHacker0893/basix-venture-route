@@ -30,12 +30,14 @@ def test_committed_schema_json_equals_fresh_pydantic_export() -> None:
 
 def test_export_covers_the_shared_contracts() -> None:
     assert sorted(json.loads(render(export()))) == [
+        "AdminDecision",
         "BuilderProfile",
         "ChatResponse",
         "ChatTurn",
         "Credential",
         "CredentialInput",
         "Gap",
+        "PendingQueue",
         "ProfileInput",
         "Project",
         "ProjectInput",

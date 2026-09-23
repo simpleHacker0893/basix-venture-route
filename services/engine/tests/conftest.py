@@ -185,14 +185,19 @@ def marketplace_app(
 
 
 @pytest.fixture
-async def api(marketplace_app: FastAPI) -> AsyncIterator[AsyncClient]:
-    async with (
-        marketplace_app.router.lifespan_context(marketplace_app),
-        AsyncClient(
-            transport=ASGITransport(app=marketplace_app), base_url="http://testserver"
-        ) as client,
-    ):
-        yield client
+async def api(marketplace_app: FastAPI, engine: MettaRouteEngine) -> AsyncIterator[AsyncClient]:
+    """The app over ASGI with its lifespan. The session-scoped engine is shared with the Sprint
+    001 tests, so after each marketplace test its space goes back to seed facts only."""
+    try:
+        async with (
+            marketplace_app.router.lifespan_context(marketplace_app),
+            AsyncClient(
+                transport=ASGITransport(app=marketplace_app), base_url="http://testserver"
+            ) as client,
+        ):
+            yield client
+    finally:
+        engine.replace_space("")
 
 
 @pytest.fixture

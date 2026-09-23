@@ -1,4 +1,39 @@
 {
+  "AdminDecision": {
+    "additionalProperties": false,
+    "properties": {
+      "id": {
+        "type": "string"
+      },
+      "kind": {
+        "enum": [
+          "account",
+          "credential",
+          "project"
+        ],
+        "type": "string"
+      },
+      "projectedRows": {
+        "maximum": 9007199254740991,
+        "minimum": 0,
+        "type": "integer"
+      },
+      "status": {
+        "enum": [
+          "confirmed",
+          "rejected"
+        ],
+        "type": "string"
+      }
+    },
+    "required": [
+      "id",
+      "kind",
+      "projectedRows",
+      "status"
+    ],
+    "type": "object"
+  },
   "BuilderProfile": {
     "additionalProperties": false,
     "properties": {
@@ -1300,6 +1335,230 @@
       "nextActions",
       "rule",
       "statement"
+    ],
+    "type": "object"
+  },
+  "PendingQueue": {
+    "additionalProperties": false,
+    "properties": {
+      "accounts": {
+        "items": {
+          "additionalProperties": false,
+          "properties": {
+            "builderId": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null
+            },
+            "clerkId": {
+              "type": "string"
+            },
+            "cohortId": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null
+            },
+            "demoData": {
+              "default": true,
+              "type": "boolean"
+            },
+            "displayName": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null
+            },
+            "email": {
+              "type": "string"
+            },
+            "id": {
+              "type": "string"
+            },
+            "role": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "founder",
+                    "builder"
+                  ],
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null
+            },
+            "submittedAt": {
+              "format": "date-time",
+              "type": "string"
+            }
+          },
+          "required": [
+            "clerkId",
+            "email",
+            "id",
+            "submittedAt"
+          ],
+          "type": "object"
+        },
+        "type": "array"
+      },
+      "credentials": {
+        "items": {
+          "additionalProperties": false,
+          "properties": {
+            "builderId": {
+              "type": "string"
+            },
+            "demoData": {
+              "default": true,
+              "type": "boolean"
+            },
+            "displayName": {
+              "type": "string"
+            },
+            "id": {
+              "type": "string"
+            },
+            "issuer": {
+              "maxLength": 120,
+              "minLength": 1,
+              "type": "string"
+            },
+            "skillId": {
+              "enum": [
+                "python",
+                "ai-metta",
+                "ui-ux",
+                "frontend",
+                "backend",
+                "domain-research",
+                "mobile",
+                "rust",
+                "data"
+              ],
+              "type": "string"
+            },
+            "submittedAt": {
+              "format": "date-time",
+              "type": "string"
+            },
+            "title": {
+              "maxLength": 120,
+              "minLength": 1,
+              "type": "string"
+            }
+          },
+          "required": [
+            "builderId",
+            "displayName",
+            "id",
+            "issuer",
+            "skillId",
+            "submittedAt",
+            "title"
+          ],
+          "type": "object"
+        },
+        "type": "array"
+      },
+      "projects": {
+        "items": {
+          "additionalProperties": false,
+          "properties": {
+            "builderId": {
+              "type": "string"
+            },
+            "completedOn": {
+              "format": "date",
+              "type": "string"
+            },
+            "demoData": {
+              "default": true,
+              "type": "boolean"
+            },
+            "displayName": {
+              "type": "string"
+            },
+            "id": {
+              "type": "string"
+            },
+            "licensable": {
+              "type": "boolean"
+            },
+            "skillIds": {
+              "items": {
+                "enum": [
+                  "python",
+                  "ai-metta",
+                  "ui-ux",
+                  "frontend",
+                  "backend",
+                  "domain-research",
+                  "mobile",
+                  "rust",
+                  "data"
+                ],
+                "type": "string"
+              },
+              "type": "array"
+            },
+            "submittedAt": {
+              "format": "date-time",
+              "type": "string"
+            },
+            "title": {
+              "maxLength": 120,
+              "minLength": 1,
+              "type": "string"
+            },
+            "vertical": {
+              "enum": [
+                "health",
+                "agri",
+                "education"
+              ],
+              "type": "string"
+            }
+          },
+          "required": [
+            "builderId",
+            "completedOn",
+            "displayName",
+            "id",
+            "licensable",
+            "skillIds",
+            "submittedAt",
+            "title",
+            "vertical"
+          ],
+          "type": "object"
+        },
+        "type": "array"
+      }
+    },
+    "required": [
+      "accounts",
+      "credentials",
+      "projects"
     ],
     "type": "object"
   },

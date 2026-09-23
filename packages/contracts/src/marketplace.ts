@@ -151,3 +151,64 @@ export const Project = z.strictObject({
   demoData: z.boolean().default(true),
 });
 export type Project = z.infer<typeof Project>;
+
+/** Admin queue (spec #35 §Admin): pending accounts, credentials and projects. */
+export const IsoDateTime = z.iso.datetime({ offset: true });
+
+export const PendingAccount = z.strictObject({
+  id: z.string(),
+  clerkId: z.string(),
+  email: z.string(),
+  role: UserRole.nullable().default(null),
+  builderId: z.string().nullable().default(null),
+  displayName: z.string().nullable().default(null),
+  cohortId: z.string().nullable().default(null),
+  submittedAt: IsoDateTime,
+  demoData: z.boolean().default(true),
+});
+export type PendingAccount = z.infer<typeof PendingAccount>;
+
+export const PendingCredential = z.strictObject({
+  id: z.string(),
+  builderId: z.string(),
+  displayName: z.string(),
+  title: Title,
+  issuer: Issuer,
+  skillId: SkillId,
+  submittedAt: IsoDateTime,
+  demoData: z.boolean().default(true),
+});
+export type PendingCredential = z.infer<typeof PendingCredential>;
+
+export const PendingProject = z.strictObject({
+  id: z.string(),
+  builderId: z.string(),
+  displayName: z.string(),
+  title: Title,
+  vertical: Vertical,
+  licensable: z.boolean(),
+  completedOn: IsoDate,
+  skillIds: z.array(SkillId),
+  submittedAt: IsoDateTime,
+  demoData: z.boolean().default(true),
+});
+export type PendingProject = z.infer<typeof PendingProject>;
+
+export const PendingQueue = z.strictObject({
+  accounts: z.array(PendingAccount),
+  credentials: z.array(PendingCredential),
+  projects: z.array(PendingProject),
+});
+export type PendingQueue = z.infer<typeof PendingQueue>;
+
+export const DecisionKind = z.enum(["account", "credential", "project"]);
+export type DecisionKind = z.infer<typeof DecisionKind>;
+
+export const AdminDecision = z.strictObject({
+  id: z.string(),
+  kind: DecisionKind,
+  status: z.enum(["confirmed", "rejected"]),
+  /** Atoms projected from confirmed rows after this decision (D-15). */
+  projectedRows: z.int().min(0),
+});
+export type AdminDecision = z.infer<typeof AdminDecision>;

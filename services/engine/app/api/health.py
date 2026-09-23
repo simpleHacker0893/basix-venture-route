@@ -14,6 +14,8 @@ class HealthResponse(BaseModel):
     status: str
     facts_loaded: int
     rules_loaded: int
+    # Atoms projected from confirmed marketplace rows (D-15); 0 without a store.
+    projected_rows: int
     hyperon_version: str
     demo_today: str
 
@@ -27,6 +29,7 @@ def health(
         status="ok",
         facts_loaded=engine.facts_loaded,
         rules_loaded=engine.rules_loaded,
+        projected_rows=engine.projected_rows,
         hyperon_version=engine.hyperon_version,
         demo_today=settings.demo_today.isoformat(),
     )
