@@ -19,6 +19,10 @@ export function fakeMarketplace(overrides: Partial<MarketplaceApi> = {}): Market
     postCredential: unexpected("postCredential"),
     listProjects: unexpected("listProjects"),
     postProject: unexpected("postProject"),
+    getCandidate: unexpected("getCandidate"),
+    getPending: unexpected("getPending"),
+    confirm: unexpected("confirm"),
+    reject: unexpected("reject"),
     ...overrides,
   };
 }

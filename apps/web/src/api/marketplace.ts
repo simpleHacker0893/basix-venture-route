@@ -4,13 +4,20 @@
  * on the guarded prefixes only.
  */
 import {
+  AdminDecision,
   BuilderProfile,
+  Candidate,
   Credential,
+  PendingQueue,
   Project,
   RoleResponse,
+  type AdminDecision as AdminDecisionT,
   type BuilderProfile as BuilderProfileT,
+  type Candidate as CandidateT,
   type Credential as CredentialT,
   type CredentialInput,
+  type DecisionKind,
+  type PendingQueue as PendingQueueT,
   type ProfileInput,
   type Project as ProjectT,
   type ProjectInput,
@@ -34,6 +41,17 @@ export type MarketplaceApi = {
   listProjects(): Promise<ProjectT[]>;
   /** POST /api/me/projects → 201; `ApiNotFoundError` until the profile exists. */
   postProject(input: ProjectInput): Promise<ProjectT>;
+  /**
+   * GET /api/builders/{builderId} (founder or admin): the candidate view with only the shared
+   * contact keys. `ApiNotFoundError` for unconfirmed, unknown and seed builder ids.
+   */
+  getCandidate(builderId: string): Promise<CandidateT>;
+  /** GET /api/admin/pending (admin): pending accounts, credentials and projects. */
+  getPending(): Promise<PendingQueueT>;
+  /** POST /api/admin/confirm/{kind}/{id}: the engine reprojects in the same request (D-15). */
+  confirm(kind: DecisionKind, id: string): Promise<AdminDecisionT>;
+  /** POST /api/admin/reject/{kind}/{id}: the engine reprojects in the same request (D-15). */
+  reject(kind: DecisionKind, id: string): Promise<AdminDecisionT>;
 };
 
 const Credentials = z.array(Credential);
@@ -49,5 +67,9 @@ export function createMarketplaceApi(baseUrl: string, fetchLike: FetchLike, getT
     postCredential: (input) => request("/api/me/credentials", Credential, jsonPost(input)),
     listProjects: () => request("/api/me/projects", Projects),
     postProject: (input) => request("/api/me/projects", Project, jsonPost(input)),
+    getCandidate: (builderId) => request(`/api/builders/${encodeURIComponent(builderId)}`, Candidate),
+    getPending: () => request("/api/admin/pending", PendingQueue),
+    confirm: (kind, id) => request(`/api/admin/confirm/${kind}/${encodeURIComponent(id)}`, AdminDecision, { method: "POST" }),
+    reject: (kind, id) => request(`/api/admin/reject/${kind}/${encodeURIComponent(id)}`, AdminDecision, { method: "POST" }),
   };
 }

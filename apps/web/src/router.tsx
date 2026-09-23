@@ -9,6 +9,7 @@ import { RoleSelect } from "./features/auth/RoleSelect";
 import { SignInScreen } from "./features/auth/SignInScreen";
 import { AddProjectPage } from "./features/builder/AddProjectPage";
 import { ProfilePage } from "./features/builder/ProfilePage";
+import { CandidatePage } from "./features/candidate/CandidatePage";
 import { HandoffScreen } from "./features/handoff/HandoffScreen";
 import { LandingPage } from "./features/landing/LandingPage";
 import { RoutePage } from "./features/route/RoutePage";
@@ -46,6 +47,9 @@ export function AppRoutes() {
         <Route element={<RequireRole roles={["builder"]} />}>
           <Route path="profile" element={<ProfilePage />} />
           <Route path="profile/projects/new" element={<AddProjectPage />} />
+        </Route>
+        <Route element={<RequireRole roles={["founder", "admin"]} />}>
+          <Route path="builders/:builderId" element={<CandidatePage />} />
         </Route>
         <Route element={<RequireRole roles={["admin"]} />}>
           <Route path="admin" element={<AdminHome />} />
