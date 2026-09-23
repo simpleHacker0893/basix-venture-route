@@ -1,4 +1,5 @@
 import type { VentureBrief, VentureRoute } from "@venture-route/contracts";
+import { useState } from "react";
 import { Link } from "react-router";
 
 import { ApiBanner } from "../../components/ApiBanner";
@@ -11,6 +12,7 @@ import { ContextCards } from "./ContextCards";
 import { CostStrip } from "./CostStrip";
 import { EmptyTeam } from "./EmptyTeam";
 import { GapsPanel } from "./GapsPanel";
+import { WhyDrawer } from "../why/WhyDrawer";
 
 type RouteResultProps = Readonly<{
   brief: VentureBrief;
@@ -84,6 +86,7 @@ export function RouteResult({ brief, route, onPatch, onChangeBrief, onWhy }: Rou
 
 export function RouteResultPage() {
   const { state, setBrief, showView } = useRouting();
+  const [whyOpen, setWhyOpen] = useState(false);
   const response = state.lastResponse;
   if (!response || response.type !== "route") return null;
   return (
@@ -93,11 +96,13 @@ export function RouteResultPage() {
         brief={response.brief}
         route={response.route}
         onChangeBrief={() => showView("review")}
+        onWhy={() => setWhyOpen(true)}
         onPatch={(patch) => {
           setBrief({ ...response.brief, ...patch });
           showView("review");
         }}
       />
+      <WhyDrawer route={response.route} open={whyOpen} onOpenChange={setWhyOpen} />
     </section>
   );
 }
