@@ -12,7 +12,7 @@ type IntakePageProps = Readonly<{ initialMode?: "chat" | "form" }>;
 
 /** Screen 3: chat thread, scenario chips and the composer, with "Your brief so far" beside them. */
 export function IntakePage({ initialMode = "chat" }: IntakePageProps) {
-  const { state, loadScenarios, sendTurn, routeBrief, showView } = useRouting();
+  const { state, loadScenarios, sendTurn, routeBrief } = useRouting();
   const [mode, setMode] = useState<"chat" | "form">(initialMode);
 
   useEffect(() => {
@@ -53,7 +53,11 @@ export function IntakePage({ initialMode = "chat" }: IntakePageProps) {
           )}
         </div>
         <div className="col-span-12 lg:col-span-4">
-          <BriefPanel brief={state.currentBrief} onFindRoute={() => showView("review")} />
+          {/* Chat path: a complete brief is confirmed through POST /api/conversation. */}
+          <BriefPanel
+            brief={state.currentBrief}
+            onFindRoute={() => void sendTurn({ userMessage: "", currentBrief: state.currentBrief ?? null })}
+          />
         </div>
       </div>
     </section>

@@ -35,8 +35,10 @@ jobs:
       - run: uv run python scripts/export_offline_snapshot.py --check
 
   web:
-    name: web (typecheck, lint, test)
+    name: web (typecheck, lint, test, Playwright e2e)
     runs-on: ubuntu-latest
+    env:
+      LLM_PROVIDER: "null"
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
@@ -51,3 +53,18 @@ jobs:
       - run: pnpm -r typecheck
       - run: pnpm -r lint
       - run: pnpm -r test
+      # Playwright runs against vite preview with the engine on LLM_PROVIDER=null (PROMPTS §Sprint 002).
+      - uses: astral-sh/setup-uv@v6
+        with:
+          python-version: "3.12"
+          enable-cache: true
+      - run: uv sync --frozen
+        working-directory: services/engine
+      - run: pnpm -F web exec playwright install --with-deps chromium
+      - run: pnpm -F web e2e
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: playwright-report
+          path: apps/web/playwright-report
+          retention-days: 14
