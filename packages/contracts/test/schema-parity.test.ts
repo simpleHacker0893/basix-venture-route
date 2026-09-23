@@ -9,7 +9,17 @@
 import { describe, expect, it } from "vitest";
 import { z } from "zod";
 
-import { ChatResponse, ChatTurn, Gap, ReasoningPath, VentureBrief, VentureRoute } from "../src/index.js";
+import {
+  BuilderProfile,
+  ChatResponse,
+  ChatTurn,
+  Gap,
+  ProfileInput,
+  ReasoningPath,
+  RoleResponse,
+  VentureBrief,
+  VentureRoute,
+} from "../src/index.js";
 import exported from "../src/schema.json" with { type: "json" };
 
 type Json = { [key: string]: unknown };
@@ -53,6 +63,9 @@ const cases: [keyof typeof exported, z.ZodType][] = [
   ["ChatResponse", ChatResponse],
   ["ReasoningPath", ReasoningPath],
   ["Gap", Gap],
+  ["ProfileInput", ProfileInput],
+  ["BuilderProfile", BuilderProfile],
+  ["RoleResponse", RoleResponse],
 ];
 
 describe("Zod JSON Schema equals Pydantic JSON Schema", () => {

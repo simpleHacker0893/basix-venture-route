@@ -1,4 +1,241 @@
 {
+  "BuilderProfile": {
+    "additionalProperties": false,
+    "properties": {
+      "accountStatus": {
+        "enum": [
+          "pending",
+          "confirmed",
+          "rejected"
+        ],
+        "type": "string"
+      },
+      "availability": {
+        "items": {
+          "additionalProperties": false,
+          "properties": {
+            "end": {
+              "format": "date",
+              "type": "string"
+            },
+            "start": {
+              "format": "date",
+              "type": "string"
+            }
+          },
+          "required": [
+            "end",
+            "start"
+          ],
+          "type": "object"
+        },
+        "type": "array"
+      },
+      "builderId": {
+        "type": "string"
+      },
+      "cohortId": {
+        "anyOf": [
+          {
+            "maxLength": 40,
+            "minLength": 1,
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null
+      },
+      "confirmed": {
+        "type": "boolean"
+      },
+      "contact": {
+        "additionalProperties": false,
+        "properties": {
+          "email": {
+            "type": "string"
+          },
+          "linkedin": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null
+          },
+          "phone": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null
+          }
+        },
+        "required": [
+          "email"
+        ],
+        "type": "object"
+      },
+      "dayRate": {
+        "exclusiveMinimum": 0,
+        "maximum": 9007199254740991,
+        "type": "integer"
+      },
+      "demoData": {
+        "default": true,
+        "type": "boolean"
+      },
+      "displayName": {
+        "maxLength": 80,
+        "minLength": 1,
+        "type": "string"
+      },
+      "headline": {
+        "maxLength": 200,
+        "type": "string"
+      },
+      "location": {
+        "maxLength": 100,
+        "minLength": 1,
+        "type": "string"
+      },
+      "modes": {
+        "additionalProperties": false,
+        "properties": {
+          "hybrid": {
+            "type": "boolean"
+          },
+          "onSite": {
+            "type": "boolean"
+          },
+          "remote": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "hybrid",
+          "onSite",
+          "remote"
+        ],
+        "type": "object"
+      },
+      "selfDescribedSkills": {
+        "items": {
+          "enum": [
+            "python",
+            "ai-metta",
+            "ui-ux",
+            "frontend",
+            "backend",
+            "domain-research",
+            "mobile",
+            "rust",
+            "data"
+          ],
+          "type": "string"
+        },
+        "type": "array"
+      },
+      "sharing": {
+        "additionalProperties": false,
+        "properties": {
+          "email": {
+            "type": "boolean"
+          },
+          "linkedin": {
+            "type": "boolean"
+          },
+          "phone": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "email",
+          "linkedin",
+          "phone"
+        ],
+        "type": "object"
+      },
+      "skills": {
+        "items": {
+          "additionalProperties": false,
+          "properties": {
+            "evidence": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "credential",
+                    "project",
+                    "both"
+                  ],
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null
+            },
+            "id": {
+              "enum": [
+                "python",
+                "ai-metta",
+                "ui-ux",
+                "frontend",
+                "backend",
+                "domain-research",
+                "mobile",
+                "rust",
+                "data"
+              ],
+              "type": "string"
+            },
+            "name": {
+              "type": "string"
+            },
+            "status": {
+              "enum": [
+                "verified",
+                "self-described"
+              ],
+              "type": "string"
+            }
+          },
+          "required": [
+            "id",
+            "name",
+            "status"
+          ],
+          "type": "object"
+        },
+        "type": "array"
+      }
+    },
+    "required": [
+      "accountStatus",
+      "availability",
+      "builderId",
+      "confirmed",
+      "contact",
+      "dayRate",
+      "displayName",
+      "headline",
+      "location",
+      "modes",
+      "selfDescribedSkills",
+      "sharing",
+      "skills"
+    ],
+    "type": "object"
+  },
   "ChatResponse": {
     "oneOf": [
       {
@@ -979,6 +1216,158 @@
     ],
     "type": "object"
   },
+  "ProfileInput": {
+    "additionalProperties": false,
+    "properties": {
+      "availability": {
+        "items": {
+          "additionalProperties": false,
+          "properties": {
+            "end": {
+              "format": "date",
+              "type": "string"
+            },
+            "start": {
+              "format": "date",
+              "type": "string"
+            }
+          },
+          "required": [
+            "end",
+            "start"
+          ],
+          "type": "object"
+        },
+        "maxItems": 12,
+        "type": "array"
+      },
+      "cohortId": {
+        "anyOf": [
+          {
+            "maxLength": 40,
+            "minLength": 1,
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null
+      },
+      "dayRate": {
+        "exclusiveMinimum": 0,
+        "maximum": 9007199254740991,
+        "type": "integer"
+      },
+      "displayName": {
+        "maxLength": 80,
+        "minLength": 1,
+        "type": "string"
+      },
+      "headline": {
+        "default": "",
+        "maxLength": 200,
+        "type": "string"
+      },
+      "linkedin": {
+        "anyOf": [
+          {
+            "maxLength": 100,
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null
+      },
+      "location": {
+        "maxLength": 100,
+        "minLength": 1,
+        "type": "string"
+      },
+      "modes": {
+        "additionalProperties": false,
+        "properties": {
+          "hybrid": {
+            "type": "boolean"
+          },
+          "onSite": {
+            "type": "boolean"
+          },
+          "remote": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "hybrid",
+          "onSite",
+          "remote"
+        ],
+        "type": "object"
+      },
+      "phone": {
+        "anyOf": [
+          {
+            "maxLength": 100,
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null
+      },
+      "selfDescribedSkills": {
+        "items": {
+          "enum": [
+            "python",
+            "ai-metta",
+            "ui-ux",
+            "frontend",
+            "backend",
+            "domain-research",
+            "mobile",
+            "rust",
+            "data"
+          ],
+          "type": "string"
+        },
+        "maxItems": 9,
+        "type": "array"
+      },
+      "sharing": {
+        "additionalProperties": false,
+        "properties": {
+          "email": {
+            "type": "boolean"
+          },
+          "linkedin": {
+            "type": "boolean"
+          },
+          "phone": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "email",
+          "linkedin",
+          "phone"
+        ],
+        "type": "object"
+      }
+    },
+    "required": [
+      "availability",
+      "dayRate",
+      "displayName",
+      "location",
+      "modes",
+      "selfDescribedSkills",
+      "sharing"
+    ],
+    "type": "object"
+  },
   "ReasoningPath": {
     "properties": {
       "conclusion": {
@@ -1019,6 +1408,30 @@
       "conclusion",
       "facts",
       "rule"
+    ],
+    "type": "object"
+  },
+  "RoleResponse": {
+    "additionalProperties": false,
+    "properties": {
+      "clerkId": {
+        "type": "string"
+      },
+      "confirmed": {
+        "type": "boolean"
+      },
+      "role": {
+        "enum": [
+          "founder",
+          "builder"
+        ],
+        "type": "string"
+      }
+    },
+    "required": [
+      "clerkId",
+      "confirmed",
+      "role"
     ],
     "type": "object"
   },

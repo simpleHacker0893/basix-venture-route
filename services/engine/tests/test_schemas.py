@@ -28,12 +28,15 @@ def test_committed_schema_json_equals_fresh_pydantic_export() -> None:
     assert SCHEMA_PATH.read_text(encoding="utf-8") == render(export())
 
 
-def test_export_covers_the_six_shared_contracts() -> None:
+def test_export_covers_the_shared_contracts() -> None:
     assert sorted(json.loads(render(export()))) == [
+        "BuilderProfile",
         "ChatResponse",
         "ChatTurn",
         "Gap",
+        "ProfileInput",
         "ReasoningPath",
+        "RoleResponse",
         "VentureBrief",
         "VentureRoute",
     ]

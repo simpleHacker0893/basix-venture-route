@@ -153,6 +153,14 @@ class MettaRouteEngine:
                 )
         return frozenset(found)
 
+    def cohorts(self) -> frozenset[str]:
+        """Every cohort id in the space, from `cohort-of` facts. A profile may only name one of
+        these (Sprint 003 spec #35 §Marketplace API)."""
+        found: set[str] = set()
+        for witness in self._query("!(match &self (cohort-of $c $u) ($c))"):
+            found.update(expect_symbol(part, "cohort id") for part in expect_list(witness, "ids"))
+        return frozenset(found)
+
     def gaps(self, brief: VentureBrief) -> list[Gap]:
         """skill / availability / mode / location gaps per required skill from `route-gap`."""
         with self._brief_in_space(brief):
