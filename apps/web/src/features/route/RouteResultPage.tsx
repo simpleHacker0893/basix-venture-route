@@ -74,7 +74,7 @@ export function RouteResult({ brief, route, onPatch, onChangeBrief, onWhy }: Rou
         )}
       </section>
 
-      <ContextCards route={route} vertical={brief.vertical} />
+      <ContextCards route={route} />
 
       <p className="text-[13px] text-ink-3">
         Rules applied:{" "}
