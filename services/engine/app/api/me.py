@@ -61,13 +61,18 @@ async def choose_role(
     row = user.db_user
     if row is not None and row.role is not None:
         raise HTTPException(status_code=409, detail="role already chosen")
+    # Clerk first, commit after: if the publicMetadata write fails nothing is stored locally, so
+    # the retry is not a 409 and the session claim can never lag a committed role.
+    try:
+        await clerk_admin.set_role(user.clerk_id, choice.role)
+    except Exception as exc:
+        raise HTTPException(status_code=502, detail="clerk backend unavailable") from exc
     if row is None:
         # The webhook has not created the row yet; it will overwrite this email when it arrives.
         row = User(clerk_id=user.clerk_id, email=f"{user.clerk_id}@{PENDING_EMAIL_DOMAIN}")
         session.add(row)
     row.role = choice.role
     await session.commit()
-    await clerk_admin.set_role(user.clerk_id, choice.role)
     return RoleResponse(
         clerk_id=row.clerk_id, role=choice.role, confirmed=row.status == "confirmed"
     )

@@ -282,3 +282,26 @@ async def test_slug_never_takes_a_seed_vocabulary_symbol(
 
     assert response.status_code == 200
     assert response.json()["builderId"] == expected
+
+
+async def test_role_is_not_stored_when_the_clerk_write_fails_and_a_retry_succeeds(
+    api: AsyncClient, bearer: Bearer, clerk_admin: FakeClerkAdmin
+) -> None:
+    """Clerk is written before the local commit: a Backend API failure answers 502 and stores no
+    role, so the retry is not a 409 and the session claim never lags the row (review, #40)."""
+    original = clerk_admin.set_role
+
+    async def failing(clerk_id: str, role: str) -> None:
+        raise RuntimeError("clerk backend unavailable")
+
+    clerk_admin.set_role = failing  # type: ignore[method-assign]
+    headers = bearer(sub="user_flaky", role=None)
+
+    failed = await api.post("/api/me/role", json={"role": "builder"}, headers=headers)
+    clerk_admin.set_role = original  # type: ignore[method-assign]
+    retried = await api.post("/api/me/role", json={"role": "builder"}, headers=headers)
+
+    assert failed.status_code == 502
+    assert retried.status_code == 200
+    assert retried.json()["role"] == "builder"
+    assert clerk_admin.role_writes == [("user_flaky", "builder")]
