@@ -241,13 +241,46 @@ async def projects_for(session: AsyncSession, profile_id: UUID) -> list[tuple[Pr
 
 
 async def add_credential(
-    session: AsyncSession, profile_id: UUID, *, title: str, issuer: str, skill_id: str
+    session: AsyncSession,
+    profile_id: UUID,
+    *,
+    title: str,
+    issuer: str,
+    skill_id: str | None,
+    issued_on: date | None = None,
+    credential_url: str | None = None,
 ) -> Credential:
-    row = Credential(profile_id=profile_id, title=title, issuer=issuer, skill_id=skill_id)
+    """A pending credential; `skill_id=None` is a certification that proves no graph skill."""
+    row = Credential(
+        profile_id=profile_id,
+        title=title,
+        issuer=issuer,
+        skill_id=skill_id,
+        issued_on=issued_on,
+        credential_url=credential_url,
+    )
     session.add(row)
     await session.commit()
     await session.refresh(row)
     return row
+
+
+async def own_project(
+    session: AsyncSession, profile_id: UUID, project_id: UUID
+) -> tuple[Project, list[str]] | None:
+    """One of the builder's own projects with its skill ids; None for anyone else's (a 404)."""
+    project = (
+        await session.exec(
+            select(Project).where(Project.id == project_id, Project.profile_id == profile_id)
+        )
+    ).first()
+    if project is None:
+        return None
+    links = (
+        await session.exec(select(ProjectSkill).where(ProjectSkill.project_id == project.id))
+    ).all()
+    order = {skill: index for index, skill in enumerate(await skill_names(session))}
+    return project, sorted((link.skill_id for link in links), key=lambda s: order.get(s, 99))
 
 
 async def add_project(
