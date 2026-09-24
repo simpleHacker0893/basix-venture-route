@@ -2,7 +2,7 @@
 
 Same rules as `planning/PROMPTS.md`: **you** type the slash commands (`/to-spec`, `/to-tickets`, `/implement`, `/code-review` are `disable-model-invocation`), tests are written only at the seams fixed below (D-19), and every part ends with `verification-before-completion` evidence, not a claim. One Claude Code session per part. The generic P1–P5 wording lives in `planning/PROMPTS.md` §"The five prompts you paste in every sprint"; this file gives the Sprint 005 lines in full so nothing has to be assembled by hand.
 
-Windows (D-42, `planning/TIMELINE.md`): **Part A** Fri 25 Sep 08:00 → Sun 27 Sep 20:00 EAT, branch `sprint/005a-showcase`, PR "Sprint 005a: Showcase". **Part B** Mon 28 Sep 08:00 → Wed 30 Sep 20:00, freeze 22:00, branch `sprint/005-demo-hardening`, PR "Sprint 005: Demo hardening". Demo Thu 1 Oct.
+Windows (D-42, `planning/TIMELINE.md`): **Part A** Fri 25 Sep 08:00 → Sun 27 Sep 20:00 EAT, branch `sprint/005a-showcase`, PR "Sprint 005a: Showcase and Chloe". **Part B** Mon 28 Sep 08:00 → Wed 30 Sep 20:00, freeze 22:00, branch `sprint/005-demo-hardening`, PR "Sprint 005: Demo hardening". Demo Thu 1 Oct.
 
 ---
 
@@ -87,7 +87,7 @@ Spec sources: the spec issue, planning/sprints/005-demo-hardening/acceptance.md 
 
 ### P5 — Evidence and PR
 ```text
-Use the verification-before-completion skill. Run every command in planning/sprints/005-demo-hardening/acceptance.md §Part A from a clean checkout of this branch and paste the real output under each line, ✅ or ❌; the Clerk suite runs locally against the compose db with the engine on 8001 and the preview on 4175, never concurrently with another Clerk run. Update planning/STATE.md (Sprint 005a shipped, what did not, what Part B inherits). Push the branch and open one pull request titled "Sprint 005a: Showcase" against master whose body follows planning/AUTOMATION.md §Completion report (all eight items). Keep it a draft if any Must line is ❌. Give me the PR URL.
+Use the verification-before-completion skill. Run every command in planning/sprints/005-demo-hardening/acceptance.md §Part A from a clean checkout of this branch and paste the real output under each line, ✅ or ❌; the Clerk suite runs locally against the compose db with the engine on 8001 and the preview on 4175, never concurrently with another Clerk run. Update planning/STATE.md (Sprint 005a shipped, what did not, what Part B inherits). Push the branch and open one pull request titled "Sprint 005a: Showcase and Chloe" against master whose body follows planning/AUTOMATION.md §Completion report (all eight items). Keep it a draft if any Must line is ❌. Give me the PR URL.
 ```
 
 ---
@@ -100,7 +100,7 @@ Skills: `gem-devops-guidelines`, `docker-build-strategies`, `docker-compose-patt
 
 ### P1b — Orient
 ```text
-You are the Builder for Venture Route, Sprint 005 Part B — Demo hardening. Fetch origin. If PR "Sprint 005a: Showcase" is not merged and it is before Mon 28 Sep 08:00, tell me and stop; after that time proceed under the Part A scope floor in blueprint.md. Create sprint/005-demo-hardening from origin/master. Read AGENTS.md, CLAUDE.md, CONTEXT.md, planning/STATE.md, planning/DECISIONS.md (D-27, D-28, D-42 to D-49), planning/TIMELINE.md, then planning/sprints/005-demo-hardening/requirements.md §Part B, blueprint.md §Part B and acceptance.md §Part B. Reply with the goal in two lines, the Part B seams, whether the Hyperon init in Docker (c025647) is on master, the current reprojection timing on Neon dev (#51), and every open question (Q-08, Q-19). No code. Wait for me.
+You are the Builder for Venture Route, Sprint 005 Part B — Demo hardening. Fetch origin. If PR "Sprint 005a: Showcase and Chloe" is not merged and it is before Mon 28 Sep 08:00, tell me and stop; after that time proceed under the Part A scope floor in blueprint.md. Create sprint/005-demo-hardening from origin/master. Read AGENTS.md, CLAUDE.md, CONTEXT.md, planning/STATE.md, planning/DECISIONS.md (D-27, D-28, D-42 to D-49), planning/TIMELINE.md, then planning/sprints/005-demo-hardening/requirements.md §Part B, blueprint.md §Part B and acceptance.md §Part B. Reply with the goal in two lines, the Part B seams, whether the Hyperon init in Docker (c025647) is on master, the current reprojection timing on Neon dev (#51), and every open question (Q-08, Q-19). No code. Wait for me.
 ```
 
 ### P2b — Slice
