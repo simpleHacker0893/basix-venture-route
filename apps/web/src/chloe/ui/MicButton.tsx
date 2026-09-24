@@ -1,4 +1,4 @@
-import { useRef, type KeyboardEvent } from "react";
+import { useEffect, useRef, type KeyboardEvent } from "react";
 
 import { useRouting } from "../../state/routingContext";
 import { useChloe } from "../useChloe";
@@ -17,8 +17,19 @@ export function MicButton({ onDictation }: MicButtonProps) {
   const chloe = useChloe();
   const { state } = useRouting();
   const held = useRef(false);
+  // The release awaits the recogniser, so read the conductor's latest submitTranscript (busy,
+  // confirmation state) at that moment rather than the one captured when the press rendered.
+  const submitRef = useRef(chloe?.submitTranscript);
+  useEffect(() => {
+    submitRef.current = chloe?.submitTranscript;
+  });
+  // A disabled button never receives pointerup: forget the press so the next one is not ignored.
+  useEffect(() => {
+    if (state.busy) held.current = false;
+  }, [state.busy]);
+
   if (!chloe || !chloe.enabled) return null;
-  const { pressMic, releaseMic, submitTranscript } = chloe;
+  const { pressMic, releaseMic } = chloe;
 
   function press() {
     if (held.current) return;
@@ -30,7 +41,8 @@ export function MicButton({ onDictation }: MicButtonProps) {
     if (!held.current) return;
     held.current = false;
     const text = await releaseMic();
-    if ((await submitTranscript(text)) === "dictation") onDictation(text.trim());
+    const submit = submitRef.current;
+    if (submit && (await submit(text)) === "dictation") onDictation(text.trim());
   }
 
   function onKeyDown(event: KeyboardEvent) {

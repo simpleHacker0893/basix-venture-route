@@ -140,7 +140,8 @@ export function VoiceSessionProvider({ voice, children }: Props) {
       const done = run.finally(() => {
         queued.current -= 1;
       });
-      queueTail.current = done;
+      // A speak() that throws must not stall the queue: the next line waits on a settled tail.
+      queueTail.current = done.catch(() => undefined);
       return done;
     },
     [voice],

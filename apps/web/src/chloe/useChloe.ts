@@ -64,14 +64,24 @@ export function useChloeConductor({ formMode }: { formMode: boolean }): ChloeVal
   const { enabled, greeted, assistantOffline, lastError, say, stopSpeaking, abortMic, enable, disable, markGreeted, markAssistantOffline } =
     voice;
 
-  // A reducer, not useState: the read-back effect opens the confirmation and a validation-error
-  // closes it, both as reactions to engine responses (blueprint §Conductor).
-  const [awaitingConfirmation, setAwaitingConfirmation] = useReducer((_: boolean, next: boolean) => next, false);
+  /** The key of the brief as it stands when complete, else null. */
+  const completeKey = currentBrief !== null && missingFields(currentBrief).length === 0 ? JSON.stringify(currentBrief) : null;
+
+  // The brief key the read-back asked "Shall I find your route?" about, or null once answered or
+  // cancelled. A reducer rather than useState because the reaction effect below opens and closes
+  // it in response to store changes, which `react-hooks/set-state-in-effect` rejects for a
+  // useState setter. The confirmation is open only while that exact complete brief is on the
+  // intake chat view with voice on, so a brief edit or a missing field closes it by derivation.
+  const [askedKey, setAskedKey] = useReducer((_: string | null, next: string | null) => next, null);
+  const awaitingConfirmation = enabled && view === "intake" && !formMode && askedKey !== null && askedKey === completeKey;
   const [emptyRelease, setEmptyRelease] = useState(false);
 
+  // The "once" guards start from the store as it is when /route mounts: RoutingProvider and the
+  // voice session outlive ChloeProvider, so coming back to /route must not repeat the last
+  // response or re-ask the read-back for the same brief.
   const seen = useRef<Seen>({ view, formMode, busy, lastResponse });
-  const spokenForResponse = useRef<ChatResponse | null>(null);
-  const confirmedBriefKey = useRef<string | null>(null);
+  const spokenForResponse = useRef<ChatResponse | null>(lastResponse);
+  const confirmedBriefKey = useRef<string | null>(completeKey);
   const spokenUnreachable = useRef<string | null>(null);
   const spokenError = useRef<unknown>(null);
   /** Set while Chloe's own "yes" post starts, so its request-started does not cut her reply. */
@@ -80,7 +90,7 @@ export function useChloeConductor({ formMode }: { formMode: boolean }): ChloeVal
   const utter = useCallback(
     (text: string) => {
       noteChloe(text);
-      void say(text);
+      say(text).catch(() => undefined);
     },
     [noteChloe, say],
   );
@@ -100,6 +110,8 @@ export function useChloeConductor({ formMode }: { formMode: boolean }): ChloeVal
     } else if (userViewChange || requestStarted) {
       stopSpeaking();
       abortMic();
+      // Anything that silences Chloe also closes her question: a later "yes" is a founder turn.
+      setAskedKey(null);
     }
 
     if (unreachable === null) {
@@ -122,26 +134,21 @@ export function useChloeConductor({ formMode }: { formMode: boolean }): ChloeVal
           utter(questionFor(lastResponse.missingFields[0]!));
         }
       } else if (lastResponse.type === "route") {
-        speakRoute(lastResponse.route).forEach(utter);
+        // Only on the result screen: turning voice on at intake after a route must not read it.
+        if (view === "result") speakRoute(lastResponse.route).forEach(utter);
       } else {
-        setAwaitingConfirmation(false);
+        setAskedKey(null);
         utter(validationSpoken(lastResponse.message));
       }
     }
 
-    if (
-      view === "intake" &&
-      !formMode &&
-      currentBrief !== null &&
-      missingFields(currentBrief).length === 0 &&
-      lastResponse?.type !== "route"
-    ) {
-      const key = JSON.stringify(currentBrief);
-      if (key !== confirmedBriefKey.current) {
-        confirmedBriefKey.current = key;
+    if (view === "intake" && !formMode && currentBrief !== null && completeKey !== null && lastResponse?.type !== "route") {
+      if (completeKey !== confirmedBriefKey.current) {
+        confirmedBriefKey.current = completeKey;
+        // readBack's precondition holds: completeKey is non-null only when nothing is missing.
         utter(readBack(currentBrief));
         utter(CONFIRM_PROMPT);
-        setAwaitingConfirmation(true);
+        setAskedKey(completeKey);
       }
     }
   }, [
@@ -151,6 +158,7 @@ export function useChloeConductor({ formMode }: { formMode: boolean }): ChloeVal
     busy,
     lastResponse,
     currentBrief,
+    completeKey,
     unreachable,
     assistantOffline,
     stopSpeaking,
@@ -179,6 +187,7 @@ export function useChloeConductor({ formMode }: { formMode: boolean }): ChloeVal
 
   const toggleVoice = useCallback(() => {
     if (enabled) {
+      setAskedKey(null);
       disable();
       return;
     }
@@ -200,6 +209,8 @@ export function useChloeConductor({ formMode }: { formMode: boolean }): ChloeVal
       if (busy) return "held";
       const transcript = text.trim();
       if (!transcript) {
+        // A recogniser failure (not-allowed, network, …) was already shown and spoken once.
+        if (lastError !== null && lastError.code !== "no-speech" && lastError.code !== "aborted") return "empty";
         setEmptyRelease(true);
         utter(MIC_ERRORS["no-speech"]);
         return "empty";
@@ -207,7 +218,7 @@ export function useChloeConductor({ formMode }: { formMode: boolean }): ChloeVal
       if (awaitingConfirmation) {
         const answer = matchConfirm(transcript);
         if (answer === "yes") {
-          setAwaitingConfirmation(false);
+          setAskedKey(null);
           utter(CONFIRM_YES_REPLY);
           chloePosting.current = true;
           // Exactly the "Find my route" post: no founder turn, the current brief as it stands.
@@ -215,7 +226,7 @@ export function useChloeConductor({ formMode }: { formMode: boolean }): ChloeVal
           return "sent";
         }
         if (answer === "no") {
-          setAwaitingConfirmation(false);
+          setAskedKey(null);
           utter(CONFIRM_NO_REPLY);
           return "held";
         }
@@ -224,7 +235,7 @@ export function useChloeConductor({ formMode }: { formMode: boolean }): ChloeVal
       await sendTurn({ userMessage: transcript, currentBrief: currentBrief ?? null });
       return "sent";
     },
-    [busy, awaitingConfirmation, assistantOffline, currentBrief, sendTurn, utter],
+    [busy, lastError, awaitingConfirmation, assistantOffline, currentBrief, sendTurn, utter],
   );
 
   const micError: VoiceErrorCode | null = emptyRelease

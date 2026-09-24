@@ -9,7 +9,7 @@ import type { ChatResponse } from "@venture-route/contracts";
 import { act, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { useState } from "react";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 import { FORM_FALLBACK_HINT } from "../src/chloe/engineHints";
 import {
@@ -63,6 +63,13 @@ async function holdAndSay(user: ReturnType<typeof userEvent.setup>, voice: FakeV
   await user.pointer({ keys: "[MouseLeft>]", target: mic });
   if (text !== null) act(() => voice.transcribe(text));
   await user.pointer({ keys: "[/MouseLeft]", target: mic });
+}
+
+/** Leave /route through the footer, then come back through the top nav. */
+async function leaveAndReturn(user: ReturnType<typeof userEvent.setup>) {
+  await user.click(screen.getAllByRole("link", { name: /privacy/i })[0]!);
+  await waitFor(() => expect(screen.queryByTestId("mic-button")).not.toBeInTheDocument());
+  await user.click(screen.getByRole("link", { name: "Route my venture" }));
 }
 
 async function openScenarioInChat(user: ReturnType<typeof userEvent.setup>, chip: string) {
@@ -122,7 +129,7 @@ describe("Chloe on /route", () => {
     await waitFor(() => expect(voice.spoken).toContain(CONFIRM_PROMPT));
     const readBack = voice.spoken.find((line) => line.startsWith("Here's your brief so far."));
     expect(readBack).toContain("USD 400 / day");
-    expect(CONFIRM_PROMPT).toContain("Shall I find your route?");
+    expect(voice.spoken.some((line) => line.startsWith("Shall I find your route?"))).toBe(true);
     expect(screen.getByText(CAPTION)).toBeInTheDocument();
 
     await holdAndSay(user, voice, "yes");
@@ -331,5 +338,133 @@ describe("Chloe on /route", () => {
 
     await provider!.speak("Budget USD 400 / day.");
     expect(said).toEqual(["Budget USD 400 a day."]);
+  });
+  it("leaving /route and coming back repeats nothing: no new spoken lines, no new chloe-turns", async () => {
+    const voice = createFakeVoiceProvider();
+    const user = userEvent.setup();
+    renderApp("/route", engineFetch(), { voice });
+
+    await openScenarioInChat(user, "Health pilot");
+    await enableVoice(user);
+    await waitFor(() => expect(voice.spoken).toContain(CONFIRM_PROMPT));
+    const afterReadBack = voice.spoken.length;
+    const turnsAfterReadBack = screen.getAllByTestId("chloe-turn").length;
+
+    await leaveAndReturn(user);
+    await screen.findByRole("heading", { level: 1, name: "Describe your MVP" });
+    await new Promise((resolve) => setTimeout(resolve, 20));
+    expect(voice.spoken).toHaveLength(afterReadBack);
+    expect(screen.getAllByTestId("chloe-turn")).toHaveLength(turnsAfterReadBack);
+
+    await user.click(screen.getByRole("button", { name: "Find my route" }));
+    expect(await screen.findByTestId("status-badge")).toHaveTextContent("Feasible");
+    await waitFor(() => expect(voice.spoken).toContain("Your route is Feasible."));
+    const afterRoute = voice.spoken.length;
+
+    await leaveAndReturn(user);
+    expect(await screen.findByTestId("status-badge")).toHaveTextContent("Feasible");
+    await new Promise((resolve) => setTimeout(resolve, 20));
+    expect(voice.spoken).toHaveLength(afterRoute);
+  });
+
+  it("a typed founder turn after the read-back closes the confirmation: a later yes is a founder turn", async () => {
+    const voice = createFakeVoiceProvider();
+    const user = userEvent.setup();
+    let calls = 0;
+    const engine = recordingFetch(
+      engineFetch({
+        // The first typed turn fails (engine unreachable) so the brief and the intake view stay.
+        conversation: (init) => {
+          calls += 1;
+          if (calls === 1) return jsonResponse({ detail: "down" }, 503);
+          return engineFetch()("http://engine.test/api/conversation", init) as unknown as Response;
+        },
+      }),
+    );
+    renderApp("/route", engine.fetchLike, { voice });
+    await openScenarioInChat(user, "Health pilot");
+    await enableVoice(user);
+    await waitFor(() => expect(voice.spoken).toContain(CONFIRM_PROMPT));
+
+    await user.type(screen.getByLabelText("Reply to assistant"), "make it five builders");
+    await user.click(screen.getByRole("button", { name: "Send" }));
+    await screen.findByRole("alert");
+
+    await holdAndSay(user, voice, "yes");
+
+    await waitFor(() => expect(engine.conversationPosts()).toHaveLength(2));
+    expect(engine.conversationPosts().map((p) => (p.body as { userMessage: string }).userMessage)).toEqual([
+      "make it five builders",
+      "yes",
+    ]);
+  });
+
+  it("a user-driven view change after the read-back closes the confirmation: a later yes is not the empty post", async () => {
+    const voice = createFakeVoiceProvider();
+    const user = userEvent.setup();
+    const engine = recordingFetch();
+    renderApp("/route", engine.fetchLike, { voice });
+    await openScenarioInChat(user, "Health pilot");
+    await enableVoice(user);
+    await waitFor(() => expect(voice.spoken).toContain(CONFIRM_PROMPT));
+
+    await user.click(screen.getByRole("button", { name: "Use the form instead" }));
+    await user.click(await screen.findByRole("button", { name: "Back to chat" }));
+    await holdAndSay(user, voice, "yes");
+
+    await waitFor(() => expect(engine.conversationPosts()).toHaveLength(1));
+    expect((engine.conversationPosts()[0]!.body as { userMessage: string }).userMessage).toBe("yes");
+  });
+
+  it("leaving /route cancels speech and aborts listening", async () => {
+    const fake = createFakeVoiceProvider({ holdUtterances: true });
+    const cancelSpeech = vi.fn(() => fake.cancelSpeech());
+    const abortListening = vi.fn(() => fake.abortListening());
+    const voice = { ...fake, cancelSpeech, abortListening };
+    const user = userEvent.setup();
+    renderApp("/route", engineFetch(), { voice });
+    await enableVoice(user);
+    expect(fake.spoken).toEqual([GREETING]);
+    cancelSpeech.mockClear();
+    abortListening.mockClear();
+
+    await user.click(screen.getAllByRole("link", { name: /privacy/i })[0]!);
+
+    await waitFor(() => expect(screen.queryByRole("switch", { name: "Voice: Chloe" })).not.toBeInTheDocument());
+    expect(cancelSpeech).toHaveBeenCalled();
+    expect(abortListening).toHaveBeenCalled();
+  });
+
+  it("a not-allowed recogniser error shows the mic error line, is spoken once, and sends nothing", async () => {
+    const voice = createFakeVoiceProvider();
+    const user = userEvent.setup();
+    const engine = recordingFetch();
+    renderApp("/route", engine.fetchLike, { voice });
+    await enableVoice(user);
+
+    const mic = await screen.findByTestId("mic-button");
+    await user.pointer({ keys: "[MouseLeft>]", target: mic });
+    act(() => voice.fail("not-allowed"));
+    await user.pointer({ keys: "[/MouseLeft]", target: mic });
+
+    expect(await screen.findByTestId("mic-error")).toHaveTextContent(MIC_ERRORS["not-allowed"]);
+    await new Promise((resolve) => setTimeout(resolve, 20));
+    expect(voice.spoken.filter((line) => line === MIC_ERRORS["not-allowed"])).toHaveLength(1);
+    expect(voice.spoken).not.toContain(MIC_ERRORS["no-speech"]);
+    expect(engine.conversationPosts()).toHaveLength(0);
+  });
+  it("turning voice on at intake after a route does not read the route", async () => {
+    const voice = createFakeVoiceProvider();
+    const user = userEvent.setup();
+    renderApp("/route", engineFetch(), { voice });
+    await user.click(await screen.findByRole("button", { name: "Load scenario: Health pilot" }));
+    await user.click(await screen.findByRole("button", { name: "Find my route" }));
+    expect(await screen.findByTestId("status-badge")).toHaveTextContent("Feasible");
+    await user.click(screen.getByRole("button", { name: "Change brief" }));
+    await user.click(await screen.findByRole("button", { name: "Back to chat" }));
+
+    await enableVoice(user);
+    await new Promise((resolve) => setTimeout(resolve, 20));
+    expect(voice.spoken).toEqual([GREETING]);
   });
 });
