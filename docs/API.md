@@ -400,6 +400,42 @@ followed by `suggestedSkills`, shown as "Self-described"; `certifications` lists
 credentials only (with or without a vocabulary skill). A hidden, unknown or malformed id answers
 `404 {"detail": "showcase entry not found"}`, the same body in every case.
 
+### Demo seed (#107)
+
+The gallery opens with seeded content: **Venture Route** itself plus two fictional entries,
+*Crop price SMS digest* and *School fees tracker*. The content lives in
+`services/engine/seed/showcase_demo.json`, which the Operator edits (titles, descriptions,
+`liveUrl`/`demoUrl`/`pitchDeckUrl`, and `pitchVideoUrl`, a YouTube link or `null`); links obey
+the same rules as the builder endpoints. Entry order is gallery order.
+
+Venture Route's owner is Njuguna Njenga (`demo-njuguna-njenga`), the Operator and the one real
+person in the file (`"operator": true`). The seed invents no facts about him (AGENTS.md rule 10):
+his profile carries his name and the Venture Route entry only, with example.org placeholder
+links and no video, and no cohort, certification, skill chips, headline or profile links; the
+file is refused if any of those are added. The fictional builders each get a cohort, 2–3
+`skillSet` chips and one confirmed skill-less certification.
+
+`scripts/seed_showcase_demo.py` writes the rows (all `demoData: true`): per entry a confirmed
+seed builder with a `demo-` builder id, a `seed_demo_<slug>` placeholder Clerk id no Clerk session
+can carry, a `.invalid` email, no availability and never `mobile`; a confirmed, showcased
+project; and the `confirmations` rows (account, project, showcase, and credential where there is
+one) signed by the seed admin `seed_basix_admin`, who cannot sign in. Location
+`Schema placeholder`, day rate 1 and remote mode are schema placeholders, not claims: the store
+requires them, the Showcase never shows them and no route reads them. Row ids are fixed uuid5
+values, so re-running updates in place and changes nothing. It reprojects once and exits non-zero
+on any error. The five demo scenarios route identically before and after (spec #86 Testing 7).
+
+`docker compose up` runs it after `alembic upgrade head` (the one-shot `seed` service); by hand:
+`cd services/engine && uv run python scripts/seed_showcase_demo.py [--file <json>]`. Operational
+notes:
+
+- Removing an entry from the JSON does not delete its rows; delete them by hand or reset the db.
+- Seed confirmations appear in the admin Decided list. A Reverse there is undone by the next
+  `docker compose up`, which re-confirms every seed row.
+- If a non-seed account already holds a seed Clerk id, email or `demo-` builder id, the seed
+  aborts with nothing written and exits non-zero; the engine service, which waits for the seed to
+  succeed, then does not start until the clash is removed.
+
 ## Requests: `/api/requests` (Sprint 004)
 
 A request is a founder's published brief: the exact `VentureBrief` the engine routed plus a
