@@ -47,6 +47,7 @@ router = APIRouter(prefix="/api/me")
 builder_router = APIRouter(dependencies=[Depends(require_role("builder"))])
 
 PENDING_EMAIL_DOMAIN = "pending.clerk.invalid"
+CANONICAL_YOUTUBE_WATCH = "https://www.youtube.com/watch?v="
 
 
 def _link(
@@ -61,7 +62,14 @@ def _link(
         raise RequestValidationError(
             [{"loc": ("body", error.field), "msg": error.message, "type": "value_error"}]
         ) from error
-    return value.strip() if rule is youtube_video_id else checked
+    return checked
+
+
+def _pitch_video(value: str | None) -> str | None:
+    """The canonical `https://www.youtube.com/watch?v=<id>` for any accepted YouTube form, so
+    two links to one video compare equal and a re-save does not reset the review (R19)."""
+    video_id = _link(value, "pitchVideoUrl", youtube_video_id)
+    return None if video_id is None else f"{CANONICAL_YOUTUBE_WATCH}{video_id}"
 
 
 def _engine(request: Request) -> MettaRouteEngine:
@@ -245,6 +253,19 @@ def _project_out(row: Project, skill_ids: list[str]) -> ProjectOut:
     )
 
 
+def _showcase_out(row: Project, skill_ids: list[str]) -> ShowcaseProject:
+    return ShowcaseProject(
+        **_project_out(row, skill_ids).model_dump(),
+        description=row.description,
+        live_url=row.live_url,
+        demo_url=row.demo_url,
+        pitch_video_url=row.pitch_video_url,
+        pitch_deck_url=row.pitch_deck_url,
+        showcased=row.showcased,
+        showcase_status=row.showcase_status,
+    )
+
+
 @builder_router.get("/credentials", response_model=list[CredentialOut])
 async def list_credentials(
     user: Annotated[CurrentUser, Depends(require_role("builder"))],
@@ -276,23 +297,24 @@ async def create_credential(
     return _credential_out(row)
 
 
-@builder_router.get("/projects", response_model=list[ProjectOut])
+@builder_router.get("/projects", response_model=list[ShowcaseProject])
 async def list_projects(
     user: Annotated[CurrentUser, Depends(require_role("builder"))],
     session: Annotated[AsyncSession, Depends(get_session)],
-) -> list[ProjectOut]:
+) -> list[ShowcaseProject]:
+    """The builder's own view: each project with its Showcase entry and status pill (R17)."""
     profile = await _own_profile(session, user)
     return [
-        _project_out(row, skills) for row, skills in await repo.projects_for(session, profile.id)
+        _showcase_out(row, skills) for row, skills in await repo.projects_for(session, profile.id)
     ]
 
 
-@builder_router.post("/projects", response_model=ProjectOut, status_code=201)
+@builder_router.post("/projects", response_model=ShowcaseProject, status_code=201)
 async def create_project(
     body: ProjectInput,
     user: Annotated[CurrentUser, Depends(require_role("builder"))],
     session: Annotated[AsyncSession, Depends(get_session)],
-) -> ProjectOut:
+) -> ShowcaseProject:
     profile = await _own_profile(session, user)
     row = await repo.add_project(
         session,
@@ -303,23 +325,10 @@ async def create_project(
         completed_on=body.completed_on,
         skill_ids=body.skill_ids,
     )
-    return _project_out(row, list(dict.fromkeys(body.skill_ids)))
+    return _showcase_out(row, list(dict.fromkeys(body.skill_ids)))
 
 
 # -- PUT /api/me/projects/{id}/showcase: the builder's Showcase entry (spec #86, #94) -------------
-
-
-def _showcase_out(row: Project, skill_ids: list[str]) -> ShowcaseProject:
-    return ShowcaseProject(
-        **_project_out(row, skill_ids).model_dump(),
-        description=row.description,
-        live_url=row.live_url,
-        demo_url=row.demo_url,
-        pitch_video_url=row.pitch_video_url,
-        pitch_deck_url=row.pitch_deck_url,
-        showcased=row.showcased,
-        showcase_status=row.showcase_status,
-    )
 
 
 @builder_router.put("/projects/{project_id}/showcase", response_model=ShowcaseProject)
@@ -331,14 +340,15 @@ async def put_showcase(
 ) -> ShowcaseProject:
     """Owner only; anyone else's project, or no such project, answers 404 (never 403).
 
-    Status rule: identical values change nothing; otherwise `showcased=false` → `none` and
-    `showcased=true` → `pending`, and either way `showcase_confirmed_at` is cleared so only a
-    fresh admin decision can make the entry public again."""
+    Status rule: identical values change nothing, except that `showcased=true` on a `rejected`
+    entry is a resubmission (R18); otherwise `showcased=false` → `none` and `showcased=true` →
+    `pending`, and either way `showcase_confirmed_at` is cleared so only a fresh admin decision
+    can make the entry public again."""
     fields = {
         "description": body.description,
         "live_url": _link(body.live_url, "liveUrl"),
         "demo_url": _link(body.demo_url, "demoUrl"),
-        "pitch_video_url": _link(body.pitch_video_url, "pitchVideoUrl", youtube_video_id),
+        "pitch_video_url": _pitch_video(body.pitch_video_url),
         "pitch_deck_url": _link(body.pitch_deck_url, "pitchDeckUrl"),
         "showcased": body.showcased,
     }
@@ -351,7 +361,9 @@ async def put_showcase(
     if found is None:
         raise HTTPException(status_code=404, detail="project not found")
     row, skill_ids = found
-    if any(getattr(row, name) != value for name, value in fields.items()):
+    changed = any(getattr(row, name) != value for name, value in fields.items())
+    resubmitted = body.showcased and row.showcase_status == "rejected"
+    if changed or resubmitted:
         for name, value in fields.items():
             setattr(row, name, value)
         row.showcase_status = "pending" if body.showcased else "none"

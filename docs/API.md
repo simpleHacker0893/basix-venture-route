@@ -231,8 +231,14 @@ Role `builder`; `404 {"detail": "no profile yet"}` until the profile exists. Pro
 { "title": "Clinic triage intake flow", "vertical": "health", "licensable": true, "completedOn": "2026-08-30", "skillIds": ["python", "ui-ux"] }
 ```
 
-`Credential` and `Project` responses echo the input plus `id`, `status` and `demoData`. A project
-takes one to five skill ids and a seed vertical.
+`Credential` responses echo the input plus `id`, `status` and `demoData`. A project takes one to
+five skill ids and a seed vertical. Since Sprint 005a (#94) both `GET /api/me/projects` and the
+`201` of `POST /api/me/projects` answer the builder's own view, `ShowcaseProject`: the input plus
+`id`, `status`, `demoData` and the project's Showcase entry (`description`, `liveUrl`, `demoUrl`,
+`pitchVideoUrl`, `pitchDeckUrl`, `showcased`, `showcaseStatus`), so the profile page can show each
+project's status pill. A new project starts with `description: ""`, null links, `showcased: false`
+and `showcaseStatus: "none"`. `ShowcaseProject` is a superset of the older `Project` shape; a
+client that parses `Project` strictly must switch to `ShowcaseProject`.
 
 A credential may also carry `issuedOn` (a date) and `credentialUrl` (an `https://` link, same
 link rules as the Showcase, blank → `null`), and `skillId` is optional since Sprint 005a (#94):
@@ -262,11 +268,14 @@ confirmed). No token → `401`; a founder or admin token → `403`. Body `Showca
 Rules: `description` at most 1000 characters. Every link is optional, `https://` only, at most
 500 characters, no localhost, IP-literal or IDN-lookalike host; a blank link is stored as `null`
 and surrounding whitespace is trimmed. `pitchVideoUrl` must be a YouTube video link
-(`watch?v=`, `youtu.be/`, `shorts/` or `embed/`). A violation answers `422` whose `message`
+(`watch?v=`, `youtu.be/`, `shorts/` or `embed/`) and is stored and returned in one canonical
+form, `https://www.youtube.com/watch?v=<id>` (extra parameters such as `&t=`, `&list=` or `si=`
+are dropped), so two links to the same video compare equal. A violation answers `422` whose `message`
 starts with the field name, e.g. `pitchVideoUrl: must be a YouTube video link (…)`.
 
-Status rule: when every field equals what is stored, nothing changes and the current state is
-returned. Otherwise the fields are saved and `showcase_confirmed_at` is cleared; `showcased: true`
+Status rule: when every field (links compared after normalising) equals what is stored, nothing
+changes and the current state is returned, with one exception: `showcased: true` on a `rejected`
+entry is a resubmission and goes back to `pending` even if nothing else changed. Otherwise the fields are saved and `showcase_confirmed_at` is cleared; `showcased: true`
 sets `showcaseStatus: "pending"` (an admin must confirm the entry, again after any edit) and
 `showcased: false` sets `"none"`. The entry is public only when `showcased`, `showcaseStatus` is
 `confirmed`, the project is confirmed and the owner's account is confirmed.

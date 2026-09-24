@@ -422,3 +422,207 @@ async def test_invalid_skill_set_or_links_are_422_naming_the_field(
     assert response.status_code == 422
     assert response.json()["type"] == "validation-error"
     assert response.json()["message"].startswith(f"{field}")
+
+
+# -- fix round 1 (R17-R19): builder project list, resubmission, canonical pitch URL --------------
+
+
+async def test_builder_projects_list_reads_back_showcase_state(
+    api: AsyncClient, confirmed_builder: Actor
+) -> None:
+    headers = confirmed_builder.headers
+    assert (
+        await api.put(_url(confirmed_builder), json=showcase_edit(), headers=headers)
+    ).status_code == 200
+
+    listed = await api.get("/api/me/projects", headers=headers)
+
+    assert listed.status_code == 200
+    [item] = listed.json()
+    assert {
+        k: item[k]
+        for k in (
+            "id",
+            "description",
+            "liveUrl",
+            "demoUrl",
+            "pitchVideoUrl",
+            "pitchDeckUrl",
+            "showcased",
+            "showcaseStatus",
+            "status",
+        )
+    } == {
+        "id": confirmed_builder.ids["project"],
+        "description": "A field survey app for smallholder farmers.",
+        "liveUrl": "https://survey.example.com",
+        "demoUrl": "https://demo.example.com/survey",
+        "pitchVideoUrl": VIDEO,
+        "pitchDeckUrl": "https://slides.example.com/deck",
+        "showcased": True,
+        "showcaseStatus": "pending",
+        "status": "confirmed",
+    }
+
+
+async def test_a_new_project_answers_with_an_empty_showcase_entry(
+    api: AsyncClient, unconfirmed_builder: Actor
+) -> None:
+    created = await api.post(
+        "/api/me/projects",
+        json={
+            "title": "Clinic intake",
+            "vertical": "health",
+            "licensable": False,
+            "completedOn": "2026-08-01",
+            "skillIds": ["python"],
+        },
+        headers=unconfirmed_builder.headers,
+    )
+
+    assert created.status_code == 201
+    body = created.json()
+    assert {
+        k: body[k]
+        for k in (
+            "description",
+            "liveUrl",
+            "demoUrl",
+            "pitchVideoUrl",
+            "pitchDeckUrl",
+            "showcased",
+            "showcaseStatus",
+        )
+    } == {
+        "description": "",
+        "liveUrl": None,
+        "demoUrl": None,
+        "pitchVideoUrl": None,
+        "pitchDeckUrl": None,
+        "showcased": False,
+        "showcaseStatus": "none",
+    }
+
+
+async def test_showcasing_a_rejected_entry_again_is_a_resubmission(
+    api: AsyncClient, confirmed_builder: Actor, db_session: AsyncSession
+) -> None:
+    headers = confirmed_builder.headers
+    assert (
+        await api.put(_url(confirmed_builder), json=showcase_edit(), headers=headers)
+    ).status_code == 200
+    row = await _project(db_session, confirmed_builder)
+    row.showcase_status = "rejected"
+    row.showcase_confirmed_at = datetime(2026, 9, 20, 9, 0, tzinfo=UTC)
+    db_session.add(row)
+    await db_session.commit()
+
+    again = await api.put(_url(confirmed_builder), json=showcase_edit(), headers=headers)
+
+    assert again.status_code == 200
+    assert again.json()["showcaseStatus"] == "pending"
+    row = await _project(db_session, confirmed_builder)
+    assert (row.showcase_status, row.showcase_confirmed_at) == ("pending", None)
+
+
+async def test_pitch_video_is_stored_as_the_canonical_watch_url(
+    api: AsyncClient, confirmed_builder: Actor, db_session: AsyncSession
+) -> None:
+    headers = confirmed_builder.headers
+    first = await api.put(
+        _url(confirmed_builder),
+        json=showcase_edit(pitchVideoUrl="https://youtu.be/dQw4w9WgXcQ?si=abc123"),
+        headers=headers,
+    )
+    assert first.status_code == 200
+    assert first.json()["pitchVideoUrl"] == VIDEO
+    confirmed_at = await _mark_confirmed(db_session, confirmed_builder)
+
+    other_form = await api.put(
+        _url(confirmed_builder),
+        json=showcase_edit(
+            pitchVideoUrl="https://m.youtube.com/watch?v=dQw4w9WgXcQ&t=30s&list=PL123"
+        ),
+        headers=headers,
+    )
+
+    assert other_form.status_code == 200
+    assert other_form.json()["pitchVideoUrl"] == VIDEO
+    assert other_form.json()["showcaseStatus"] == "confirmed"
+    row = await _project(db_session, confirmed_builder)
+    assert (row.pitch_video_url, row.showcase_status, row.showcase_confirmed_at) == (
+        VIDEO,
+        "confirmed",
+        confirmed_at,
+    )
+
+
+@pytest.mark.parametrize(
+    "url",
+    [
+        "https://www.youtube.com/shorts/dQw4w9WgXcQ",
+        "https://www.youtube.com/embed/dQw4w9WgXcQ",
+        "https://www.youtube-nocookie.com/embed/dQw4w9WgXcQ",
+    ],
+)
+async def test_every_youtube_form_normalises_to_one_url(
+    api: AsyncClient, confirmed_builder: Actor, url: str
+) -> None:
+    response = await api.put(
+        _url(confirmed_builder),
+        json=showcase_edit(pitchVideoUrl=url),
+        headers=confirmed_builder.headers,
+    )
+
+    assert response.status_code == 200
+    assert response.json()["pitchVideoUrl"] == VIDEO
+
+
+async def test_linkedin_url_leaves_the_legacy_contact_and_toggle_alone(
+    api: AsyncClient, unconfirmed_builder: Actor, db_session: AsyncSession
+) -> None:
+    legacy = {
+        "linkedin": "linkedin.com/in/naomi-legacy",
+        "sharing": {"email": True, "phone": False, "linkedin": True},
+    }
+    seeded = await api.put(
+        "/api/me/profile", json=_profile(**legacy), headers=unconfirmed_builder.headers
+    )
+    assert seeded.status_code == 200
+
+    saved = await api.put(
+        "/api/me/profile",
+        json=_profile(**legacy, linkedinUrl="https://www.linkedin.com/in/naomi-chebet"),
+        headers=unconfirmed_builder.headers,
+    )
+
+    assert saved.status_code == 200
+    out = saved.json()
+    assert out["linkedinUrl"] == "https://www.linkedin.com/in/naomi-chebet"
+    assert (out["contact"]["linkedin"], out["sharing"]["linkedin"]) == (
+        "linkedin.com/in/naomi-legacy",
+        True,
+    )
+    row = await db_session.get(Profile, await _profile_id(db_session, unconfirmed_builder))
+    assert row is not None
+    await db_session.refresh(row)
+    assert (row.linkedin, row.share_linkedin, row.linkedin_url) == (
+        "linkedin.com/in/naomi-legacy",
+        True,
+        "https://www.linkedin.com/in/naomi-chebet",
+    )
+
+
+@pytest.mark.parametrize("blank", ["", "   "])
+async def test_a_blank_credential_url_is_stored_as_null(
+    api: AsyncClient, unconfirmed_builder: Actor, db_session: AsyncSession, blank: str
+) -> None:
+    body = {"title": "Cert", "issuer": "Issuer", "credentialUrl": blank}
+
+    created = await api.post("/api/me/credentials", json=body, headers=unconfirmed_builder.headers)
+
+    assert created.status_code == 201
+    assert created.json()["credentialUrl"] is None
+    row = await db_session.get(Credential, UUID(created.json()["id"]))
+    assert row is not None
+    assert row.credential_url is None
