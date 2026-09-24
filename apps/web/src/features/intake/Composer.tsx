@@ -2,6 +2,9 @@ import { useState, type FormEvent } from "react";
 
 import { Button } from "@/components/ui/button";
 
+import { MicButton } from "../../chloe/ui/MicButton";
+import { MicErrorLine } from "../../chloe/ui/VoiceCaptions";
+
 type ComposerProps = Readonly<{
   busy: boolean;
   onSend(text: string): void;
@@ -42,11 +45,15 @@ export function Composer({ busy, onSend, onUseForm }: ComposerProps) {
         />
         <div className="flex items-center justify-between border-t border-border pt-3">
           <span className="text-[13px] text-ink-3">Plain language: dates, budget, team roles.</span>
-          <Button type="submit" disabled={busy}>
-            {busy ? "Sending…" : "Send"}
-          </Button>
+          <div className="flex items-center gap-2">
+            <MicButton onDictation={setText} />
+            <Button type="submit" disabled={busy}>
+              {busy ? "Sending…" : "Send"}
+            </Button>
+          </div>
         </div>
       </form>
+      <MicErrorLine />
       <div className="px-1">
         <button
           type="button"

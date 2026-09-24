@@ -6,7 +6,7 @@
 import { OFFLINE_DEMO } from "../api/source";
 import { createFakeVoiceProvider, installWindowHook } from "./fakeVoiceProvider";
 import type { VoiceProvider } from "./provider";
-import { createWebSpeechProvider } from "./webSpeechProvider";
+import { createWebSpeechProvider, type WebSpeechProviderOptions } from "./webSpeechProvider";
 
 export type VoiceProviderSetting = "web" | "fake" | "off";
 
@@ -20,6 +20,8 @@ export function selectProvider(
   setting: VoiceProviderSetting = VOICE_PROVIDER,
   offlineDemo: boolean = OFFLINE_DEMO,
   win: Window = window,
+  /** Web provider only: the fake records display text untouched (ruling R10). */
+  webOptions: WebSpeechProviderOptions = {},
 ): VoiceProvider | null {
   if (offlineDemo || setting === "off") return null;
   if (setting === "fake") {
@@ -29,10 +31,14 @@ export function selectProvider(
     installWindowHook(provider, win);
     return provider;
   }
-  return createWebSpeechProvider(win);
+  return createWebSpeechProvider(win, webOptions);
 }
 
-/** The one call site App.tsx makes when no test double is injected. */
-export function createVoiceProvider(): VoiceProvider | null {
-  return selectProvider();
+/**
+ * The one call site App.tsx makes when no test double is injected. App passes Chloe's
+ * `spokenForm` as the web provider's `transform`, so display text becomes spoken text only at
+ * the real speech boundary (#97, ruling R10).
+ */
+export function createVoiceProvider(webOptions: WebSpeechProviderOptions = {}): VoiceProvider | null {
+  return selectProvider(VOICE_PROVIDER, OFFLINE_DEMO, window, webOptions);
 }

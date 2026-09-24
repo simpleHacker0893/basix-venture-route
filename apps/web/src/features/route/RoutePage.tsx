@@ -1,6 +1,7 @@
 import { useEffect } from "react";
 import { useSearchParams } from "react-router";
 
+import { ChloeProvider } from "../../chloe/ChloeProvider";
 import { clearStash, readStash } from "../../lib/publishStash";
 import { useRouting } from "../../state/routingContext";
 import { IntakePage } from "../intake/IntakePage";
@@ -33,5 +34,9 @@ export function RoutePage() {
   ) : (
     <IntakePage />
   );
-  return <div className="mx-auto w-full max-w-[1200px] px-6 py-12">{page}</div>;
+  return (
+    <ChloeProvider>
+      <div className="mx-auto w-full max-w-[1200px] px-6 py-12">{page}</div>
+    </ChloeProvider>
+  );
 }

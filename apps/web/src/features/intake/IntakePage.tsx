@@ -2,6 +2,7 @@ import { VentureBrief } from "@venture-route/contracts";
 import { useEffect } from "react";
 import { useSearchParams } from "react-router";
 
+import { VoiceToggle } from "../../chloe/ui/VoiceToggle";
 import { ApiBanner } from "../../components/ApiBanner";
 import { toBriefInput } from "../../lib/brief";
 import { useRouting } from "../../state/routingContext";
@@ -37,9 +38,12 @@ export function IntakePage() {
       <ApiBanner />
       <div className="grid grid-cols-12 items-start gap-6">
         <div className="col-span-12 flex flex-col gap-8 lg:col-span-8">
-          <div className="border-b border-border pb-6">
-            <h1 className="font-display text-[36px] font-medium leading-tight">Describe your MVP</h1>
-            <p className="text-ink-2">Plain language is fine. We will ask for anything missing.</p>
+          <div className="flex flex-wrap items-start justify-between gap-4 border-b border-border pb-6">
+            <div>
+              <h1 className="font-display text-[36px] font-medium leading-tight">Describe your MVP</h1>
+              <p className="text-ink-2">Plain language is fine. We will ask for anything missing.</p>
+            </div>
+            <VoiceToggle />
           </div>
           {mode === "form" ? (
             <BriefEditor
