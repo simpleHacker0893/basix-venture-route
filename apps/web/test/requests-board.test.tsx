@@ -137,6 +137,10 @@ const profile: BuilderProfile = {
   skills: [{ id: "mobile", name: "Mobile", status: "verified", evidence: "both" }],
   accountStatus: "confirmed",
   confirmed: true,
+  skillSet: [],
+  suggestedSkills: [],
+  githubUrl: null,
+  linkedinUrl: null,
   demoData: true,
 };
 

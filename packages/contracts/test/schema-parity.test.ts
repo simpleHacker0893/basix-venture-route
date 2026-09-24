@@ -35,6 +35,13 @@ import {
   Request,
   RequestCreate,
   RoleResponse,
+  ShowcaseCard,
+  ShowcaseDetail,
+  ShowcaseEdit,
+  ShowcasePage,
+  ShowcaseProject,
+  SkillSuggestRequest,
+  SkillSuggestions,
   VentureBrief,
   VentureRoute,
 } from "../src/index.js";
@@ -103,6 +110,14 @@ const cases: [keyof typeof exported, z.ZodType][] = [
   ["Booking", Booking],
   ["Eligibility", Eligibility],
   ["Dashboard", Dashboard],
+  // Sprint 005a (#86): showcase and skill suggestion contracts.
+  ["ShowcaseCard", ShowcaseCard],
+  ["ShowcaseDetail", ShowcaseDetail],
+  ["ShowcaseEdit", ShowcaseEdit],
+  ["ShowcasePage", ShowcasePage],
+  ["ShowcaseProject", ShowcaseProject],
+  ["SkillSuggestRequest", SkillSuggestRequest],
+  ["SkillSuggestions", SkillSuggestions],
 ];
 
 describe("Zod JSON Schema equals Pydantic JSON Schema", () => {

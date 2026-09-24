@@ -41,6 +41,13 @@ from app.marketplace.schemas import (  # noqa: E402
     RequestCreate,
     RequestOut,
     RoleResponse,
+    ShowcaseCard,
+    ShowcaseDetail,
+    ShowcaseEdit,
+    ShowcasePage,
+    ShowcaseProject,
+    SkillSuggestions,
+    SkillSuggestRequest,
 )
 from app.models.brief import VentureBrief  # noqa: E402
 from app.models.chat import ChatResponse, ChatTurn  # noqa: E402
@@ -126,6 +133,14 @@ def export() -> Json:
         "Booking": model(BookingOut),
         "Eligibility": model(Eligibility),
         "Dashboard": model(Dashboard),
+        # Sprint 005a (spec #86): showcase and skill suggestion contracts.
+        "ShowcaseCard": model(ShowcaseCard),
+        "ShowcaseDetail": model(ShowcaseDetail),
+        "ShowcaseEdit": model(ShowcaseEdit),
+        "ShowcasePage": model(ShowcasePage),
+        "ShowcaseProject": model(ShowcaseProject),
+        "SkillSuggestRequest": model(SkillSuggestRequest),
+        "SkillSuggestions": model(SkillSuggestions),
     }
 
 

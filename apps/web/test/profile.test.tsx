@@ -53,6 +53,10 @@ function profile(overrides: Partial<BuilderProfile> = {}): BuilderProfile {
     ],
     accountStatus: "pending",
     confirmed: false,
+    skillSet: [],
+    suggestedSkills: [],
+    githubUrl: null,
+    linkedinUrl: null,
     demoData: true,
     ...overrides,
   };

@@ -55,6 +55,14 @@ def test_export_covers_the_shared_contracts() -> None:
         "Request",
         "RequestCreate",
         "RoleResponse",
+        # Sprint 005a showcase and skill suggestion contracts (spec #86).
+        "ShowcaseCard",
+        "ShowcaseDetail",
+        "ShowcaseEdit",
+        "ShowcasePage",
+        "ShowcaseProject",
+        "SkillSuggestRequest",
+        "SkillSuggestions",
         "VentureBrief",
         "VentureRoute",
     ]
