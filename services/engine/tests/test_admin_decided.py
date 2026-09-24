@@ -39,7 +39,7 @@ async def test_decided_list_is_empty_while_everything_is_pending(
 ) -> None:
     body = await _decided(api, admin)
 
-    assert body == {"accounts": [], "credentials": [], "projects": []}
+    assert body == {"accounts": [], "credentials": [], "projects": [], "showcase": []}
 
 
 async def test_decided_list_shows_confirmed_and_rejected_rows_with_the_last_decision(
@@ -66,7 +66,7 @@ async def test_decided_list_shows_confirmed_and_rejected_rows_with_the_last_deci
             assert row["demoData"] is True
             assert _offset_aware(row["decidedAt"]) >= _offset_aware(row["submittedAt"])
     pending = (await api.get("/api/admin/pending", headers=admin.headers)).json()
-    assert pending == {"accounts": [], "credentials": [], "projects": []}
+    assert pending == {"accounts": [], "credentials": [], "projects": [], "showcase": []}
 
 
 async def test_decided_list_keeps_pending_rows_and_admin_accounts_out(

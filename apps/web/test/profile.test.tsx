@@ -142,7 +142,16 @@ describe("/profile", () => {
       ...noRows,
       postCredential: async (input) => {
         posted.push(input);
-        return { id: "cred-1", ...input, status: "pending", demoData: true };
+        return {
+          id: "cred-1",
+          ...input,
+          // The server always returns a fully-populated row; unset optional fields on the
+          // request come back null, never absent (W0 integration fix).
+          issuedOn: input.issuedOn ?? null,
+          credentialUrl: input.credentialUrl ?? null,
+          status: "pending",
+          demoData: true,
+        };
       },
     });
 
