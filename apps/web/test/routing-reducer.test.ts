@@ -64,6 +64,21 @@ function routed(from: RoutingState = initialRoutingState): RoutingState {
   return routingReducer(started, { type: "response-received", response: { type: "route", brief, route, message: "" } });
 }
 
+describe("chloe-said", () => {
+  it("appends a chloe turn and changes nothing else", () => {
+    let state = routingReducer(initialRoutingState, { type: "scenarios-loaded", scenarios: [brief] });
+    state = routingReducer(state, { type: "founder-said", text: "I need a mobile app" });
+
+    const next = routingReducer(state, { type: "chloe-said", text: "What is the working title?" });
+
+    expect(next.turns).toEqual([
+      { role: "founder", text: "I need a mobile app" },
+      { role: "chloe", text: "What is the working title?" },
+    ]);
+    expect(next).toEqual({ ...state, turns: next.turns });
+  });
+});
+
 describe("hydrated", () => {
   it("yields the same state as a completed route call and selects the result view", () => {
     const state = routingReducer(initialRoutingState, { type: "hydrated", brief, route });
