@@ -14,7 +14,7 @@ import { expect, test, type APIResponse, type Page } from "@playwright/test";
 
 import { routeScenario } from "../helpers";
 import { readState } from "./env";
-import { engineGet, expectRoleClaim, sessionToken, signInAs } from "./helpers";
+import { engineGet, expectRoleClaim, sessionToken, signInAs, signOut } from "./helpers";
 
 test.describe.configure({ mode: "serial" });
 
@@ -64,6 +64,8 @@ test("admin confirms the builder's account and mobile credential", async ({ page
   const account = (await (await engineGet(page, "/api/admin/pending", builderToken)).json()) as unknown;
   expect(account).toMatchObject({ detail: "role admin required" });
 
+  // One page, two roles: Clerk refuses a second sign-in on a live session.
+  await signOut(page);
   await signInAs(page, "admin");
   const adminToken = await expectRoleClaim(page, "/api/admin/pending");
   const pending = (await (await engineGet(page, "/api/admin/pending", adminToken)).json()) as {

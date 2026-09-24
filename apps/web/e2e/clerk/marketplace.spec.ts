@@ -46,7 +46,8 @@ test("builder creates a profile with availability, a mobile credential and a lic
   await form.getByRole("checkbox", { name: "Mobile" }).check({ force: true });
   await page.getByRole("button", { name: /September 22nd, 2026/ }).first().click();
   await page.getByRole("button", { name: /October 20th, 2026/ }).first().click();
-  await expect(form.getByText("Selected window:")).toContainText("2026-09-22");
+  // The window renders beside the "Selected window:" span in the display format (`22 Sep – 20 Oct 2026`).
+  await expect(form).toContainText("22 Sep – 20 Oct 2026");
   await form.getByRole("button", { name: "Save profile" }).click();
   await expect(page.getByText("Profile saved.")).toBeVisible();
   await expect(page.getByText("Pending BASIX confirmation")).toBeVisible();
