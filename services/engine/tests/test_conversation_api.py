@@ -39,6 +39,9 @@ class OutageAdapter:
     def explain_route(self, route: VentureRoute) -> str:
         raise LlmUnavailable("simulated 5xx")
 
+    def suggest_skills(self, text: str) -> list[str]:
+        raise LlmUnavailable("simulated outage")
+
 
 @pytest.fixture
 def outage_client() -> Iterator[TestClient]:

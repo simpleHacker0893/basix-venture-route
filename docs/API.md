@@ -221,6 +221,32 @@ Role `builder`; `404 {"detail": "no profile yet"}` until the profile exists. Pro
 `Credential` and `Project` responses echo the input plus `id`, `status` and `demoData`. A project
 takes one to five skill ids and a seed vertical.
 
+### POST /api/me/skills/suggest (Sprint 005a, D-50)
+
+Role `builder` (no token `401`, another role `403`). Pasted résumé text in, skill chips out:
+
+```json
+{ "resumeText": "Five years building Python backends and UI/UX design for clinics…" }
+```
+
+`resumeText` is 50–20,000 characters (otherwise `422` naming `resumeText`, never quoting it).
+The text goes to Claude Haiku 4.5 (`claude-haiku-4-5`) through `app/llm` with a strict output
+schema, a 10-second timeout and no retries. It is never stored, never logged and never echoed.
+
+```json
+{ "available": true,
+  "suggestions": [{ "label": "UI/UX design", "skillId": "ui-ux" },
+                  { "label": "Figma", "skillId": null }] }
+```
+
+A label matching one of the nine skills (by display name or id, ignoring case and punctuation)
+carries that `skillId` and the vocabulary display name; any other label is free text, trimmed,
+at most 40 characters (longer ones are dropped). Duplicates are dropped case-insensitively; at
+most 20 suggestions. With no model configured (null adapter, no `ANTHROPIC_API_KEY`), a timeout
+or any provider error the answer is `200 { "available": false, "suggestions": [] }`, never a
+5xx. Suggestions are display-only: the builder accepts them one at a time into
+`suggestedSkills` on the profile; nothing here reaches routing.
+
 ## Founder: GET /api/builders/{builderId}
 
 Role `founder` or `admin`. A confirmed builder as a founder sees them (`Candidate`):
