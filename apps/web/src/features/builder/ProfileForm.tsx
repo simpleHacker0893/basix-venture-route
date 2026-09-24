@@ -321,22 +321,31 @@ export function ProfileForm({ profile, onSave }: ProfileFormProps) {
               id="profile-skill-set"
               label="Skill set"
               value={draft.skillSet}
-              max={SKILL_SET_LIMIT - draft.suggestedSkills.length}
+              otherValues={draft.suggestedSkills}
+              max={SKILL_SET_LIMIT}
               onChange={(skillSet) => patch({ skillSet })}
               errors={errors}
               errorField="skillSet"
             />
             <ResumeSuggestions
+              currentSkills={[...draft.skillSet, ...draft.suggestedSkills]}
+              max={SKILL_SET_LIMIT}
               onAccept={(label) => {
                 const combined = [...draft.skillSet, ...draft.suggestedSkills];
                 const exists = combined.some((skill) => skill.toLowerCase() === label.toLowerCase());
-                if (exists || combined.length >= SKILL_SET_LIMIT) return;
+                if (exists || combined.length >= SKILL_SET_LIMIT) return false;
                 patch({ suggestedSkills: [...draft.suggestedSkills, label] });
+                return true;
               }}
             />
             {draft.suggestedSkills.length > 0 ? (
               <div className="flex flex-col gap-2">
-                <span className={labelClass}>Self-described</span>
+                <div className="flex items-center gap-2">
+                  <span className={labelClass}>Suggested skills</span>
+                  <span className="inline-flex h-5 items-center rounded-pill border border-border-strong bg-surface-strong px-2 text-[11px] text-ink-3">
+                    Self-described
+                  </span>
+                </div>
                 <ul aria-label="Suggested skills" className="flex flex-wrap gap-2">
                   {draft.suggestedSkills.map((skill) => (
                     <li
@@ -355,6 +364,7 @@ export function ProfileForm({ profile, onSave }: ProfileFormProps) {
                     </li>
                   ))}
                 </ul>
+                <span className={helpClass}>Save your profile to keep these.</span>
               </div>
             ) : null}
             <FieldError field="suggestedSkills" errors={errors} />

@@ -63,10 +63,12 @@ export function ProjectsCard({ projects, hasProfile, onSaveShowcase }: ProjectsC
                   <DemoDataPill />
                   <button
                     type="button"
+                    aria-expanded={expanded === project.id}
+                    aria-controls={`showcase-editor-${project.id}`}
                     onClick={() => setExpanded((current) => (current === project.id ? null : project.id))}
                     className="text-[13px] text-ink-2 underline-offset-4 hover:text-accent-green hover:underline"
                   >
-                    {expanded === project.id ? "Close" : "Edit showcase"}
+                    Edit showcase
                   </button>
                 </div>
               </div>

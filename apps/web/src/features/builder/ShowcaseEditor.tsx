@@ -84,6 +84,7 @@ export function ShowcaseEditor({ project, onSave }: ShowcaseEditorProps) {
 
   return (
     <form
+      id={`showcase-editor-${project.id}`}
       aria-label={`Showcase details for ${project.title}`}
       onSubmit={(e) => void submit(e)}
       noValidate

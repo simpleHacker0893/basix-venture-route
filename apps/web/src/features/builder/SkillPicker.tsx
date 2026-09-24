@@ -16,23 +16,42 @@ type SkillPickerProps = Readonly<{
   id: string;
   label: string;
   value: readonly string[];
+  /**
+   * The other free-text list sharing the same combined limit (spec #86, D-40, D-52): the engine
+   * rejects a label already present in either `skillSet` or `suggestedSkills`, case-insensitively
+   * (`schemas.py` combined-uniqueness check), so this picker must too — never just against
+   * `value` — or a chip that is valid here still 422s on save.
+   */
+  otherValues?: readonly string[];
   onChange(next: string[]): void;
+  /** The combined cap across `value` and `otherValues` (20, D-40), not just this list's length. */
   max?: number;
   errors?: Record<string, string>;
   errorField?: string;
 }>;
 
-export function SkillPicker({ id, label, value, onChange, max = 20, errors = {}, errorField = "skillSet" }: SkillPickerProps) {
+export function SkillPicker({
+  id,
+  label,
+  value,
+  otherValues = [],
+  onChange,
+  max = 20,
+  errors = {},
+  errorField = "skillSet",
+}: SkillPickerProps) {
   const [draft, setDraft] = useState("");
   const listId = `${id}-suggestions`;
+  const combined = [...value, ...otherValues];
+  const atCap = combined.length >= max;
 
   function addSkill() {
     const trimmed = draft.trim();
-    if (!trimmed || value.length >= max) {
+    if (!trimmed || atCap) {
       setDraft("");
       return;
     }
-    const exists = value.some((skill) => skill.toLowerCase() === trimmed.toLowerCase());
+    const exists = combined.some((skill) => skill.toLowerCase() === trimmed.toLowerCase());
     if (!exists) onChange([...value, trimmed]);
     setDraft("");
   }
@@ -40,11 +59,16 @@ export function SkillPicker({ id, label, value, onChange, max = 20, errors = {},
   return (
     <div className="flex flex-col gap-2">
       <div className="flex items-center justify-between gap-3">
-        <label htmlFor={id} className={labelClass}>
-          {label}
-        </label>
+        <div className="flex items-center gap-2">
+          <label htmlFor={id} className={labelClass}>
+            {label}
+          </label>
+          <span className="inline-flex h-5 items-center rounded-pill border border-border-strong bg-surface-strong px-2 text-[11px] text-ink-3">
+            Self-described
+          </span>
+        </div>
         <span className="font-mono text-[11px] text-ink-3">
-          {value.length} / {max}
+          {combined.length} / {max}
         </span>
       </div>
       <span className={helpClass}>Self-described. Shown on your public Showcase profile; never counted as verified.</span>
@@ -71,7 +95,7 @@ export function SkillPicker({ id, label, value, onChange, max = 20, errors = {},
             <option key={skill} value={SKILL_LABELS[skill]} />
           ))}
         </datalist>
-        <Button type="button" variant="outline" size="sm" disabled={value.length >= max} onClick={addSkill}>
+        <Button type="button" variant="outline" size="sm" disabled={atCap} onClick={addSkill}>
           Add skill
         </Button>
       </div>
