@@ -26,7 +26,12 @@ import { dateRange } from "../../lib/format";
 import { PROFILE_FIELDS, splitFieldMessages } from "../../lib/validationError";
 import { EvidenceBadge } from "../route/Badges";
 import { errorMessage, helpClass, inputClass, labelClass, pillClass } from "./formStyles";
+import { ResumeSuggestions } from "./ResumeSuggestions";
+import { SkillPicker } from "./SkillPicker";
 import { Card, FieldError, Toggle } from "./StatusPill";
+
+/** Skill set + résumé suggestions combined, ≤20 entries of ≤40 characters (D-40, spec #86). */
+const SKILL_SET_LIMIT = 20;
 
 type ProfileFormProps = Readonly<{
   /** `null` before the first save (GET /api/me/profile answered 404): the form starts empty. */
@@ -48,6 +53,11 @@ type Draft = {
   /** Windows already added; the calendar selection below is appended on save. */
   windows: AvailabilityRange[];
   range: DateRange | undefined;
+  /** Sprint 005a (spec #86, D-52): free-text skill chips picked by hand vs. accepted from a résumé. */
+  skillSet: string[];
+  suggestedSkills: string[];
+  githubUrl: string;
+  linkedinUrl: string;
 };
 
 /** Cohort ids from services/engine/seed/facts.metta; the field stays free text (any ≤40-char id). */
@@ -73,6 +83,10 @@ function draftFrom(profile: BuilderProfile | null): Draft {
     sharing: profile?.sharing ?? { email: false, phone: false, linkedin: false },
     windows: profile?.availability ?? [],
     range: undefined,
+    skillSet: profile?.skillSet ?? [],
+    suggestedSkills: profile?.suggestedSkills ?? [],
+    githubUrl: profile?.githubUrl ?? "",
+    linkedinUrl: profile?.linkedinUrl ?? "",
   };
 }
 
@@ -94,6 +108,10 @@ function toInput(draft: Draft): unknown {
     linkedin: draft.linkedin.trim() || null,
     sharing: draft.sharing,
     availability: picked ? [...draft.windows, picked] : draft.windows,
+    skillSet: draft.skillSet,
+    suggestedSkills: draft.suggestedSkills,
+    githubUrl: draft.githubUrl.trim() || null,
+    linkedinUrl: draft.linkedinUrl.trim() || null,
   };
 }
 
@@ -297,6 +315,60 @@ export function ProfileForm({ profile, onSave }: ProfileFormProps) {
             </div>
             <FieldError field="selfDescribedSkills" errors={errors} />
           </fieldset>
+
+          <div className="flex flex-col gap-4 border-t border-border pt-4">
+            <SkillPicker
+              id="profile-skill-set"
+              label="Skill set"
+              value={draft.skillSet}
+              otherValues={draft.suggestedSkills}
+              max={SKILL_SET_LIMIT}
+              onChange={(skillSet) => patch({ skillSet })}
+              errors={errors}
+              errorField="skillSet"
+            />
+            <ResumeSuggestions
+              currentSkills={[...draft.skillSet, ...draft.suggestedSkills]}
+              max={SKILL_SET_LIMIT}
+              onAccept={(label) => {
+                const combined = [...draft.skillSet, ...draft.suggestedSkills];
+                const exists = combined.some((skill) => skill.toLowerCase() === label.toLowerCase());
+                if (exists || combined.length >= SKILL_SET_LIMIT) return false;
+                patch({ suggestedSkills: [...draft.suggestedSkills, label] });
+                return true;
+              }}
+            />
+            {draft.suggestedSkills.length > 0 ? (
+              <div className="flex flex-col gap-2">
+                <div className="flex items-center gap-2">
+                  <span className={labelClass}>Suggested skills</span>
+                  <span className="inline-flex h-5 items-center rounded-pill border border-border-strong bg-surface-strong px-2 text-[11px] text-ink-3">
+                    Self-described
+                  </span>
+                </div>
+                <ul aria-label="Suggested skills" className="flex flex-wrap gap-2">
+                  {draft.suggestedSkills.map((skill) => (
+                    <li
+                      key={skill}
+                      className="inline-flex h-8 items-center gap-2 rounded-pill border border-border-strong bg-surface-strong px-3 text-sm"
+                    >
+                      <span>{skill}</span>
+                      <button
+                        type="button"
+                        aria-label={`Remove ${skill}`}
+                        onClick={() => patch({ suggestedSkills: draft.suggestedSkills.filter((s) => s !== skill) })}
+                        className="text-ink-3 hover:text-danger"
+                      >
+                        ×
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+                <span className={helpClass}>Save your profile to keep these.</span>
+              </div>
+            ) : null}
+            <FieldError field="suggestedSkills" errors={errors} />
+          </div>
         </Card>
 
         <Card title="Availability" lead="Pick the windows founders can book you for and your day rate. The available-for-brief rule needs the window to overlap a brief by at least two days.">
@@ -434,6 +506,45 @@ export function ProfileForm({ profile, onSave }: ProfileFormProps) {
               </>
             ) : null}
           </dl>
+        </Card>
+
+        <Card title="Public profile links" lead="Shown on your Showcase profile even when contact sharing is off (spec #86 stories 27-28).">
+          <div className="flex flex-col gap-3">
+            <div className="flex flex-col gap-1">
+              <label htmlFor="profile-github-url" className={labelClass}>
+                GitHub profile
+              </label>
+              <input
+                id="profile-github-url"
+                autoComplete="url"
+                placeholder="https://github.com/…"
+                maxLength={500}
+                value={draft.githubUrl}
+                aria-invalid={invalid("githubUrl")}
+                aria-describedby={describedBy("githubUrl")}
+                onChange={(e) => patch({ githubUrl: e.target.value })}
+                className={inputClass}
+              />
+              <FieldError field="githubUrl" errors={errors} />
+            </div>
+            <div className="flex flex-col gap-1">
+              <label htmlFor="profile-linkedin-url" className={labelClass}>
+                LinkedIn profile
+              </label>
+              <input
+                id="profile-linkedin-url"
+                autoComplete="url"
+                placeholder="https://www.linkedin.com/in/…"
+                maxLength={500}
+                value={draft.linkedinUrl}
+                aria-invalid={invalid("linkedinUrl")}
+                aria-describedby={describedBy("linkedinUrl")}
+                onChange={(e) => patch({ linkedinUrl: e.target.value })}
+                className={inputClass}
+              />
+              <FieldError field="linkedinUrl" errors={errors} />
+            </div>
+          </div>
         </Card>
 
         <Card title="Contact sharing" lead="Founders only see what you switch on.">

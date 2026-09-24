@@ -81,7 +81,10 @@ export function useChloeConductor({ formMode }: { formMode: boolean }): ChloeVal
   // response or re-ask the read-back for the same brief.
   const seen = useRef<Seen>({ view, formMode, busy, lastResponse });
   const spokenForResponse = useRef<ChatResponse | null>(lastResponse);
-  const confirmedBriefKey = useRef<string | null>(completeKey);
+  // Seeded only when voice is already enabled at mount (ruling R21): a remount with voice off
+  // must not mark an already-complete brief as "confirmed" before it was ever read back, or
+  // turning voice on afterwards would silently skip the read-back.
+  const confirmedBriefKey = useRef<string | null>(enabled ? completeKey : null);
   const spokenUnreachable = useRef<string | null>(null);
   const spokenError = useRef<unknown>(null);
   /** Set while Chloe's own "yes" post starts, so its request-started does not cut her reply. */
