@@ -1,0 +1,86 @@
+{
+  "_comment": "Showcase demo seed (#107). Operator-editable: titles, descriptions and links. Every person except the Operator (Njuguna Njenga) is fictional; every row is demo data. Entry order is gallery order (the first entry shows first). Links must be https:// (no localhost or IP literals); pitchVideoUrl is a YouTube link or null. Builder ids must start with demo- and never change once seeded. Skills come from the nine-skill vocabulary and never include mobile. Run: uv run python scripts/seed_showcase_demo.py",
+  "entries": [
+    {
+      "key": "venture-route",
+      "title": "Venture Route",
+      "description": "Turns a founder's venture brief into a staffing route: the verified builders, partner and cohort fit, reusable IP and the gaps, each with the reasoning path MeTTa matched. Built for the Basix ecosystem.",
+      "vertical": "education",
+      "skills": ["ai-metta", "python", "frontend", "backend"],
+      "licensable": false,
+      "completedOn": "2026-09-22",
+      "liveUrl": "https://example.org/venture-route/live",
+      "demoUrl": "https://example.org/venture-route/demo",
+      "pitchDeckUrl": "https://example.org/venture-route/deck",
+      "pitchVideoUrl": null,
+      "owner": {
+        "builderId": "demo-njuguna-njenga",
+        "name": "Njuguna Njenga",
+        "headline": "Builder of Venture Route",
+        "cohort": "cohort-2025c",
+        "skillSet": ["MeTTa reasoning", "FastAPI", "React"],
+        "certification": {
+          "title": "Symbolic AI Foundations",
+          "issuer": "Lakeview Open Academy",
+          "issuedOn": "2026-03-14"
+        },
+        "githubUrl": null,
+        "linkedinUrl": null
+      }
+    },
+    {
+      "key": "crop-price-sms-digest",
+      "title": "Crop price SMS digest",
+      "description": "A daily SMS digest of market prices for maize, beans and tomatoes across county markets, so smallholder farmers know where to sell before they travel.",
+      "vertical": "agri",
+      "skills": ["data", "backend"],
+      "licensable": false,
+      "completedOn": "2026-07-30",
+      "liveUrl": "https://example.org/crop-price-digest/live",
+      "demoUrl": null,
+      "pitchDeckUrl": "https://example.org/crop-price-digest/deck",
+      "pitchVideoUrl": null,
+      "owner": {
+        "builderId": "demo-achieng-owino",
+        "name": "Achieng Owino",
+        "headline": "Data pipelines for farmers",
+        "cohort": "cohort-2026b",
+        "skillSet": ["SMS gateways", "PostgreSQL"],
+        "certification": {
+          "title": "Data Pipelines in Practice",
+          "issuer": "Riverbend Data School",
+          "issuedOn": "2026-02-02"
+        },
+        "githubUrl": null,
+        "linkedinUrl": null
+      }
+    },
+    {
+      "key": "school-fees-tracker",
+      "title": "School fees tracker",
+      "description": "Parents see what they owe and what they paid per term; bursars reconcile mobile money receipts against a class list in one screen. Licensable to school networks.",
+      "vertical": "education",
+      "skills": ["frontend", "ui-ux"],
+      "licensable": true,
+      "completedOn": "2026-06-18",
+      "liveUrl": null,
+      "demoUrl": "https://example.org/school-fees-tracker/demo",
+      "pitchDeckUrl": null,
+      "pitchVideoUrl": null,
+      "owner": {
+        "builderId": "demo-imani-kariuki",
+        "name": "Imani Kariuki",
+        "headline": "Interfaces for schools",
+        "cohort": "cohort-2026a",
+        "skillSet": ["Figma", "Accessibility", "Design systems"],
+        "certification": {
+          "title": "Inclusive Interface Design",
+          "issuer": "Hillcrest Design Institute",
+          "issuedOn": "2025-11-20"
+        },
+        "githubUrl": null,
+        "linkedinUrl": null
+      }
+    }
+  ]
+}

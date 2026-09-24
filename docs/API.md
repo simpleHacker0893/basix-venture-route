@@ -400,6 +400,25 @@ followed by `suggestedSkills`, shown as "Self-described"; `certifications` lists
 credentials only (with or without a vocabulary skill). A hidden, unknown or malformed id answers
 `404 {"detail": "showcase entry not found"}`, the same body in every case.
 
+### Demo seed (#107)
+
+The gallery opens with seeded content: **Venture Route** itself (owner Njuguna Njenga,
+`demo-njuguna-njenga`) plus two fictional entries, *Crop price SMS digest* and *School fees
+tracker*. The content lives in `services/engine/seed/showcase_demo.json`, which the Operator
+edits (titles, descriptions, `liveUrl`/`demoUrl`/`pitchDeckUrl`, and `pitchVideoUrl`, a YouTube
+link or `null`); links obey the same rules as the builder endpoints. Entry order is gallery order.
+
+`scripts/seed_showcase_demo.py` writes the rows (all `demoData: true`): per entry a confirmed
+seed builder with a `demo-` builder id, a `seed_demo_<slug>` placeholder Clerk id no Clerk session
+can carry, a `.invalid` email, 2–3 `skillSet` chips, one confirmed skill-less certification, no
+availability and never `mobile`; a confirmed, showcased project; and the `confirmations` rows
+(account, credential, project, showcase) signed by the seed admin `seed_basix_admin`, who cannot
+sign in. Row ids are fixed uuid5 values, so re-running updates in place and changes nothing; a
+real account already holding a seed id aborts the run with nothing written. It reprojects once and
+exits non-zero on any error. The five demo scenarios route identically before and after (spec
+#86 Testing 7). `docker compose up` runs it after `alembic upgrade head` (the `seed` service);
+by hand: `cd services/engine && uv run python scripts/seed_showcase_demo.py [--file <json>]`.
+
 ## Requests: `/api/requests` (Sprint 004)
 
 A request is a founder's published brief: the exact `VentureBrief` the engine routed plus a

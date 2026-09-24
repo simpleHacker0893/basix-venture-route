@@ -108,9 +108,10 @@ Point `DATABASE_URL` in `.env` at that database (`postgresql+asyncpg://postgres:
 
 ```bash
 cp .env.example .env
-docker compose up                    # db (postgres:18) then engine; run migrations once:
-docker compose run --rm engine alembic upgrade head
+docker compose up                    # db (postgres:18), then seed, then engine
 ```
+
+The one-shot `seed` service runs `alembic upgrade head` and then `scripts/seed_showcase_demo.py`, which writes the Showcase demo entries (Venture Route plus two fictional ones) from `services/engine/seed/showcase_demo.json`; edit that file to change titles or links. The seed is idempotent, touches only its own `demo_data` rows and never changes a route. The engine starts once the seed exits successfully. See `docs/API.md` §Demo seed.
 
 The engine image is `python:3.12-slim` with uv, a non-root user, the migrations, and a health check. The web app is served by Vite locally and by Vercel in deployment (D-27).
 
