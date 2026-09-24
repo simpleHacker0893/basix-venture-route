@@ -43,6 +43,7 @@ def test_export_covers_the_shared_contracts() -> None:
         "Credential",
         "CredentialInput",
         "Dashboard",
+        "DecidedQueue",
         "Ecosystem",
         "Eligibility",
         "Gap",

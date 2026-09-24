@@ -23,6 +23,7 @@ import {
   Credential,
   CredentialInput,
   Dashboard,
+  DecidedQueue,
   Eligibility,
   Ecosystem,
   Gap,
@@ -89,6 +90,7 @@ const cases: [keyof typeof exported, z.ZodType][] = [
   ["ProjectInput", ProjectInput],
   ["Project", Project],
   ["PendingQueue", PendingQueue],
+  ["DecidedQueue", DecidedQueue],
   ["AdminDecision", AdminDecision],
   ["Candidate", Candidate],
   // Sprint 004 (#54): requests, bids, bookings, eligibility, dashboard.

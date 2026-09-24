@@ -36,7 +36,7 @@ builds call `VITE_API_URL` directly and rely on the engine's `CORS_ORIGINS` allo
 | `/choose-role` | Founder / builder cards; posts `POST /api/me/role` once | signed in |
 | `/profile`, `/profile/projects/new` | Builder profile, availability, credentials, projects | role `builder` |
 | `/builders/:builderId` | Candidate profile with shared contact only | role `founder` or `admin` |
-| `/admin` | Confirmation queue with `projected_rows` after each decision | role `admin` |
+| `/admin` | Confirmation queue with `projected_rows` after each decision; the Decided tab lists confirmed and rejected rows with a Reverse action that posts the opposite decision (#49) | role `admin` |
 | `/requests` | Requests board with the engine's eligibility indicator and the Bid dialog (403 reason inline) | role `builder` |
 | `/dashboard` | Founder dashboard: SQL-backed counts, requests, bids received, upcoming bookings | role `founder` |
 | `/bookings/new`, `/bookings/:bookingId` | Propose an interview slot (Africa/Nairobi grid); booking status with accept, counter and confirm | role `founder` or `builder` |

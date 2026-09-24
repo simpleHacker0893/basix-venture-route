@@ -13,7 +13,7 @@ camelCase on the wire, dates are ISO date-only strings, money is integer USD per
 | Routing | `POST /api/route`, `POST /api/conversation`, `GET /api/scenarios`, `GET /api/ecosystem` | none |
 | Builder | `POST /api/me/role`; `GET`/`PUT /api/me/profile`; `GET`/`POST /api/me/credentials`; `GET`/`POST /api/me/projects` | Clerk session, role `builder` (`/role`: any session) |
 | Founder | `GET /api/builders/{builderId}` | Clerk session, role `founder` or `admin` |
-| Admin | `GET /api/admin/pending`; `POST /api/admin/confirm/{kind}/{id}`; `POST /api/admin/reject/{kind}/{id}` | Clerk session, role `admin` |
+| Admin | `GET /api/admin/pending`; `GET /api/admin/decided`; `POST /api/admin/confirm/{kind}/{id}`; `POST /api/admin/reject/{kind}/{id}` | Clerk session, role `admin` |
 | Webhook | `POST /api/webhooks/clerk` | Svix signature |
 | Dev only | `POST /internal/query` | `ENGINE_DEV_QUERY=1` |
 
@@ -453,6 +453,15 @@ Role `admin`. Admins are never user-chosen: the webhook assigns the role to emai
 pending founders and builders (`id`, `clerkId`, `email`, `role`, `builderId`, `displayName`,
 `cohortId`, `submittedAt`); credentials and projects carry their builder's slug and display name
 plus the row fields. Every row has `demoData: true`.
+
+### GET /api/admin/decided
+
+`DecidedQueue`: the same three lists with the rows an admin has already confirmed or rejected
+(spec #35 story 24, #49). Each row carries its pending counterpart's fields plus `status`
+(`confirmed` | `rejected`) and `decidedAt`, the timestamp of the latest `confirmations` row for
+that target (ISO date-time with offset), oldest decision first. Pending rows and admin accounts
+never appear. A mistaken decision is reversed by calling the opposite endpoint below; the `/admin`
+Decided tab's Reverse button does exactly that.
 
 ### POST /api/admin/confirm/{kind}/{id}, POST /api/admin/reject/{kind}/{id}
 
