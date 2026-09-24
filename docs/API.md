@@ -233,8 +233,9 @@ seed builder ids that have no account, answer `404 {"detail": "no confirmed buil
 
 A request is a founder's published brief: the exact `VentureBrief` the engine routed plus a
 `route` snapshot `{ "status", "totalDailyRate", "builderIds" }` of what the founder saw. The
-snapshot is display-only; every eligibility question is answered by the engine again, never read
-from it. Requests, bids and bookings never become atoms (D-15). Admins have no access this sprint.
+web posts what it holds (the routing store's brief and the last route, spec #52 §Web); the
+engine validates the brief again and the snapshot is display-only: every eligibility question
+is answered by the engine again, never read from it. Requests, bids and bookings never become atoms (D-15). Admins have no access this sprint.
 
 ### POST /api/requests
 
