@@ -11,7 +11,7 @@
  * number, latency, invented request ids, founder names and organisations, the info and warning
  * glyphs, and the attestation-ledger copy are left out; the request id shown is the brief's id.
  */
-import type { BuilderProfile, Request, Vertical } from "@venture-route/contracts";
+import type { Bid, BuilderProfile, Request, Vertical } from "@venture-route/contracts";
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router";
 
@@ -21,6 +21,7 @@ import { DemoDataPill } from "../../components/DemoDataPill";
 import { MODE_LABELS, SKILL_LABELS, VERTICAL_LABELS, VERTICALS } from "../../lib/brief";
 import { dateRange, usd } from "../../lib/format";
 import { errorMessage } from "../builder/formStyles";
+import { BidDialog } from "./BidDialog";
 
 type Sort = "deadline" | "budget" | "newest";
 type Chip = "all" | "eligible" | Vertical;
@@ -70,6 +71,8 @@ export function RequestsBoard() {
   const [chip, setChip] = useState<Chip>("all");
   const [sort, setSort] = useState<Sort>("newest");
   const [bidding, setBidding] = useState<Request | null>(null);
+  /** Bids placed in this session, by request id: the card shows the bid instead of the button. */
+  const [placed, setPlaced] = useState<Record<string, Bid>>({});
 
   useEffect(() => {
     let cancelled = false;
@@ -198,21 +201,35 @@ export function RequestsBoard() {
             <ul className="flex flex-col gap-4">
               {shown.map((request) => (
                 <li key={request.id}>
-                  <RequestCard request={request} onBid={() => setBidding(request)} />
+                  <RequestCard request={request} placed={placed[request.id]} onBid={() => setBidding(request)} />
                 </li>
               ))}
             </ul>
           )}
         </>
       ) : null}
-      {bidding ? <p className="sr-only">Bidding on {bidding.title}</p> : null}
+      {bidding ? (
+        <BidDialog
+          request={bidding}
+          profile={profile}
+          onClose={() => setBidding(null)}
+          onPlaced={(bid) => {
+            setPlaced((current) => ({ ...current, [bid.requestId]: bid }));
+            setBidding(null);
+          }}
+        />
+      ) : null}
     </div>
   );
 }
 
-function RequestCard({ request, onBid }: Readonly<{ request: Request; onBid(): void }>) {
+function RequestCard({
+  request,
+  placed,
+  onBid,
+}: Readonly<{ request: Request; placed?: Bid | undefined; onBid(): void }>) {
   const verdict = request.eligibility;
-  const eligible = isEligible(request);
+  const eligible = isEligible(request) && placed === undefined;
   const reasonId = `reason-${request.id}`;
   const eligibleSkills = new Set(verdict?.skills ?? []);
   const reason = verdict?.reason ?? "eligible-builder does not hold";
@@ -273,14 +290,19 @@ function RequestCard({ request, onBid }: Readonly<{ request: Request; onBid(): v
       <div className="flex shrink-0 flex-col items-start gap-2 md:items-end">
         <span className="font-mono text-[11px] uppercase tracking-wider text-ink-3">Budget ceiling</span>
         <span className="font-mono text-sm text-ink">{usd(request.dailyBudget)}</span>
+        {placed ? (
+          <span className="rounded-pill bg-accent-green/10 px-2 py-0.5 font-mono text-[11px] text-accent-green">
+            Bid placed · {usd(placed.dayRate)}
+          </span>
+        ) : null}
         <button
           type="button"
           onClick={onBid}
           disabled={!eligible}
-          aria-describedby={eligible ? undefined : reasonId}
+          aria-describedby={placed || eligible ? undefined : reasonId}
           className="mt-2 rounded-md bg-accent-green px-5 py-2 text-sm font-medium text-white transition-colors hover:bg-accent-green-hover disabled:cursor-not-allowed disabled:bg-border-strong disabled:text-ink-3"
         >
-          Bid
+          {placed ? "Bid placed" : "Bid"}
         </button>
       </div>
     </article>
