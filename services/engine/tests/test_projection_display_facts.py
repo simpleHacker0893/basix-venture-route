@@ -64,7 +64,7 @@ def _builder(**overrides: Any) -> ConfirmedBuilder:
                     skill_ids=("mobile",),
                     licensable=False,
                     vertical="agri",
-                    showcased=True,
+                    showcase_visible=True,
                 ),
                 ConfirmedProject(
                     project_id=HIDDEN, skill_ids=("mobile",), licensable=False, vertical="agri"

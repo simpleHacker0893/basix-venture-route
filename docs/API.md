@@ -13,6 +13,7 @@ camelCase on the wire, dates are ISO date-only strings, money is integer USD per
 | Routing | `POST /api/route`, `POST /api/conversation`, `GET /api/scenarios`, `GET /api/ecosystem` | none |
 | Builder | `POST /api/me/role`; `GET`/`PUT /api/me/profile`; `GET`/`POST /api/me/credentials`; `GET`/`POST /api/me/projects`; `PUT /api/me/projects/{id}/showcase` | Clerk session, role `builder` (`/role`: any session) |
 | Founder | `GET /api/builders/{builderId}` | Clerk session, role `founder` or `admin` |
+| Showcase | `GET /api/showcase`, `GET /api/showcase/{projectId}` | none (a token is ignored) |
 | Admin | `GET /api/admin/pending`; `GET /api/admin/decided`; `POST /api/admin/confirm/{kind}/{id}`; `POST /api/admin/reject/{kind}/{id}` | Clerk session, role `admin` |
 | Webhook | `POST /api/webhooks/clerk` | Svix signature |
 | Dev only | `POST /internal/query` | `ENGINE_DEV_QUERY=1` |
@@ -332,6 +333,72 @@ Role `founder` or `admin`. A confirmed builder as a founder sees them (`Candidat
 rules). `projects` lists confirmed projects only. Unconfirmed, rejected and unknown builders, and
 seed builder ids that have no account, answer `404 {"detail": "no confirmed builder <id>"}`; a
 `builder` session answers `403`.
+
+## Public Showcase: GET /api/showcase, GET /api/showcase/{projectId} (Sprint 005a)
+
+No token needed; a token, if sent, is ignored (never `401`/`403`). An entry is public only when
+`showcased`, `showcaseStatus` is `confirmed`, the project is confirmed and the owner's account is
+confirmed: one predicate in the repository (`visible_showcase_projects()`) that both endpoints
+use. No response carries email, phone, location, day rate, availability or the `contact` block;
+the builder is identified by `builderId` only.
+
+### GET /api/showcase
+
+Query parameters, all optional:
+
+| Parameter | Meaning |
+|---|---|
+| `skill` | A vocabulary skill id (e.g. `python`) or a free-text `skillSet`/`suggestedSkills` label (case-insensitive), at most 40 characters. Matches an entry whose project demonstrates the skill, whose builder is verified for it (a confirmed credential or any confirmed project proves it), or whose builder lists the label. |
+| `vertical` | `health`, `agri` or `education`. |
+| `licensable` | `true` keeps licensable projects only; `false` keeps non-licensable ones. |
+| `q` | Case-insensitive title search, at most 120 characters; `%` and `_` match themselves. |
+| `limit` | 1–24, default 12. |
+| `offset` | 0 or more, default 0. |
+
+An invalid value answers `422` (`type: validation-error`). Order: `showcase_confirmed_at`
+newest first, then id. Response `200` `ShowcasePage`, `total` counting every match before paging:
+
+```json
+{
+  "items": [{
+    "id": "…", "title": "Field survey app", "builderId": "naomi-chebet",
+    "displayName": "Naomi Chebet", "cohortId": null, "vertical": "agri", "licensable": true,
+    "description": "A field survey app for smallholder farmers.", "skillIds": ["mobile"],
+    "matchedSkill": { "id": "mobile", "label": "Mobile", "kind": "demonstrated" },
+    "liveUrl": "https://survey.example.com", "demoUrl": null,
+    "pitchVideoUrl": "https://www.youtube.com/watch?v=dQw4w9WgXcQ", "pitchDeckUrl": null,
+    "pitchVideoId": "dQw4w9WgXcQ", "demoData": false
+  }],
+  "total": 1
+}
+```
+
+`matchedSkill` is `null` without `?skill=`. With it, each card reports the kind that matched,
+preferring `demonstrated` over `verified` over `self-described`; a self-described match has
+`id: null` and the label as the builder typed it. `pitchVideoId` is the YouTube id parsed from
+`pitchVideoUrl` (the web embeds `https://www.youtube-nocookie.com/embed/<id>` only after a click).
+
+### GET /api/showcase/{projectId}
+
+Response `200` `ShowcaseDetail`: the card's project fields plus `completedOn`, and a `builder`
+panel:
+
+```json
+{
+  "builderId": "naomi-chebet", "displayName": "Naomi Chebet", "cohortId": null,
+  "verifiedSkills": [{ "id": "mobile", "name": "Mobile", "status": "verified", "evidence": "both" }],
+  "skillSet": ["Flutter", "Figma"],
+  "certifications": [{ "id": "…", "title": "Cloud Cert", "issuer": "AWS", "skillId": null,
+                       "issuedOn": null, "credentialUrl": "https://verify.example.com/cloud",
+                       "status": "confirmed", "demoData": false }],
+  "githubUrl": "https://github.com/naomi-chebet", "linkedinUrl": null
+}
+```
+
+`verifiedSkills` is the verified-skill derivation (D-39) with evidence; `skillSet` is `skillSet`
+followed by `suggestedSkills`, shown as "Self-described"; `certifications` lists confirmed
+credentials only (with or without a vocabulary skill). A hidden, unknown or malformed id answers
+`404 {"detail": "showcase entry not found"}`, the same body in every case.
 
 ## Requests: `/api/requests` (Sprint 004)
 
