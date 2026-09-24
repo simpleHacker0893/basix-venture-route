@@ -1,6 +1,6 @@
 # STATE — rolling snapshot (edit in place, never append a log)
 
-**Updated:** 2026-09-23 (evening) · **Demo:** Thu 2026-10-01 · **Current sprint:** 003 — Marketplace, PR #48 from `sprint/003-marketplace` **merged on the Operator's explicit instruction with acceptance Must lines 1–4 still ❌** ("commit and merge all branches for us to close sprint 003", 2026-09-23). AGENTS.md rule 9 and `planning/AUTOMATION.md` say a PR is ready only when every Must line has evidence; this merge is the Operator's override, recorded here so it stays visible. The four lines reopen on #47 with one Dashboard step (see Blockers). Sprint 002 merged at `c194b6f` (PR #33, #34).
+**Updated:** 2026-09-24 (morning, Architect) · **Demo:** Thu 2026-10-01 · **Current sprint:** 004 — Requests and interviews, **code complete, not closed**: PR #78 (`sprint/004-requests-interviews`) is a draft; 24 of 25 tickets closed; #76 (Clerk round-trip) waits on the Clerk session-token claim and #77 (Clerk suite in CI) on the repo secrets. Sprint 003 merged by Operator override (PR #48) with its Must lines 1–4 reopening on #47 with the same Clerk step. **Next:** Sprint 005 split by D-42 into 005a Showcase (Fri 25 → Sun 27 Sep) and Part B demo hardening (Mon 28 → Wed 30 Sep, freeze 22:00).
 
 ## Where we are
 - Sprints 000–002 are on `master`: the FastAPI engine with `hyperon==0.2.10` in-process (seven named rules over 181 seed atoms), the routing core (`POST /api/route`, `GET /api/scenarios`, `POST /api/conversation`, LLM adapters with the null fallback), `packages/contracts` (Zod 4 with the Pydantic parity test) and the founder UI (`/`, `/route`, `/handoff`, Why this route? drawer, PWA, offline mode) replicating the Stitch exports (D-36).
@@ -10,6 +10,11 @@
 - Clerk (D-03): `VITE_CLERK_PUBLISHABLE_KEY`, `CLERK_SECRET_KEY`, `CLERK_JWKS_URL` and `ADMIN_EMAILS` are real in `.env` (dev instance; hostnames stay out of tracked files, AGENTS.md rule 8). `CLERK_WEBHOOK_SIGNING_SECRET` is still the placeholder: the Clerk Playwright suite signs its own events with a per-run secret, so the placeholder only matters for a real Dashboard webhook.
 - Windows notes: pushes that touch `.github/workflows` go over SSH (the `gh` token lacks the `workflow` scope); `pytest.exe` stubs outside the repo are blocked by Application Control (use `python -m pytest` / `uv run pytest`); clean checkouts and worktrees must live at a short path (`C:\w\…`); the web Vitest suite is run serially (`--no-file-parallelism`) when other suites share the machine, otherwise it times out.
 - Prompt 0, D-17 (Neon), D-25 (React 19), D-26 (keys via `.env`), D-27 (Operator runs Railway/Vercel), D-28 (demo assets), D-36 (Stitch exports win), D-37 (postgres:18), D-38 (Chloe voice, post-demo) stand. Docker is verified on GitHub Codespaces and locally. Knowledge graph: `graphify-out/` committed in `f04ede7`.
+
+## Sprint 004 — status (branch `sprint/004-requests-interviews`, PR #78 draft)
+- **Shipped as code** (tickets #53–#75 closed with RED/GREEN evidence, #76 and #77 committed): migration `0002` (`requests`, `bids`, `bookings`, `demo_data` CHECKs); wire schemas + Zod mirrors with parity; `eligibility(engine, brief, builder_id)` on the route service from `eligible_builders` + `gaps` with the two-tier reason; slot rules and the Africa/Nairobi presenter; the booking machine as a pure function (founder-owned, one counter per round per side, 409 on illegal moves); requests API (publish, list, read, close → 409 on bids), eligibility endpoint and inline eligibility; bids behind the 403 gate with the engine's reason, founder's bid list and builder's own bids; bookings API (create, list, accept, counter, confirm); dashboard counts from SQL; web: MarketplaceApi with typed 403, routing-store hydrate, requests board with indicator and disabled Bid, BidDialog, "Publish as request" with sign-in stash/restore, founder dashboard, booking propose and status/counter screens; Clerk round-trip spec `e2e/clerk/requests.spec.ts`; CI step running the Clerk suite on a Postgres service container, skipping without keys (#77).
+- **Not closed**: #76 local run `4 failed, 9 did not run, 1 passed`, every failure at the missing `metadata` claim; #77 needs the Clerk keys as repo secrets; #49 (admin reverse) ratified into 004 by D-41 but not built → carried to 005a as a Should. D-39..D-41 were stranded on `claude/nifty-newton-i607nd`; now on `claude/relaxed-galileo-frqz6v` with D-42/D-43.
+- **Also on master**: PR #80 (header section links, Ecosystem and Privacy pages). Not on master: `c025647` on `antonypeter` (Hyperon init in Docker) — Part B checks it.
 
 ## Sprint 003 — what shipped (all on `sprint/003-marketplace`)
 - **Engine store** (#37): compose `db` on `postgres:18`, async SQLModel session, Alembic `0001_marketplace` creating `users`, `profiles`, `skills`, `credentials`, `projects`, `project_skills`, `availability`, `confirmations`, every table with `demo_data` default true and a CHECK; placeholder URLs mean "no store" (routing from seed, marketplace routes 503).
@@ -25,8 +30,9 @@
 - **Judgement calls left as they are** (listed in PR #48): wire shape `{id, kind, status, projectedRows}` instead of the spec's snake_case; availability `start == end` allowed; `projection.ts` mirrors `projection.py` for the admin preview; 8-character `cred-`/`proj-` atom ids; marketplace tests skip without `TEST_DATABASE_URL` (README documents it); `projected_rows` counts atoms.
 
 ## Blockers
-- **Operator, one Dashboard step (unblocks #47 and the four Must lines):** Clerk Dashboard → dev instance → Sessions → Customize session token → `{"metadata": "{{user.public_metadata}}"}` → save. Then `pnpm --filter web e2e:clerk` from `apps/web` with Docker running, paste the output on #47, tick the four lines in the PR #48 report and mark the PR ready.
-- Team member names for the pitch deck and README (Q-08) — "at the end".
+- **Operator, Clerk Dashboard (unblocks #47, #76 and both sprints' Clerk Must lines):** dev instance → Sessions → Customize session token → `{"metadata": "{{user.public_metadata}}"}` → save. Then `planning/PROMPTS.md` §Sprint 005 C0.
+- **Operator, GitHub secrets for #77:** the Clerk dev keys as Actions secrets.
+- Q-17 (Showcase Stitch export), Q-18 (demo showcase content), Q-20 (public Showcase) before 005a S0; Q-19 (pitch PDF) and Q-08 (team names) before Part B.
 
 ## What Sprint 004 inherits
 - **Tables and migrations**: Alembic `0001_marketplace` (`users`, `profiles`, `skills`, `credentials`, `projects`, `project_skills`, `availability`, `confirmations`; `demo_data` default true + CHECK everywhere; `availability` CHECK `end_date >= start_date`). New tables get their own revision; Alembic resolves `ALEMBIC_DATABASE_URL`, then `DATABASE_URL_DIRECT`, then `DATABASE_URL`. CI runs `alembic upgrade head` on the `postgres:18` service container; pytest drops the schema and upgrades once per session on `TEST_DATABASE_URL`, rolling every test back.
@@ -36,11 +42,10 @@
 - **Web**: `MarketplaceApi` (`apps/web/src/api/marketplace.ts`) with typed 404s, `splitFieldMessages` for 422 → field mapping, `lib/dates.ts`, `lib/projection.ts` (admin preview), Demo data pill and StatusPill components; convert `design/stitch/batch-4/*` exports faithfully per D-36.
 
 ## Next
-1. Operator: the Clerk session-token claim (Blockers), rerun `e2e:clerk`, paste on #47, mark PR #48 ready; Architect Builder Review per `planning/AUTOMATION.md`, merge.
-2. Architect: answer Q-15 and Q-16 (DECISIONS entries) before Sprint 004 P1; ratify or drop #49.
-3. Sprint 004 — Requests and interviews on `sprint/004-requests-interviews` from the merged `master`.
-4. Optional: #19 with the real `ANTHROPIC_API_KEY`; the `CLERK_WEBHOOK_SIGNING_SECRET` from a Dashboard webhook when the deployed engine exists (Sprint 005).
-5. Post-demo: Sprint 006 — Chloe voice intake (D-38); window per Q-13, phrases per Q-14.
+1. Operator: the two Blockers above, then C0 in the Sprint 004 session; Architect Builder Review of PR #78; merge.
+2. Sprint 005a Showcase (D-42, D-43): C0 → P1 → S0 brainstorming → S1 /to-spec → P2 /to-tickets → P3-fast waves → P4 → P5 on `sprint/005a-showcase`; gate G5a Sun 27 Sep 20:00.
+3. Sprint 005 Part B from Mon 28 Sep 08:00: P1b → P2b → P3b → P4 → P5b; freeze Wed 30 Sep 22:00, tag `v0.1.0-demo`.
+4. Post-demo: Sprint 006 — Chloe voice intake (D-38).
 
 ## Scope floor (must be on screen on 1 Oct)
 Chat/form intake · brief review chips · route result with gaps first · Why this route? drawer · five demo scenarios · Demo data labels · one launch command.

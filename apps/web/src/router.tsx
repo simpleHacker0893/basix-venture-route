@@ -14,30 +14,24 @@ import { AddProjectPage } from "./features/builder/AddProjectPage";
 import { ProfilePage } from "./features/builder/ProfilePage";
 import { CandidatePage } from "./features/candidate/CandidatePage";
 import { DashboardPage } from "./features/dashboard/DashboardPage";
-import { EcosystemPage } from "./features/ecosystem/EcosystemPage";
+import { PartnersPage } from "./features/ecosystem/PartnersPage";
 import { HandoffScreen } from "./features/handoff/HandoffScreen";
 import { LandingPage } from "./features/landing/LandingPage";
-import { PrivacyPage } from "./features/legal/PrivacyPage";
+import { PrivacyPage } from "./features/privacy/PrivacyPage";
 import { RequestsBoard } from "./features/requests/RequestsBoard";
 import { RoutePage } from "./features/route/RoutePage";
 
 /**
- * The header and footer link to landing and ecosystem sections by hash (`/#evidence`,
- * `/ecosystem#partners`). A history push never scrolls on its own, so after every navigation
- * with a hash the named element is scrolled into view; without one, a new path starts at the top.
+ * React Router does not scroll to a hash (#79): the header and footer section links target
+ * landing sections, so after every navigation the hashed section scrolls into view, otherwise
+ * the page starts at the top.
  */
 function ScrollToHash() {
   const { pathname, hash } = useLocation();
   useEffect(() => {
-    if (hash) {
-      document.getElementById(hash.slice(1))?.scrollIntoView({ block: "start" });
-    } else if (typeof window.scrollTo === "function") {
-      try {
-        window.scrollTo({ top: 0 });
-      } catch {
-        // jsdom and older browsers: nothing to restore
-      }
-    }
+    const target = hash ? document.getElementById(hash.slice(1)) : null;
+    if (target) target.scrollIntoView({ block: "start" });
+    else window.scrollTo(0, 0);
   }, [pathname, hash]);
   return null;
 }
@@ -51,9 +45,9 @@ function Layout() {
       >
         Skip to main content
       </a>
+      <ScrollToHash />
       <OfflineBanner />
       <TopNav />
-      <ScrollToHash />
       <main id="main" tabIndex={-1} className="flex-1 outline-none">
         <Outlet />
       </main>
@@ -69,8 +63,7 @@ export function AppRoutes() {
         <Route index element={<LandingPage />} />
         <Route path="route" element={<RoutePage />} />
         <Route path="handoff" element={<HandoffScreen />} />
-        {/* Footer destinations (D-36): the Ecosystem column and Privacy. */}
-        <Route path="ecosystem" element={<EcosystemPage />} />
+        <Route path="partners" element={<PartnersPage />} />
         <Route path="privacy" element={<PrivacyPage />} />
         {/* Clerk's path routing owns the sub-paths (factor steps, SSO callback). */}
         <Route path="sign-in/*" element={<SignInScreen />} />

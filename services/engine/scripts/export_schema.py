@@ -43,6 +43,7 @@ from app.marketplace.schemas import (  # noqa: E402
 )
 from app.models.brief import VentureBrief  # noqa: E402
 from app.models.chat import ChatResponse, ChatTurn  # noqa: E402
+from app.models.ecosystem import Ecosystem  # noqa: E402
 from app.models.engine import Gap, ReasoningPath  # noqa: E402
 from app.models.route import VentureRoute  # noqa: E402
 
@@ -101,6 +102,7 @@ def export() -> Json:
         "ChatResponse": canonical(TypeAdapter(ChatResponse).json_schema(mode="validation")),
         "ReasoningPath": model(ReasoningPath),
         "Gap": model(Gap),
+        "Ecosystem": model(Ecosystem),
         # Sprint 003 marketplace (spec #35): the web client Zod-parses these too.
         "ProfileInput": model(ProfileInput),
         "BuilderProfile": model(BuilderProfile),

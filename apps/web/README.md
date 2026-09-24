@@ -30,11 +30,15 @@ builds call `VITE_API_URL` directly and rely on the engine's `CORS_ORIGINS` allo
 | `/` | Landing page | public |
 | `/route` | Intake (chat or `?mode=form`) → brief review → route result with gaps above team cards and the "Why this route?" drawer | public |
 | `/handoff` | Plain-text venture handoff (copy, download) | public |
+| `/partners` | The seed partners, universities with cohorts and licensable assets behind every route (`GET /api/ecosystem`) | public |
+| `/privacy` | Demo-data, account and contact-sharing statement | public |
 | `/sign-in`, `/sign-up` | Stitch sign-in frame around Clerk's prebuilt components | public |
 | `/choose-role` | Founder / builder cards; posts `POST /api/me/role` once | signed in |
 | `/profile`, `/profile/projects/new` | Builder profile, availability, credentials, projects | role `builder` |
 | `/builders/:builderId` | Candidate profile with shared contact only | role `founder` or `admin` |
 | `/admin` | Confirmation queue with `projected_rows` after each decision | role `admin` |
+
+The header section links and the footer Product links scroll the landing sections (`ScrollToHash`); the footer Ecosystem column opens BASIX, the MeTTa OmniUniversity LMS and metta-lang.dev in a new tab.
 
 `RequireRole` reads Clerk `publicMetadata.role`: signed out → `/sign-in`, no role → `/choose-role`,
 wrong role → that role's home (`/route`, `/profile`, `/admin`).
@@ -46,7 +50,7 @@ src/api/         client.ts (one fetch wrapper; Zod-parses every response; bearer
                  marketplace.ts (profile, proof, candidate, admin calls), offline.ts, default.ts (api vs offline)
 src/auth/        Clerk provider or no-key provider behind one AuthState, RequireRole, ROLE_HOME
 src/state/       reducer-and-context routing store (scenarios, brief, turns, last route, view)
-src/features/    landing, intake, review, route, why, handoff, auth, builder, candidate, admin
+src/features/    landing, intake, review, route, why, handoff, ecosystem, privacy, auth, builder, candidate, admin
 src/components/  TopNav, SiteFooter, DemoDataPill, banners; ui/ is shadcn output (edit through the CLI only)
 src/lib/         formatting, brief helpers, next actions, validation-error mapping
 src/styles/      tokens.css from the Stitch DESIGN.md block

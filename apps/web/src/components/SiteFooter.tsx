@@ -2,11 +2,9 @@ import { Link } from "react-router";
 
 /**
  * The Stitch footer (design/stitch/batch-2/landing-page, D-36), on every route: wordmark and
- * tagline, three link columns, the bottom links and the copyright line. The export's Ecosystem
- * and Privacy links were `#` placeholders; here every link lands on a real page (the landing
- * sections, /ecosystem sections built from seed facts, /privacy).
+ * tagline, three link columns, the bottom links and the copyright line.
  */
-const COLUMNS: { heading: string; links: { label: string; to: string }[] }[] = [
+const COLUMNS: { heading: string; links: { label: string; to: string; external?: boolean }[] }[] = [
   {
     heading: "Product",
     links: [
@@ -19,10 +17,13 @@ const COLUMNS: { heading: string; links: { label: string; to: string }[] }[] = [
   {
     heading: "Ecosystem",
     links: [
-      { label: "BASIX", to: "/ecosystem#basix" },
-      { label: "MeTTa OmniUniversity", to: "/ecosystem#omni" },
-      { label: "SingularityNET MeTTa", to: "/ecosystem#snet" },
-      { label: "Partners", to: "/ecosystem#partners" },
+      // Verified 2026-09-23 (#79): basixmarket.io redirects to basix.market, "BASIX Omniversity
+      // Incubator", whose /lms is the MeTTa cohort learning platform; metta-lang.dev is the MeTTa
+      // site the Hyperon README names. Partners is rendered from the seed graph.
+      { label: "BASIX", to: "https://basix.market/", external: true },
+      { label: "MeTTa OmniUniversity", to: "https://basix.market/lms", external: true },
+      { label: "SingularityNET MeTTa", to: "https://metta-lang.dev/", external: true },
+      { label: "Partners", to: "/partners" },
     ],
   },
   {
@@ -54,22 +55,32 @@ export function SiteFooter() {
             <nav key={column.heading} aria-label={column.heading}>
               <h2 className="mb-3 text-sm font-semibold text-white">{column.heading}</h2>
               <ul className="space-y-2 text-ink-subtle">
-                {column.links.map((link) => (
-                  <li key={link.label}>
-                    <Link to={link.to} className="transition-colors hover:text-white">
-                      {link.label}
-                    </Link>
-                  </li>
-                ))}
+                {column.links.map((link) =>
+                  link.external ? (
+                    <li key={link.label}>
+                      <a
+                        href={link.to}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="transition-colors hover:text-white"
+                      >
+                        {link.label}
+                      </a>
+                    </li>
+                  ) : (
+                    <li key={link.label}>
+                      <Link to={link.to} className="transition-colors hover:text-white">
+                        {link.label}
+                      </Link>
+                    </li>
+                  ),
+                )}
               </ul>
             </nav>
           ))}
         </div>
         <div className="flex flex-col items-start justify-between gap-4 border-t border-[#26282d] pt-8 text-sm sm:flex-row sm:items-center">
           <div className="flex items-center gap-6">
-            <a href={REPO} className="underline decoration-ink-subtle/40 underline-offset-4 hover:text-white">
-              GitHub
-            </a>
             <a href={`${REPO}/blob/master/docs/PRD.md`} className="underline decoration-ink-subtle/40 underline-offset-4 hover:text-white">
               PRD
             </a>

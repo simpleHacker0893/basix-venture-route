@@ -185,13 +185,94 @@ Append to P3:
 Bid creation calls the route service's eligibility(brief, builder_id) in-process and returns 403 with the engine's reason when not eligible. Booking transitions proposed → accepted | countered → confirmed, one counter per round per side, 409 on illegal transitions, history appended in the same transaction. If the scope floor is active, ship requests board + gated bids only.
 ```
 
-### Sprint 005 — Demo hardening and deployment (Wed 30 Sep 08:00 → 20:00, freeze 22:00)
-Seams: `docker compose up` end-to-end via Playwright `demo.spec.ts`; deployed `/health` and landing page via HTTP checks; every earlier sprint's acceptance suite on the freeze commit.
-Skills: `docker-build-strategies` (multi-stage, non-root, small engine image), `docker-compose-patterns`, `use-railway` and `deploy-to-vercel` **for writing `docs/DEPLOY.md` only** (engine service, `DATABASE_URL`, `ANTHROPIC_API_KEY`, `CLERK_*`, release command `alembic upgrade head`, health check `/health`; web `VITE_API_URL`, `VITE_CLERK_PUBLISHABLE_KEY`), `mattpocock-skills:wizard` (turn DEPLOY.md into the step-by-step wizard the Operator runs), `neon-postgres` (production `main` branch, `demo` branch for resets), `playwright-cli` (record the demo video), `secure-coding` (final pass on headers, CORS, secrets).
-Append to P3 (deployment is the last two tickets):
+### Sprint 004 — P3-fast: wave execution with isolated subagents (D-41)
+
+Replaces P3 for Sprint 004 once the tickets exist on GitHub (spec #52, tickets #53–#77, #49). One paste; the controller runs to the end without check-ins except the four stop conditions of the superpowers skill.
+
 ```text
-No new features. Order: regressions from earlier acceptance suites → single launch command and README → docs/DEMO.md script → Playwright CLI recording of demo.spec.ts to docs/demo/ (D-28) → docs/PITCH.md per-slide script and the Slides-artifact deck rebuilt from the existing pitch PDF with the video on the demo slide, team names as a placeholder → docs/DEPLOY.md wizard (D-27): Railway steps for services/engine (Dockerfile, release command, health check, env vars from .env.example, public domain), Vercel steps for apps/web with VITE_API_URL, Neon main as production DATABASE_URL and demo branch for resets — the Operator runs every railway and vercel command and pastes the URLs and /health 200s back → docs/SUBMISSION.md. Never run railway or vercel yourself. Freeze: tag v0.1.0-demo on the merged commit and write the SHA into STATE.md.
+You are the Sprint 004 controller for Venture Route on branch sprint/004-requests-interviews (create it from origin/master if absent; never work on master). Use the superpowers subagent-driven-development skill for the ledger, briefs, review packages and the per-task review loop; use the Matt Pocock tdd and code-review skills inside the implementers and reviewers; use verification-before-completion before any claim. Read AGENTS.md, CONTEXT.md, planning/DECISIONS.md D-16 D-17 D-19 D-39 D-40 D-41, planning/sprints/004-requests-interviews/{requirements,blueprint,acceptance}.md and planning/PROMPTS.md §Sprint 004 once.
+
+Setup (30 min): fetch spec #52 and every open issue labelled sprint:004 with gh, and write .superpowers/sdd/sprint-004-plan.md with one "### Task N — #<issue> <title>" section per ticket in the D-41 wave order (W0 #53 #54 #55 #56 #57 #58 #68 · W1 #59 #64 #67 · W2 #60 #61 #65 #71 · W3 #62 #72 #74 #75 · W4 #63 #69 · W5 #66 #70 · W6 #73 #49 · W7 #76 · W8 #77), each section holding the issue body verbatim, its Blocked by list, the acceptance.md lines it quotes, and the seam it tests at (planning/PROMPTS.md §Sprint 004). Global Constraints at the top: money USD per day; times Africa/Nairobi in UI, UTC in store; every new table demo_data default true with a check constraint; eligibility only from eligible_builders and gaps; booking transitions proposed → accepted | countered → confirmed, one counter per round per side, 409 otherwise, history in the same transaction; 401/403 never 500; secrets from .env only, never printed; contracts get Zod mirrors with the parity test; no planning files or graph output on this branch. Run sdd-workspace on the plan, create the ledger, do the pre-flight conflict table (pairs sharing a file: #53/#54 models vs schemas, #59/#64 routers vs #67 client, #71/#72 store), rule on each row, and create one todo per task.
+
+Execution, per wave: for every ticket in the wave dispatch one implementer subagent with isolation "worktree" on branch sprint/004/t<issue>, using the skill's implementer-prompt with the task brief from task-brief, the interfaces produced by earlier waves, the model claude-opus-5 at effort high for engine and machine tickets and claude-sonnet-5 for prefactor and pure-UI tickets. Implementers in a wave run in parallel because each has its own worktree; never two implementers in one worktree. Each implementer: red test first at the ticket's seam, green, uv run mypy . or pnpm -r typecheck, one commit "<type>(<scope>): <what> (#<issue>)", report with RED and GREEN output. When the wave's implementers return, merge their branches into sprint/004-requests-interviews in ascending issue order, resolve conflicts yourself (ruling in the ledger), run the full suite once (uv run pytest -q with TEST_DATABASE_URL, ruff, mypy ., pnpm -r typecheck, pnpm -r test), then dispatch the task reviewers for the wave in parallel with review-package diffs; fix rounds per the skill, max 5, resuming the implementer in its worktree. Close each issue with the test command, output and commit SHA. Append "Task N: complete" lines to the ledger. Then the next wave. Time budget: W0 90 min, W1 60, W2 60, W3 60, W4 45, W5 45, W6 45, W7 60, W8 30; if a wave runs 50 percent over, ledger a ruling naming which ticket slips to the next wave and continue.
+
+Finish (60 min): dispatch the final whole-branch reviewer per requesting-code-review/code-reviewer.md with spec #52 and acceptance.md as the Spec axis; one fix dispatch, one re-review; then run /code-review master yourself and fix hard violations; then run every command in planning/sprints/004-requests-interviews/acceptance.md from a clean checkout and paste the output ✅/❌ per line, update planning/STATE.md (what shipped, what did not, what Sprint 005 inherits), push, and open the PR "Sprint 004: Requests and interviews" with the planning/AUTOMATION.md completion report. Draft if any Must line is ❌. Stop only for the four superpowers stop conditions; a push to the sprint branch and the PR are pre-approved by this prompt.
 ```
+
+### Sprint 005 — Builder Showcase (Part A) and demo hardening (Part B) (D-42)
+Part A: Fri 25 Sep 08:00 → Sun 27 Sep 20:00, branch `sprint/005a-showcase`, PR "Sprint 005a: Showcase". Part B: Mon 28 Sep 08:00 → Wed 30 Sep 20:00, freeze 22:00, branch `sprint/005-demo-hardening`, PR "Sprint 005: Demo hardening".
+
+Seams (Part A, fixed): HTTP `PUT /api/me/projects/{id}/showcase`, `POST /api/me/credentials`, `GET /api/showcase`, `GET /api/showcase/{id}`, `/api/admin/{confirm|reject}/showcase/{id}` against `TEST_DATABASE_URL` (fake JWT per role, no token for public routes); pure functions `validate_https_url`, `youtube_video_id` and the `render_program()` byte-equal invariant; rendered screens through RTL; Playwright no-key `showcase.spec.ts` with `page.route` stubs; Clerk `showcase.spec.ts` (builder → admin → signed-out visitor).
+Seams (Part B): `docker compose up` end-to-end via Playwright `demo.spec.ts`; deployed `/health` and landing page via HTTP checks; every earlier acceptance suite on the freeze commit.
+Skills (Part A): superpowers `brainstorming`, `writing-plans`, `subagent-driven-development`, `test-driven-development`, `verification-before-completion`; Matt Pocock `to-spec`, `to-tickets`, `implement`, `tdd`, `code-review`; plus `neon-postgres`, `secure-coding` (URL rules, embeds), `clerk-testing`, `vercel-react-best-practices`, `vercel-composition-patterns`, `web-design-guidelines` (final audit), `playwright-cli`.
+Skills (Part B): `gem-devops-guidelines`, `docker-build-strategies`, `docker-compose-patterns`, `use-railway` and `deploy-to-vercel` **for writing `docs/DEPLOY.md` only**, `neon-postgres`, `playwright-cli` (recording), `secure-coding` (headers, CORS, secrets).
+
+#### C0 — Close Sprint 004 (Operator steps, then paste into the Sprint 004 Builder session)
+Operator first: Clerk Dashboard → dev instance → Sessions → Customize session token → `{"metadata": "{{user.public_metadata}}"}` → save. GitHub → Settings → Secrets and variables → Actions → add the Clerk dev keys named in #77.
+```text
+The Clerk session-token claim is set and the CI secrets for #77 exist. On sprint/004-requests-interviews: run pnpm --filter web e2e:clerk from apps/web with Docker running and paste the output on #76 and #47; close them if green. Confirm the CI run for the PR head shows the Clerk suite green with requests.spec listed and link it on #77; close #77. Then use verification-before-completion: run every command in planning/sprints/004-requests-interviews/acceptance.md from a clean checkout, paste ✅/❌ with output per line, update planning/STATE.md (Sprint 004 shipped, #49 carried to Sprint 005a as a Should, what 005a inherits), rewrite the PR #78 body as the planning/AUTOMATION.md completion report and mark it ready only if every Must line is ✅. Tell me when it is ready to merge.
+```
+
+#### P1 — Orient (Part A; paste the generic P1 with NNN = 005, slug = 005a-showcase, and append)
+```text
+Branch is sprint/005a-showcase (D-42), not sprint/005-demo-hardening. Read only Part A of planning/sprints/005-demo-hardening/requirements.md, blueprint.md and acceptance.md, plus D-39, D-40, D-41, D-42, D-43 and Q-17 to Q-20. List which of Q-17, Q-18, Q-20 are still open and the default you will follow for each.
+```
+
+#### S0 — Brainstorm the Showcase (superpowers `brainstorming`)
+```text
+Use the brainstorming skill. This is an architectural change (new migration, public endpoints, a new admin kind): say so. Ground everything in planning/sprints/005-demo-hardening/requirements.md §Part A, blueprint.md §Part A, acceptance.md §Part A, CONTEXT.md, docs/adr/ and D-42, D-43. D-43 is settled: do not reopen display-only, admin gating, public read or the URL rules. Write back your understanding first, separating what the pack says from what you assume. Ask me one question at a time, multiple choice, only where the pack is silent — expected: card layout and fields (Q-17 fallback exports), empty and pending states wording, filter chip set, sort order of the gallery (default: most recently confirmed first), whether seed licensable IP assets (asset-afya-triage, asset-shamba-records) get read-only cards. Present the design in sections (data, API, visibility, web screens, admin, demo seed, tests) and stop for my approval after each. Do not write files; when I approve the last section, stop and wait for /to-spec.
+```
+
+#### S1 — Publish the spec (Matt Pocock `to-spec`)
+```text
+/to-spec
+
+Synthesize the approved Showcase design plus planning/sprints/005-demo-hardening/requirements.md §Part A and blueprint.md §Part A into the spec template. Seams are the Part A seams in planning/PROMPTS.md §Sprint 005; confirm them with me before writing. User stories 1–6 from requirements.md §Part A; Implementation Decisions cite D-40, D-42, D-43; Testing Decisions cite the seams and each acceptance.md §Part A line; Out of Scope copies requirements.md §Out of scope (Part A). Publish as one GitHub issue "Spec: Sprint 005a — Builder Showcase" labelled sprint:005 and ready-for-agent. Give me the issue number.
+```
+
+#### P2 — Slice (Part A)
+```text
+/to-tickets #<spec issue>
+
+Sprint label: sprint:005. Follow blueprint.md §Part A Steps 1–15 in that order and keep its blocking brackets as native GitHub relationships; prefactors (links module, contracts, MarketplaceApi + routes + TopNav link) are their own tickets. Tracer-bullet slices, each demoable and one fresh context window. Every ticket quotes the acceptance.md §Part A line it proves. Reuse issue #49 as step 15 (Should) instead of creating a duplicate. Show me the numbered breakdown with the wave each ticket falls in (blueprint §Wave plan) and wait for my approval before publishing.
+```
+
+#### P3-fast — Build in waves (superpowers `subagent-driven-development`, D-41 pattern)
+```text
+You are the Sprint 005a controller on branch sprint/005a-showcase (never master). Use the superpowers subagent-driven-development skill for the ledger, task briefs, review packages and per-task review loop; Matt Pocock tdd and code-review inside implementers and reviewers; verification-before-completion before any claim. Read AGENTS.md, CONTEXT.md, D-39 to D-43, planning/sprints/005-demo-hardening/{requirements,blueprint,acceptance}.md §Part A and planning/PROMPTS.md §Sprint 005 once.
+
+Setup (20 min): fetch spec #<spec issue> and every open sprint:005 issue with gh; write .superpowers/sdd/sprint-005a-plan.md with one "### Task N — #<issue> <title>" per ticket in wave order (W0 migration, links · W1 contracts, projection guard, builder writes · W2 public read, admin kind, web prefactor · W3 gallery, detail + PitchVideo, profile, admin tab · W4 demo seed, Playwright · W5 #49), each with the issue body verbatim, Blocked by, the acceptance lines it quotes and its seam. Global Constraints: showcase data never reaches the MeTTa space and render_program() stays byte-equal (D-43); visibility is one SQL predicate (showcased ∧ showcase_status confirmed ∧ project confirmed ∧ account confirmed); showcase edits reset to pending; admin showcase decisions never call reproject(); https-only links, no localhost/IP, ≤500 chars, YouTube-only pitch with youtube-nocookie embed after click, rel="noopener noreferrer"; public routes need no token, builder writes are owner-only (404 otherwise), 401/403 never 500; every new column respects demo_data; Zod mirrors with the parity test; secrets from .env only; no planning files on this branch. Pre-flight conflict table (shared files: models.py/schemas.py, router.tsx, marketplace.ts, TopNav.tsx), rule on each row in the ledger.
+
+Per wave: one implementer subagent per ticket with isolation "worktree" on branch sprint/005a/t<issue> (engine, migration and security tickets at effort high; prefactor and pure-UI tickets on a lighter model). Red test first at the ticket's seam, green, typecheck, one commit "<type>(<scope>): <what> (#<issue>)", report RED and GREEN output. Merge the wave's branches in ascending issue order, resolve conflicts (ledger ruling), run the full suite once (uv run pytest -q with TEST_DATABASE_URL, ruff, uv run mypy ., pnpm -r typecheck, pnpm -r lint, pnpm -r test), dispatch the wave's task reviewers in parallel, fix rounds max 5. Close each issue with command, output and SHA. Time budget: W0 60 min, W1 90, W2 90, W3 120, W4 90, W5 45; 50 percent over → ledger which ticket slips and apply the Part A scope floor in blueprint.md if G5a (Sun 27 Sep 20:00) is at risk.
+
+Finish: final whole-branch review with spec #<spec issue> and acceptance.md §Part A as the Spec axis; one fix dispatch, one re-review. Stop only for the four superpowers stop conditions; pushes to the sprint branch are pre-approved.
+```
+
+#### P4 — Review (Part A; the generic P4, plus)
+```text
+Also run the secure-coding skill over the showcase endpoints, links.py and PitchVideo, and the web-design-guidelines skill over /showcase, /showcase/:projectId and the profile editor. Fix every hard finding in its own commit.
+```
+
+#### P5 — Evidence and PR (Part A; the generic P5 with the title "Sprint 005a: Showcase" and acceptance.md §Part A only). STATE.md gets what 005a shipped and what Part B inherits.
+
+#### P1b — Orient (Part B, after 005a merges or at Mon 28 Sep 08:00)
+```text
+You are the Builder for Venture Route, Sprint 005 Part B — Demo hardening. Fetch origin. Create sprint/005-demo-hardening from origin/master. Read AGENTS.md, CLAUDE.md, CONTEXT.md, planning/STATE.md, planning/DECISIONS.md (D-27, D-28, D-42, D-43), planning/TIMELINE.md, then planning/sprints/005-demo-hardening/requirements.md §Part B, blueprint.md §Part B and acceptance.md §Part B. Reply with the goal in two lines, the Part B seams, whether c025647 (Hyperon init in Docker) is on master, and every open question (Q-08, Q-19). No code. Wait for me.
+```
+
+#### P2b — Slice (Part B)
+```text
+/to-tickets planning/sprints/005-demo-hardening/requirements.md
+
+Part B only. Sprint label sprint:005. Order fixed by blueprint.md §Part B Steps 1–8: regressions (one ticket per failing acceptance line found by running every suite 000–005a on master) → compose web service + README launch → #51 (reuse the issue) → demo.spec.ts + docs/DEMO.md (five scenarios, change-a-constraint, Showcase moment) → recording → docs/PITCH.md + Slides deck → docs/DEPLOY.md wizard → docs/SUBMISSION.md + freeze. Quote the acceptance.md §Part B line in each. Show me the breakdown and wait.
+```
+
+#### P3b — Implement (Part B; the generic P3, plus)
+```text
+No new features. Never run railway or vercel yourself: docs/DEPLOY.md is a wizard for me — Railway steps for services/engine (Dockerfile, release command alembic upgrade head, health check /health, env vars from .env.example, public domain), Vercel steps for apps/web with VITE_API_URL and VITE_CLERK_PUBLISHABLE_KEY, Neon production branch as DATABASE_URL, the Clerk session-token claim step; stop and wait while I run each command and paste the URL and /health output back, then record them in README. Record demo.spec.ts only after it passes twice against a clean docker compose up. Freeze: tag v0.1.0-demo on the merged commit and write the SHA into STATE.md with "frozen for demo".
+```
+
+#### P5b — Evidence and PR (Part B; the generic P5 with the title "Sprint 005: Demo hardening" and acceptance.md §Part B). Keep it draft until my sign-off comment on docs/DEMO.md.
 
 ### Sprint 006 — Chloe voice intake (post-demo; window per Q-13)
 Seams: rendered intake and route screens through React Testing Library with the fake voice provider injected via `renderApp(path, fetch, { voice })`, and Playwright flows against `vite preview` built with `VITE_VOICE_PROVIDER=fake` and the engine on `LLM_PROVIDER=null`; no component-internal tests; nothing in the engine.
@@ -212,7 +293,9 @@ D-38 governs. POST /api/conversation and its contract do not change; no file und
 | 002 | Fri 25 Sep 08:00 | Sat 26 Sep 20:00 (scope-floor trigger) |
 | 003 | Sun 27 Sep 08:00 | Mon 28 Sep 20:00 |
 | 004 | Tue 29 Sep 08:00 | Tue 29 Sep 22:00 |
-| 005 | Wed 30 Sep 08:00 | Wed 30 Sep 22:00 freeze |
+| 004 close-out | Thu 24 Sep (C0) | Thu 24 Sep |
+| 005a Showcase | Fri 25 Sep 08:00 | Sun 27 Sep 20:00 |
+| 005 Part B | Mon 28 Sep 08:00 | Wed 30 Sep 22:00 freeze |
 | Demo | Thu 1 Oct | recording is the fallback |
 
 Stitch batch 1 exports must be committed under `design/stitch/batch-1/` before P1 of Sprint 002.

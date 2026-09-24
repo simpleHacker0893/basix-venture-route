@@ -2596,6 +2596,94 @@
     ],
     "type": "object"
   },
+  "Ecosystem": {
+    "properties": {
+      "assets": {
+        "items": {
+          "properties": {
+            "assetId": {
+              "type": "string"
+            },
+            "title": {
+              "type": "string"
+            },
+            "vertical": {
+              "enum": [
+                "health",
+                "agri",
+                "education"
+              ],
+              "type": "string"
+            }
+          },
+          "required": [
+            "assetId",
+            "title",
+            "vertical"
+          ],
+          "type": "object"
+        },
+        "type": "array"
+      },
+      "demoData": {
+        "default": true,
+        "type": "boolean"
+      },
+      "partners": {
+        "items": {
+          "properties": {
+            "partnerId": {
+              "type": "string"
+            },
+            "verticals": {
+              "items": {
+                "enum": [
+                  "health",
+                  "agri",
+                  "education"
+                ],
+                "type": "string"
+              },
+              "type": "array"
+            }
+          },
+          "required": [
+            "partnerId",
+            "verticals"
+          ],
+          "type": "object"
+        },
+        "type": "array"
+      },
+      "universities": {
+        "items": {
+          "properties": {
+            "cohorts": {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            "universityId": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "cohorts",
+            "universityId"
+          ],
+          "type": "object"
+        },
+        "type": "array"
+      }
+    },
+    "required": [
+      "assets",
+      "partners",
+      "universities"
+    ],
+    "type": "object"
+  },
   "Eligibility": {
     "additionalProperties": false,
     "properties": {

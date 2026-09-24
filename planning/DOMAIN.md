@@ -18,6 +18,9 @@ Give a founder one trustworthy answer: *given my MVP, constraints and budget, wh
 | Venture brief | Validated founder input: `id, title, vertical, requiredSkills[], maximumTeamSize, availabilityStart, availabilityEnd, deliveryMode, location?, dailyBudget, preferReusableIp`. Contract in `packages/contracts`. |
 | Route | Engine output: status, builders with evidence, total day rate, optional reusable IP, cohort, partner, gaps, rules applied, summary. |
 | Evidence type | `credential` (a confirmed credential proves the skill), `project` (a confirmed completed project demonstrates it), `both`. |
+| Showcase entry | A builder's project with display details (description, live URL, demo URL, YouTube pitch, pitch deck) switched on for the public **Showcase** tab. Public only after a BASIX admin confirms both the project and its showcase details (D-43). Display-only: never a MeTTa fact. |
+| Certification | A credential a builder lists with issuer, issue date and verification link. With a vocabulary skill it is a normal credential (confirmed → `proves`); without one it is display-only (D-43). |
+| Skill set | The builder's self-described skills picked on the profile. Display-only (AGENTS.md rule 4); shown under "Self-described", never as verified. |
 | Reasoning path | `{ rule, facts[], conclusion }`. One per builder×skill, per IP, per cohort, per partner. |
 | Gap | `{ category, statement, affected[], nextActions[] }` with `category ∈ skill, availability, mode, location, team-size, budget`. Each gap names its rule. |
 | Self-described skill | A skill the builder claims without proof. Shown on profiles as "Self-described"; never eligible. |
