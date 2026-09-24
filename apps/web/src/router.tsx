@@ -9,6 +9,7 @@ import { AdminHome } from "./features/admin/AdminHome";
 import { RoleSelect } from "./features/auth/RoleSelect";
 import { SignInScreen } from "./features/auth/SignInScreen";
 import { BookingProposePage } from "./features/booking/BookingProposePage";
+import { BookingStatusPage } from "./features/booking/BookingStatusPage";
 import { AddProjectPage } from "./features/builder/AddProjectPage";
 import { ProfilePage } from "./features/builder/ProfilePage";
 import { CandidatePage } from "./features/candidate/CandidatePage";
@@ -89,6 +90,10 @@ export function AppRoutes() {
           <Route path="dashboard" element={<DashboardPage />} />
           {/* Sprint 004 screen 13, propose variant: ?builder=<slug>&request=<id>. */}
           <Route path="bookings/new" element={<BookingProposePage />} />
+        </Route>
+        <Route element={<RequireRole roles={["founder", "builder"]} />}>
+          {/* Sprint 004 screen 13, status and counter variants, for either party. */}
+          <Route path="bookings/:bookingId" element={<BookingStatusPage />} />
         </Route>
         <Route element={<RequireRole roles={["admin"]} />}>
           <Route path="admin" element={<AdminHome />} />
