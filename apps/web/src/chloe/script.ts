@@ -10,6 +10,7 @@ import type { BriefField, PartialBriefInput, VentureRoute } from "@venture-route
 import { FIELD_LABELS, MODE_LABELS, SKILL_LABELS, VERTICAL_LABELS } from "../lib/brief";
 import { dateRange, STATUS_LABEL, usd } from "../lib/format";
 import { splitFieldMessages } from "../lib/validationError";
+import type { VoiceErrorCode } from "../voice/provider";
 
 export const GREETING =
   "Hi, I'm Chloe, Venture Route's assistant. Hold the mic, tell me about your MVP, and let go " +
@@ -40,7 +41,10 @@ export function questionFor(field: BriefField): string {
   return field === "id" ? "" : QUESTIONS[field];
 }
 
-/** Read the brief back once every required field is filled (requirements.md §In scope 5). */
+/**
+ * Read the brief back once every required field is filled (requirements.md §In scope 5).
+ * Precondition: `missingFields(brief)` is empty; the non-null assertions below rely on it.
+ */
 export function readBack(brief: PartialBriefInput): string {
   const skills = (brief.requiredSkills ?? []).map((id) => SKILL_LABELS[id]).join(", ");
   const onSite =
@@ -91,10 +95,7 @@ export function validationSpoken(message: string): string {
   return `The engine found a problem with the brief: ${body}. Fix it in the brief panel or the form.`;
 }
 
-/** Mirrors `VoiceErrorCode` (`voice/provider.ts`) structurally, without importing it. */
-export type MicErrorCode = "no-speech" | "not-allowed" | "network" | "audio-capture" | "aborted" | "unknown";
-
-export const MIC_ERRORS: Record<MicErrorCode, string> = {
+export const MIC_ERRORS: Record<VoiceErrorCode, string> = {
   "no-speech": "I didn't catch that. Hold the mic and try again.",
   "not-allowed": "Microphone access is blocked. Allow it in your browser's site settings.",
   network: "Speech recognition needs a network connection.",

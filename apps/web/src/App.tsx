@@ -7,6 +7,7 @@ import { MarketplaceApiProvider } from "./api/MarketplaceApiProvider";
 import type { RouteSource } from "./api/source";
 import type { AuthState } from "./auth/authContext";
 import { AuthProvider } from "./auth/AuthProvider";
+import { spokenForm } from "./chloe/script";
 import { AppRoutes } from "./router";
 import { RoutingProvider } from "./state/RoutingProvider";
 import { createVoiceProvider } from "./voice/selectProvider";
@@ -28,7 +29,7 @@ type AppProps = {
 
 export function App({ initialPath, source, auth, marketplace, voice }: AppProps) {
   const resolvedSource = useMemo(() => source ?? createDefaultSource(), [source]);
-  const resolvedVoice = useMemo(() => (voice === undefined ? createVoiceProvider() : voice), [voice]);
+  const resolvedVoice = useMemo(() => (voice === undefined ? createVoiceProvider({ transform: spokenForm }) : voice), [voice]);
   const tree = (
     <AuthProvider auth={auth}>
       <MarketplaceApiProvider marketplace={marketplace}>

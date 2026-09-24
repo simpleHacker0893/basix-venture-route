@@ -61,7 +61,8 @@ export function voiceReducer(state: VoiceState, action: VoiceAction): VoiceState
     case "speaking-started":
       return { ...state, status: "speaking", nowSpeaking: action.text };
     case "speaking-ended":
-      return { ...state, status: "idle", nowSpeaking: null };
+      // Stopping speech while the mic is held must not end the listening state.
+      return { ...state, status: state.status === "speaking" ? "idle" : state.status, nowSpeaking: null };
     case "error":
       return { ...state, lastError: action.error, status: "idle" };
     default:
@@ -87,28 +88,64 @@ export function VoiceSessionProvider({ voice, children }: Props) {
     dispatch({ type: "enabled", value: true });
   }, [supported]);
 
-  const disable = useCallback(() => {
+  /**
+   * The utterance queue: `say` calls play one after another (the web provider's `speak` cancels
+   * whatever is in flight, so back-to-back lines must wait their turn). `stopSpeaking` bumps the
+   * generation, which drops every queued line and cancels the one playing ("Stop Chloe").
+   */
+  const generation = useRef(0);
+  const queued = useRef(0);
+  const queueTail = useRef<Promise<void>>(Promise.resolve());
+
+  const stopSpeaking = useCallback(() => {
+    generation.current += 1;
     voice?.cancelSpeech();
-    voice?.abortListening();
-    // abortListening discards without an onEnd callback (provider.ts): reset directly so a
-    // releaseMic() called after disabling does not wait forever on a session that never ends.
-    listeningRef.current = false;
-    dispatch({ type: "enabled", value: false });
+    dispatch({ type: "speaking-ended" });
   }, [voice]);
 
+  /**
+   * Discard the current recognition (no final flush, no `onEnd` from the provider): any
+   * `releaseMic()` still waiting resolves with "" so its caller never hangs (#97 carry-over).
+   */
+  const abortMic = useCallback(() => {
+    voice?.abortListening();
+    const wasListening = listeningRef.current;
+    listeningRef.current = false;
+    const resolvers = endResolvers.current;
+    endResolvers.current = [];
+    resolvers.forEach((resolve) => resolve(""));
+    if (wasListening) dispatch({ type: "listening-ended" });
+  }, [voice]);
+
+  const disable = useCallback(() => {
+    stopSpeaking();
+    abortMic();
+    dispatch({ type: "enabled", value: false });
+  }, [stopSpeaking, abortMic]);
+
   const say = useCallback(
-    async (text: string) => {
-      if (!voice) return;
-      dispatch({ type: "speaking-started", text });
-      await voice.speak(text);
-      dispatch({ type: "speaking-ended" });
+    (text: string): Promise<void> => {
+      if (!voice) return Promise.resolve();
+      const turn = generation.current;
+      const play = async () => {
+        if (turn !== generation.current) return;
+        dispatch({ type: "speaking-started", text });
+        await voice.speak(text);
+        if (turn === generation.current && queued.current === 1) dispatch({ type: "speaking-ended" });
+      };
+      // An idle queue starts at once, synchronously, so a line said inside a click handler is
+      // spoken inside that user gesture (the greeting, requirements.md §Business rules).
+      const run = queued.current === 0 ? play() : queueTail.current.then(play);
+      queued.current += 1;
+      const done = run.finally(() => {
+        queued.current -= 1;
+      });
+      // A speak() that throws must not stall the queue: the next line waits on a settled tail.
+      queueTail.current = done.catch(() => undefined);
+      return done;
     },
     [voice],
   );
-
-  const stopSpeaking = useCallback(() => {
-    voice?.cancelSpeech();
-  }, [voice]);
 
   const pressMic = useCallback(() => {
     if (!voice || !supported) return;
@@ -166,10 +203,11 @@ export function VoiceSessionProvider({ voice, children }: Props) {
       stopSpeaking,
       pressMic,
       releaseMic,
+      abortMic,
       markGreeted,
       markAssistantOffline,
     }),
-    [voice, supported, state, enable, disable, say, stopSpeaking, pressMic, releaseMic, markGreeted, markAssistantOffline],
+    [voice, supported, state, enable, disable, say, stopSpeaking, pressMic, releaseMic, abortMic, markGreeted, markAssistantOffline],
   );
 
   return <VoiceContext.Provider value={value}>{children}</VoiceContext.Provider>;

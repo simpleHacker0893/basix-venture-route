@@ -31,6 +31,8 @@ export type VoiceSessionValue = {
   pressMic(): void;
   /** Resolves with the accumulated final transcript once the provider's `onEnd` fires. */
   releaseMic(): Promise<string>;
+  /** Discard the current recognition; a pending `releaseMic()` resolves with "". */
+  abortMic(): void;
   markGreeted(): void;
   markAssistantOffline(): void;
 };
