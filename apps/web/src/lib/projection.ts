@@ -15,18 +15,44 @@ export function shortId(rowId: string): string {
 }
 
 /**
- * One quoted MeTTa string atom, mirroring `app/engine/projection.py::metta_string` for the
- * characters a preview is likely to show (backslash, quote and the common whitespace escapes);
- * this is a preview helper, not the engine's own encoder.
+ * One quoted MeTTa string atom, porting `app/engine/projection.py::metta_string` exactly (same
+ * escape table, same `\u{hex}` form for every Unicode Cc/Cf/Zl/Zp character, same U+FFFD
+ * replacement for NUL and a lone surrogate) so the preview can never diverge from the fact the
+ * engine actually projects.
  */
-function mettaString(text: string): string {
-  const escaped = text
-    .replace(/\\/g, "\\\\")
-    .replace(/"/g, '\\"')
-    .replace(/\n/g, "\\n")
-    .replace(/\r/g, "\\r")
-    .replace(/\t/g, "\\t");
-  return `"${escaped}"`;
+const METTA_ESCAPES = new Map<string, string>([
+  ["\\", "\\\\"],
+  ['"', '\\"'],
+  ["\n", "\\n"],
+  ["\r", "\\r"],
+  ["\t", "\\t"],
+]);
+/** Cc (control), Cf (format), Zl (line separator), Zp (paragraph separator). */
+const HEX_ESCAPED_CATEGORY = /^[\p{Cc}\p{Cf}\p{Zl}\p{Zp}]$/u;
+const REPLACEMENT_CHAR = "�";
+
+/** A code point `for...of` could not pair into a surrogate pair: a lone surrogate. */
+function isLoneSurrogate(char: string): boolean {
+  if (char.length !== 1) return false;
+  const code = char.charCodeAt(0);
+  return code >= 0xd800 && code <= 0xdfff;
+}
+
+export function mettaString(text: string): string {
+  const out: string[] = [];
+  for (const char of text) {
+    const escape = METTA_ESCAPES.get(char);
+    if (escape !== undefined) {
+      out.push(escape);
+    } else if (char === "\u0000" || isLoneSurrogate(char)) {
+      out.push(REPLACEMENT_CHAR);
+    } else if (HEX_ESCAPED_CATEGORY.test(char)) {
+      out.push(`\\u{${(char.codePointAt(0) ?? 0).toString(16)}}`);
+    } else {
+      out.push(char);
+    }
+  }
+  return `"${out.join("")}"`;
 }
 
 export type ProjectionPreview = {

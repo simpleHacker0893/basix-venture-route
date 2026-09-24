@@ -653,9 +653,6 @@ function ShowcaseQueueList({
           No pending Showcase entries.
         </p>
       )}
-      <span className="font-mono text-[12px] text-ink-3">
-        {entries.length} of {entries.length} pending
-      </span>
     </div>
   );
 }
