@@ -8,6 +8,7 @@ import { TopNav } from "./components/TopNav";
 import { AdminHome } from "./features/admin/AdminHome";
 import { RoleSelect } from "./features/auth/RoleSelect";
 import { SignInScreen } from "./features/auth/SignInScreen";
+import { BookingProposePage } from "./features/booking/BookingProposePage";
 import { AddProjectPage } from "./features/builder/AddProjectPage";
 import { ProfilePage } from "./features/builder/ProfilePage";
 import { CandidatePage } from "./features/candidate/CandidatePage";
@@ -86,6 +87,8 @@ export function AppRoutes() {
         <Route element={<RequireRole roles={["founder"]} />}>
           {/* Sprint 004 screen 11: the founder dashboard fed by GET /api/me/dashboard. */}
           <Route path="dashboard" element={<DashboardPage />} />
+          {/* Sprint 004 screen 13, propose variant: ?builder=<slug>&request=<id>. */}
+          <Route path="bookings/new" element={<BookingProposePage />} />
         </Route>
         <Route element={<RequireRole roles={["admin"]} />}>
           <Route path="admin" element={<AdminHome />} />
