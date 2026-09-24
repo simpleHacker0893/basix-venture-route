@@ -8,13 +8,17 @@ import { TopNav } from "./components/TopNav";
 import { AdminHome } from "./features/admin/AdminHome";
 import { RoleSelect } from "./features/auth/RoleSelect";
 import { SignInScreen } from "./features/auth/SignInScreen";
+import { BookingProposePage } from "./features/booking/BookingProposePage";
+import { BookingStatusPage } from "./features/booking/BookingStatusPage";
 import { AddProjectPage } from "./features/builder/AddProjectPage";
 import { ProfilePage } from "./features/builder/ProfilePage";
 import { CandidatePage } from "./features/candidate/CandidatePage";
+import { DashboardPage } from "./features/dashboard/DashboardPage";
 import { PartnersPage } from "./features/ecosystem/PartnersPage";
 import { HandoffScreen } from "./features/handoff/HandoffScreen";
 import { LandingPage } from "./features/landing/LandingPage";
 import { PrivacyPage } from "./features/privacy/PrivacyPage";
+import { RequestsBoard } from "./features/requests/RequestsBoard";
 import { RoutePage } from "./features/route/RoutePage";
 
 /**
@@ -68,9 +72,21 @@ export function AppRoutes() {
         <Route element={<RequireRole roles={["builder"]} />}>
           <Route path="profile" element={<ProfilePage />} />
           <Route path="profile/projects/new" element={<AddProjectPage />} />
+          {/* Sprint 004 screen 10: the requests board with the engine's eligibility verdicts. */}
+          <Route path="requests" element={<RequestsBoard />} />
         </Route>
         <Route element={<RequireRole roles={["founder", "admin"]} />}>
           <Route path="builders/:builderId" element={<CandidatePage />} />
+        </Route>
+        <Route element={<RequireRole roles={["founder"]} />}>
+          {/* Sprint 004 screen 11: the founder dashboard fed by GET /api/me/dashboard. */}
+          <Route path="dashboard" element={<DashboardPage />} />
+          {/* Sprint 004 screen 13, propose variant: ?builder=<slug>&request=<id>. */}
+          <Route path="bookings/new" element={<BookingProposePage />} />
+        </Route>
+        <Route element={<RequireRole roles={["founder", "builder"]} />}>
+          {/* Sprint 004 screen 13, status and counter variants, for either party. */}
+          <Route path="bookings/:bookingId" element={<BookingStatusPage />} />
         </Route>
         <Route element={<RequireRole roles={["admin"]} />}>
           <Route path="admin" element={<AdminHome />} />

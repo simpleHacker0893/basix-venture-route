@@ -50,6 +50,7 @@ export function RoutingProvider({ source, children }: { source: RouteSource; chi
       },
       setBrief: (brief) => dispatch({ type: "brief-changed", brief }),
       showView: (view) => dispatch({ type: "view-changed", view }),
+      hydrate: (brief, route) => dispatch({ type: "hydrated", brief, route }),
     }),
     [state, source, run],
   );

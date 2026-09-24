@@ -22,14 +22,23 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from app.marketplace.schemas import (  # noqa: E402
     AdminDecision,
+    BidCreate,
+    BidOut,
+    BookingCreate,
+    BookingOut,
+    BookingProposal,
     BuilderProfile,
     Candidate,
     CredentialInput,
     CredentialOut,
+    Dashboard,
+    Eligibility,
     PendingQueue,
     ProfileInput,
     ProjectInput,
     ProjectOut,
+    RequestCreate,
+    RequestOut,
     RoleResponse,
 )
 from app.models.brief import VentureBrief  # noqa: E402
@@ -105,6 +114,16 @@ def export() -> Json:
         "PendingQueue": model(PendingQueue),
         "AdminDecision": model(AdminDecision),
         "Candidate": model(Candidate),
+        # Sprint 004 requests, bids, bookings, eligibility, dashboard (spec #52, #54).
+        "RequestCreate": model(RequestCreate),
+        "Request": model(RequestOut),
+        "BidCreate": model(BidCreate),
+        "Bid": model(BidOut),
+        "BookingCreate": model(BookingCreate),
+        "BookingProposal": model(BookingProposal),
+        "Booking": model(BookingOut),
+        "Eligibility": model(Eligibility),
+        "Dashboard": model(Dashboard),
     }
 
 

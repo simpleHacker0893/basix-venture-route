@@ -245,6 +245,203 @@ rules). `projects` lists confirmed projects only. Unconfirmed, rejected and unkn
 seed builder ids that have no account, answer `404 {"detail": "no confirmed builder <id>"}`; a
 `builder` session answers `403`.
 
+## Requests: `/api/requests` (Sprint 004)
+
+A request is a founder's published brief: the exact `VentureBrief` the engine routed plus a
+`route` snapshot `{ "status", "totalDailyRate", "builderIds" }` of what the founder saw. The
+web posts what it holds (the routing store's brief and the last route, spec #52 §Web); the
+engine validates the brief again and the snapshot is display-only: every eligibility question
+is answered by the engine again, never read from it. Requests, bids and bookings never become atoms (D-15). Admins have no access this sprint.
+
+### POST /api/requests
+
+Role `founder`. Body `RequestCreate`:
+
+```json
+{ "brief": { "id": "brief-constrained-01", "title": "…", "vertical": "health", "requiredSkills": ["mobile", "rust"], "maximumTeamSize": 2, "availabilityStart": "2026-09-22", "availabilityEnd": "2026-10-06", "deliveryMode": "remote", "location": null, "dailyBudget": 300, "preferReusableIp": false, "demoData": true },
+  "route": { "status": "partial", "totalDailyRate": 130, "builderIds": ["zawadi-njoroge"] } }
+```
+
+The brief is validated as a `VentureBrief` (`422` names the field, e.g. `brief.requiredSkills:
+…`, `brief: availabilityEnd must not precede availabilityStart`, `brief: location is required
+when deliveryMode is on-site`). Response `201` `Request`:
+
+```json
+{ "id": "…", "founderId": "user_…", "brief": { … }, "route": { … },
+  "title": "…", "vertical": "health", "deliveryMode": "remote", "availabilityStart": "2026-09-22",
+  "availabilityEnd": "2026-10-06", "dailyBudget": 300, "routeStatus": "partial",
+  "status": "open", "closedAt": null, "createdAt": "2026-09-23T07:30:00Z", "eligibility": null, "demoData": true }
+```
+
+### GET /api/requests, GET /api/requests/{id}
+
+Role `founder` or `builder`. A founder lists their own requests in every status, newest first;
+a builder lists every `open` request, newest first (the builder's list carries `eligibility`
+inline, see below). `GET /api/requests/{id}` answers `200` to the owning founder or any builder
+and `404 {"detail": "no request <id>"}` to another founder, so ids leak nothing. A `builder`
+session on `POST` answers `403 {"detail": "role founder required"}`.
+
+### GET /api/requests/{id}/eligibility
+
+Role `builder`. The engine's verdict for the signed-in builder on the request's brief
+(`Eligibility`), computed by the route service's `eligibility(brief, builderId)` from
+`eligible-builder` witnesses only (AGENTS.md rule 1); the builder id is the profile slug, so an
+unconfirmed or rejected builder has no atoms and is never eligible. `404 {"detail": "no profile
+yet"}` until the builder has a profile; a `founder` session answers `403`.
+
+```json
+{ "eligible": true, "skills": ["mobile"],
+  "path": { "rule": "eligible-builder", "facts": ["(earned naomi-chebet cred-…)", "…", "(confirmed admin-basix naomi-chebet)"],
+            "conclusion": "naomi-chebet is eligible for mobile with both evidence" },
+  "reason": null }
+```
+
+When not eligible, `skills` is empty, `path` is `null` and `reason` is two-tier: the statement
+of the first `route-gap` the founder's route carries (sorted by skill id), so both sides read one
+sentence, else the template `eligible-builder does not hold for <builderId> on any of <required
+skills>.` The builder's `GET /api/requests` carries this verdict inline as `eligibility` on every
+item, so the board makes one call; the founder's list carries `eligibility: null`.
+
+### POST /api/requests/{id}/close
+
+Role `founder`, owner only (`404` otherwise). Sets `status: "closed"` and `closedAt` and answers
+`200` `Request`; a second close answers `409 {"detail": "request already closed"}`. A closed
+request no longer appears in the builders' list and refuses bids (`409`), but stays in the
+founder's list with its status.
+
+## Bids (Sprint 004)
+
+A bid is allowed only where `eligible-builder` holds for the request's brief and the bidding
+builder (DOMAIN.md §Marketplace rules). The gate is the engine's verdict above, never a Python
+check; the stored bid carries the skills and the reasoning path the engine returned.
+
+### POST /api/requests/{id}/bids
+
+Role `builder`; `404 {"detail": "no profile yet"}` without a profile. Body `BidCreate`:
+
+```json
+{ "dayRate": 120, "message": "The field survey app demonstrates mobile." }
+```
+
+`dayRate` is a positive integer USD per day (D-16), `message` up to 1000 characters and
+optional. The request is locked, checked open, and the route service computes eligibility for
+the builder's slug:
+
+| Status | Body | When |
+|---|---|---|
+| `201` | `Bid` (below) | `eligible-builder` holds; `eligibleSkills` and `path` are the engine's |
+| `403` | `{"detail": "<reason>"}` | not eligible; `reason` is the same text `GET …/eligibility` answers (a `route-gap` statement or the template) |
+| `409` | `{"detail": "request closed"}` | the founder closed the request |
+| `409` | `{"detail": "already bid"}` | the builder already has a bid on this request (UNIQUE, so a race still ends in one bid) |
+| `404` | `{"detail": "no request <id>"}` | unknown request |
+
+```json
+{ "id": "…", "requestId": "…", "requestTitle": "…", "requestStatus": "open",
+  "builderId": "naomi-chebet", "displayName": "Naomi Chebet", "dayRate": 120,
+  "message": "…", "eligibleSkills": ["mobile"],
+  "path": { "rule": "eligible-builder", "facts": ["…"], "conclusion": "naomi-chebet is eligible for mobile with both evidence" },
+  "status": "submitted", "createdAt": "2026-09-23T07:30:00Z", "demoData": true }
+```
+
+### GET /api/requests/{id}/bids
+
+Role `founder`, owner only (`404 {"detail": "no request <id>"}` otherwise; a `builder` session
+answers `403`). The request's bids from builders whose account is confirmed right now, newest
+first, each a `Bid` with the builder's slug and display name, `eligibleSkills` and `path`. A bid
+from a builder whose account was rejected since is hidden, never deleted, and returns when the
+account is confirmed again (DOMAIN.md §Marketplace rules).
+
+### GET /api/me/bids
+
+Role `builder`; `404 {"detail": "no profile yet"}` without a profile. The builder's own bids,
+newest first, each carrying `requestTitle` and `requestStatus` (`open` or `closed`).
+
+## Bookings (Sprint 004)
+
+An interview booking between a founder and a confirmed builder. Founder-owned machine
+(spec #52): the builder accepts or counters, the founder confirms or counters. Every time on the
+wire is ISO 8601: `proposedStart` in UTC (`…Z`) and `proposedStartLocal` the same instant in
+Africa/Nairobi (`…+03:00`), rendered by the engine so the browser does no zone arithmetic
+(D-16). History is a JSONB list written in the same UPDATE as the state.
+
+### POST /api/bookings
+
+Role `founder`. Body `BookingCreate`:
+
+```json
+{ "builderId": "naomi-chebet", "requestId": null, "proposedStart": "2026-09-24T07:30:00Z", "durationMin": 30, "note": "Intro call" }
+```
+
+`builderId` must be a confirmed builder (`404 {"detail": "no confirmed builder <slug>"}`
+otherwise, including seed builder ids); `requestId`, when given, must be the founder's own
+request (`404` otherwise). Slot rules (chosen by the Operator, no buffer): the start's date in
+Africa/Nairobi lies inside one of the builder's confirmed availability ranges, the start is on
+the 30-minute grid from 08:00 to 18:00 Africa/Nairobi (18:00 is the last start), and the
+duration is 30 or 45 minutes. A violation answers `422` with the reason, field-mapped like every
+validation error, e.g. `proposedStart: start is outside the builder's confirmed availability
+(2026-11-02 is in no range)` or `proposedStart: start must be on the 30-minute grid between
+08:00 and 18:00 Africa/Nairobi`. `proposedStart` must carry an offset. Response `201`
+`Booking` in state `proposed` with one history entry (`propose` by the `founder`):
+
+```json
+{ "id": "…", "requestId": null, "requestTitle": null, "founderId": "user_…",
+  "builderId": "naomi-chebet", "displayName": "Naomi Chebet", "state": "proposed",
+  "proposedStart": "2026-09-24T07:30:00Z", "proposedStartLocal": "2026-09-24T10:30:00+03:00",
+  "durationMin": 30, "note": "Intro call",
+  "history": [{ "action": "propose", "actor": "founder", "state": "proposed",
+                "proposedStart": "2026-09-24T07:30:00Z", "proposedStartLocal": "2026-09-24T10:30:00+03:00",
+                "durationMin": 30, "note": "Intro call", "at": "2026-09-23T10:00:00Z" }],
+  "createdAt": "2026-09-23T10:00:00Z", "demoData": true }
+```
+
+### POST /api/bookings/{id}/accept, /counter, /confirm
+
+The founder-owned machine (spec #52), a pure function in `app/marketplace/booking.py`:
+
+| From | Action | Actor | To |
+|---|---|---|---|
+| proposed | accept | builder | accepted |
+| proposed | counter | builder | countered |
+| countered | confirm | founder | confirmed |
+| countered | counter | founder | proposed (new round) |
+| accepted | confirm | founder | confirmed |
+
+`accept` is builder-only, `confirm` founder-only, `counter` open to either party with a
+`BookingProposal` body (`proposedStart`, `durationMin`, `note`) validated by the same slot rules
+as creation (`422` with the reason). Each call locks the row, applies the machine, and writes
+state, history, proposed start and duration in one UPDATE. Every other cell answers `409
+{"detail": "<reason>"}`: `accept` by a founder, `confirm` by a builder, any action on a
+`confirmed` booking (`the booking is confirmed; no further action is possible`), a second
+counter by the same side in one round (`the builder already countered this round`). Anyone who
+is not the founder or the builder on the row gets `404 {"detail": "no booking <id>"}`. The
+founder's "Accept" on a counter is the `confirm` action; the screen maps it. The acceptance
+round-trip (founder proposes, builder counters, founder confirms) ends `confirmed` with three
+history entries: `propose`, `counter`, `confirm`, and `proposedStart` is the builder's counter.
+
+### GET /api/me/bookings
+
+Role `founder` or `builder`. Own bookings (the founder's, or the ones on the builder's profile),
+soonest proposed start first, each a `Booking` with both time fields on every row and entry.
+
+## Founder dashboard: GET /api/me/dashboard (Sprint 004)
+
+Role `founder`. One call whose numbers come from SQL, never from the engine (D-17); the tiles
+map one-to-one onto `counts`:
+
+```json
+{ "counts": { "briefs": 3, "routes": { "feasible": 2, "partial": 1, "infeasible": 0 },
+              "openRequests": 2, "bidsReceived": 1, "bookings": 2 },
+  "requests": [ { "…": "Request, newest first, every status, eligibility null" } ],
+  "bidsReceived": [ { "…": "Bid, newest first, confirmed builders only, at most ten" } ],
+  "upcomingBookings": [ { "…": "Booking with proposedStart at or after now, soonest first" } ] }
+```
+
+`briefs` counts the founder's requests; `routes` groups them by `routeStatus`; `openRequests`
+counts the open ones; `bidsReceived` counts bids on the founder's requests from builders whose
+account is confirmed right now (the list shows the newest ten of them); `bookings` counts the
+founder's bookings in every state. A `builder` or `admin` session answers `403`; a founder with
+nothing gets zeros and empty lists.
+
 ## Admin: `/api/admin/*`
 
 Role `admin`. Admins are never user-chosen: the webhook assigns the role to emails in

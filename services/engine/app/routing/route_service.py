@@ -19,6 +19,7 @@ from app.models.route import (
     VentureRoute,
 )
 from app.routing.assembler import Assembly, assemble
+from app.routing.eligibility import BuilderEligibility, eligibility
 from app.routing.presenter import asset_title
 from app.routing.summary import template_summary
 
@@ -74,6 +75,11 @@ class RouteService:
             summary="",
         )
         return route.model_copy(update={"summary": template_summary(route)})
+
+    def eligibility(self, brief: VentureBrief, builder_id: str) -> BuilderEligibility:
+        """Is this builder eligible for this brief, and why not (Sprint 004, spec #52). The bid
+        gate and the requests board ask this; it reads `eligible-builder` witnesses only."""
+        return eligibility(self._engine, brief, builder_id)
 
     def _reusable_ip(self, brief: VentureBrief) -> ReusableIp | None:
         """First `reuse-fit` candidate in stable asset-id order, only when the brief prefers IP."""

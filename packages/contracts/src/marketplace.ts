@@ -7,7 +7,8 @@
  */
 import { z } from "zod";
 
-import { DailyBudget, IsoDate, Location, SkillId, Vertical } from "./brief.js";
+import { DailyBudget, DeliveryMode, IsoDate, Location, SkillId, VentureBrief, Vertical } from "./brief.js";
+import { ReasoningPath, RouteStatus, UsdPerDay } from "./route.js";
 
 export const Evidence = z.enum(["credential", "project", "both"]);
 export type Evidence = z.infer<typeof Evidence>;
@@ -239,3 +240,173 @@ export const Candidate = z.strictObject({
   demoData: z.boolean().default(true),
 });
 export type Candidate = z.infer<typeof Candidate>;
+
+/**
+ * Sprint 004 (spec #52 §HTTP API, #54): requests, bids, bookings, eligibility, dashboard.
+ * Money is integer USD per day (D-16); `proposedStart` is ISO 8601 with offset in UTC and
+ * `proposedStartLocal` the same instant rendered by the engine in Africa/Nairobi.
+ */
+export const RequestStatus = z.enum(["open", "closed"]);
+export type RequestStatus = z.infer<typeof RequestStatus>;
+
+/** One value this sprint; a literal, so the JSON Schema is the `const` the Pydantic mirror emits. */
+export const BidStatus = z.literal("submitted");
+export type BidStatus = z.infer<typeof BidStatus>;
+
+export const BookingState = z.enum(["proposed", "accepted", "countered", "confirmed"]);
+export type BookingState = z.infer<typeof BookingState>;
+
+export const BookingAction = z.enum(["propose", "accept", "counter", "confirm"]);
+export type BookingAction = z.infer<typeof BookingAction>;
+
+export const BookingActor = z.enum(["founder", "builder"]);
+export type BookingActor = z.infer<typeof BookingActor>;
+
+/** 30 or 45 minutes; `meta` keeps the JSON Schema `type: integer` the Pydantic literal emits. */
+export const DurationMin = z.literal([30, 45]).meta({ type: "integer" });
+export type DurationMin = z.infer<typeof DurationMin>;
+
+export const BidMessage = z.string().max(1000);
+export const BookingNote = z.string().max(500);
+export const Count = z.int().min(0);
+
+/** What the founder saw when publishing; display-only, never an input to eligibility. */
+export const RouteSnapshot = z.strictObject({
+  status: RouteStatus,
+  totalDailyRate: UsdPerDay,
+  builderIds: z.array(z.string()),
+});
+export type RouteSnapshot = z.infer<typeof RouteSnapshot>;
+
+export const RequestCreate = z.strictObject({
+  brief: VentureBrief,
+  route: RouteSnapshot,
+});
+export type RequestCreate = z.infer<typeof RequestCreate>;
+export type RequestCreateInput = z.input<typeof RequestCreate>;
+
+/** The engine's verdict for one builder on one brief: `eligible-builder` witnesses only. */
+export const Eligibility = z.strictObject({
+  eligible: z.boolean(),
+  skills: z.array(SkillId),
+  path: ReasoningPath.nullable().default(null),
+  reason: z.string().nullable().default(null),
+});
+export type Eligibility = z.infer<typeof Eligibility>;
+
+export const Request = z.strictObject({
+  id: z.string(),
+  founderId: z.string(),
+  brief: VentureBrief,
+  route: RouteSnapshot,
+  title: z.string(),
+  vertical: Vertical,
+  deliveryMode: DeliveryMode,
+  availabilityStart: IsoDate,
+  availabilityEnd: IsoDate,
+  dailyBudget: DailyBudget,
+  routeStatus: RouteStatus,
+  status: RequestStatus,
+  closedAt: IsoDateTime.nullable().default(null),
+  createdAt: IsoDateTime,
+  /** Present on the builder's list only: the engine's verdict for the signed-in builder. */
+  eligibility: Eligibility.nullable().default(null),
+  demoData: z.boolean().default(true),
+});
+export type Request = z.infer<typeof Request>;
+
+export const BidCreate = z.strictObject({
+  dayRate: DayRate,
+  message: BidMessage.default(""),
+});
+export type BidCreate = z.infer<typeof BidCreate>;
+export type BidCreateInput = z.input<typeof BidCreate>;
+
+export const Bid = z.strictObject({
+  id: z.string(),
+  requestId: z.string(),
+  requestTitle: z.string(),
+  requestStatus: RequestStatus,
+  builderId: z.string(),
+  displayName: z.string(),
+  dayRate: DayRate,
+  message: BidMessage,
+  /** The skills `eligible-builder` held for, and the first witness the engine returned. */
+  eligibleSkills: z.array(SkillId),
+  path: ReasoningPath,
+  status: BidStatus,
+  createdAt: IsoDateTime,
+  demoData: z.boolean().default(true),
+});
+export type Bid = z.infer<typeof Bid>;
+
+export const BookingProposal = z.strictObject({
+  proposedStart: IsoDateTime,
+  durationMin: DurationMin,
+  note: BookingNote.default(""),
+});
+export type BookingProposal = z.infer<typeof BookingProposal>;
+export type BookingProposalInput = z.input<typeof BookingProposal>;
+
+export const BookingCreate = z.strictObject({
+  ...BookingProposal.shape,
+  builderId: z.string(),
+  requestId: z.string().nullable().default(null),
+});
+export type BookingCreate = z.infer<typeof BookingCreate>;
+export type BookingCreateInput = z.input<typeof BookingCreate>;
+
+export const BookingHistoryEntry = z.strictObject({
+  action: BookingAction,
+  actor: BookingActor,
+  /** The state after the transition. */
+  state: BookingState,
+  proposedStart: IsoDateTime,
+  proposedStartLocal: z.string(),
+  durationMin: DurationMin,
+  note: BookingNote,
+  at: IsoDateTime,
+});
+export type BookingHistoryEntry = z.infer<typeof BookingHistoryEntry>;
+
+export const Booking = z.strictObject({
+  id: z.string(),
+  requestId: z.string().nullable().default(null),
+  requestTitle: z.string().nullable().default(null),
+  founderId: z.string(),
+  builderId: z.string(),
+  displayName: z.string(),
+  state: BookingState,
+  proposedStart: IsoDateTime,
+  proposedStartLocal: z.string(),
+  durationMin: DurationMin,
+  note: BookingNote,
+  history: z.array(BookingHistoryEntry),
+  createdAt: IsoDateTime,
+  demoData: z.boolean().default(true),
+});
+export type Booking = z.infer<typeof Booking>;
+
+export const RouteCounts = z.strictObject({
+  feasible: Count,
+  partial: Count,
+  infeasible: Count,
+});
+export type RouteCounts = z.infer<typeof RouteCounts>;
+
+export const DashboardCounts = z.strictObject({
+  briefs: Count,
+  routes: RouteCounts,
+  openRequests: Count,
+  bidsReceived: Count,
+  bookings: Count,
+});
+export type DashboardCounts = z.infer<typeof DashboardCounts>;
+
+export const Dashboard = z.strictObject({
+  counts: DashboardCounts,
+  requests: z.array(Request),
+  bidsReceived: z.array(Bid),
+  upcomingBookings: z.array(Booking),
+});
+export type Dashboard = z.infer<typeof Dashboard>;

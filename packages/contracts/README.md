@@ -9,7 +9,7 @@ so it never sees an unparsed route and never parses MeTTa output.
 | `src/brief.ts` | `VentureBrief`, `PartialBrief`, `SkillId`, `Vertical`, `DeliveryMode`, `IsoDate`, `DailyBudget` (PRD §5.3) | `app/models/brief.py` |
 | `src/route.ts` | `VentureRoute`, `RouteBuilder`, `ReusableIp`, `RouteCohort`, `RoutePartner`, `Gap`, `ReasoningPath` (PRD §5.4) | `app/models/route.py`, `app/models/engine.py` |
 | `src/chat.ts` | `ChatTurn`, `ChatResponse` (`clarification | route | validation-error`), `ValidationErrorResponse` (PRD §5.2) | `app/models/chat.py` |
-| `src/marketplace.ts` | `RoleChoice`, `RoleResponse`, `ProfileInput`, `BuilderProfile`, `ProfileSkill`, `CredentialInput`, `Credential`, `ProjectInput`, `Project`, `PendingQueue`, `AdminDecision`, `Candidate`, `SharedContact` (Sprint 003) | `app/marketplace/schemas.py` |
+| `src/marketplace.ts` | `RoleChoice`, `RoleResponse`, `ProfileInput`, `BuilderProfile`, `ProfileSkill`, `CredentialInput`, `Credential`, `ProjectInput`, `Project`, `PendingQueue`, `AdminDecision`, `Candidate`, `SharedContact` (Sprint 003); `RequestCreate`, `Request`, `RouteSnapshot`, `Eligibility`, `BidCreate`, `Bid`, `BookingProposal`, `BookingCreate`, `Booking`, `BookingHistoryEntry`, `Dashboard`, `DashboardCounts`, `RouteCounts` and the literal unions `RequestStatus`, `BidStatus`, `BookingState`, `BookingAction`, `BookingActor`, `DurationMin` (Sprint 004) | `app/marketplace/schemas.py` |
 
 `src/schema.json` is **generated** from the Pydantic mirrors:
 
@@ -18,6 +18,8 @@ cd services/engine && uv run python scripts/export_schema.py          # rewrite 
 cd services/engine && uv run python scripts/export_schema.py --check  # CI freshness check
 ```
 
+`test/marketplace-roundtrip.test.ts` parses a pasted `model_dump_json(by_alias=True)` of every
+Sprint 004 `Out` shape and checks the literal unions reject values outside the contract.
 `test/schema-parity.test.ts` renders every Zod schema to JSON Schema and requires it to equal the
 export, after both sides apply the same canonical form (refs inlined, `title`/`description`
 dropped, `required` sorted, `type: [T, "null"]` written as `anyOf`, Zod's regex restatement of

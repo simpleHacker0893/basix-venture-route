@@ -11,12 +11,19 @@ import { z } from "zod";
 
 import {
   AdminDecision,
+  Bid,
+  BidCreate,
+  Booking,
+  BookingCreate,
+  BookingProposal,
   BuilderProfile,
   Candidate,
   ChatResponse,
   ChatTurn,
   Credential,
   CredentialInput,
+  Dashboard,
+  Eligibility,
   Ecosystem,
   Gap,
   PendingQueue,
@@ -24,6 +31,8 @@ import {
   Project,
   ProjectInput,
   ReasoningPath,
+  Request,
+  RequestCreate,
   RoleResponse,
   VentureBrief,
   VentureRoute,
@@ -82,6 +91,16 @@ const cases: [keyof typeof exported, z.ZodType][] = [
   ["PendingQueue", PendingQueue],
   ["AdminDecision", AdminDecision],
   ["Candidate", Candidate],
+  // Sprint 004 (#54): requests, bids, bookings, eligibility, dashboard.
+  ["RequestCreate", RequestCreate],
+  ["Request", Request],
+  ["BidCreate", BidCreate],
+  ["Bid", Bid],
+  ["BookingCreate", BookingCreate],
+  ["BookingProposal", BookingProposal],
+  ["Booking", Booking],
+  ["Eligibility", Eligibility],
+  ["Dashboard", Dashboard],
 ];
 
 describe("Zod JSON Schema equals Pydantic JSON Schema", () => {

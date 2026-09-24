@@ -1,8 +1,20 @@
+from collections.abc import Callable
+from datetime import datetime
+
 from fastapi import Request
 
 from app.engine.metta_engine import MettaRouteEngine
 from app.models.brief import VentureBrief
 from app.routing.route_service import RouteService
+
+Clock = Callable[[], datetime]
+
+
+def get_clock(request: Request) -> Clock:
+    """The app's notion of now (aware UTC). Real time in production; tests inject a fixed
+    instant through create_app so "upcoming" never depends on the wall clock."""
+    clock: Clock = request.app.state.clock
+    return clock
 
 
 def get_engine(request: Request) -> MettaRouteEngine:

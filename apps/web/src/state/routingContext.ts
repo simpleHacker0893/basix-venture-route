@@ -1,4 +1,4 @@
-import type { ChatTurnInput, PartialBriefInput, VentureBrief } from "@venture-route/contracts";
+import type { ChatTurnInput, PartialBriefInput, VentureBrief, VentureRoute } from "@venture-route/contracts";
 import { createContext, useContext } from "react";
 
 import type { RouteSource } from "../api/source";
@@ -16,6 +16,8 @@ export type RoutingContextValue = {
   sendTurn(turn: ChatTurnInput): Promise<void>;
   setBrief(brief: PartialBriefInput | null): void;
   showView(view: View): void;
+  /** A stored brief and route enter the store as if just routed (dashboard "View route", stash restore). */
+  hydrate(brief: VentureBrief, route: VentureRoute): void;
 };
 
 export const RoutingContext = createContext<RoutingContextValue | null>(null);

@@ -7,15 +7,35 @@ match these tables; the migration test proves both agree on an empty database.
 """
 
 from datetime import UTC, date, datetime
+from typing import Any
 from uuid import UUID, uuid4
 
-from sqlalchemy import ARRAY, CheckConstraint, Column, DateTime, String, func, true
+from sqlalchemy import (
+    ARRAY,
+    CheckConstraint,
+    Column,
+    DateTime,
+    Index,
+    String,
+    UniqueConstraint,
+    func,
+    true,
+)
+from sqlalchemy.dialects.postgresql import JSONB
 from sqlmodel import Field, SQLModel
 
 USER_ROLES = ("founder", "builder", "admin")
 RECORD_STATUSES = ("pending", "confirmed", "rejected")
 CONFIRMATION_KINDS = ("account", "credential", "project")
 CONFIRMATION_DECISIONS = ("confirmed", "rejected")
+# Sprint 004 (spec #52 §Store): requests, bids, bookings.
+REQUEST_STATUSES = ("open", "closed")
+ROUTE_STATUSES = ("feasible", "partial", "infeasible")
+BID_STATUSES = ("submitted",)
+BOOKING_STATES = ("proposed", "accepted", "countered", "confirmed")
+BOOKING_DURATIONS = (30, 45)
+BID_MESSAGE_MAX = 1000
+BOOKING_NOTE_MAX = 500
 
 
 def _now() -> datetime:
@@ -161,3 +181,86 @@ class Confirmation(UuidRow, table=True):
     target_id: UUID
     decision: str
     admin_user_id: UUID = Field(foreign_key="users.id")
+
+
+# -- Sprint 004 (spec #52 §Store, #53): requests, bids, bookings ----------------------------------
+# None of these rows ever becomes an atom; the projection reads profile rows only (D-15).
+
+
+class Request(UuidRow, table=True):
+    """A founder's published brief: the VentureBrief snapshot the engine routed, its promoted
+    columns for listing and filtering, and the route snapshot the founder saw when publishing.
+    The snapshot is display-only; eligibility is always recomputed by the engine."""
+
+    __tablename__ = "requests"
+    __table_args__ = (
+        demo_data_check("requests"),
+        CheckConstraint("availability_end >= availability_start", name="ck_requests_window"),
+        CheckConstraint("daily_budget > 0", name="ck_requests_daily_budget"),
+        CheckConstraint(_in("route_status", ROUTE_STATUSES), name="ck_requests_route_status"),
+        CheckConstraint(_in("status", REQUEST_STATUSES), name="ck_requests_status"),
+        Index("ix_requests_status_created_at", "status", "created_at"),
+    )
+
+    founder_id: UUID = Field(foreign_key="users.id", index=True)
+    brief: dict[str, Any] = Field(sa_column=Column(JSONB, nullable=False))
+    title: str
+    vertical: str
+    delivery_mode: str
+    availability_start: date
+    availability_end: date
+    daily_budget: int
+    route: dict[str, Any] = Field(sa_column=Column(JSONB, nullable=False))
+    route_status: str
+    status: str = Field(default="open", sa_column_kwargs={"server_default": "open"})
+    closed_at: datetime | None = Field(default=None, sa_type=DateTime(timezone=True))
+
+
+class Bid(UuidRow, table=True):
+    """One bid per builder per request (UNIQUE), stored with the skills and the reasoning path
+    the engine returned when `eligible-builder` held."""
+
+    __tablename__ = "bids"
+    __table_args__ = (
+        demo_data_check("bids"),
+        CheckConstraint("day_rate > 0", name="ck_bids_day_rate"),
+        CheckConstraint(
+            f"char_length(message) <= {BID_MESSAGE_MAX}", name="ck_bids_message_length"
+        ),
+        CheckConstraint(_in("status", BID_STATUSES), name="ck_bids_status"),
+        UniqueConstraint("request_id", "profile_id", name="uq_bids_request_profile"),
+    )
+
+    request_id: UUID = Field(foreign_key="requests.id", index=True)
+    profile_id: UUID = Field(foreign_key="profiles.id", index=True)
+    day_rate: int
+    message: str = Field(default="", sa_column_kwargs={"server_default": ""})
+    eligible_skills: list[str] = Field(sa_column=Column(JSONB, nullable=False))
+    path: dict[str, Any] = Field(sa_column=Column(JSONB, nullable=False))
+    status: str = Field(default="submitted", sa_column_kwargs={"server_default": "submitted"})
+
+
+class Booking(UuidRow, table=True):
+    """An interview proposal between a founder and a confirmed builder. `proposed_start` is the
+    current proposal in UTC (D-16); `history` is the JSONB list of every transition, written in
+    the same UPDATE as `state` so the two never disagree."""
+
+    __tablename__ = "bookings"
+    __table_args__ = (
+        demo_data_check("bookings"),
+        CheckConstraint(
+            f"duration_min IN ({', '.join(str(d) for d in BOOKING_DURATIONS)})",
+            name="ck_bookings_duration",
+        ),
+        CheckConstraint(_in("state", BOOKING_STATES), name="ck_bookings_state"),
+        CheckConstraint(f"char_length(note) <= {BOOKING_NOTE_MAX}", name="ck_bookings_note_length"),
+    )
+
+    request_id: UUID | None = Field(default=None, foreign_key="requests.id")
+    founder_id: UUID = Field(foreign_key="users.id", index=True)
+    profile_id: UUID = Field(foreign_key="profiles.id", index=True)
+    proposed_start: datetime = Field(sa_type=DateTime(timezone=True))
+    duration_min: int
+    state: str = Field(default="proposed", sa_column_kwargs={"server_default": "proposed"})
+    history: list[dict[str, Any]] = Field(sa_column=Column(JSONB, nullable=False))
+    note: str = Field(default="", sa_column_kwargs={"server_default": ""})
