@@ -9,13 +9,14 @@
  */
 import type {
   AdminDecision,
+  AdminDecisionKind,
   DecidedQueue,
-  DecisionKind,
   DecisionStatus,
   PendingAccount,
   PendingCredential,
   PendingProject,
   PendingQueue,
+  PendingShowcase,
 } from "@venture-route/contracts";
 import { useEffect, useState } from "react";
 
@@ -27,24 +28,38 @@ import { SKILL_LABELS, VERTICAL_LABELS } from "../../lib/brief";
 import { isoDate } from "../../lib/format";
 import { accountPreview, credentialPreview, projectPreview, type ProjectionPreview } from "../../lib/projection";
 import { errorMessage } from "../builder/formStyles";
-import { StatusPill } from "../builder/StatusPill";
+import { ShowcaseStatusPill, StatusPill } from "../builder/StatusPill";
 
 type Decision = "confirm" | "reject";
 
 type LastDecision = { decision: AdminDecision; label: string };
 
-const KIND_LABEL: Record<DecisionKind, string> = {
+const KIND_LABEL: Record<AdminDecisionKind, string> = {
   account: "account",
   credential: "credential",
   project: "project",
+  showcase: "showcase",
 };
+
+/** Sprint 005a (spec #86 story 15): a certification outside the nine-skill vocabulary is
+ * display-only and never produces a `proves` fact (D-52). */
+const NO_VOCABULARY_SKILL_BADGE = "No vocabulary skill: display only";
+
+function SkillCell({ skillId }: Readonly<{ skillId: PendingCredential["skillId"] }>) {
+  if (skillId) return <>{SKILL_LABELS[skillId]}</>;
+  return (
+    <span className="inline-flex h-6 items-center rounded-pill border border-border-strong bg-surface-strong px-2 font-mono text-[11px] text-ink-3">
+      {NO_VOCABULARY_SKILL_BADGE}
+    </span>
+  );
+}
 
 function submitted(iso: string): string {
   return isoDate(iso.slice(0, 10));
 }
 
 type DecidedRowData = {
-  kind: DecisionKind;
+  kind: AdminDecisionKind;
   id: string;
   label: string;
   sub: string;
@@ -69,7 +84,7 @@ function decidedRows(queue: DecidedQueue): DecidedRowData[] {
       kind: "credential" as const,
       id: credential.id,
       label: credential.title,
-      sub: `${credential.issuer} · ${credential.skillId ? SKILL_LABELS[credential.skillId] : "No vocabulary skill"}`,
+      sub: `${credential.issuer} · ${credential.skillId ? SKILL_LABELS[credential.skillId] : NO_VOCABULARY_SKILL_BADGE}`,
       builder: credential.displayName,
       status: credential.status,
       decidedAt: credential.decidedAt,
@@ -82,6 +97,15 @@ function decidedRows(queue: DecidedQueue): DecidedRowData[] {
       builder: project.displayName,
       status: project.status,
       decidedAt: project.decidedAt,
+    })),
+    ...queue.showcase.map((entry) => ({
+      kind: "showcase" as const,
+      id: entry.id,
+      label: entry.title,
+      sub: VERTICAL_LABELS[entry.vertical],
+      builder: entry.displayName,
+      status: entry.status,
+      decidedAt: entry.decidedAt,
     })),
   ];
   return rows.sort((a, b) => Date.parse(b.decidedAt) - Date.parse(a.decidedAt));
@@ -120,7 +144,7 @@ export function AdminHome() {
     };
   }, [api]);
 
-  async function decide(decision: Decision, kind: DecisionKind, id: string, label: string) {
+  async function decide(decision: Decision, kind: AdminDecisionKind, id: string, label: string) {
     setBusy(id);
     setActionError(null);
     try {
@@ -131,9 +155,7 @@ export function AdminHome() {
           accounts: kind === "account" ? current.accounts.filter((row) => row.id !== id) : current.accounts,
           credentials: kind === "credential" ? current.credentials.filter((row) => row.id !== id) : current.credentials,
           projects: kind === "project" ? current.projects.filter((row) => row.id !== id) : current.projects,
-          // The showcase admin kind (#103) isn't wired into this screen yet; carry the list
-          // through unchanged so `PendingQueue`'s new field doesn't break this update.
-          showcase: current.showcase,
+          showcase: kind === "showcase" ? current.showcase.filter((row) => row.id !== id) : current.showcase,
         };
       });
       setExpanded((current) => (current === id ? null : current));
@@ -141,6 +163,12 @@ export function AdminHome() {
       setDecided(await api.getDecided());
     } catch (cause) {
       setActionError(errorMessage(cause, `The ${KIND_LABEL[kind]} decision could not be saved.`));
+      // A 409 means the builder withdrew the entry after the queue loaded (spec #86 story 56);
+      // refresh so the stale row is no longer offered.
+      api
+        .getPending()
+        .then(setQueue)
+        .catch(() => undefined);
     } finally {
       setBusy(null);
     }
@@ -169,11 +197,12 @@ export function AdminHome() {
     accounts: queue?.accounts.length ?? 0,
     credentials: queue?.credentials.length ?? 0,
     projects: queue?.projects.length ?? 0,
+    showcase: queue?.showcase.length ?? 0,
   };
-  const total = counts.accounts + counts.credentials + counts.projects;
+  const total = counts.accounts + counts.credentials + counts.projects + counts.showcase;
   const decidedList = decided ? decidedRows(decided) : [];
 
-  const rowProps = (kind: DecisionKind, id: string, label: string, preview: ProjectionPreview) => ({
+  const rowProps = (kind: AdminDecisionKind, id: string, label: string, preview: ProjectionPreview) => ({
     kind,
     id,
     label,
@@ -251,6 +280,9 @@ export function AdminHome() {
                 <span>Projects</span>
                 <Count value={counts.projects} />
               </TabsTrigger>
+              <TabsTrigger value="showcase" className="gap-2 px-3">
+                <span>Showcase ({counts.showcase})</span>
+              </TabsTrigger>
               <TabsTrigger value="decided" className="gap-2 px-3">
                 <span>Decided</span>
                 <Count value={decidedList.length} />
@@ -289,7 +321,7 @@ export function AdminHome() {
                     detail={<CredentialDetail credential={credential} />}
                     cells={[
                       credential.displayName,
-                      credential.skillId ? SKILL_LABELS[credential.skillId] : "No vocabulary skill",
+                      <SkillCell key="skill" skillId={credential.skillId} />,
                       submitted(credential.submittedAt),
                     ]}
                     sub={credential.issuer}
@@ -313,9 +345,16 @@ export function AdminHome() {
                 ))}
               />
             </TabsContent>
+            <TabsContent value="showcase">
+              <ShowcaseQueueList
+                entries={queue.showcase}
+                busyId={busy}
+                onDecide={(decision, entry) => decide(decision, "showcase", entry.id, entry.title)}
+              />
+            </TabsContent>
             <TabsContent value="decided">
               <QueueTable
-                caption="Decided accounts, credentials and projects"
+                caption="Decided accounts, credentials, projects and showcase entries"
                 columns={["Item", "Kind", "Builder", "Status", "Decided", "Actions"]}
                 empty="Nothing has been decided yet."
                 noun="decided"
@@ -426,7 +465,7 @@ function QueueRow({
   onDecide,
 }: Readonly<{
   id: string;
-  kind: DecisionKind;
+  kind: AdminDecisionKind;
   label: string;
   sub: string;
   cells: React.ReactNode[];
@@ -560,6 +599,146 @@ function DecidedRow({
   );
 }
 
+/**
+ * Sprint 005a (spec #86 stories 48-49, #106): a Showcase entry's card preview in the admin queue.
+ * Links are plain text, not clickable anchors that auto-open, with the host highlighted; the
+ * video id is the one the engine already parsed out of `pitchVideoUrl` (#89), never re-parsed
+ * here. Confirm/Reject act on this entry's own `showcaseStatus`, independent of the project's
+ * confirmation (#103).
+ */
+const SHOWCASE_LINKS: ReadonlyArray<{ field: keyof PendingShowcase; label: string }> = [
+  { field: "liveUrl", label: "Live" },
+  { field: "demoUrl", label: "Demo" },
+  { field: "pitchVideoUrl", label: "Pitch video" },
+  { field: "pitchDeckUrl", label: "Pitch deck" },
+];
+
+/** A URL as plain text with its host highlighted; never an `<a>`, so it cannot auto-open. */
+function LinkText({ url }: Readonly<{ url: string }>) {
+  let before = "";
+  let host = url;
+  let after = "";
+  try {
+    host = new URL(url).host;
+    const at = url.indexOf(host);
+    before = url.slice(0, at);
+    after = url.slice(at + host.length);
+  } catch {
+    // Not a parseable URL: show it verbatim with nothing highlighted.
+  }
+  return (
+    <span className="break-all font-mono text-[12px] text-ink-2">
+      {before}
+      <span className="font-semibold text-ink">{host}</span>
+      {after}
+    </span>
+  );
+}
+
+function ShowcaseQueueList({
+  entries,
+  busyId,
+  onDecide,
+}: Readonly<{
+  entries: PendingShowcase[];
+  busyId: string | null;
+  onDecide(decision: Decision, entry: PendingShowcase): void;
+}>) {
+  return (
+    <div className="flex flex-col gap-3">
+      {entries.length > 0 ? (
+        entries.map((entry) => <ShowcaseEntryCard key={entry.id} entry={entry} busy={busyId === entry.id} onDecide={onDecide} />)
+      ) : (
+        <p className="rounded-card border border-border bg-surface px-4 py-6 text-center text-ink-muted">
+          No pending Showcase entries.
+        </p>
+      )}
+      <span className="font-mono text-[12px] text-ink-3">
+        {entries.length} of {entries.length} pending
+      </span>
+    </div>
+  );
+}
+
+function ShowcaseEntryCard({
+  entry,
+  busy,
+  onDecide,
+}: Readonly<{ entry: PendingShowcase; busy: boolean; onDecide(decision: Decision, entry: PendingShowcase): void }>) {
+  const links = SHOWCASE_LINKS.map(({ field, label }) => ({ label, url: entry[field] as string | null })).filter(
+    (link): link is { label: string; url: string } => link.url !== null,
+  );
+  return (
+    <article aria-label={entry.title} className="flex flex-col gap-3 rounded-card border border-border bg-surface p-4">
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div className="flex flex-col gap-1">
+          <div className="flex flex-wrap items-center gap-2">
+            <h3 className="font-display text-lg font-semibold text-ink">{entry.title}</h3>
+            <DemoDataPill />
+          </div>
+          <span className="text-[12px] text-ink-3">
+            {entry.displayName} · {VERTICAL_LABELS[entry.vertical]}
+          </span>
+        </div>
+        <ShowcaseStatusPill status={entry.showcaseStatus} />
+      </div>
+
+      <p className="line-clamp-2 text-[13px] leading-relaxed text-ink-2">{entry.description}</p>
+
+      {entry.projectStatus !== "confirmed" || !entry.accountConfirmed ? (
+        <div className="flex flex-wrap gap-2">
+          {entry.projectStatus !== "confirmed" ? (
+            <span className="rounded-pill border border-amber-ink/40 bg-amber-fill px-2.5 py-1 text-[12px] font-medium text-amber-ink">
+              Project not yet confirmed
+            </span>
+          ) : null}
+          {!entry.accountConfirmed ? (
+            <span className="rounded-pill border border-amber-ink/40 bg-amber-fill px-2.5 py-1 text-[12px] font-medium text-amber-ink">
+              Account not confirmed
+            </span>
+          ) : null}
+        </div>
+      ) : null}
+
+      {links.length > 0 ? (
+        <dl className="grid grid-cols-1 gap-1.5 border-t border-border pt-3 sm:grid-cols-2">
+          {links.map((link) => (
+            <div key={link.label} className="flex flex-col gap-0.5">
+              <dt className="font-mono text-[11px] uppercase tracking-wider text-ink-3">{link.label}</dt>
+              <dd>
+                <LinkText url={link.url} />
+              </dd>
+            </div>
+          ))}
+        </dl>
+      ) : null}
+
+      <p className="font-mono text-[12px] text-ink-3">
+        {entry.pitchVideoId ? <>Video id: {entry.pitchVideoId}</> : "No pitch video"}
+      </p>
+
+      <div className="flex items-center gap-2 border-t border-border pt-3">
+        <button
+          type="button"
+          disabled={busy}
+          onClick={() => onDecide("confirm", entry)}
+          className="inline-flex h-8 items-center rounded-lg bg-accent-green px-3 text-[13px] font-medium text-white hover:bg-accent-green-hover disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          Confirm
+        </button>
+        <button
+          type="button"
+          disabled={busy}
+          onClick={() => onDecide("reject", entry)}
+          className="inline-flex h-8 items-center rounded-lg border border-border-strong bg-surface-strong px-3 text-[13px] font-medium text-danger hover:border-danger disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          Reject
+        </button>
+      </div>
+    </article>
+  );
+}
+
 function DetailGrid({ items }: Readonly<{ items: readonly { label: string; value: React.ReactNode }[] }>) {
   return (
     <dl className="grid grid-cols-1 gap-3 sm:grid-cols-2">
@@ -595,7 +774,7 @@ function CredentialDetail({ credential }: Readonly<{ credential: PendingCredenti
         { label: "Builder", value: `${credential.displayName} (${credential.builderId})` },
         {
           label: "Skill",
-          value: credential.skillId ? SKILL_LABELS[credential.skillId] : "No vocabulary skill",
+          value: <SkillCell skillId={credential.skillId} />,
         },
       ]}
     />

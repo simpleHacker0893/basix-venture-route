@@ -14,6 +14,21 @@ export function shortId(rowId: string): string {
   return rowId.replace(/-/g, "").slice(0, 8);
 }
 
+/**
+ * One quoted MeTTa string atom, mirroring `app/engine/projection.py::metta_string` for the
+ * characters a preview is likely to show (backslash, quote and the common whitespace escapes);
+ * this is a preview helper, not the engine's own encoder.
+ */
+function mettaString(text: string): string {
+  const escaped = text
+    .replace(/\\/g, "\\\\")
+    .replace(/"/g, '\\"')
+    .replace(/\n/g, "\\n")
+    .replace(/\r/g, "\\r")
+    .replace(/\t/g, "\\t");
+  return `"${escaped}"`;
+}
+
 export type ProjectionPreview = {
   facts: string[];
   /** What the preview cannot show from this row alone. */
@@ -38,6 +53,14 @@ export function accountPreview(account: PendingAccount): ProjectionPreview {
 
 export function credentialPreview(credential: PendingCredential): ProjectionPreview {
   const cred = `cred-${shortId(credential.id)}`;
+  // A skill-less certification never earns or proves anything: it becomes exactly one
+  // display-only `certified` fact that no rule reads (D-52), not `earned`/`proves`/`confirmed`.
+  if (credential.skillId === null) {
+    return {
+      facts: [`(certified ${credential.builderId} ${cred} ${mettaString(credential.issuer)})`],
+      note: "Outside the nine-skill vocabulary, so this stays a display-only certified fact: it never satisfies verified-for-skill.",
+    };
+  }
   return {
     facts: [
       `(earned ${credential.builderId} ${cred})`,

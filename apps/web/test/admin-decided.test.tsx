@@ -3,7 +3,7 @@
  * The Decided tab on `/admin` lists confirmed and rejected rows; Reverse posts the opposite
  * decision, the engine reprojects and answers `projectedRows`, and the screen shows that number.
  */
-import type { AdminDecision, DecidedQueue, DecisionKind, PendingQueue } from "@venture-route/contracts";
+import type { AdminDecision, AdminDecisionKind, DecidedQueue, PendingQueue } from "@venture-route/contracts";
 import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
@@ -86,7 +86,7 @@ function decided(): DecidedQueue {
   };
 }
 
-function decision(kind: DecisionKind, id: string, status: AdminDecision["status"], projectedRows: number): AdminDecision {
+function decision(kind: AdminDecisionKind, id: string, status: AdminDecision["status"], projectedRows: number): AdminDecision {
   return { id, kind, status, projectedRows };
 }
 
@@ -113,7 +113,7 @@ describe("/admin Decided tab", () => {
 
   it("reverses a confirmed credential by rejecting it and shows the returned projected_rows", async () => {
     const user = userEvent.setup();
-    const reject = vi.fn(async (kind: DecisionKind, id: string) => decision(kind, id, "rejected", 44));
+    const reject = vi.fn(async (kind: AdminDecisionKind, id: string) => decision(kind, id, "rejected", 44));
     const confirm = vi.fn();
     const getDecided = vi.fn(async () => decided());
     const marketplace = fakeMarketplace({ getPending: async () => pending(), getDecided, confirm, reject });
@@ -132,7 +132,7 @@ describe("/admin Decided tab", () => {
 
   it("reverses a rejected project by confirming it", async () => {
     const user = userEvent.setup();
-    const confirm = vi.fn(async (kind: DecisionKind, id: string) => decision(kind, id, "confirmed", 61));
+    const confirm = vi.fn(async (kind: AdminDecisionKind, id: string) => decision(kind, id, "confirmed", 61));
     const reject = vi.fn();
     const marketplace = fakeMarketplace({ getPending: async () => pending(), getDecided: async () => decided(), confirm, reject });
 
