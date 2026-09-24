@@ -4,11 +4,14 @@
  * the engine rebuilds the MeTTa space in the same request (D-15) and answers with `projectedRows`,
  * which the status line shows as `projected_rows`. An expanded row previews the facts the row would
  * add, rendered client-side from the row's fields with the seed predicates; it is a preview, not the
- * projection itself and not a ledger.
+ * projection itself and not a ledger. The Decided tab (spec #35 story 24, #49) lists what has already
+ * been confirmed or rejected; Reverse posts the opposite decision and refreshes both lists.
  */
 import type {
   AdminDecision,
+  DecidedQueue,
   DecisionKind,
+  DecisionStatus,
   PendingAccount,
   PendingCredential,
   PendingProject,
@@ -24,6 +27,7 @@ import { SKILL_LABELS, VERTICAL_LABELS } from "../../lib/brief";
 import { isoDate } from "../../lib/format";
 import { accountPreview, credentialPreview, projectPreview, type ProjectionPreview } from "../../lib/projection";
 import { errorMessage } from "../builder/formStyles";
+import { StatusPill } from "../builder/StatusPill";
 
 type Decision = "confirm" | "reject";
 
@@ -39,9 +43,54 @@ function submitted(iso: string): string {
   return isoDate(iso.slice(0, 10));
 }
 
+type DecidedRowData = {
+  kind: DecisionKind;
+  id: string;
+  label: string;
+  sub: string;
+  builder: string;
+  status: DecisionStatus;
+  decidedAt: string;
+};
+
+/** Every decided row in one list, most recent decision first. */
+function decidedRows(queue: DecidedQueue): DecidedRowData[] {
+  const rows: DecidedRowData[] = [
+    ...queue.accounts.map((account) => ({
+      kind: "account" as const,
+      id: account.id,
+      label: account.displayName ?? account.email,
+      sub: account.email,
+      builder: account.builderId ?? "—",
+      status: account.status,
+      decidedAt: account.decidedAt,
+    })),
+    ...queue.credentials.map((credential) => ({
+      kind: "credential" as const,
+      id: credential.id,
+      label: credential.title,
+      sub: `${credential.issuer} · ${SKILL_LABELS[credential.skillId]}`,
+      builder: credential.displayName,
+      status: credential.status,
+      decidedAt: credential.decidedAt,
+    })),
+    ...queue.projects.map((project) => ({
+      kind: "project" as const,
+      id: project.id,
+      label: project.title,
+      sub: VERTICAL_LABELS[project.vertical],
+      builder: project.displayName,
+      status: project.status,
+      decidedAt: project.decidedAt,
+    })),
+  ];
+  return rows.sort((a, b) => Date.parse(b.decidedAt) - Date.parse(a.decidedAt));
+}
+
 export function AdminHome() {
   const api = useMarketplaceApi();
   const [queue, setQueue] = useState<PendingQueue | null>(null);
+  const [decided, setDecided] = useState<DecidedQueue | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [last, setLast] = useState<LastDecision | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
@@ -57,6 +106,14 @@ export function AdminHome() {
       })
       .catch((cause: unknown) => {
         if (!cancelled) setLoadError(errorMessage(cause, "The queue could not be loaded."));
+      });
+    api
+      .getDecided()
+      .then((next) => {
+        if (!cancelled) setDecided(next);
+      })
+      .catch((cause: unknown) => {
+        if (!cancelled) setLoadError(errorMessage(cause, "The decided list could not be loaded."));
       });
     return () => {
       cancelled = true;
@@ -78,8 +135,28 @@ export function AdminHome() {
       });
       setExpanded((current) => (current === id ? null : current));
       setLast({ decision: result, label });
+      setDecided(await api.getDecided());
     } catch (cause) {
       setActionError(errorMessage(cause, `The ${KIND_LABEL[kind]} decision could not be saved.`));
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  /** Reverse posts the opposite decision (reject a confirmed row, confirm a rejected one) and
+   * reloads both lists: the engine reprojects in the same request and answers `projectedRows`. */
+  async function reverse(row: DecidedRowData) {
+    setBusy(row.id);
+    setActionError(null);
+    try {
+      const result =
+        row.status === "confirmed" ? await api.reject(row.kind, row.id) : await api.confirm(row.kind, row.id);
+      setLast({ decision: result, label: row.label });
+      const [nextPending, nextDecided] = await Promise.all([api.getPending(), api.getDecided()]);
+      setQueue(nextPending);
+      setDecided(nextDecided);
+    } catch (cause) {
+      setActionError(errorMessage(cause, `The ${KIND_LABEL[row.kind]} decision could not be reversed.`));
     } finally {
       setBusy(null);
     }
@@ -91,6 +168,7 @@ export function AdminHome() {
     projects: queue?.projects.length ?? 0,
   };
   const total = counts.accounts + counts.credentials + counts.projects;
+  const decidedList = decided ? decidedRows(decided) : [];
 
   const rowProps = (kind: DecisionKind, id: string, label: string, preview: ProjectionPreview) => ({
     kind,
@@ -170,6 +248,10 @@ export function AdminHome() {
                 <span>Projects</span>
                 <Count value={counts.projects} />
               </TabsTrigger>
+              <TabsTrigger value="decided" className="gap-2 px-3">
+                <span>Decided</span>
+                <Count value={decidedList.length} />
+              </TabsTrigger>
             </TabsList>
 
             <TabsContent value="accounts">
@@ -224,6 +306,17 @@ export function AdminHome() {
                 ))}
               />
             </TabsContent>
+            <TabsContent value="decided">
+              <QueueTable
+                caption="Decided accounts, credentials and projects"
+                columns={["Item", "Kind", "Builder", "Status", "Decided", "Actions"]}
+                empty="Nothing has been decided yet."
+                noun="decided"
+                rows={decidedList.map((row) => (
+                  <DecidedRow key={row.id} row={row} busy={busy === row.id} onReverse={() => reverse(row)} />
+                ))}
+              />
+            </TabsContent>
           </Tabs>
 
           <aside className="flex flex-col gap-6">
@@ -244,7 +337,8 @@ export function AdminHome() {
               </ul>
               <p className="border-t border-border pt-3 text-[12px] text-ink-3">
                 Every decision reprojects the graph; the same count is on <code className="font-mono">GET /health</code> as{" "}
-                <code className="font-mono">projected_rows</code>.
+                <code className="font-mono">projected_rows</code>. A mistaken decision is reversed from the Decided tab; every
+                step stays in the confirmations log.
               </p>
             </section>
           </aside>
@@ -275,7 +369,8 @@ function QueueTable({
   columns,
   rows,
   empty,
-}: Readonly<{ caption: string; columns: readonly string[]; rows: React.ReactNode[]; empty: string }>) {
+  noun = "pending",
+}: Readonly<{ caption: string; columns: readonly string[]; rows: React.ReactNode[]; empty: string; noun?: string }>) {
   return (
     <div className="flex flex-col gap-3">
       <div className="overflow-x-auto rounded-card border border-border bg-surface">
@@ -304,7 +399,7 @@ function QueueTable({
         </table>
       </div>
       <span className="font-mono text-[12px] text-ink-3">
-        {rows.length} of {rows.length} pending
+        {rows.length} of {rows.length} {noun}
       </span>
     </div>
   );
@@ -418,6 +513,43 @@ function QueueRow({
         </tr>
       ) : null}
     </>
+  );
+}
+
+function DecidedRow({
+  row,
+  busy,
+  onReverse,
+}: Readonly<{ row: DecidedRowData; busy: boolean; onReverse(): void }>) {
+  return (
+    <tr aria-label={row.label} className="align-top">
+      <td className="px-4 py-3">
+        <div className="flex flex-col gap-1">
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="font-medium text-ink">{row.label}</span>
+            <DemoDataPill />
+          </div>
+          <span className="text-[12px] text-ink-3">{row.sub}</span>
+        </div>
+      </td>
+      <td className="px-4 py-3 text-ink-2">{KIND_LABEL[row.kind]}</td>
+      <td className="px-4 py-3 text-ink-2">{row.builder}</td>
+      <td className="px-4 py-3">
+        <StatusPill status={row.status} />
+      </td>
+      <td className="px-4 py-3 text-ink-2">{submitted(row.decidedAt)}</td>
+      <td className="px-4 py-3">
+        <button
+          type="button"
+          disabled={busy}
+          onClick={onReverse}
+          title={row.status === "confirmed" ? "Reject this row" : "Confirm this row"}
+          className="inline-flex h-8 items-center rounded-lg border border-border-strong bg-surface-strong px-3 text-[13px] font-medium text-ink hover:border-accent-green disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          Reverse
+        </button>
+      </td>
+    </tr>
   );
 }
 

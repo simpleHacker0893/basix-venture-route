@@ -205,6 +205,30 @@ export type PendingQueue = z.infer<typeof PendingQueue>;
 export const DecisionKind = z.enum(["account", "credential", "project"]);
 export type DecisionKind = z.infer<typeof DecisionKind>;
 
+export const DecisionStatus = z.enum(["confirmed", "rejected"]);
+export type DecisionStatus = z.infer<typeof DecisionStatus>;
+
+/**
+ * Decided list (spec #35 story 24, #49): the same rows as the pending queue once an admin has
+ * confirmed or rejected them, with the latest decision and its timestamp so it can be reversed
+ * through the opposite endpoint. Admin accounts never appear.
+ */
+export const DecidedAccount = PendingAccount.extend({ status: DecisionStatus, decidedAt: IsoDateTime });
+export type DecidedAccount = z.infer<typeof DecidedAccount>;
+
+export const DecidedCredential = PendingCredential.extend({ status: DecisionStatus, decidedAt: IsoDateTime });
+export type DecidedCredential = z.infer<typeof DecidedCredential>;
+
+export const DecidedProject = PendingProject.extend({ status: DecisionStatus, decidedAt: IsoDateTime });
+export type DecidedProject = z.infer<typeof DecidedProject>;
+
+export const DecidedQueue = z.strictObject({
+  accounts: z.array(DecidedAccount),
+  credentials: z.array(DecidedCredential),
+  projects: z.array(DecidedProject),
+});
+export type DecidedQueue = z.infer<typeof DecidedQueue>;
+
 export const AdminDecision = z.strictObject({
   id: z.string(),
   kind: DecisionKind,

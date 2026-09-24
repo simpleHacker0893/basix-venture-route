@@ -224,6 +224,32 @@ class PendingQueue(Wire):
     projects: list[PendingProject]
 
 
+DecisionStatus = Literal["confirmed", "rejected"]
+
+
+class DecidedAccount(PendingAccount):
+    """A confirmed or rejected account with its latest decision (spec #35 story 24, #49)."""
+
+    status: DecisionStatus
+    decided_at: datetime = Field(alias="decidedAt")
+
+
+class DecidedCredential(PendingCredential):
+    status: DecisionStatus
+    decided_at: datetime = Field(alias="decidedAt")
+
+
+class DecidedProject(PendingProject):
+    status: DecisionStatus
+    decided_at: datetime = Field(alias="decidedAt")
+
+
+class DecidedQueue(Wire):
+    accounts: list[DecidedAccount]
+    credentials: list[DecidedCredential]
+    projects: list[DecidedProject]
+
+
 class AdminDecision(Wire):
     id: str
     kind: Literal["account", "credential", "project"]

@@ -21,6 +21,7 @@ export function fakeMarketplace(overrides: Partial<MarketplaceApi> = {}): Market
     postProject: unexpected("postProject"),
     getCandidate: unexpected("getCandidate"),
     getPending: unexpected("getPending"),
+    getDecided: unexpected("getDecided"),
     confirm: unexpected("confirm"),
     reject: unexpected("reject"),
     // Sprint 004 (#67)
