@@ -59,6 +59,22 @@ jobs:
     runs-on: ubuntu-latest
     env:
       LLM_PROVIDER: "null"
+    # Sprint 004 (#77): the Clerk suite starts its own engine against `venture_route` on this
+    # service container (the same URL its config uses for the compose `db`, postgres:18, D-37).
+    services:
+      postgres:
+        image: postgres:18
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: venture_route
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d venture_route"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 10
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
@@ -88,3 +104,26 @@ jobs:
           name: playwright-report
           path: apps/web/playwright-report
           retention-days: 14
+      # Sprint 004 (#77): the Clerk suite (three-role smoke, marketplace, the request → bid →
+      # booking round-trip) on every push, against the postgres:18 service container migrated to
+      # head. The Clerk dev keys are repository secrets the Operator adds (D-26); without them the
+      # step skips with a message naming them, so forks and secret-less runs stay green.
+      - name: Clerk Playwright suite (skips without the Clerk dev keys)
+        env:
+          VITE_CLERK_PUBLISHABLE_KEY: ${{ secrets.VITE_CLERK_PUBLISHABLE_KEY }}
+          CLERK_SECRET_KEY: ${{ secrets.CLERK_SECRET_KEY }}
+          ALEMBIC_DATABASE_URL: postgresql+asyncpg://postgres:postgres@localhost:5432/venture_route
+        run: |
+          if [ -z "$VITE_CLERK_PUBLISHABLE_KEY" ] || [ -z "$CLERK_SECRET_KEY" ]; then
+            echo "Clerk suite skipped: repository secrets VITE_CLERK_PUBLISHABLE_KEY and CLERK_SECRET_KEY are not set (Operator step, D-26)."
+            exit 0
+          fi
+          (cd services/engine && uv run alembic upgrade head)
+          pnpm -F web e2e:clerk
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: playwright-report-clerk
+          path: apps/web/playwright-report-clerk
+          retention-days: 14
+          if-no-files-found: ignore
