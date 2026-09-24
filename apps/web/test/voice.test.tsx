@@ -10,15 +10,68 @@ import { useState } from "react";
 import { describe, expect, it } from "vitest";
 
 import type { VoiceErrorCode } from "../src/voice/provider";
-import { createFakeVoiceProvider, installWindowHook } from "../src/voice/fakeVoiceProvider";
+import { createFakeVoiceProvider, installWindowHook, type ChloeVoiceWindowHook } from "../src/voice/fakeVoiceProvider";
 import { createVoiceProvider, selectProvider } from "../src/voice/selectProvider";
 import { useVoice, VoiceSessionProvider } from "../src/voice/VoiceSession";
 import { createWebSpeechProvider } from "../src/voice/webSpeechProvider";
 import { renderApp } from "./fakeEngine";
 
+/**
+ * A minimal stand-in for `speechSynthesis` / `SpeechSynthesisUtterance`, just enough to exercise
+ * `webSpeechProvider.ts`'s speak/cancel bookkeeping without a real browser. `cancel()` mimics the
+ * real API: it fires the in-flight utterance's `onerror` synchronously (fix round 1, Critical #1).
+ */
+type StubUtterance = {
+  text: string;
+  voice: SpeechSynthesisVoice | null;
+  onend: (() => void) | null;
+  onerror: (() => void) | null;
+};
+
+function createSpeechStub() {
+  const spoken: string[] = [];
+  let current: StubUtterance | null = null;
+  const synth = {
+    getVoices: () => [] as SpeechSynthesisVoice[],
+    addEventListener: () => undefined,
+    removeEventListener: () => undefined,
+    cancel: () => {
+      const utterance = current;
+      current = null;
+      utterance?.onerror?.();
+    },
+    speak: (utterance: StubUtterance) => {
+      spoken.push(utterance.text);
+      current = utterance;
+    },
+  };
+  function SpeechSynthesisUtteranceStub(this: StubUtterance, text: string) {
+    this.text = text;
+    this.voice = null;
+    this.onend = null;
+    this.onerror = null;
+  }
+  const win = {
+    speechSynthesis: synth,
+    SpeechSynthesisUtterance: SpeechSynthesisUtteranceStub,
+  } as unknown as Window;
+  return {
+    win,
+    spoken,
+    finishCurrent: () => {
+      const utterance = current;
+      current = null;
+      utterance?.onend?.();
+    },
+  };
+}
+
 function Probe() {
   const voice = useVoice();
   const [transcript, setTranscript] = useState("");
+  // Distinguishes "releaseMic() resolved with an empty transcript" from "still pending" — the
+  // transcript div alone cannot, since both render as empty text (fix round 1, Important #3).
+  const [released, setReleased] = useState(false);
   return (
     <div>
       <div data-testid="status">{voice.status}</div>
@@ -29,12 +82,23 @@ function Probe() {
       <div data-testid="assistant-offline">{String(voice.assistantOffline)}</div>
       <div data-testid="last-error">{voice.lastError?.code ?? ""}</div>
       <div data-testid="transcript">{transcript}</div>
+      <div data-testid="released">{String(released)}</div>
       <button onClick={voice.enable}>enable</button>
       <button onClick={voice.disable}>disable</button>
       <button onClick={() => void voice.say("hi there")}>say</button>
       <button onClick={voice.stopSpeaking}>stop</button>
       <button onClick={voice.pressMic}>press</button>
-      <button onClick={() => void voice.releaseMic().then(setTranscript)}>release</button>
+      <button
+        onClick={() => {
+          setReleased(false);
+          void voice.releaseMic().then((text) => {
+            setTranscript(text);
+            setReleased(true);
+          });
+        }}
+      >
+        release
+      </button>
       <button onClick={voice.markGreeted}>greet</button>
       <button onClick={voice.markAssistantOffline}>offline</button>
     </div>
@@ -48,11 +112,63 @@ describe("voice device layer", () => {
     expect(provider.supported).toBe(false);
   });
 
+  it("cancelSpeech during a multi-chunk utterance stops the queue instead of speaking the next chunk (fix round 1, Critical #1)", async () => {
+    const { win, spoken } = createSpeechStub();
+    const provider = createWebSpeechProvider(win);
+    // Two sentences, each under the ~180-char cap alone but too long together: chunkSpeech
+    // yields two utterances, so a bug that lets `advance()` run after cancel would speak both.
+    const text = `${"a".repeat(150)}. ${"b".repeat(150)}.`;
+
+    const promise = provider.speak(text);
+    expect(spoken).toEqual([`${"a".repeat(150)}.`]);
+    provider.cancelSpeech();
+    await promise;
+
+    expect(spoken).toEqual([`${"a".repeat(150)}.`]);
+  });
+
+  it("a second speak() cancels the first instead of leaving its promise pending (fix round 1, Missing #4)", async () => {
+    const { win, spoken, finishCurrent } = createSpeechStub();
+    const provider = createWebSpeechProvider(win);
+
+    let firstResolved = false;
+    const first = provider.speak("first utterance.").then(() => {
+      firstResolved = true;
+    });
+    provider.speak("second utterance.");
+    await first;
+
+    expect(firstResolved).toBe(true);
+    expect(spoken).toEqual(["first utterance.", "second utterance."]);
+    finishCurrent();
+  });
+
+  it("createWebSpeechProvider applies a transform before chunking and speaking (fix round 1, ruling R13; #97 wires spokenForm)", async () => {
+    const { win, spoken, finishCurrent } = createSpeechStub();
+    const provider = createWebSpeechProvider(win, { transform: (text) => text.toUpperCase() });
+
+    const promise = provider.speak("hello there.");
+    expect(spoken).toEqual(["HELLO THERE."]);
+    finishCurrent();
+    await promise;
+  });
+
   it("selectProvider yields no provider for off and for the offline demo, and the fake for fake", () => {
     expect(selectProvider("off", false)).toBeNull();
     expect(selectProvider("web", true)).toBeNull();
     expect(selectProvider("fake", false)?.kind).toBe("fake");
     expect(selectProvider("web", false, window)?.kind).toBe("web");
+  });
+
+  it("selectProvider('fake', ...) installs window.__chloeVoice so Playwright can drive it (fix round 1, Missing #5)", () => {
+    const fakeWindow = {} as Window & { __chloeVoice?: ChloeVoiceWindowHook };
+    const provider = selectProvider("fake", false, fakeWindow);
+    expect(provider?.kind).toBe("fake");
+    expect(fakeWindow.__chloeVoice).toBeDefined();
+    fakeWindow.__chloeVoice?.transcribe("hooked through selectProvider");
+    // Nobody is listening yet, so transcribe() is a no-op; the point is the hook exists and is
+    // wired to the same provider selectProvider returned, not a disconnected instance.
+    expect(fakeWindow.__chloeVoice?.spoken()).toEqual([]);
   });
 
   it("createVoiceProvider defaults to the unsupported web provider under jsdom's pinned env", () => {
@@ -215,13 +331,39 @@ describe("voice device layer", () => {
     expect(screen.getByTestId("enabled")).toHaveTextContent("false");
   });
 
-  it("renderApp wires an injected voice provider (or none) through App without crashing the intake screen", async () => {
+  it("releaseMic() resolves immediately with \"\" when nothing is listening, instead of hanging (fix round 1, Important #3)", async () => {
+    const provider = createFakeVoiceProvider();
+    const user = userEvent.setup();
+    render(
+      <VoiceSessionProvider voice={provider}>
+        <Probe />
+      </VoiceSessionProvider>,
+    );
+
+    // Never pressed the mic.
+    await user.click(screen.getByRole("button", { name: "release" }));
+    expect(await screen.findByTestId("released")).toHaveTextContent("true");
+    expect(screen.getByTestId("transcript")).toHaveTextContent("");
+
+    // Pressed, then disabled mid-press (abortListening discards without an onEnd callback).
+    await user.click(screen.getByRole("button", { name: "press" }));
+    await user.click(screen.getByRole("button", { name: "disable" }));
+    await user.click(screen.getByRole("button", { name: "release" }));
+    expect(await screen.findByTestId("released")).toHaveTextContent("true");
+  });
+
+  it("renderApp wires an injected voice provider through App without crashing the intake screen", async () => {
     renderApp("/route", undefined, { voice: createFakeVoiceProvider() });
     expect(await screen.findByRole("heading", { level: 1, name: "Describe your MVP" })).toBeInTheDocument();
   });
 
-  it("renderApp's default App wiring (no voice option) still resolves the unsupported web provider and renders", async () => {
+  it("renderApp wires an explicit voice: null through App without crashing the intake screen", async () => {
     renderApp("/route", undefined, { voice: null });
+    expect(await screen.findByRole("heading", { level: 1, name: "Describe your MVP" })).toBeInTheDocument();
+  });
+
+  it("renderApp's default App wiring (no voice option at all) resolves createVoiceProvider() and still renders (fix round 1, Minor #7)", async () => {
+    renderApp("/route");
     expect(await screen.findByRole("heading", { level: 1, name: "Describe your MVP" })).toBeInTheDocument();
   });
 });

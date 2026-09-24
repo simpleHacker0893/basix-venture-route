@@ -79,6 +79,7 @@ export function VoiceSessionProvider({ voice, children }: Props) {
   const [state, dispatch] = useReducer(voiceReducer, initialVoiceState);
   const endResolvers = useRef<Array<(text: string) => void>>([]);
   const finalText = useRef("");
+  const listeningRef = useRef(false);
   const supported = voice?.supported ?? false;
 
   const enable = useCallback(() => {
@@ -89,6 +90,9 @@ export function VoiceSessionProvider({ voice, children }: Props) {
   const disable = useCallback(() => {
     voice?.cancelSpeech();
     voice?.abortListening();
+    // abortListening discards without an onEnd callback (provider.ts): reset directly so a
+    // releaseMic() called after disabling does not wait forever on a session that never ends.
+    listeningRef.current = false;
     dispatch({ type: "enabled", value: false });
   }, [voice]);
 
@@ -109,6 +113,7 @@ export function VoiceSessionProvider({ voice, children }: Props) {
   const pressMic = useCallback(() => {
     if (!voice || !supported) return;
     finalText.current = "";
+    listeningRef.current = true;
     dispatch({ type: "listening-started" });
     const handlers: ListenHandlers = {
       onInterim: (text) => dispatch({ type: "interim", text }),
@@ -117,6 +122,7 @@ export function VoiceSessionProvider({ voice, children }: Props) {
       },
       onError: (error) => dispatch({ type: "error", error }),
       onEnd: () => {
+        listeningRef.current = false;
         dispatch({ type: "listening-ended" });
         const resolvers = endResolvers.current;
         endResolvers.current = [];
@@ -129,7 +135,9 @@ export function VoiceSessionProvider({ voice, children }: Props) {
 
   const releaseMic = useCallback((): Promise<string> => {
     return new Promise((resolve) => {
-      if (!voice) {
+      // Nothing is listening (never pressed, already ended, or disabled mid-press): resolve
+      // immediately instead of waiting on an `onEnd` that will never come.
+      if (!voice || !listeningRef.current) {
         resolve("");
         return;
       }

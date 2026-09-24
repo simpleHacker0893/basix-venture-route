@@ -28,7 +28,8 @@ export default defineConfig([
   },
   {
     // Sprint 006 blueprint §Files pins `VoiceSessionProvider + voiceReducer; useVoice()` to one
-    // file, mirroring `state/RoutingProvider.tsx`'s pairing of provider and hook.
+    // file. The routing store splits the same shapes across routingContext.ts (useRouting) and
+    // RoutingProvider.tsx (the component); the voice blueprint deliberately keeps them together.
     files: ['src/voice/VoiceSession.tsx'],
     rules: {
       'react-refresh/only-export-components': 'off',

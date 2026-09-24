@@ -20,7 +20,8 @@ export type ListenHandlers = {
 
 export interface VoiceProvider {
   kind: "web" | "fake";
-  /** False when the browser has neither `SpeechRecognition` nor `speechSynthesis`. */
+  /** False whenever the browser lacks any of `SpeechRecognition`, `speechSynthesis` or
+   * `SpeechSynthesisUtterance` — true only when the web provider has every API it needs. */
   supported: boolean;
   /** Resolves once speech has ended, naturally or via `cancelSpeech`. */
   speak(text: string): Promise<void>;

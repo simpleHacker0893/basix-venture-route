@@ -4,7 +4,7 @@
  * inject; `off` and the offline demo (`VITE_OFFLINE_DEMO=1`) mean no voice UI at all.
  */
 import { OFFLINE_DEMO } from "../api/source";
-import { createFakeVoiceProvider } from "./fakeVoiceProvider";
+import { createFakeVoiceProvider, installWindowHook } from "./fakeVoiceProvider";
 import type { VoiceProvider } from "./provider";
 import { createWebSpeechProvider } from "./webSpeechProvider";
 
@@ -22,7 +22,13 @@ export function selectProvider(
   win: Window = window,
 ): VoiceProvider | null {
   if (offlineDemo || setting === "off") return null;
-  if (setting === "fake") return createFakeVoiceProvider();
+  if (setting === "fake") {
+    // Playwright drives the mic and speech through window.__chloeVoice (e2e/helpers.ts): a
+    // VITE_VOICE_PROVIDER=fake build must expose it, not just return the provider (Missing #5).
+    const provider = createFakeVoiceProvider();
+    installWindowHook(provider, win);
+    return provider;
+  }
   return createWebSpeechProvider(win);
 }
 

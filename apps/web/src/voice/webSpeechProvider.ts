@@ -100,17 +100,24 @@ function chunkSpeech(text: string, maxLen = 180): string[] {
   return chunks;
 }
 
-export function createWebSpeechProvider(win: Window = window): VoiceProvider {
+export type WebSpeechProviderOptions = {
+  /** Applied to the full text before it is chunked and spoken; identity by default. Ticket #97
+   * wires Chloe's `spokenForm()` in here so display text and spoken text can differ. */
+  transform?: (text: string) => string;
+};
+
+export function createWebSpeechProvider(win: Window = window, options: WebSpeechProviderOptions = {}): VoiceProvider {
   const speechWin = win as SpeechWindow;
   const RecognitionCtor = speechWin.SpeechRecognition ?? speechWin.webkitSpeechRecognition ?? null;
   const synth = speechWin.speechSynthesis ?? null;
   const UtteranceCtor = speechWin.SpeechSynthesisUtterance ?? null;
   const supported = Boolean(RecognitionCtor) && Boolean(synth) && Boolean(UtteranceCtor);
+  const transform = options.transform ?? ((text: string) => text);
 
   let lang: "en-GB" | "en-US" = "en-GB";
   let activeRecognition: SpeechRecognitionLike | null = null;
   let resolvedVoice: SpeechSynthesisVoice | null = null;
-  let pendingCancel: (() => void) | null = null;
+  let cancelCurrent: (() => void) | null = null;
 
   function refreshVoice(): void {
     if (!synth) return;
@@ -123,27 +130,43 @@ export function createWebSpeechProvider(win: Window = window): VoiceProvider {
   }
 
   function speak(text: string): Promise<void> {
+    // A second speak() while one is still in flight must not orphan the first caller's promise
+    // (Task 91 fix round 1, Missing #4): cancel whatever is current before starting a new one.
+    cancelSpeech();
     return new Promise((resolve) => {
       if (!synth || !UtteranceCtor) {
         resolve();
         return;
       }
-      const chunks = chunkSpeech(text);
+      const chunks = chunkSpeech(transform(text));
       if (chunks.length === 0) {
         resolve();
         return;
       }
       let index = 0;
-      pendingCancel = resolve;
+      let cancelled = false;
+      cancelCurrent = () => {
+        if (cancelled) return;
+        // Set the flag, then resolve, before `cancelSpeech` ever calls `synth.cancel()`: that
+        // call fires the current utterance's `onerror`/`onend` synchronously in real browsers,
+        // and `advance` below must see `cancelled` as already true when it does (Critical #1).
+        cancelled = true;
+        cancelCurrent = null;
+        resolve();
+      };
       const speakNext = (): void => {
+        if (cancelled) return;
         if (index >= chunks.length) {
-          pendingCancel = null;
+          cancelCurrent = null;
           resolve();
           return;
         }
         const utterance = new UtteranceCtor(chunks[index]!);
         if (resolvedVoice) utterance.voice = resolvedVoice;
         const advance = (): void => {
+          // synth.cancel() fires onend/onerror on the utterance still playing: without this
+          // guard that would queue the next chunk right after Stop Chloe (Critical #1).
+          if (cancelled) return;
           index += 1;
           speakNext();
         };
@@ -156,12 +179,10 @@ export function createWebSpeechProvider(win: Window = window): VoiceProvider {
   }
 
   function cancelSpeech(): void {
+    // Order matters (Critical #1): mark the in-flight speak() cancelled *before* calling
+    // synth.cancel(), because that call fires the current utterance's onend/onerror synchronously.
+    cancelCurrent?.();
     synth?.cancel();
-    if (pendingCancel) {
-      const resolve = pendingCancel;
-      pendingCancel = null;
-      resolve();
-    }
   }
 
   function startListening(handlers: ListenHandlers): void {
@@ -184,12 +205,21 @@ export function createWebSpeechProvider(win: Window = window): VoiceProvider {
     recognition.onerror = (event) => {
       if (event.error === "language-not-supported" && lang === "en-GB") {
         lang = "en-US";
+        // Detach the superseded instance's handlers before restarting: its `onend` still fires
+        // once the browser finishes tearing it down, and unguarded that would null out the *new*
+        // recognition and end the caller's session early (Important #2).
+        recognition.onend = null;
+        recognition.onerror = null;
+        recognition.onresult = null;
         startListening(handlers);
         return;
       }
       handlers.onError({ code: mapErrorCode(event.error) } satisfies VoiceError);
     };
     recognition.onend = () => {
+      // A stale `onend` from an instance superseded by the language fallback must not affect the
+      // session that replaced it (identity guard, same fix as above).
+      if (activeRecognition !== recognition) return;
       activeRecognition = null;
       handlers.onEnd();
     };
