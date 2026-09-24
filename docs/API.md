@@ -604,24 +604,37 @@ Role `admin`. Admins are never user-chosen: the webhook assigns the role to emai
 
 ### GET /api/admin/pending
 
-`PendingQueue`: `{ "accounts": [...], "credentials": [...], "projects": [...] }`. Accounts are
-pending founders and builders (`id`, `clerkId`, `email`, `role`, `builderId`, `displayName`,
-`cohortId`, `submittedAt`); credentials and projects carry their builder's slug and display name
-plus the row fields. Every row has `demoData: true`.
+`PendingQueue`: `{ "accounts": [...], "credentials": [...], "projects": [...], "showcase": [...] }`.
+Accounts are pending founders and builders (`id`, `clerkId`, `email`, `role`, `builderId`,
+`displayName`, `cohortId`, `submittedAt`); credentials and projects carry their builder's slug and
+display name plus the row fields. Credentials include `issuedOn` and `credentialUrl` (both
+nullable) and a skill-less certification has `skillId: null`. Every row has `demoData: true`.
+
+`showcase` (Sprint 005a, #103) lists every project with `showcased: true` and
+`showcaseStatus: "pending"`, whatever the project's or account's own status. Each row is the card
+preview: `id` (the project id), `builderId`, `displayName`, `cohortId`, `title`, `description`,
+`vertical`, `licensable`, `skillIds`, the four links `liveUrl`, `demoUrl`, `pitchVideoUrl`,
+`pitchDeckUrl`, `pitchVideoId` (the parsed 11-character YouTube id, or `null`), `showcaseStatus`,
+plus `projectStatus` and `accountConfirmed` for the "Project not yet confirmed" / "Account not
+confirmed" warnings: an entry can be confirmed before both are, but stays private until they are
+(the single visibility rule, see `GET /api/showcase`).
 
 ### GET /api/admin/decided
 
-`DecidedQueue`: the same three lists with the rows an admin has already confirmed or rejected
+`DecidedQueue`: the same four lists with the rows an admin has already confirmed or rejected
 (spec #35 story 24, #49). Each row carries its pending counterpart's fields plus `status`
 (`confirmed` | `rejected`) and `decidedAt`, the timestamp of the latest `confirmations` row for
 that target (ISO date-time with offset), oldest decision first. Pending rows and admin accounts
 never appear. A mistaken decision is reversed by calling the opposite endpoint below; the `/admin`
-Decided tab's Reverse button does exactly that.
+Decided tab's Reverse button does exactly that. A `showcase` row's `status` is its
+`showcaseStatus`; an entry the builder edits goes back to pending, and one the builder withdraws
+(`showcased: false`) leaves both lists.
 
 ### POST /api/admin/confirm/{kind}/{id}, POST /api/admin/reject/{kind}/{id}
 
-`kind` is `account`, `credential` or `project` (`422` otherwise); `id` is the row UUID (`404`
-`{"detail": "no pending <kind> <id>"}` when unknown). Any transition is allowed so a mistake can
+`kind` is `account`, `credential`, `project` or `showcase` (`422` otherwise); `id` is the row
+UUID (`404` `{"detail": "no pending <kind> <id>"}` when unknown; for `showcase` the id is a
+project id, so any other id is `404`). Any transition is allowed so a mistake can
 be reversed; every decision appends a `confirmations` row. The status is committed, then the
 engine rebuilds its space in the same request (D-15) and answers:
 
@@ -632,6 +645,14 @@ engine rebuilds its space in the same request (D-15) and answers:
 Only builders whose account is confirmed produce atoms; rejecting an account removes the builder
 from the graph on that rebuild, rejecting a project drops its `demonstrates` facts so evidence
 falls back to `credential`. Reprojection on demo-size data takes well under a second.
+
+`showcase` decides the Showcase entry, not the project: confirm sets `showcaseStatus: "confirmed"`
+and stamps `showcase_confirmed_at` (the gallery's sort key); reject sets `"rejected"` and clears
+it. Both log a `confirmations` row of kind `showcase` and reproject, because a publicly visible
+entry is the display-only fact `(showcases <builder> <project>)` that no rule reads (D-52). An
+entry the builder has withdrawn (`showcased: false`) answers `409`
+`{"detail": "Builder has withdrawn this entry"}` and nothing is logged. No token `401`, a
+non-admin `403`.
 
 ## Webhook: POST /api/webhooks/clerk
 
