@@ -43,7 +43,9 @@ export default defineConfig({
   projects: [{ name: "chromium", use: { ...devices["Desktop Chrome"], viewport: { width: 1440, height: 900 } } }],
   webServer: [
     {
-      command: `uv run python -m uvicorn app.main:app --port ${ENGINE_PORT}`,
+      // The reset removes the rows earlier runs' +clerk_test users left in the compose db before
+      // the engine projects the store (#76), so every run starts from seed-only atoms.
+      command: `uv run python scripts/e2e_reset.py && uv run python -m uvicorn app.main:app --port ${ENGINE_PORT}`,
       cwd: ENGINE_DIR,
       url: `${ENGINE_URL}/health`,
       reuseExistingServer: false,

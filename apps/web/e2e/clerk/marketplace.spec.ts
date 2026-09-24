@@ -10,7 +10,7 @@ import { expect, test, type Page } from "@playwright/test";
 
 import { builderIds, routeScenario } from "../helpers";
 import { readState } from "./env";
-import { engineGet, enginePost, expectRoleClaim, sessionToken, signInAs } from "./helpers";
+import { engineGet, enginePost, expectRoleClaim, sessionToken, signInAs, signOut } from "./helpers";
 
 test.describe.configure({ mode: "serial" });
 
@@ -140,6 +140,8 @@ test("admin rejects the project; the founder's rerun shows evidence Credential",
   expect(rejected.status()).toBe(200);
   expect(await rejected.json()).toMatchObject({ kind: "project", status: "rejected" });
 
+  // One page, two roles: Clerk refuses a second sign-in on a live session.
+  await signOut(page);
   await signInAs(page, "founder");
   await routeScenario(page, SCENARIO);
 
