@@ -2,7 +2,7 @@
 
 > Evidence-backed venture routing through the BASIX ecosystem, decided by MeTTa graph rules.
 
-**Status:** Sprints 000–002 merged (engine, routing core, founder UI). Sprint 003 (marketplace: Clerk sign-in, Neon Postgres, admin confirmation projected into the graph) is in progress on `sprint/003-marketplace`. Hackathon proof of concept for the SingularityNET MeTTa track; demo Thursday 1 October 2026. Every record is fictional demo data.
+**Status:** Sprints 000–004 merged (engine, routing core, founder UI, marketplace with Clerk and Neon Postgres, requests, bids and interview bookings). Sprint 005 (Builder Showcase, then demo hardening and deployment) is next. Hackathon proof of concept for the SingularityNET MeTTa track; demo Thursday 1 October 2026. Every record is fictional demo data.
 
 Venture Route turns a founder's plain-language venture brief into the smallest credible route through a BASIX-shaped ecosystem: verified builders, reusable IP, cohort and university context, a relevant partner, daily cost, and explicit capability gaps.
 
@@ -12,7 +12,7 @@ It is not an AI matcher. MeTTa relationship rules over inspectable facts decide 
 
 - **Engine** (`services/engine`): FastAPI with the official Hyperon runtime (`hyperon==0.2.10`) in-process, seven named MeTTa rules over a fictional seed graph, a deterministic team assembler, and a language-model adapter that only narrates. `POST /api/route` answers the structured form; `POST /api/conversation` answers chat. Every result carries typed reasoning paths.
 - **Web app** (`apps/web`): React 19 PWA. Chat or form intake, brief review, the route result with gaps above team cards, the "Why this route?" drawer over the reasoning paths, a plain-text handoff, an offline demonstration mode, and the landing page from the approved Stitch designs.
-- **Marketplace** (Sprint 003, engine side merged on the sprint branch): Clerk session verification, a Postgres store with Alembic migrations, builder profiles, credentials and projects, a founder-facing candidate view, and an admin queue whose confirmations rebuild the MeTTa space so user-entered builders appear in routes with the same evidence as seed builders.
+- **Marketplace** (Sprints 003–004): Clerk sign-in with founder, builder and admin roles, a Postgres store with Alembic migrations, builder profiles, credentials and projects, a founder-facing candidate view, an admin queue whose confirmations rebuild the MeTTa space so user-entered builders appear in routes with the same evidence as seed builders, requests published from a route, bids gated by the engine's eligibility verdict, interview bookings on a founder-owned state machine, and a founder dashboard.
 
 `GET /health` proves the runtime loaded the graph and all seven rules:
 
@@ -21,6 +21,21 @@ It is not an AI matcher. MeTTa relationship rules over inspectable facts decide 
 `POST /internal/query` (dev-only) runs the rules for a seed brief. Below, the constrained brief asks for `mobile` and `rust`: the Rust builder is eligible with a full fact chain, and `route-gap` reports an honest `skill` gap for `mobile` with engine-supplied next actions instead of a fabricated match:
 
 ![Response body for brief-constrained-01: one eligible builder for rust with ten source facts, and a skill gap for mobile with next actions](docs/images/engine-query-response.png)
+
+## Screens
+
+Captured from the merged app with Playwright (`docs/screenshots/`, engine on `LLM_PROVIDER=null`, no Clerk key).
+
+| | |
+|---|---|
+| ![Landing page](docs/screenshots/landing.png) | ![Chat intake with scenario chips and the brief panel](docs/screenshots/intake.png) |
+| Landing page from the approved Stitch export | Intake: chat or form, scenario chips, "Your brief so far" |
+| ![Brief review with the two-month calendar](docs/screenshots/brief-review.png) | ![Feasible route: three builder cards with evidence badges, reusable IP, cohort and partner](docs/screenshots/route-feasible.png) |
+| Confirm your brief before routing | Feasible route: team, cost strip, reusable IP, cohort, partner |
+| ![Why this route? drawer listing the eligible-builder rule and its source facts](docs/screenshots/why-this-route.png) | ![Partial route with the gaps panel above the team](docs/screenshots/route-partial.png) |
+| "Why this route?": the named rule and its facts, no model text | Partial route: the gap and its next actions come first |
+| ![Partners page from the seed graph](docs/screenshots/partners.png) | ![Plain-text venture handoff](docs/screenshots/handoff.png) |
+| Partners, universities, cohorts and reusable IP from the seed graph | Handoff text built client-side from the route |
 
 ## Quick start
 
@@ -37,6 +52,8 @@ Five minutes to a running engine, a running web app and green test suites. No AP
 | Visual C++ 2015-2022 runtime | Windows only | The hyperon Windows wheel needs `MSVCP140.dll`: `winget install Microsoft.VCRedist.2015+.x64`. |
 
 ### 1. Engine
+
+Everything installs inside the repository: `uv` creates `services/engine/.venv`, `pnpm` creates `node_modules` at the root and per package; nothing is written outside the clone except the uv and pnpm caches.
 
 ```bash
 git clone https://github.com/simpleHacker0893/basix-venture-route.git
@@ -168,21 +185,21 @@ Builders sign in with Clerk and keep a profile, availability, credentials and sh
 
 ```text
 services/engine/        FastAPI + Hyperon engine (uv, Python 3.12)
-  app/api/              /health, /api/route, /api/conversation, /api/scenarios, /api/me/*, /api/builders/*, /api/admin/*, /api/webhooks/clerk, /internal/query
+  app/api/              /health, /api/route, /api/conversation, /api/scenarios, /api/ecosystem, /api/me/*, /api/builders/*, /api/admin/*, /api/requests*, /api/bookings*, /api/me/dashboard, /api/webhooks/clerk, /internal/query
   app/engine/           MettaRouteEngine, grounded atoms, atom parsing, projection, EngineError
   app/conversation/     orchestrator: merge → missing fields → clarification or route
   app/llm/              LlmAdapter protocol, Anthropic adapter, null adapter
   app/auth/             Clerk JWKS cache, session verification, require_role, Svix webhook
   app/db/               async engine and session dependency (Neon / compose db)
-  app/marketplace/      SQLModel tables, repository, verified-skill derivation, wire schemas
+  app/marketplace/      SQLModel tables, repository, verified-skill derivation, booking state machine, slot rules, wire schemas
   app/models/           VentureBrief, VentureRoute, chat and engine result models
-  alembic/              migrations (0001_marketplace); `alembic upgrade head` is the release command
+  alembic/              migrations (0001_marketplace, 0002 requests/bids/bookings); `alembic upgrade head` is the release command
   seed/                 facts.metta, rules.metta, briefs.json (five demo scenarios)
   scripts/              export_schema.py, export_offline_snapshot.py (both have --check)
   tests/                real-runtime, HTTP-seam and database tests
 packages/contracts/     Zod schemas + generated JSON Schema mirrored by Pydantic (see its README)
 apps/web/               React 19 + Vite PWA (see its README)
-docs/                   API.md, PRD.md, adr/, design/ (Stitch prompts), agents/, images/
+docs/                   API.md, PRD.md, adr/, design/ (Stitch prompts), agents/, images/, screenshots/
 design/stitch/          approved Stitch exports per batch; they win over the prompt pack (D-36)
 planning/               operating pack: STATE, DECISIONS, DOMAIN, TIMELINE, PROMPTS, sprints/
 graphify-out/           knowledge graph of the repo (graph.json, GRAPH_REPORT.md)
@@ -221,9 +238,10 @@ Planning follows the 120x Architect/Builder Operating Pack. Start with `AGENTS.m
 | 000 MeTTa spike | 22–23 Sep | engine, rules, seed graph, `/health` | merged |
 | 001 Routing core | 23–24 Sep | `POST /api/conversation`, team assembler, deterministic status, Zod ↔ Pydantic contracts, LLM adapter with form fallback | merged |
 | 002 Founder UI | 25–26 Sep | React intake, brief review, route result with gaps first, "Why this route?" drawer, handoff, PWA, landing | merged |
-| 003 Marketplace | 27–28 Sep | Clerk roles, Postgres store, profiles and proof, admin confirmation projected into the graph | in progress |
-| 004 Requests & interviews | 29 Sep | requests board, eligibility-gated bids, bookings | planned |
-| 005 Demo hardening | 30 Sep | single launch command, Railway + Vercel deploy, recording, pitch | planned |
+| 003 Marketplace | 23 Sep | Clerk roles, Postgres store, profiles and proof, admin confirmation projected into the graph | merged |
+| 004 Requests & interviews | 24 Sep | requests published from a route, eligibility-gated bids, interview bookings, founder dashboard | merged |
+| 005a Builder Showcase | 25–27 Sep | public showcase of shipped products, certifications and skills, admin-gated, display-only (D-42, D-43) | next |
+| 005 Demo hardening | 28–30 Sep | single launch command, Railway + Vercel deploy, recording, pitch, freeze | planned |
 | 006 Chloe voice intake | after the demo | browser-speech voice skin over the unchanged conversation API (D-38) | planned |
 
 ## Contributing
