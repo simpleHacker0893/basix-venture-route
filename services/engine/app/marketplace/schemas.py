@@ -224,10 +224,15 @@ class CredentialInput(Wire):
     issuer: Issuer
     # Sprint 005a (spec #86, story 15): a certification outside the nine-skill vocabulary has no
     # `skillId`; it stays display-only and never produces a `proves` fact (D-52). Existing
-    # clients that always send `skillId` keep working unchanged.
+    # clients that always send `skillId` keep working unchanged. `skillId` keeps a plain default:
+    # the builder's skill picker already exists, so an explicit `null` for "no vocabulary skill"
+    # is meaningful. `issuedOn`/`credentialUrl` have no picker yet (#99); `default_factory` (like
+    # `default_factory=list` elsewhere in this module) keeps the JSON Schema's `default` key out,
+    # so the field is optional without inviting a client to send an explicit `null` for a field
+    # its form doesn't have inputs for yet (W0 integration fix).
     skill_id: SkillId | None = Field(default=None, alias="skillId")
-    issued_on: date | None = Field(default=None, alias="issuedOn")
-    credential_url: ShowcaseUrl | None = Field(default=None, alias="credentialUrl")
+    issued_on: date | None = Field(default_factory=lambda: None, alias="issuedOn")
+    credential_url: ShowcaseUrl | None = Field(default_factory=lambda: None, alias="credentialUrl")
 
 
 class CredentialOut(Wire):

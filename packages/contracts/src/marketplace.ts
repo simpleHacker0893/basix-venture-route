@@ -153,14 +153,18 @@ export const Issuer = z.string().min(1).max(120);
 /**
  * Sprint 005a (spec #86, story 15): a certification outside the nine-skill vocabulary has no
  * `skillId`; it stays display-only and never produces a `proves` fact (D-52). Existing clients
- * that always send `skillId` keep working unchanged.
+ * that always send `skillId` keep working unchanged. `skillId` keeps `.default(null)`: the
+ * builder's skill picker already exists, so an explicit `null` for "no vocabulary skill" is
+ * meaningful. `issuedOn`/`credentialUrl` have no picker yet (#99), so they are `.optional()`
+ * with no default: unset fields are simply absent from the parsed body, not sent as noise
+ * (W0 integration fix).
  */
 export const CredentialInput = z.strictObject({
   title: Title,
   issuer: Issuer,
   skillId: SkillId.nullable().default(null),
-  issuedOn: IsoDate.nullable().default(null),
-  credentialUrl: ShowcaseUrl.nullable().default(null),
+  issuedOn: IsoDate.nullable().optional(),
+  credentialUrl: ShowcaseUrl.nullable().optional(),
 });
 export type CredentialInput = z.infer<typeof CredentialInput>;
 export type CredentialInputInput = z.input<typeof CredentialInput>;
