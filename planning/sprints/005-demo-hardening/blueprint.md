@@ -12,7 +12,14 @@ Read `planning/STATE.md` §What Sprint 004 inherits and the Sprint 004 PR #78 re
 
 Field limits follow D-40 and D-43.
 
-## Part A — Showcase
+## Part A — Showcase and Chloe
+
+**Amendments after the S0 brainstorm (spec #86; D-50, D-51, D-52). Where they conflict with the lines below, these win:**
+- `profiles` gains `skill_set text[]`, `github_url`, `linkedin_url`; `projects` gains `showcase_confirmed_at`. The skill picker writes `skill_set`, never `self_described_skills`.
+- `app/marketplace/projection.py` projects `showcases`, `has-skill-set`, `certified` and `suggested-skill` facts with escaped strings; `test_projection_display_only.py` becomes a scenario route-equality test plus an escaping test (D-52). Showcase admin decisions reproject.
+- New: `POST /api/me/skills/suggest` and `suggest_skills()` on `LlmAdapter` (`app/llm/`), `tests/test_skills_suggest.py`; web `ResumeSuggest` panel on `/profile` (D-50).
+- Chloe: the Sprint 006 blueprint files and steps 1–6 run on this branch in parallel from W0, plus `VoiceSessionProvider` above the founder routes, the founder-header toggle, and dashboard/booking read-aloud scripts (D-51). Shared files with the Showcase: `TopNav.tsx`, `App.tsx`; the ledger rules on both.
+- Demo seed content lives in `services/engine/seed/showcase_demo.json`; seed builders are `demo-`-prefixed with no availability and no `mobile`.
 
 ### Files
 ```

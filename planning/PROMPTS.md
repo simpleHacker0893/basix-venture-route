@@ -201,7 +201,7 @@ Finish (60 min): dispatch the final whole-branch reviewer per requesting-code-re
 
 ### Sprint 005 — Builder Showcase (Part A) and demo hardening (Part B) (D-42)
 The complete, self-contained prompt set for this sprint (with the Sprint 004 inheritance section) is `planning/sprints/005-demo-hardening/PROMPTS-005.md`; the lines below are kept in step with it.
-Part A: Fri 25 Sep 08:00 → Sun 27 Sep 20:00, branch `sprint/005a-showcase`, PR "Sprint 005a: Showcase". Part B: Mon 28 Sep 08:00 → Wed 30 Sep 20:00, freeze 22:00, branch `sprint/005-demo-hardening`, PR "Sprint 005: Demo hardening".
+Part A: Fri 25 Sep 08:00 → Sun 27 Sep 20:00, branch `sprint/005a-showcase`, PR "Sprint 005a: Showcase and Chloe". Part B: Mon 28 Sep 08:00 → Wed 30 Sep 20:00, freeze 22:00, branch `sprint/005-demo-hardening`, PR "Sprint 005: Demo hardening".
 
 Seams (Part A, fixed): HTTP `PUT /api/me/projects/{id}/showcase`, `POST /api/me/credentials`, `GET /api/showcase`, `GET /api/showcase/{id}`, `/api/admin/{confirm|reject}/showcase/{id}` against `TEST_DATABASE_URL` (fake JWT per role, no token for public routes); pure functions `validate_https_url`, `youtube_video_id` and the `render_program()` byte-equal invariant; rendered screens through RTL; Playwright no-key `showcase.spec.ts` with `page.route` stubs; Clerk `showcase.spec.ts` (builder → admin → signed-out visitor).
 Seams (Part B): `docker compose up` end-to-end via Playwright `demo.spec.ts`; deployed `/health` and landing page via HTTP checks; every earlier acceptance suite on the freeze commit.
@@ -254,7 +254,7 @@ Finish: final whole-branch review with spec #<spec issue> and acceptance.md §Pa
 Also run the secure-coding skill over the showcase endpoints, links.py and PitchVideo, and the web-design-guidelines skill over /showcase, /showcase/:projectId and the profile editor. Fix every hard finding in its own commit.
 ```
 
-#### P5 — Evidence and PR (Part A; the generic P5 with the title "Sprint 005a: Showcase" and acceptance.md §Part A only). STATE.md gets what 005a shipped and what Part B inherits.
+#### P5 — Evidence and PR (Part A; the generic P5 with the title "Sprint 005a: Showcase and Chloe" and acceptance.md §Part A only). STATE.md gets what 005a shipped and what Part B inherits.
 
 #### P1b — Orient (Part B, after 005a merges or at Mon 28 Sep 08:00)
 ```text

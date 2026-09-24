@@ -1,6 +1,8 @@
 # Sprint 006 — Chloe voice intake
 
-**Window:** post-demo; the Operator sets the dates (Q-13). **Branch:** `sprint/006-chloe-voice`. **Depends on:** Sprint 005 merged and the demo done; a real `ANTHROPIC_API_KEY` in `.env` for the manual voice check (D-26). Stitch export under `design/stitch/batch-5/founder-intake-voice/` (D-36 applies).
+**Window:** merged into Sprint 005a, Fri 25 Sep 08:00 → Sun 27 Sep 20:00 EAT, gate G5a (D-51). **Branch:** `sprint/005a-showcase`, PR "Sprint 005a: Showcase and Chloe", spec #86. **Depends on:** Sprint 004 merged (done); a real `ANTHROPIC_API_KEY` in `.env` for the manual voice check (D-26). Stitch export under `design/stitch/batch-5/founder-intake-voice/` (D-36 applies).
+
+**Additions in 005a (D-51):** the "Voice: Chloe" switch moves to the founder header (remembered in `sessionStorage`) and `VoiceSessionProvider` mounts above the founder routes; Chloe also reads aloud on `/dashboard` (counts and next upcoming booking) and `/bookings/:id` (state and latest proposal in Africa/Nairobi time), templated only from those API responses, with no voice commands. The "engine and contract unchanged" rule means the conversation contract only (see acceptance).
 
 ## Goal
 A founder holds a microphone on the intake screen, describes the MVP, and is walked by Chloe, one spoken question at a time, to a complete brief and a spoken route. The typed chat path and the form path are untouched and byte-identical in outcome (AGENTS.md rule 7). Chloe is a voice skin over `POST /api/conversation`; the engine, the contract and the MeTTa rules do not change (D-38).
