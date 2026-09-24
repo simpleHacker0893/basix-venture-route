@@ -11,6 +11,7 @@ import {
   Candidate,
   Credential,
   Dashboard,
+  DecidedQueue,
   Eligibility,
   PendingQueue,
   Project,
@@ -27,6 +28,7 @@ import {
   type Credential as CredentialT,
   type CredentialInput,
   type Dashboard as DashboardT,
+  type DecidedQueue as DecidedQueueT,
   type DecisionKind,
   type Eligibility as EligibilityT,
   type PendingQueue as PendingQueueT,
@@ -92,6 +94,8 @@ export type MarketplaceApi = {
   getCandidate(builderId: string): Promise<CandidateT>;
   /** GET /api/admin/pending (admin): pending accounts, credentials and projects. */
   getPending(): Promise<PendingQueueT>;
+  /** GET /api/admin/decided: confirmed and rejected rows with their latest decision (#49). */
+  getDecided(): Promise<DecidedQueueT>;
   /** POST /api/admin/confirm/{kind}/{id}: the engine reprojects in the same request (D-15). */
   confirm(kind: DecisionKind, id: string): Promise<AdminDecisionT>;
   /** POST /api/admin/reject/{kind}/{id}: the engine reprojects in the same request (D-15). */
@@ -132,6 +136,7 @@ export function createMarketplaceApi(baseUrl: string, fetchLike: FetchLike, getT
     postProject: (input) => request("/api/me/projects", Project, jsonPost(input)),
     getCandidate: (builderId) => request(`/api/builders/${encodeURIComponent(builderId)}`, Candidate),
     getPending: () => request("/api/admin/pending", PendingQueue),
+    getDecided: () => request("/api/admin/decided", DecidedQueue),
     confirm: (kind, id) => request(`/api/admin/confirm/${kind}/${encodeURIComponent(id)}`, AdminDecision, { method: "POST" }),
     reject: (kind, id) => request(`/api/admin/reject/${kind}/${encodeURIComponent(id)}`, AdminDecision, { method: "POST" }),
   };

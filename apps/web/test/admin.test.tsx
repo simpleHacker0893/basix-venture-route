@@ -4,7 +4,7 @@
  * marketplace API. The engine reprojects the graph and reports `projectedRows`; the screen only
  * posts the decision and renders what came back.
  */
-import type { AdminDecision, DecisionKind, PendingQueue } from "@venture-route/contracts";
+import type { AdminDecision, DecidedQueue, DecisionKind, PendingQueue } from "@venture-route/contracts";
 import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
@@ -75,6 +75,10 @@ function queue(): PendingQueue {
   };
 }
 
+function decided(): DecidedQueue {
+  return { accounts: [], credentials: [], projects: [] };
+}
+
 function decision(kind: DecisionKind, id: string, status: AdminDecision["status"], projectedRows: number): AdminDecision {
   return { id, kind, status, projectedRows };
 }
@@ -83,7 +87,7 @@ describe("/admin", () => {
   it("shows the three tabs with counts, confirms the credential and reports projected_rows", async () => {
     const user = userEvent.setup();
     const confirm = vi.fn(async (kind: DecisionKind, id: string) => decision(kind, id, "confirmed", 57));
-    const marketplace = fakeMarketplace({ getPending: async () => queue(), confirm });
+    const marketplace = fakeMarketplace({ getPending: async () => queue(), getDecided: async () => decided(), confirm });
 
     render(<App initialPath="/admin" source={source} auth={adminAuth} marketplace={marketplace} />);
 
@@ -108,7 +112,7 @@ describe("/admin", () => {
   it("rejects the project with its kind and id", async () => {
     const user = userEvent.setup();
     const reject = vi.fn(async (kind: DecisionKind, id: string) => decision(kind, id, "rejected", 51));
-    const marketplace = fakeMarketplace({ getPending: async () => queue(), reject });
+    const marketplace = fakeMarketplace({ getPending: async () => queue(), getDecided: async () => decided(), reject });
 
     render(<App initialPath="/admin" source={source} auth={adminAuth} marketplace={marketplace} />);
 
@@ -123,7 +127,7 @@ describe("/admin", () => {
 
   it("shows the projection preview for an expanded credential row", async () => {
     const user = userEvent.setup();
-    const marketplace = fakeMarketplace({ getPending: async () => queue() });
+    const marketplace = fakeMarketplace({ getPending: async () => queue(), getDecided: async () => decided() });
 
     render(<App initialPath="/admin" source={source} auth={adminAuth} marketplace={marketplace} />);
 

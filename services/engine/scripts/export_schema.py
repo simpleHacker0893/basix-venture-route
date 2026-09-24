@@ -32,6 +32,7 @@ from app.marketplace.schemas import (  # noqa: E402
     CredentialInput,
     CredentialOut,
     Dashboard,
+    DecidedQueue,
     Eligibility,
     PendingQueue,
     ProfileInput,
@@ -112,6 +113,7 @@ def export() -> Json:
         "ProjectInput": model(ProjectInput),
         "Project": model(ProjectOut),
         "PendingQueue": model(PendingQueue),
+        "DecidedQueue": model(DecidedQueue),
         "AdminDecision": model(AdminDecision),
         "Candidate": model(Candidate),
         # Sprint 004 requests, bids, bookings, eligibility, dashboard (spec #52, #54).

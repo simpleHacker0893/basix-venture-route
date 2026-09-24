@@ -352,6 +352,77 @@ async def pending_projects(session: AsyncSession) -> list[tuple[Project, Profile
     return out
 
 
+DECIDED_STATUSES = ("confirmed", "rejected")
+
+
+async def latest_decisions(
+    session: AsyncSession, kind: str, target_ids: Iterable[UUID]
+) -> dict[UUID, datetime]:
+    """Target id → `created_at` of its most recent confirmations row of that kind."""
+    ids = list(target_ids)
+    if not ids:
+        return {}
+    statement = (
+        select(Confirmation.target_id, func.max(Confirmation.created_at))
+        .where(Confirmation.kind == kind, col(Confirmation.target_id).in_(ids))
+        .group_by(col(Confirmation.target_id))
+    )
+    return {target_id: decided_at for target_id, decided_at in (await session.exec(statement))}
+
+
+async def decided_accounts(
+    session: AsyncSession,
+) -> list[tuple[User, Profile | None, datetime]]:
+    """Confirmed or rejected founders and builders, most recent decision last (#49). Admins are
+    bootstrapped confirmed and never decided on, so they are absent. A row without a log entry
+    reports its own `created_at`."""
+    statement = (
+        select(User)
+        .where(col(User.status).in_(DECIDED_STATUSES), col(User.role).in_(["founder", "builder"]))
+        .order_by(col(User.created_at), col(User.id))
+    )
+    users = (await session.exec(statement)).all()
+    decided = await latest_decisions(session, "account", (user.id for user in users))
+    rows = [
+        (user, await profile_for_user(session, user.id), decided.get(user.id, user.created_at))
+        for user in users
+    ]
+    return sorted(rows, key=lambda row: (row[2], row[0].id))
+
+
+async def decided_credentials(session: AsyncSession) -> list[tuple[Credential, Profile, datetime]]:
+    statement = (
+        select(Credential, Profile)
+        .join(Profile, col(Profile.id) == col(Credential.profile_id))
+        .where(col(Credential.status).in_(DECIDED_STATUSES))
+        .order_by(col(Credential.created_at), col(Credential.id))
+    )
+    pairs = (await session.exec(statement)).all()
+    decided = await latest_decisions(session, "credential", (row.id for row, _ in pairs))
+    rows = [(row, profile, decided.get(row.id, row.created_at)) for row, profile in pairs]
+    return sorted(rows, key=lambda row: (row[2], row[0].id))
+
+
+async def decided_projects(
+    session: AsyncSession,
+) -> list[tuple[Project, Profile, list[str], datetime]]:
+    statement = (
+        select(Project, Profile)
+        .join(Profile, col(Profile.id) == col(Project.profile_id))
+        .where(col(Project.status).in_(DECIDED_STATUSES))
+        .order_by(col(Project.created_at), col(Project.id))
+    )
+    pairs = (await session.exec(statement)).all()
+    decided = await latest_decisions(session, "project", (row.id for row, _ in pairs))
+    rows: list[tuple[Project, Profile, list[str], datetime]] = []
+    for row, profile in pairs:
+        skills = [s for p, s in await projects_for(session, profile.id) if p.id == row.id]
+        rows.append(
+            (row, profile, skills[0] if skills else [], decided.get(row.id, row.created_at))
+        )
+    return sorted(rows, key=lambda row: (row[3], row[0].id))
+
+
 async def decide(
     session: AsyncSession,
     kind: str,
