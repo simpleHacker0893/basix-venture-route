@@ -4,7 +4,9 @@ Router-level guard: builder. The one exception is `POST /api/me/role`, which any
 session may call once, before its users row exists (the webhook may not have arrived yet).
 """
 
+from collections.abc import Callable
 from typing import Annotated
+from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.exceptions import RequestValidationError
@@ -15,6 +17,13 @@ from app.auth.webhook import ClerkAdmin
 from app.db.session import get_session
 from app.engine.metta_engine import MettaRouteEngine
 from app.marketplace import repo
+from app.marketplace.links import (
+    LinkError,
+    github_profile_url,
+    linkedin_profile_url,
+    validate_https_url,
+    youtube_video_id,
+)
 from app.marketplace.models import Credential, Profile, Project, User
 from app.marketplace.schemas import (
     AvailabilityRange,
@@ -29,6 +38,8 @@ from app.marketplace.schemas import (
     ProjectOut,
     RoleChoice,
     RoleResponse,
+    ShowcaseEdit,
+    ShowcaseProject,
 )
 from app.marketplace.verification import profile_skills
 
@@ -36,6 +47,29 @@ router = APIRouter(prefix="/api/me")
 builder_router = APIRouter(dependencies=[Depends(require_role("builder"))])
 
 PENDING_EMAIL_DOMAIN = "pending.clerk.invalid"
+CANONICAL_YOUTUBE_WATCH = "https://www.youtube.com/watch?v="
+
+
+def _link(
+    value: str | None, field: str, rule: Callable[..., str] = validate_https_url
+) -> str | None:
+    """The trimmed link, None for a blank one, or a 422 naming the API field (links module)."""
+    if value is None or not value.strip():
+        return None
+    try:
+        checked: str = rule(value, field=field)
+    except LinkError as error:
+        raise RequestValidationError(
+            [{"loc": ("body", error.field), "msg": error.message, "type": "value_error"}]
+        ) from error
+    return checked
+
+
+def _pitch_video(value: str | None) -> str | None:
+    """The canonical `https://www.youtube.com/watch?v=<id>` for any accepted YouTube form, so
+    two links to one video compare equal and a re-save does not reset the review (R19)."""
+    video_id = _link(value, "pitchVideoUrl", youtube_video_id)
+    return None if video_id is None else f"{CANONICAL_YOUTUBE_WATCH}{video_id}"
 
 
 def _engine(request: Request) -> MettaRouteEngine:
@@ -108,6 +142,10 @@ async def _render(session: AsyncSession, user: User, profile: Profile) -> Builde
         skills=profile_skills(rows, list(profile.self_described_skills), names),
         account_status=user.status,
         confirmed=user.status == "confirmed",
+        skill_set=list(profile.skill_set),
+        suggested_skills=list(profile.suggested_skills),
+        github_url=profile.github_url,
+        linkedin_url=profile.linkedin_url,
         demo_data=profile.demo_data,
     )
 
@@ -132,6 +170,8 @@ async def put_profile(
     engine: Annotated[MettaRouteEngine, Depends(_engine)],
 ) -> BuilderProfile:
     assert user.db_user is not None
+    github_url = _link(body.github_url, "githubUrl", github_profile_url)
+    linkedin_url = _link(body.linkedin_url, "linkedinUrl", linkedin_profile_url)
     if body.cohort_id is not None and body.cohort_id not in engine.cohorts():
         raise RequestValidationError(
             [{"loc": ("body", "cohortId"), "msg": "unknown cohort", "type": "value_error"}]
@@ -163,6 +203,10 @@ async def put_profile(
     profile.share_email = body.sharing.email
     profile.share_phone = body.sharing.phone
     profile.share_linkedin = body.sharing.linkedin
+    profile.skill_set = list(body.skill_set)
+    profile.suggested_skills = list(body.suggested_skills)
+    profile.github_url = github_url
+    profile.linkedin_url = linkedin_url
     await session.flush()
     await repo.replace_availability(
         session, profile.id, [(item.start, item.end) for item in body.availability]
@@ -189,6 +233,8 @@ def _credential_out(row: Credential) -> CredentialOut:
         title=row.title,
         issuer=row.issuer,
         skill_id=row.skill_id,
+        issued_on=row.issued_on,
+        credential_url=row.credential_url,
         status=row.status,
         demo_data=row.demo_data,
     )
@@ -207,6 +253,19 @@ def _project_out(row: Project, skill_ids: list[str]) -> ProjectOut:
     )
 
 
+def _showcase_out(row: Project, skill_ids: list[str]) -> ShowcaseProject:
+    return ShowcaseProject(
+        **_project_out(row, skill_ids).model_dump(),
+        description=row.description,
+        live_url=row.live_url,
+        demo_url=row.demo_url,
+        pitch_video_url=row.pitch_video_url,
+        pitch_deck_url=row.pitch_deck_url,
+        showcased=row.showcased,
+        showcase_status=row.showcase_status,
+    )
+
+
 @builder_router.get("/credentials", response_model=list[CredentialOut])
 async def list_credentials(
     user: Annotated[CurrentUser, Depends(require_role("builder"))],
@@ -222,37 +281,40 @@ async def create_credential(
     user: Annotated[CurrentUser, Depends(require_role("builder"))],
     session: Annotated[AsyncSession, Depends(get_session)],
 ) -> CredentialOut:
+    credential_url = _link(body.credential_url, "credentialUrl")
     profile = await _own_profile(session, user)
-    # Skill-less certifications (spec #86 story 15) need the `credentials.skill_id` column
-    # nullable (#88) and the storage/projection changes in #94; until then this endpoint keeps
-    # its Sprint 003 behaviour of requiring a vocabulary skill.
-    if body.skill_id is None:
-        raise RequestValidationError(
-            [{"loc": ("body", "skillId"), "msg": "skillId is required", "type": "value_error"}]
-        )
+    # A certification without `skillId` (spec #86 story 15) is stored as-is and proves nothing:
+    # `repo.confirmed_rows_for` skips it, so it never becomes a `proves` fact (D-52).
     row = await repo.add_credential(
-        session, profile.id, title=body.title, issuer=body.issuer, skill_id=body.skill_id
+        session,
+        profile.id,
+        title=body.title,
+        issuer=body.issuer,
+        skill_id=body.skill_id,
+        issued_on=body.issued_on,
+        credential_url=credential_url,
     )
     return _credential_out(row)
 
 
-@builder_router.get("/projects", response_model=list[ProjectOut])
+@builder_router.get("/projects", response_model=list[ShowcaseProject])
 async def list_projects(
     user: Annotated[CurrentUser, Depends(require_role("builder"))],
     session: Annotated[AsyncSession, Depends(get_session)],
-) -> list[ProjectOut]:
+) -> list[ShowcaseProject]:
+    """The builder's own view: each project with its Showcase entry and status pill (R17)."""
     profile = await _own_profile(session, user)
     return [
-        _project_out(row, skills) for row, skills in await repo.projects_for(session, profile.id)
+        _showcase_out(row, skills) for row, skills in await repo.projects_for(session, profile.id)
     ]
 
 
-@builder_router.post("/projects", response_model=ProjectOut, status_code=201)
+@builder_router.post("/projects", response_model=ShowcaseProject, status_code=201)
 async def create_project(
     body: ProjectInput,
     user: Annotated[CurrentUser, Depends(require_role("builder"))],
     session: Annotated[AsyncSession, Depends(get_session)],
-) -> ProjectOut:
+) -> ShowcaseProject:
     profile = await _own_profile(session, user)
     row = await repo.add_project(
         session,
@@ -263,7 +325,53 @@ async def create_project(
         completed_on=body.completed_on,
         skill_ids=body.skill_ids,
     )
-    return _project_out(row, list(dict.fromkeys(body.skill_ids)))
+    return _showcase_out(row, list(dict.fromkeys(body.skill_ids)))
+
+
+# -- PUT /api/me/projects/{id}/showcase: the builder's Showcase entry (spec #86, #94) -------------
+
+
+@builder_router.put("/projects/{project_id}/showcase", response_model=ShowcaseProject)
+async def put_showcase(
+    project_id: str,
+    body: ShowcaseEdit,
+    user: Annotated[CurrentUser, Depends(require_role("builder"))],
+    session: Annotated[AsyncSession, Depends(get_session)],
+) -> ShowcaseProject:
+    """Owner only; anyone else's project, or no such project, answers 404 (never 403).
+
+    Status rule: identical values change nothing, except that `showcased=true` on a `rejected`
+    entry is a resubmission (R18); otherwise `showcased=false` → `none` and `showcased=true` →
+    `pending`, and either way `showcase_confirmed_at` is cleared so only a fresh admin decision
+    can make the entry public again."""
+    fields = {
+        "description": body.description,
+        "live_url": _link(body.live_url, "liveUrl"),
+        "demo_url": _link(body.demo_url, "demoUrl"),
+        "pitch_video_url": _pitch_video(body.pitch_video_url),
+        "pitch_deck_url": _link(body.pitch_deck_url, "pitchDeckUrl"),
+        "showcased": body.showcased,
+    }
+    profile = await _own_profile(session, user)
+    try:
+        wanted = UUID(project_id)
+    except ValueError:
+        raise HTTPException(status_code=404, detail="project not found") from None
+    found = await repo.own_project(session, profile.id, wanted)
+    if found is None:
+        raise HTTPException(status_code=404, detail="project not found")
+    row, skill_ids = found
+    changed = any(getattr(row, name) != value for name, value in fields.items())
+    resubmitted = body.showcased and row.showcase_status == "rejected"
+    if changed or resubmitted:
+        for name, value in fields.items():
+            setattr(row, name, value)
+        row.showcase_status = "pending" if body.showcased else "none"
+        row.showcase_confirmed_at = None
+        session.add(row)
+        await session.commit()
+        await session.refresh(row)
+    return _showcase_out(row, skill_ids)
 
 
 router.include_router(builder_router)
