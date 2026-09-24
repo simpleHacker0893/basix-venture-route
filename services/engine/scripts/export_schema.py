@@ -33,8 +33,10 @@ from app.marketplace.schemas import (  # noqa: E402
     CredentialOut,
     Dashboard,
     DecidedQueue,
+    DecidedShowcase,
     Eligibility,
     PendingQueue,
+    PendingShowcase,
     ProfileInput,
     ProjectInput,
     ProjectOut,
@@ -121,6 +123,10 @@ def export() -> Json:
         "Project": model(ProjectOut),
         "PendingQueue": model(PendingQueue),
         "DecidedQueue": model(DecidedQueue),
+        # Sprint 005a admin card preview (spec #86 story 48), registered on their own too so a
+        # shape gap in the row itself (not just the queue container) fails here.
+        "PendingShowcase": model(PendingShowcase),
+        "DecidedShowcase": model(DecidedShowcase),
         "AdminDecision": model(AdminDecision),
         "Candidate": model(Candidate),
         # Sprint 004 requests, bids, bookings, eligibility, dashboard (spec #52, #54).

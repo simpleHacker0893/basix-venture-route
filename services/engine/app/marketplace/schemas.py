@@ -16,6 +16,8 @@ from pydantic import (
     ConfigDict,
     Field,
     SerializerFunctionWrapHandler,
+    StringConstraints,
+    ValidationInfo,
     field_validator,
     model_serializer,
     model_validator,
@@ -37,6 +39,11 @@ Evidence = Literal["credential", "project", "both"]
 SkillStatus = Literal["verified", "self-described"]
 AccountStatus = Literal["pending", "confirmed", "rejected"]
 UserRole = Literal["founder", "builder"]
+# Sprint 005a (spec #86): a showcase entry's own review status, and which kind of skill a
+# `GET /api/showcase?skill=` filter matched. Declared up here so the admin queue row shapes below
+# (`PendingShowcase`/`DecidedShowcase`) can use `ShowcaseStatus` before its own section.
+MatchedSkillKind = Literal["demonstrated", "verified", "self-described"]
+ShowcaseStatus = Literal["none", "pending", "confirmed", "rejected"]
 
 DisplayName = Annotated[str, Field(min_length=1, max_length=80)]
 Headline = Annotated[str, Field(max_length=200)]
@@ -48,10 +55,16 @@ Issuer = Annotated[str, Field(min_length=1, max_length=120)]
 
 # Sprint 005a (spec #86, D-43/D-52): showcase description, plain link strings (the `https://` /
 # host / YouTube rules live in `app/marketplace/links.py`, enforced by the endpoints, not here),
-# and one free-text skill label shared by `skillSet`, `suggestedSkills` and résumé suggestions.
+# one free-text skill label shared by `skillSet`, `suggestedSkills` and résumé suggestions
+# (`strip_whitespace=True` rejects a whitespace-only entry outright, since it strips to ""
+# before the `min_length` check runs), and the 11-character YouTube video id the endpoints parse
+# out of `pitchVideoUrl` (#89).
 ShowcaseDescription = Annotated[str, Field(max_length=1000)]
 ShowcaseUrl = Annotated[str, Field(max_length=500)]
-SkillSetEntry = Annotated[str, Field(min_length=1, max_length=40)]
+SkillSetEntry = Annotated[
+    str, StringConstraints(strip_whitespace=True, min_length=1, max_length=40)
+]
+PitchVideoId = Annotated[str, Field(min_length=11, max_length=11)]
 
 
 class Wire(BaseModel):
@@ -130,25 +143,40 @@ class ProfileInput(Wire):
             raise ValueError("needs at least one letter or digit")
         return value.strip()
 
-    @field_validator("skill_set", "suggested_skills")
+    # `SkillSetEntry` already strips whitespace and rejects a now-empty entry, so only the
+    # cross-entry rules (uniqueness, the combined 20-entry cap) need a validator here. Each is a
+    # `field_validator`, not a `model_validator`, so a 422 names the field that actually caused it
+    # (`skillSet` for a duplicate inside `skillSet` itself; `suggestedSkills` for the combined
+    # 20-entry overflow or a duplicate `suggestedSkills` introduces).
+    @field_validator("skill_set")
     @classmethod
-    def _trim_skill_labels(cls, value: list[str]) -> list[str]:
-        return [label.strip() for label in value]
-
-    @model_validator(mode="after")
-    def _skill_labels_fit_and_are_unique(self) -> Self:
-        combined = [*self.skill_set, *self.suggested_skills]
-        if len(combined) > 20:
-            raise ValueError("skillSet and suggestedSkills together must be at most 20 entries")
+    def _skill_set_has_no_internal_duplicate(cls, value: list[str]) -> list[str]:
         seen: set[str] = set()
-        for label in combined:
+        for label in value:
+            key = label.lower()
+            if key in seen:
+                raise ValueError("skillSet must not repeat a skill regardless of case")
+            seen.add(key)
+        return value
+
+    @field_validator("suggested_skills")
+    @classmethod
+    def _suggested_skills_fit_and_are_unique(
+        cls, value: list[str], info: ValidationInfo
+    ) -> list[str]:
+        skill_set: list[str] = info.data.get("skill_set", [])
+        if len(skill_set) + len(value) > 20:
+            raise ValueError("skillSet and suggestedSkills together must be at most 20 entries")
+        seen = {label.lower() for label in skill_set}
+        for label in value:
             key = label.lower()
             if key in seen:
                 raise ValueError(
-                    "skillSet and suggestedSkills must not repeat a skill regardless of case"
+                    "suggestedSkills must not repeat a skill already in skillSet or "
+                    "suggestedSkills, regardless of case"
                 )
             seen.add(key)
-        return self
+        return value
 
 
 class ProfileSkill(Wire):
@@ -253,7 +281,11 @@ class PendingCredential(Wire):
     display_name: str = Field(alias="displayName")
     title: Title
     issuer: Issuer
-    skill_id: SkillId = Field(alias="skillId")
+    # Sprint 005a (spec #86 story 55): a skill-less certification reaches this same queue, so
+    # `skillId` must be nullable here too, or `GET /api/admin/pending` 500s on it.
+    skill_id: SkillId | None = Field(default=None, alias="skillId")
+    issued_on: date | None = Field(default=None, alias="issuedOn")
+    credential_url: ShowcaseUrl | None = Field(default=None, alias="credentialUrl")
     submitted_at: datetime = Field(alias="submittedAt")
     demo_data: bool = Field(default=True, alias="demoData")
 
@@ -271,10 +303,41 @@ class PendingProject(Wire):
     demo_data: bool = Field(default=True, alias="demoData")
 
 
+class PendingShowcase(Wire):
+    """Admin card preview (spec #86 story 48): the same fields the public `ShowcaseCard` shows,
+    plus the flags that drive the "Project not yet confirmed" / "Account not confirmed" warnings
+    (story 49) and the showcase entry's own review status."""
+
+    id: str
+    builder_id: str = Field(alias="builderId")
+    display_name: str = Field(alias="displayName")
+    cohort_id: CohortId | None = Field(default=None, alias="cohortId")
+    title: Title
+    description: ShowcaseDescription
+    vertical: Vertical
+    licensable: bool
+    skill_ids: list[SkillId] = Field(alias="skillIds", min_length=1, max_length=5)
+    live_url: ShowcaseUrl | None = Field(default=None, alias="liveUrl")
+    demo_url: ShowcaseUrl | None = Field(default=None, alias="demoUrl")
+    pitch_video_url: ShowcaseUrl | None = Field(default=None, alias="pitchVideoUrl")
+    pitch_deck_url: ShowcaseUrl | None = Field(default=None, alias="pitchDeckUrl")
+    pitch_video_id: PitchVideoId | None = Field(default=None, alias="pitchVideoId")
+    showcase_status: ShowcaseStatus = Field(alias="showcaseStatus")
+    # "Project not yet confirmed" / "Account not confirmed" (story 49): the entry can still be
+    # confirmed, but it won't be public until both are true too (D-43's visibility predicate).
+    project_status: AccountStatus = Field(alias="projectStatus")
+    account_confirmed: bool = Field(alias="accountConfirmed")
+    submitted_at: datetime = Field(alias="submittedAt")
+    demo_data: bool = Field(default=True, alias="demoData")
+
+
 class PendingQueue(Wire):
     accounts: list[PendingAccount]
     credentials: list[PendingCredential]
     projects: list[PendingProject]
+    # Optional and defaulted so a client built before the showcase admin kind (#103) shipped
+    # still validates this response.
+    showcase: list[PendingShowcase] = Field(default=[])
 
 
 DecisionStatus = Literal["confirmed", "rejected"]
@@ -297,10 +360,16 @@ class DecidedProject(PendingProject):
     decided_at: datetime = Field(alias="decidedAt")
 
 
+class DecidedShowcase(PendingShowcase):
+    status: DecisionStatus
+    decided_at: datetime = Field(alias="decidedAt")
+
+
 class DecidedQueue(Wire):
     accounts: list[DecidedAccount]
     credentials: list[DecidedCredential]
     projects: list[DecidedProject]
+    showcase: list[DecidedShowcase] = Field(default=[])
 
 
 class AdminDecision(Wire):
@@ -484,17 +553,17 @@ class Dashboard(Wire):
 # -- Sprint 005a (spec #86 §API contracts, §Web): Builder Showcase and skill suggestions --------
 # Public reads never carry email, phone, location, day rate or availability (D-43). Link fields
 # are plain strings capped at 500 chars; `https://` / host / YouTube rules are enforced by the
-# endpoints through `app/marketplace/links.py` (#89), not by these wire shapes.
-
-MatchedSkillKind = Literal["demonstrated", "verified", "self-described"]
-ShowcaseStatus = Literal["none", "pending", "confirmed", "rejected"]
+# endpoints through `app/marketplace/links.py` (#89), not by these wire shapes. `MatchedSkillKind`
+# and `ShowcaseStatus` are declared with the other top-level literals above.
 
 
 class MatchedSkill(Wire):
-    """Which of a builder's skills matched a `GET /api/showcase?skill=` filter, and how."""
+    """Which of a builder's skills matched a `GET /api/showcase?skill=` filter, and how. `skill`
+    accepts a vocabulary id (e.g. `python`) or a free-text `skillSet`/`suggestedSkills` label; a
+    self-described match's `id` is null and `label` carries the free text as typed."""
 
-    id: SkillId
-    name: str
+    id: SkillId | None = None
+    label: str
     kind: MatchedSkillKind
 
 
@@ -509,13 +578,14 @@ class ShowcaseCard(Wire):
     vertical: Vertical
     licensable: bool
     description: ShowcaseDescription
-    skill_ids: list[SkillId] = Field(alias="skillIds")
+    skill_ids: list[SkillId] = Field(alias="skillIds", min_length=1, max_length=5)
     # Present only when the request carried `?skill=`: which kind of skill matched (story 32).
     matched_skill: MatchedSkill | None = Field(default=None, alias="matchedSkill")
     live_url: ShowcaseUrl | None = Field(default=None, alias="liveUrl")
     demo_url: ShowcaseUrl | None = Field(default=None, alias="demoUrl")
     pitch_video_url: ShowcaseUrl | None = Field(default=None, alias="pitchVideoUrl")
     pitch_deck_url: ShowcaseUrl | None = Field(default=None, alias="pitchDeckUrl")
+    pitch_video_id: PitchVideoId | None = Field(default=None, alias="pitchVideoId")
     demo_data: bool = Field(default=True, alias="demoData")
 
 
@@ -532,8 +602,9 @@ class ShowcaseBuilder(Wire):
     display_name: DisplayName = Field(alias="displayName")
     cohort_id: CohortId | None = Field(default=None, alias="cohortId")
     verified_skills: list[ProfileSkill] = Field(alias="verifiedSkills")
-    # `skillSet` + `suggestedSkills` combined, labelled "Self-described", never "verified".
-    self_described_skills: list[SkillSetEntry] = Field(alias="selfDescribedSkills")
+    # `skillSet` + `suggestedSkills` combined, labelled "Self-described", never "verified". Not
+    # `BuilderProfile.selfDescribedSkills`, which stays the nine-vocabulary field, unchanged.
+    skill_set: list[SkillSetEntry] = Field(alias="skillSet")
     certifications: list[CredentialOut]
     github_url: ShowcaseUrl | None = Field(default=None, alias="githubUrl")
     linkedin_url: ShowcaseUrl | None = Field(default=None, alias="linkedinUrl")
@@ -548,11 +619,12 @@ class ShowcaseDetail(Wire):
     licensable: bool
     description: ShowcaseDescription
     completed_on: date = Field(alias="completedOn")
-    skill_ids: list[SkillId] = Field(alias="skillIds")
+    skill_ids: list[SkillId] = Field(alias="skillIds", min_length=1, max_length=5)
     live_url: ShowcaseUrl | None = Field(default=None, alias="liveUrl")
     demo_url: ShowcaseUrl | None = Field(default=None, alias="demoUrl")
     pitch_video_url: ShowcaseUrl | None = Field(default=None, alias="pitchVideoUrl")
     pitch_deck_url: ShowcaseUrl | None = Field(default=None, alias="pitchDeckUrl")
+    pitch_video_id: PitchVideoId | None = Field(default=None, alias="pitchVideoId")
     builder: ShowcaseBuilder
     demo_data: bool = Field(default=True, alias="demoData")
 
@@ -568,17 +640,12 @@ class ShowcaseEdit(Wire):
     showcased: bool
 
 
-class ShowcaseProject(Wire):
+class ShowcaseProject(ProjectOut):
     """The builder's own view of one project's showcase entry, returned by the edit endpoint and
-    listed on `/profile` (story 5-9): the status pill the builder sees, not the public card."""
+    listed on `/profile` (story 5-9): the status pill the builder sees, not the public card.
+    Extends `ProjectOut` (same `id/title/vertical/licensable/completedOn/skillIds/status/demoData`,
+    same skillIds bounds) instead of duplicating it."""
 
-    id: str
-    title: Title
-    vertical: Vertical
-    licensable: bool
-    completed_on: date = Field(alias="completedOn")
-    skill_ids: list[SkillId] = Field(alias="skillIds", min_length=1, max_length=5)
-    status: AccountStatus
     description: ShowcaseDescription
     live_url: ShowcaseUrl | None = Field(default=None, alias="liveUrl")
     demo_url: ShowcaseUrl | None = Field(default=None, alias="demoUrl")
@@ -586,7 +653,6 @@ class ShowcaseProject(Wire):
     pitch_deck_url: ShowcaseUrl | None = Field(default=None, alias="pitchDeckUrl")
     showcased: bool
     showcase_status: ShowcaseStatus = Field(alias="showcaseStatus")
-    demo_data: bool = Field(default=True, alias="demoData")
 
 
 class SkillSuggestion(Wire):
@@ -611,30 +677,5 @@ class SkillSuggestRequest(Wire):
 
     resume_text: Annotated[str, Field(min_length=50, max_length=20000)] = Field(alias="resumeText")
 
-
-# -- admin queue additions (spec #86 §Admin, wired by #103): row shapes only; `PendingQueue` and
-# `DecidedQueue` above gain a `showcase` list when the admin kind ships. -------------------------
-
-
-class PendingShowcase(Wire):
-    id: str
-    builder_id: str = Field(alias="builderId")
-    display_name: str = Field(alias="displayName")
-    title: Title
-    vertical: Vertical
-    licensable: bool
-    description: ShowcaseDescription
-    live_url: ShowcaseUrl | None = Field(default=None, alias="liveUrl")
-    demo_url: ShowcaseUrl | None = Field(default=None, alias="demoUrl")
-    pitch_video_url: ShowcaseUrl | None = Field(default=None, alias="pitchVideoUrl")
-    pitch_deck_url: ShowcaseUrl | None = Field(default=None, alias="pitchDeckUrl")
-    # Drive the "Project not yet confirmed" / "Account not confirmed" admin warnings (story 49).
-    project_confirmed: bool = Field(alias="projectConfirmed")
-    account_confirmed: bool = Field(alias="accountConfirmed")
-    submitted_at: datetime = Field(alias="submittedAt")
-    demo_data: bool = Field(default=True, alias="demoData")
-
-
-class DecidedShowcase(PendingShowcase):
-    status: DecisionStatus
-    decided_at: datetime = Field(alias="decidedAt")
+# `PendingShowcase`/`DecidedShowcase` live with the other admin-queue row shapes above (next to
+# `PendingProject`/`DecidedProject`), wired into `PendingQueue`/`DecidedQueue`'s `showcase` list.

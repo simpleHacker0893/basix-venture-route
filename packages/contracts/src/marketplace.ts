@@ -23,6 +23,17 @@ export type AccountStatus = z.infer<typeof AccountStatus>;
 export const UserRole = z.enum(["founder", "builder"]);
 export type UserRole = z.infer<typeof UserRole>;
 
+/**
+ * Sprint 005a (spec #86): a showcase entry's own review status, and which kind of skill a
+ * `GET /api/showcase?skill=` filter matched. Declared up here, with the other top-level enums,
+ * so the admin queue row shapes below (`PendingShowcase`/`DecidedShowcase`) can use them.
+ */
+export const MatchedSkillKind = z.enum(["demonstrated", "verified", "self-described"]);
+export type MatchedSkillKind = z.infer<typeof MatchedSkillKind>;
+
+export const ShowcaseStatus = z.enum(["none", "pending", "confirmed", "rejected"]);
+export type ShowcaseStatus = z.infer<typeof ShowcaseStatus>;
+
 export const DisplayName = z.string().min(1).max(80);
 export const Headline = z.string().max(200);
 export const ContactField = z.string().max(100);
@@ -32,12 +43,15 @@ export const DayRate = DailyBudget;
 
 /**
  * Sprint 005a (spec #86, D-43/D-52): showcase description, plain link strings (the `https://` /
- * host / YouTube rules live in the endpoints' links module, #89, not in these wire shapes), and
- * one free-text skill label shared by `skillSet`, `suggestedSkills` and résumé suggestions.
+ * host / YouTube rules live in the endpoints' links module, #89, not in these wire shapes), one
+ * free-text skill label shared by `skillSet`, `suggestedSkills` and résumé suggestions (`.trim()`
+ * runs before `.min(1)`, so a whitespace-only entry is rejected, not silently accepted as blank),
+ * and the 11-character YouTube video id the endpoints parse out of `pitchVideoUrl` (#89).
  */
 export const ShowcaseDescription = z.string().max(1000);
 export const ShowcaseUrl = z.string().max(500);
-export const SkillSetEntry = z.string().min(1).max(40);
+export const SkillSetEntry = z.string().trim().min(1).max(40);
+export const PitchVideoId = z.string().length(11);
 
 export const RoleChoice = z.strictObject({ role: UserRole });
 export type RoleChoice = z.infer<typeof RoleChoice>;
@@ -200,13 +214,19 @@ export const PendingAccount = z.strictObject({
 });
 export type PendingAccount = z.infer<typeof PendingAccount>;
 
+/**
+ * Sprint 005a (spec #86 story 55): a skill-less certification reaches this same queue, so
+ * `skillId` must be nullable here too, or `GET /api/admin/pending` 500s on it.
+ */
 export const PendingCredential = z.strictObject({
   id: z.string(),
   builderId: z.string(),
   displayName: z.string(),
   title: Title,
   issuer: Issuer,
-  skillId: SkillId,
+  skillId: SkillId.nullable().default(null),
+  issuedOn: IsoDate.nullable().default(null),
+  credentialUrl: ShowcaseUrl.nullable().default(null),
   submittedAt: IsoDateTime,
   demoData: z.boolean().default(true),
 });
@@ -226,10 +246,42 @@ export const PendingProject = z.strictObject({
 });
 export type PendingProject = z.infer<typeof PendingProject>;
 
+/**
+ * Admin card preview (spec #86 story 48): the same fields the public `ShowcaseCard` shows, plus
+ * the flags that drive the "Project not yet confirmed" / "Account not confirmed" warnings
+ * (story 49) and the showcase entry's own review status.
+ */
+export const PendingShowcase = z.strictObject({
+  id: z.string(),
+  builderId: z.string(),
+  displayName: z.string(),
+  cohortId: CohortId.nullable().default(null),
+  title: Title,
+  description: ShowcaseDescription,
+  vertical: Vertical,
+  licensable: z.boolean(),
+  skillIds: z.array(SkillId).min(1).max(5),
+  liveUrl: ShowcaseUrl.nullable().default(null),
+  demoUrl: ShowcaseUrl.nullable().default(null),
+  pitchVideoUrl: ShowcaseUrl.nullable().default(null),
+  pitchDeckUrl: ShowcaseUrl.nullable().default(null),
+  pitchVideoId: PitchVideoId.nullable().default(null),
+  showcaseStatus: ShowcaseStatus,
+  /** "Project not yet confirmed" / "Account not confirmed" (story 49). */
+  projectStatus: AccountStatus,
+  accountConfirmed: z.boolean(),
+  submittedAt: IsoDateTime,
+  demoData: z.boolean().default(true),
+});
+export type PendingShowcase = z.infer<typeof PendingShowcase>;
+
 export const PendingQueue = z.strictObject({
   accounts: z.array(PendingAccount),
   credentials: z.array(PendingCredential),
   projects: z.array(PendingProject),
+  // Optional and defaulted so a client built before the showcase admin kind (#103) shipped still
+  // validates this response.
+  showcase: z.array(PendingShowcase).default([]),
 });
 export type PendingQueue = z.infer<typeof PendingQueue>;
 
@@ -253,10 +305,14 @@ export type DecidedCredential = z.infer<typeof DecidedCredential>;
 export const DecidedProject = PendingProject.extend({ status: DecisionStatus, decidedAt: IsoDateTime });
 export type DecidedProject = z.infer<typeof DecidedProject>;
 
+export const DecidedShowcase = PendingShowcase.extend({ status: DecisionStatus, decidedAt: IsoDateTime });
+export type DecidedShowcase = z.infer<typeof DecidedShowcase>;
+
 export const DecidedQueue = z.strictObject({
   accounts: z.array(DecidedAccount),
   credentials: z.array(DecidedCredential),
   projects: z.array(DecidedProject),
+  showcase: z.array(DecidedShowcase).default([]),
 });
 export type DecidedQueue = z.infer<typeof DecidedQueue>;
 
@@ -470,18 +526,18 @@ export type Dashboard = z.infer<typeof Dashboard>;
  * Sprint 005a (spec #86 §API contracts, §Web): Builder Showcase and skill suggestions.
  * Public reads never carry email, phone, location, day rate or availability (D-43). Link fields
  * are plain strings capped at 500 chars; `https://` / host / YouTube rules are enforced by the
- * endpoints through the links module (#89), not by these wire shapes.
+ * endpoints through the links module (#89), not by these wire shapes. `MatchedSkillKind` and
+ * `ShowcaseStatus` are declared with the other top-level enums above.
  */
-export const MatchedSkillKind = z.enum(["demonstrated", "verified", "self-described"]);
-export type MatchedSkillKind = z.infer<typeof MatchedSkillKind>;
 
-export const ShowcaseStatus = z.enum(["none", "pending", "confirmed", "rejected"]);
-export type ShowcaseStatus = z.infer<typeof ShowcaseStatus>;
-
-/** Which of a builder's skills matched a `GET /api/showcase?skill=` filter, and how. */
+/**
+ * Which of a builder's skills matched a `GET /api/showcase?skill=` filter, and how. `skill`
+ * accepts a vocabulary id (e.g. `python`) or a free-text `skillSet`/`suggestedSkills` label; a
+ * self-described match's `id` is null and `label` carries the free text as typed.
+ */
 export const MatchedSkill = z.strictObject({
-  id: SkillId,
-  name: z.string(),
+  id: SkillId.nullable().default(null),
+  label: z.string(),
   kind: MatchedSkillKind,
 });
 export type MatchedSkill = z.infer<typeof MatchedSkill>;
@@ -496,13 +552,14 @@ export const ShowcaseCard = z.strictObject({
   vertical: Vertical,
   licensable: z.boolean(),
   description: ShowcaseDescription,
-  skillIds: z.array(SkillId),
+  skillIds: z.array(SkillId).min(1).max(5),
   /** Present only when the request carried `?skill=`: which kind of skill matched (story 32). */
   matchedSkill: MatchedSkill.nullable().default(null),
   liveUrl: ShowcaseUrl.nullable().default(null),
   demoUrl: ShowcaseUrl.nullable().default(null),
   pitchVideoUrl: ShowcaseUrl.nullable().default(null),
   pitchDeckUrl: ShowcaseUrl.nullable().default(null),
+  pitchVideoId: PitchVideoId.nullable().default(null),
   demoData: z.boolean().default(true),
 });
 export type ShowcaseCard = z.infer<typeof ShowcaseCard>;
@@ -522,8 +579,9 @@ export const ShowcaseBuilder = z.strictObject({
   displayName: DisplayName,
   cohortId: CohortId.nullable().default(null),
   verifiedSkills: z.array(ProfileSkill),
-  /** `skillSet` + `suggestedSkills` combined, labelled "Self-described", never "verified". */
-  selfDescribedSkills: z.array(SkillSetEntry),
+  // `skillSet` + `suggestedSkills` combined, labelled "Self-described", never "verified". Not
+  // `BuilderProfile.selfDescribedSkills`, which stays the nine-vocabulary field, unchanged.
+  skillSet: z.array(SkillSetEntry),
   certifications: z.array(Credential),
   githubUrl: ShowcaseUrl.nullable().default(null),
   linkedinUrl: ShowcaseUrl.nullable().default(null),
@@ -538,11 +596,12 @@ export const ShowcaseDetail = z.strictObject({
   licensable: z.boolean(),
   description: ShowcaseDescription,
   completedOn: IsoDate,
-  skillIds: z.array(SkillId),
+  skillIds: z.array(SkillId).min(1).max(5),
   liveUrl: ShowcaseUrl.nullable().default(null),
   demoUrl: ShowcaseUrl.nullable().default(null),
   pitchVideoUrl: ShowcaseUrl.nullable().default(null),
   pitchDeckUrl: ShowcaseUrl.nullable().default(null),
+  pitchVideoId: PitchVideoId.nullable().default(null),
   builder: ShowcaseBuilder,
   demoData: z.boolean().default(true),
 });
@@ -563,15 +622,10 @@ export type ShowcaseEditInput = z.input<typeof ShowcaseEdit>;
 /**
  * The builder's own view of one project's showcase entry, returned by the edit endpoint and
  * listed on `/profile` (story 5-9): the status pill the builder sees, not the public card.
+ * Extends `Project` (same `id/title/vertical/licensable/completedOn/skillIds/status/demoData`,
+ * same `skillIds` bounds) instead of duplicating it.
  */
-export const ShowcaseProject = z.strictObject({
-  id: z.string(),
-  title: Title,
-  vertical: Vertical,
-  licensable: z.boolean(),
-  completedOn: IsoDate,
-  skillIds: z.array(SkillId).min(1).max(5),
-  status: AccountStatus,
+export const ShowcaseProject = Project.extend({
   description: ShowcaseDescription,
   liveUrl: ShowcaseUrl.nullable().default(null),
   demoUrl: ShowcaseUrl.nullable().default(null),
@@ -579,7 +633,6 @@ export const ShowcaseProject = z.strictObject({
   pitchDeckUrl: ShowcaseUrl.nullable().default(null),
   showcased: z.boolean(),
   showcaseStatus: ShowcaseStatus,
-  demoData: z.boolean().default(true),
 });
 export type ShowcaseProject = z.infer<typeof ShowcaseProject>;
 
@@ -612,29 +665,5 @@ export const SkillSuggestRequest = z.strictObject({
 });
 export type SkillSuggestRequest = z.infer<typeof SkillSuggestRequest>;
 
-/**
- * Admin queue additions (spec #86 §Admin, wired by #103): row shapes only; `PendingQueue` and
- * `DecidedQueue` above gain a `showcase` list when the admin kind ships.
- */
-export const PendingShowcase = z.strictObject({
-  id: z.string(),
-  builderId: z.string(),
-  displayName: z.string(),
-  title: Title,
-  vertical: Vertical,
-  licensable: z.boolean(),
-  description: ShowcaseDescription,
-  liveUrl: ShowcaseUrl.nullable().default(null),
-  demoUrl: ShowcaseUrl.nullable().default(null),
-  pitchVideoUrl: ShowcaseUrl.nullable().default(null),
-  pitchDeckUrl: ShowcaseUrl.nullable().default(null),
-  /** Drive the "Project not yet confirmed" / "Account not confirmed" admin warnings (story 49). */
-  projectConfirmed: z.boolean(),
-  accountConfirmed: z.boolean(),
-  submittedAt: IsoDateTime,
-  demoData: z.boolean().default(true),
-});
-export type PendingShowcase = z.infer<typeof PendingShowcase>;
-
-export const DecidedShowcase = PendingShowcase.extend({ status: DecisionStatus, decidedAt: IsoDateTime });
-export type DecidedShowcase = z.infer<typeof DecidedShowcase>;
+// `PendingShowcase`/`DecidedShowcase` live with the other admin-queue row shapes above (next to
+// `PendingProject`/`DecidedProject`), wired into `PendingQueue`/`DecidedQueue`'s `showcase` list.

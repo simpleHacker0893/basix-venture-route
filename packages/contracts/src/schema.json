@@ -2805,6 +2805,18 @@
             "builderId": {
               "type": "string"
             },
+            "credentialUrl": {
+              "anyOf": [
+                {
+                  "maxLength": 500,
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null
+            },
             "decidedAt": {
               "format": "date-time",
               "type": "string"
@@ -2819,24 +2831,44 @@
             "id": {
               "type": "string"
             },
+            "issuedOn": {
+              "anyOf": [
+                {
+                  "format": "date",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null
+            },
             "issuer": {
               "maxLength": 120,
               "minLength": 1,
               "type": "string"
             },
             "skillId": {
-              "enum": [
-                "python",
-                "ai-metta",
-                "ui-ux",
-                "frontend",
-                "backend",
-                "domain-research",
-                "mobile",
-                "rust",
-                "data"
+              "anyOf": [
+                {
+                  "enum": [
+                    "python",
+                    "ai-metta",
+                    "ui-ux",
+                    "frontend",
+                    "backend",
+                    "domain-research",
+                    "mobile",
+                    "rust",
+                    "data"
+                  ],
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
               ],
-              "type": "string"
+              "default": null
             },
             "status": {
               "enum": [
@@ -2861,7 +2893,6 @@
             "displayName",
             "id",
             "issuer",
-            "skillId",
             "status",
             "submittedAt",
             "title"
@@ -2956,12 +2987,382 @@
           "type": "object"
         },
         "type": "array"
+      },
+      "showcase": {
+        "default": [],
+        "items": {
+          "additionalProperties": false,
+          "properties": {
+            "accountConfirmed": {
+              "type": "boolean"
+            },
+            "builderId": {
+              "type": "string"
+            },
+            "cohortId": {
+              "anyOf": [
+                {
+                  "maxLength": 40,
+                  "minLength": 1,
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null
+            },
+            "decidedAt": {
+              "format": "date-time",
+              "type": "string"
+            },
+            "demoData": {
+              "default": true,
+              "type": "boolean"
+            },
+            "demoUrl": {
+              "anyOf": [
+                {
+                  "maxLength": 500,
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null
+            },
+            "description": {
+              "maxLength": 1000,
+              "type": "string"
+            },
+            "displayName": {
+              "type": "string"
+            },
+            "id": {
+              "type": "string"
+            },
+            "licensable": {
+              "type": "boolean"
+            },
+            "liveUrl": {
+              "anyOf": [
+                {
+                  "maxLength": 500,
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null
+            },
+            "pitchDeckUrl": {
+              "anyOf": [
+                {
+                  "maxLength": 500,
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null
+            },
+            "pitchVideoId": {
+              "anyOf": [
+                {
+                  "maxLength": 11,
+                  "minLength": 11,
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null
+            },
+            "pitchVideoUrl": {
+              "anyOf": [
+                {
+                  "maxLength": 500,
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null
+            },
+            "projectStatus": {
+              "enum": [
+                "pending",
+                "confirmed",
+                "rejected"
+              ],
+              "type": "string"
+            },
+            "showcaseStatus": {
+              "enum": [
+                "none",
+                "pending",
+                "confirmed",
+                "rejected"
+              ],
+              "type": "string"
+            },
+            "skillIds": {
+              "items": {
+                "enum": [
+                  "python",
+                  "ai-metta",
+                  "ui-ux",
+                  "frontend",
+                  "backend",
+                  "domain-research",
+                  "mobile",
+                  "rust",
+                  "data"
+                ],
+                "type": "string"
+              },
+              "maxItems": 5,
+              "minItems": 1,
+              "type": "array"
+            },
+            "status": {
+              "enum": [
+                "confirmed",
+                "rejected"
+              ],
+              "type": "string"
+            },
+            "submittedAt": {
+              "format": "date-time",
+              "type": "string"
+            },
+            "title": {
+              "maxLength": 120,
+              "minLength": 1,
+              "type": "string"
+            },
+            "vertical": {
+              "enum": [
+                "health",
+                "agri",
+                "education"
+              ],
+              "type": "string"
+            }
+          },
+          "required": [
+            "accountConfirmed",
+            "builderId",
+            "decidedAt",
+            "description",
+            "displayName",
+            "id",
+            "licensable",
+            "projectStatus",
+            "showcaseStatus",
+            "skillIds",
+            "status",
+            "submittedAt",
+            "title",
+            "vertical"
+          ],
+          "type": "object"
+        },
+        "type": "array"
       }
     },
     "required": [
       "accounts",
       "credentials",
       "projects"
+    ],
+    "type": "object"
+  },
+  "DecidedShowcase": {
+    "additionalProperties": false,
+    "properties": {
+      "accountConfirmed": {
+        "type": "boolean"
+      },
+      "builderId": {
+        "type": "string"
+      },
+      "cohortId": {
+        "anyOf": [
+          {
+            "maxLength": 40,
+            "minLength": 1,
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null
+      },
+      "decidedAt": {
+        "format": "date-time",
+        "type": "string"
+      },
+      "demoData": {
+        "default": true,
+        "type": "boolean"
+      },
+      "demoUrl": {
+        "anyOf": [
+          {
+            "maxLength": 500,
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null
+      },
+      "description": {
+        "maxLength": 1000,
+        "type": "string"
+      },
+      "displayName": {
+        "type": "string"
+      },
+      "id": {
+        "type": "string"
+      },
+      "licensable": {
+        "type": "boolean"
+      },
+      "liveUrl": {
+        "anyOf": [
+          {
+            "maxLength": 500,
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null
+      },
+      "pitchDeckUrl": {
+        "anyOf": [
+          {
+            "maxLength": 500,
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null
+      },
+      "pitchVideoId": {
+        "anyOf": [
+          {
+            "maxLength": 11,
+            "minLength": 11,
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null
+      },
+      "pitchVideoUrl": {
+        "anyOf": [
+          {
+            "maxLength": 500,
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null
+      },
+      "projectStatus": {
+        "enum": [
+          "pending",
+          "confirmed",
+          "rejected"
+        ],
+        "type": "string"
+      },
+      "showcaseStatus": {
+        "enum": [
+          "none",
+          "pending",
+          "confirmed",
+          "rejected"
+        ],
+        "type": "string"
+      },
+      "skillIds": {
+        "items": {
+          "enum": [
+            "python",
+            "ai-metta",
+            "ui-ux",
+            "frontend",
+            "backend",
+            "domain-research",
+            "mobile",
+            "rust",
+            "data"
+          ],
+          "type": "string"
+        },
+        "maxItems": 5,
+        "minItems": 1,
+        "type": "array"
+      },
+      "status": {
+        "enum": [
+          "confirmed",
+          "rejected"
+        ],
+        "type": "string"
+      },
+      "submittedAt": {
+        "format": "date-time",
+        "type": "string"
+      },
+      "title": {
+        "maxLength": 120,
+        "minLength": 1,
+        "type": "string"
+      },
+      "vertical": {
+        "enum": [
+          "health",
+          "agri",
+          "education"
+        ],
+        "type": "string"
+      }
+    },
+    "required": [
+      "accountConfirmed",
+      "builderId",
+      "decidedAt",
+      "description",
+      "displayName",
+      "id",
+      "licensable",
+      "projectStatus",
+      "showcaseStatus",
+      "skillIds",
+      "status",
+      "submittedAt",
+      "title",
+      "vertical"
     ],
     "type": "object"
   },
@@ -3287,6 +3688,18 @@
             "builderId": {
               "type": "string"
             },
+            "credentialUrl": {
+              "anyOf": [
+                {
+                  "maxLength": 500,
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null
+            },
             "demoData": {
               "default": true,
               "type": "boolean"
@@ -3297,24 +3710,44 @@
             "id": {
               "type": "string"
             },
+            "issuedOn": {
+              "anyOf": [
+                {
+                  "format": "date",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null
+            },
             "issuer": {
               "maxLength": 120,
               "minLength": 1,
               "type": "string"
             },
             "skillId": {
-              "enum": [
-                "python",
-                "ai-metta",
-                "ui-ux",
-                "frontend",
-                "backend",
-                "domain-research",
-                "mobile",
-                "rust",
-                "data"
+              "anyOf": [
+                {
+                  "enum": [
+                    "python",
+                    "ai-metta",
+                    "ui-ux",
+                    "frontend",
+                    "backend",
+                    "domain-research",
+                    "mobile",
+                    "rust",
+                    "data"
+                  ],
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
               ],
-              "type": "string"
+              "default": null
             },
             "submittedAt": {
               "format": "date-time",
@@ -3331,7 +3764,6 @@
             "displayName",
             "id",
             "issuer",
-            "skillId",
             "submittedAt",
             "title"
           ],
@@ -3412,12 +3844,356 @@
           "type": "object"
         },
         "type": "array"
+      },
+      "showcase": {
+        "default": [],
+        "items": {
+          "additionalProperties": false,
+          "properties": {
+            "accountConfirmed": {
+              "type": "boolean"
+            },
+            "builderId": {
+              "type": "string"
+            },
+            "cohortId": {
+              "anyOf": [
+                {
+                  "maxLength": 40,
+                  "minLength": 1,
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null
+            },
+            "demoData": {
+              "default": true,
+              "type": "boolean"
+            },
+            "demoUrl": {
+              "anyOf": [
+                {
+                  "maxLength": 500,
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null
+            },
+            "description": {
+              "maxLength": 1000,
+              "type": "string"
+            },
+            "displayName": {
+              "type": "string"
+            },
+            "id": {
+              "type": "string"
+            },
+            "licensable": {
+              "type": "boolean"
+            },
+            "liveUrl": {
+              "anyOf": [
+                {
+                  "maxLength": 500,
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null
+            },
+            "pitchDeckUrl": {
+              "anyOf": [
+                {
+                  "maxLength": 500,
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null
+            },
+            "pitchVideoId": {
+              "anyOf": [
+                {
+                  "maxLength": 11,
+                  "minLength": 11,
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null
+            },
+            "pitchVideoUrl": {
+              "anyOf": [
+                {
+                  "maxLength": 500,
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null
+            },
+            "projectStatus": {
+              "enum": [
+                "pending",
+                "confirmed",
+                "rejected"
+              ],
+              "type": "string"
+            },
+            "showcaseStatus": {
+              "enum": [
+                "none",
+                "pending",
+                "confirmed",
+                "rejected"
+              ],
+              "type": "string"
+            },
+            "skillIds": {
+              "items": {
+                "enum": [
+                  "python",
+                  "ai-metta",
+                  "ui-ux",
+                  "frontend",
+                  "backend",
+                  "domain-research",
+                  "mobile",
+                  "rust",
+                  "data"
+                ],
+                "type": "string"
+              },
+              "maxItems": 5,
+              "minItems": 1,
+              "type": "array"
+            },
+            "submittedAt": {
+              "format": "date-time",
+              "type": "string"
+            },
+            "title": {
+              "maxLength": 120,
+              "minLength": 1,
+              "type": "string"
+            },
+            "vertical": {
+              "enum": [
+                "health",
+                "agri",
+                "education"
+              ],
+              "type": "string"
+            }
+          },
+          "required": [
+            "accountConfirmed",
+            "builderId",
+            "description",
+            "displayName",
+            "id",
+            "licensable",
+            "projectStatus",
+            "showcaseStatus",
+            "skillIds",
+            "submittedAt",
+            "title",
+            "vertical"
+          ],
+          "type": "object"
+        },
+        "type": "array"
       }
     },
     "required": [
       "accounts",
       "credentials",
       "projects"
+    ],
+    "type": "object"
+  },
+  "PendingShowcase": {
+    "additionalProperties": false,
+    "properties": {
+      "accountConfirmed": {
+        "type": "boolean"
+      },
+      "builderId": {
+        "type": "string"
+      },
+      "cohortId": {
+        "anyOf": [
+          {
+            "maxLength": 40,
+            "minLength": 1,
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null
+      },
+      "demoData": {
+        "default": true,
+        "type": "boolean"
+      },
+      "demoUrl": {
+        "anyOf": [
+          {
+            "maxLength": 500,
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null
+      },
+      "description": {
+        "maxLength": 1000,
+        "type": "string"
+      },
+      "displayName": {
+        "type": "string"
+      },
+      "id": {
+        "type": "string"
+      },
+      "licensable": {
+        "type": "boolean"
+      },
+      "liveUrl": {
+        "anyOf": [
+          {
+            "maxLength": 500,
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null
+      },
+      "pitchDeckUrl": {
+        "anyOf": [
+          {
+            "maxLength": 500,
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null
+      },
+      "pitchVideoId": {
+        "anyOf": [
+          {
+            "maxLength": 11,
+            "minLength": 11,
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null
+      },
+      "pitchVideoUrl": {
+        "anyOf": [
+          {
+            "maxLength": 500,
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null
+      },
+      "projectStatus": {
+        "enum": [
+          "pending",
+          "confirmed",
+          "rejected"
+        ],
+        "type": "string"
+      },
+      "showcaseStatus": {
+        "enum": [
+          "none",
+          "pending",
+          "confirmed",
+          "rejected"
+        ],
+        "type": "string"
+      },
+      "skillIds": {
+        "items": {
+          "enum": [
+            "python",
+            "ai-metta",
+            "ui-ux",
+            "frontend",
+            "backend",
+            "domain-research",
+            "mobile",
+            "rust",
+            "data"
+          ],
+          "type": "string"
+        },
+        "maxItems": 5,
+        "minItems": 1,
+        "type": "array"
+      },
+      "submittedAt": {
+        "format": "date-time",
+        "type": "string"
+      },
+      "title": {
+        "maxLength": 120,
+        "minLength": 1,
+        "type": "string"
+      },
+      "vertical": {
+        "enum": [
+          "health",
+          "agri",
+          "education"
+        ],
+        "type": "string"
+      }
+    },
+    "required": [
+      "accountConfirmed",
+      "builderId",
+      "description",
+      "displayName",
+      "id",
+      "licensable",
+      "projectStatus",
+      "showcaseStatus",
+      "skillIds",
+      "submittedAt",
+      "title",
+      "vertical"
     ],
     "type": "object"
   },
@@ -4335,18 +5111,26 @@
             "additionalProperties": false,
             "properties": {
               "id": {
-                "enum": [
-                  "python",
-                  "ai-metta",
-                  "ui-ux",
-                  "frontend",
-                  "backend",
-                  "domain-research",
-                  "mobile",
-                  "rust",
-                  "data"
+                "anyOf": [
+                  {
+                    "enum": [
+                      "python",
+                      "ai-metta",
+                      "ui-ux",
+                      "frontend",
+                      "backend",
+                      "domain-research",
+                      "mobile",
+                      "rust",
+                      "data"
+                    ],
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
                 ],
-                "type": "string"
+                "default": null
               },
               "kind": {
                 "enum": [
@@ -4356,14 +5140,13 @@
                 ],
                 "type": "string"
               },
-              "name": {
+              "label": {
                 "type": "string"
               }
             },
             "required": [
-              "id",
               "kind",
-              "name"
+              "label"
             ],
             "type": "object"
           },
@@ -4377,6 +5160,19 @@
         "anyOf": [
           {
             "maxLength": 500,
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null
+      },
+      "pitchVideoId": {
+        "anyOf": [
+          {
+            "maxLength": 11,
+            "minLength": 11,
             "type": "string"
           },
           {
@@ -4412,6 +5208,8 @@
           ],
           "type": "string"
         },
+        "maxItems": 5,
+        "minItems": 1,
         "type": "array"
       },
       "title": {
@@ -4577,7 +5375,7 @@
             ],
             "default": null
           },
-          "selfDescribedSkills": {
+          "skillSet": {
             "items": {
               "maxLength": 40,
               "minLength": 1,
@@ -4644,7 +5442,7 @@
           "builderId",
           "certifications",
           "displayName",
-          "selfDescribedSkills",
+          "skillSet",
           "verifiedSkills"
         ],
         "type": "object"
@@ -4703,6 +5501,19 @@
         ],
         "default": null
       },
+      "pitchVideoId": {
+        "anyOf": [
+          {
+            "maxLength": 11,
+            "minLength": 11,
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null
+      },
       "pitchVideoUrl": {
         "anyOf": [
           {
@@ -4730,6 +5541,8 @@
           ],
           "type": "string"
         },
+        "maxItems": 5,
+        "minItems": 1,
         "type": "array"
       },
       "title": {
@@ -4895,18 +5708,26 @@
                   "additionalProperties": false,
                   "properties": {
                     "id": {
-                      "enum": [
-                        "python",
-                        "ai-metta",
-                        "ui-ux",
-                        "frontend",
-                        "backend",
-                        "domain-research",
-                        "mobile",
-                        "rust",
-                        "data"
+                      "anyOf": [
+                        {
+                          "enum": [
+                            "python",
+                            "ai-metta",
+                            "ui-ux",
+                            "frontend",
+                            "backend",
+                            "domain-research",
+                            "mobile",
+                            "rust",
+                            "data"
+                          ],
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
                       ],
-                      "type": "string"
+                      "default": null
                     },
                     "kind": {
                       "enum": [
@@ -4916,14 +5737,13 @@
                       ],
                       "type": "string"
                     },
-                    "name": {
+                    "label": {
                       "type": "string"
                     }
                   },
                   "required": [
-                    "id",
                     "kind",
-                    "name"
+                    "label"
                   ],
                   "type": "object"
                 },
@@ -4937,6 +5757,19 @@
               "anyOf": [
                 {
                   "maxLength": 500,
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null
+            },
+            "pitchVideoId": {
+              "anyOf": [
+                {
+                  "maxLength": 11,
+                  "minLength": 11,
                   "type": "string"
                 },
                 {
@@ -4972,6 +5805,8 @@
                 ],
                 "type": "string"
               },
+              "maxItems": 5,
+              "minItems": 1,
               "type": "array"
             },
             "title": {

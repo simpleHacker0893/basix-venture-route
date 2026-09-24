@@ -28,6 +28,8 @@ import {
   Ecosystem,
   Gap,
   PendingQueue,
+  PendingShowcase,
+  DecidedShowcase,
   ProfileInput,
   Project,
   ProjectInput,
@@ -98,6 +100,9 @@ const cases: [keyof typeof exported, z.ZodType][] = [
   ["Project", Project],
   ["PendingQueue", PendingQueue],
   ["DecidedQueue", DecidedQueue],
+  // Sprint 005a admin card preview (spec #86 story 48), registered on their own too.
+  ["PendingShowcase", PendingShowcase],
+  ["DecidedShowcase", DecidedShowcase],
   ["AdminDecision", AdminDecision],
   ["Candidate", Candidate],
   // Sprint 004 (#54): requests, bids, bookings, eligibility, dashboard.
