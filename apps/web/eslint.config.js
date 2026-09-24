@@ -26,4 +26,12 @@ export default defineConfig([
       'react-refresh/only-export-components': 'off',
     },
   },
+  {
+    // Sprint 006 blueprint §Files pins `VoiceSessionProvider + voiceReducer; useVoice()` to one
+    // file, mirroring `state/RoutingProvider.tsx`'s pairing of provider and hook.
+    files: ['src/voice/VoiceSession.tsx'],
+    rules: {
+      'react-refresh/only-export-components': 'off',
+    },
+  },
 ])

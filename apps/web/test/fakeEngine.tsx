@@ -8,6 +8,7 @@ import { render } from "@testing-library/react";
 import { createApiSource } from "../src/api/client";
 import { App } from "../src/App";
 import snapshot from "../src/offline/snapshot.json";
+import type { VoiceProvider } from "../src/voice/provider";
 
 export type FetchLike = typeof fetch;
 
@@ -99,7 +100,11 @@ export function engineFetch(overrides: Overrides = {}): FetchLike {
   };
 }
 
-export function renderApp(path: string, fetchLike: FetchLike = engineFetch()) {
+export function renderApp(
+  path: string,
+  fetchLike: FetchLike = engineFetch(),
+  options: { voice?: VoiceProvider | null } = {},
+) {
   const source = createApiSource("http://engine.test", fetchLike);
-  return render(<App initialPath={path} source={source} />);
+  return render(<App initialPath={path} source={source} voice={options.voice} />);
 }
