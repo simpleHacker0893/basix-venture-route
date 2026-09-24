@@ -13,6 +13,7 @@ import asyncio
 import os
 from collections.abc import AsyncIterator, Awaitable, Callable, Iterator
 from dataclasses import dataclass, field
+from datetime import UTC, datetime
 from typing import Any
 from uuid import UUID
 
@@ -41,6 +42,8 @@ from tests.auth_fixtures import (  # noqa: E402
 )
 
 TEST_ADMIN_EMAILS = "ops@basix.example, Admin@Example.org"
+
+TEST_NOW = datetime(2026, 9, 23, tzinfo=UTC)
 
 
 class FakeClerkAdmin:
@@ -184,6 +187,9 @@ def marketplace_app(
         jwks_cache=JwksCache.preloaded(test_keys.jwks),
         session_factory=session_factory,
         clerk_admin=clerk_admin,
+        # Fixed instant (D-14 spirit): dashboard "upcoming" is judged against 2026-09-23 00:00 UTC,
+        # not the wall clock, so the bookings in tests/test_dashboard.py stay past and upcoming.
+        clock=lambda: TEST_NOW,
     )
 
 

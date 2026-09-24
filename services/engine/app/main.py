@@ -6,6 +6,7 @@ connection) so nothing is patched (D-19). `app` at module level is what uvicorn 
 
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
+from datetime import UTC, datetime
 
 from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
@@ -19,6 +20,7 @@ from app.api.bookings import router as bookings_router
 from app.api.builders import router as builders_router
 from app.api.conversation import router as conversation_router
 from app.api.dashboard import router as dashboard_router
+from app.api.deps import Clock
 from app.api.health import router as health_router
 from app.api.internal import router as internal_router
 from app.api.me import router as me_router
@@ -48,6 +50,7 @@ def create_app(
     jwks_cache: JwksCache | None = None,
     session_factory: SessionFactory | None | object = _UNSET,
     clerk_admin: ClerkAdmin | None = None,
+    clock: Clock | None = None,
 ) -> FastAPI:
     resolved = settings or get_settings()
 
@@ -61,6 +64,8 @@ def create_app(
         app.state.route_service = RouteService(route_engine)
         app.state.known_entities = route_engine.known_entities()
         app.state.llm_adapter = select_adapter(resolved)
+        # Wall clock unless a test injects a fixed instant (upcoming bookings, #66).
+        app.state.clock = clock or (lambda: datetime.now(UTC))
 
         # Clerk (D-03): keys fetched once; a placeholder CLERK_JWKS_URL means an empty cache and
         # every gated route answers 401 (D-26).

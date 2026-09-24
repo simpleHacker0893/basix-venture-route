@@ -5,7 +5,6 @@ the bids on them from currently confirmed builders, newest first, capped at ten;
 `upcomingBookings` the founder's bookings with a start at or after now, soonest first.
 """
 
-from datetime import UTC, datetime
 from typing import Annotated
 
 from fastapi import APIRouter, Depends
@@ -13,6 +12,7 @@ from sqlmodel.ext.asyncio.session import AsyncSession
 
 from app.api.bids import bid_out
 from app.api.bookings import booking_out
+from app.api.deps import Clock, get_clock
 from app.api.requests import request_out
 from app.auth.clerk import CurrentUser, require_role
 from app.db.session import get_session
@@ -28,6 +28,7 @@ BIDS_RECEIVED_CAP = 10
 async def dashboard(
     user: Annotated[CurrentUser, Depends(require_role("founder"))],
     session: Annotated[AsyncSession, Depends(get_session)],
+    clock: Annotated[Clock, Depends(get_clock)],
 ) -> Dashboard:
     assert user.db_user is not None
     founder = user.db_user
@@ -53,7 +54,7 @@ async def dashboard(
         upcoming_bookings=[
             booking_out(row, profile, owner, request)
             for row, profile, owner, request in await repo.upcoming_bookings(
-                session, founder.id, datetime.now(UTC)
+                session, founder.id, clock()
             )
         ],
     )

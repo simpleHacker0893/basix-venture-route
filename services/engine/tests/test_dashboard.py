@@ -89,7 +89,8 @@ async def test_tiles_equal_direct_sql_counts_and_lists_follow_the_rules(
     naomi_bid = await bid(api, confirmed_builder, constrained["id"])
     await bid(api, rejected_builder, constrained["id"], dayRate=95)
     await decide(rejected_builder, {"account": "rejected"})
-    # two bookings: one in the past (2026-09-22 08:00 EAT), one upcoming
+    # two bookings against the fixed test clock (2026-09-23 00:00 UTC, conftest TEST_NOW):
+    # one in the past (2026-09-22 08:00 EAT), one upcoming (2026-09-24 10:30 EAT)
     past = await propose(api, founder, proposedStart="2026-09-22T05:00:00Z")
     upcoming = await propose(
         api, founder, proposedStart="2026-09-24T07:30:00Z", requestId=constrained["id"]
