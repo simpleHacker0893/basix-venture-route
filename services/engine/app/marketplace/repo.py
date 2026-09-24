@@ -188,6 +188,8 @@ async def confirmed_rows_for(session: AsyncSession, profile_id: UUID) -> Confirm
         credentials=tuple(
             ConfirmedCredential(credential_id=str(row.id), skill_id=row.skill_id)
             for row in credentials
+            # A skill-less certification (#88) proves nothing; its display facts belong to #98.
+            if row.skill_id is not None
         ),
         projects=tuple(
             ConfirmedProject(
