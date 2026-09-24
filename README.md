@@ -14,7 +14,7 @@ It is not an AI matcher. MeTTa relationship rules over inspectable facts decide 
 |---|---|
 | Live demo | _to be added by the Operator_ |
 | Demo video (YouTube) | _to be added by the Operator_ |
-| Pitch deck (Canva, 12 slides) | _to be added by the Operator_ |
+| Pitch deck (Canva, 12 slides) | [canva.link/324jdfx6j1knlgn](https://canva.link/324jdfx6j1knlgn) |
 
 Founder: **Njuguna Njenga** (Operator). Other team members: _to be named_ (Q-08).
 
