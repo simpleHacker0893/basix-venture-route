@@ -289,9 +289,6 @@ export const PendingQueue = z.strictObject({
 });
 export type PendingQueue = z.infer<typeof PendingQueue>;
 
-export const DecisionKind = z.enum(["account", "credential", "project"]);
-export type DecisionKind = z.infer<typeof DecisionKind>;
-
 export const DecisionStatus = z.enum(["confirmed", "rejected"]);
 export type DecisionStatus = z.infer<typeof DecisionStatus>;
 
@@ -320,10 +317,7 @@ export const DecidedQueue = z.strictObject({
 });
 export type DecidedQueue = z.infer<typeof DecidedQueue>;
 
-/**
- * Every kind an admin decides on. `showcase` (#103) has its own tab in the admin UI (#106), so
- * `DecisionKind` keeps the three row kinds the existing tabs render until that ticket lands.
- */
+/** Every kind an admin decides on; `showcase` (#103) has its own tab in the admin UI (#106). */
 export const AdminDecisionKind = z.enum(["account", "credential", "project", "showcase"]);
 export type AdminDecisionKind = z.infer<typeof AdminDecisionKind>;
 

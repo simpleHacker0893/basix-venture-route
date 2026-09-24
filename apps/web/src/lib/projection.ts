@@ -14,6 +14,47 @@ export function shortId(rowId: string): string {
   return rowId.replace(/-/g, "").slice(0, 8);
 }
 
+/**
+ * One quoted MeTTa string atom, porting `app/engine/projection.py::metta_string` exactly (same
+ * escape table, same `\u{hex}` form for every Unicode Cc/Cf/Zl/Zp character, same U+FFFD
+ * replacement for NUL and a lone surrogate) so the preview can never diverge from the fact the
+ * engine actually projects.
+ */
+const METTA_ESCAPES = new Map<string, string>([
+  ["\\", "\\\\"],
+  ['"', '\\"'],
+  ["\n", "\\n"],
+  ["\r", "\\r"],
+  ["\t", "\\t"],
+]);
+/** Cc (control), Cf (format), Zl (line separator), Zp (paragraph separator). */
+const HEX_ESCAPED_CATEGORY = /^[\p{Cc}\p{Cf}\p{Zl}\p{Zp}]$/u;
+const REPLACEMENT_CHAR = "�";
+
+/** A code point `for...of` could not pair into a surrogate pair: a lone surrogate. */
+function isLoneSurrogate(char: string): boolean {
+  if (char.length !== 1) return false;
+  const code = char.charCodeAt(0);
+  return code >= 0xd800 && code <= 0xdfff;
+}
+
+export function mettaString(text: string): string {
+  const out: string[] = [];
+  for (const char of text) {
+    const escape = METTA_ESCAPES.get(char);
+    if (escape !== undefined) {
+      out.push(escape);
+    } else if (char === "\u0000" || isLoneSurrogate(char)) {
+      out.push(REPLACEMENT_CHAR);
+    } else if (HEX_ESCAPED_CATEGORY.test(char)) {
+      out.push(`\\u{${(char.codePointAt(0) ?? 0).toString(16)}}`);
+    } else {
+      out.push(char);
+    }
+  }
+  return `"${out.join("")}"`;
+}
+
 export type ProjectionPreview = {
   facts: string[];
   /** What the preview cannot show from this row alone. */
@@ -38,6 +79,14 @@ export function accountPreview(account: PendingAccount): ProjectionPreview {
 
 export function credentialPreview(credential: PendingCredential): ProjectionPreview {
   const cred = `cred-${shortId(credential.id)}`;
+  // A skill-less certification never earns or proves anything: it becomes exactly one
+  // display-only `certified` fact that no rule reads (D-52), not `earned`/`proves`/`confirmed`.
+  if (credential.skillId === null) {
+    return {
+      facts: [`(certified ${credential.builderId} ${cred} ${mettaString(credential.issuer)})`],
+      note: "Outside the nine-skill vocabulary, so this stays a display-only certified fact: it never satisfies verified-for-skill.",
+    };
+  }
   return {
     facts: [
       `(earned ${credential.builderId} ${cred})`,
