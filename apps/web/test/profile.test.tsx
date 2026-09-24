@@ -9,7 +9,6 @@ import type {
   Credential,
   CredentialInput,
   ProfileInput,
-  Project,
   ProjectInput,
 } from "@venture-route/contracts";
 import { render, screen, waitFor, within } from "@testing-library/react";
@@ -62,7 +61,7 @@ function profile(overrides: Partial<BuilderProfile> = {}): BuilderProfile {
   };
 }
 
-const noRows = { listCredentials: async (): Promise<Credential[]> => [], listProjects: async (): Promise<Project[]> => [] };
+const noRows = { listCredentials: async (): Promise<Credential[]> => [], listProjects: async () => [] };
 
 describe("/profile", () => {
   it("shows the pending banner, the Both badge on python and display-only wording on backend", async () => {
@@ -180,7 +179,20 @@ describe("/profile/projects/new", () => {
       ...noRows,
       postProject: async (input) => {
         posted.push(input);
-        return { id: "proj-1", ...input, status: "pending", demoData: true };
+        return {
+          id: "proj-1",
+          ...input,
+          status: "pending",
+          demoData: true,
+          // Since #94 (ruling R17) the engine returns the ShowcaseProject shape.
+          description: "",
+          liveUrl: null,
+          demoUrl: null,
+          pitchVideoUrl: null,
+          pitchDeckUrl: null,
+          showcased: false,
+          showcaseStatus: "none",
+        };
       },
     });
 

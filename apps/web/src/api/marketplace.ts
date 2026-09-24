@@ -14,9 +14,12 @@ import {
   DecidedQueue,
   Eligibility,
   PendingQueue,
-  Project,
   Request,
   RoleResponse,
+  ShowcaseDetail,
+  ShowcasePage,
+  ShowcaseProject,
+  SkillSuggestions,
   type AdminDecision as AdminDecisionT,
   type Bid as BidT,
   type BidCreateInput,
@@ -33,12 +36,17 @@ import {
   type Eligibility as EligibilityT,
   type PendingQueue as PendingQueueT,
   type ProfileInput,
-  type Project as ProjectT,
   type ProjectInput,
   type Request as RequestT,
   type RequestCreateInput,
   type RoleChoice,
   type RoleResponse as RoleResponseT,
+  type ShowcaseDetail as ShowcaseDetailT,
+  type ShowcaseEditInput,
+  type ShowcasePage as ShowcasePageT,
+  type ShowcaseProject as ShowcaseProjectT,
+  type SkillSuggestions as SkillSuggestionsT,
+  type Vertical,
 } from "@venture-route/contracts";
 import { z } from "zod";
 
@@ -84,9 +92,14 @@ export type MarketplaceApi = {
   listCredentials(): Promise<CredentialT[]>;
   /** POST /api/me/credentials → 201; `ApiNotFoundError` until the profile exists. */
   postCredential(input: CredentialInput): Promise<CredentialT>;
-  listProjects(): Promise<ProjectT[]>;
-  /** POST /api/me/projects → 201; `ApiNotFoundError` until the profile exists. */
-  postProject(input: ProjectInput): Promise<ProjectT>;
+  /**
+   * GET /api/me/projects: since #94 (ruling R17) the engine returns the `ShowcaseProject` shape
+   * (Project plus the showcase fields and `showcaseStatus`); `ShowcaseProject extends Project` so
+   * every existing caller typed to `Project[]` keeps compiling unchanged.
+   */
+  listProjects(): Promise<ShowcaseProjectT[]>;
+  /** POST /api/me/projects → 201; `ApiNotFoundError` until the profile exists. Same shape as above. */
+  postProject(input: ProjectInput): Promise<ShowcaseProjectT>;
   /**
    * GET /api/builders/{builderId} (founder or admin): the candidate view with only the shared
    * contact keys. `ApiNotFoundError` for unconfirmed, unknown and seed builder ids.
@@ -100,10 +113,45 @@ export type MarketplaceApi = {
   confirm(kind: DecisionKind, id: string): Promise<AdminDecisionT>;
   /** POST /api/admin/reject/{kind}/{id}: the engine reprojects in the same request (D-15). */
   reject(kind: DecisionKind, id: string): Promise<AdminDecisionT>;
+  // -- Sprint 005a (#96, spec #86): the public Showcase, résumé skill suggestions and the
+  // showcase editor. Public reads (`showcase.list`/`showcase.get`) carry no bearer token, even
+  // when the caller is signed in (`/api/showcase*` is not a guarded prefix, `client.ts`).
+  showcase: {
+    /** GET /api/showcase?skill&vertical&licensable&q&limit&offset: the public gallery page. */
+    list(params?: ShowcaseListParams): Promise<ShowcasePageT>;
+    /** GET /api/showcase/{projectId}; a hidden or missing entry answers `ApiNotFoundError`. */
+    get(projectId: string): Promise<ShowcaseDetailT>;
+  };
+  /** PUT /api/me/projects/{id}/showcase (builder, owner only): save showcase details → `pending`. */
+  saveShowcase(projectId: string, body: ShowcaseEditInput): Promise<ShowcaseProjectT>;
+  /** POST /api/me/skills/suggest (builder): résumé text → skill chips; never 5xx (D-50). */
+  suggestSkills(resumeText: string): Promise<SkillSuggestionsT>;
 };
 
+/** `GET /api/showcase` query parameters (spec #86 §API contracts); every field is optional. */
+export type ShowcaseListParams = {
+  skill?: string;
+  vertical?: Vertical;
+  licensable?: boolean;
+  q?: string;
+  limit?: number;
+  offset?: number;
+};
+
+function showcaseQuery(params: ShowcaseListParams = {}): string {
+  const search = new URLSearchParams();
+  if (params.skill !== undefined) search.set("skill", params.skill);
+  if (params.vertical !== undefined) search.set("vertical", params.vertical);
+  if (params.licensable !== undefined) search.set("licensable", String(params.licensable));
+  if (params.q !== undefined) search.set("q", params.q);
+  if (params.limit !== undefined) search.set("limit", String(params.limit));
+  if (params.offset !== undefined) search.set("offset", String(params.offset));
+  const query = search.toString();
+  return query ? `?${query}` : "";
+}
+
 const Credentials = z.array(Credential);
-const Projects = z.array(Project);
+const Projects = z.array(ShowcaseProject);
 const Requests = z.array(Request);
 const Bids = z.array(Bid);
 const Bookings = z.array(Booking);
@@ -133,11 +181,18 @@ export function createMarketplaceApi(baseUrl: string, fetchLike: FetchLike, getT
     listCredentials: () => request("/api/me/credentials", Credentials),
     postCredential: (input) => request("/api/me/credentials", Credential, jsonPost(input)),
     listProjects: () => request("/api/me/projects", Projects),
-    postProject: (input) => request("/api/me/projects", Project, jsonPost(input)),
+    postProject: (input) => request("/api/me/projects", ShowcaseProject, jsonPost(input)),
     getCandidate: (builderId) => request(`/api/builders/${encodeURIComponent(builderId)}`, Candidate),
     getPending: () => request("/api/admin/pending", PendingQueue),
     getDecided: () => request("/api/admin/decided", DecidedQueue),
     confirm: (kind, id) => request(`/api/admin/confirm/${kind}/${encodeURIComponent(id)}`, AdminDecision, { method: "POST" }),
     reject: (kind, id) => request(`/api/admin/reject/${kind}/${encodeURIComponent(id)}`, AdminDecision, { method: "POST" }),
+    showcase: {
+      list: (params) => request(`/api/showcase${showcaseQuery(params)}`, ShowcasePage),
+      get: (projectId) => request(`/api/showcase/${id(projectId)}`, ShowcaseDetail),
+    },
+    saveShowcase: (projectId, body) =>
+      request(`/api/me/projects/${id(projectId)}/showcase`, ShowcaseProject, jsonPut(body)),
+    suggestSkills: (resumeText) => request("/api/me/skills/suggest", SkillSuggestions, jsonPost({ resumeText })),
   };
 }

@@ -20,6 +20,8 @@ import { LandingPage } from "./features/landing/LandingPage";
 import { PrivacyPage } from "./features/privacy/PrivacyPage";
 import { RequestsBoard } from "./features/requests/RequestsBoard";
 import { RoutePage } from "./features/route/RoutePage";
+import { ShowcaseDetailPage } from "./features/showcase/ShowcaseDetailPage";
+import { ShowcaseGalleryPage } from "./features/showcase/ShowcaseGalleryPage";
 
 /**
  * React Router does not scroll to a hash (#79): the header and footer section links target
@@ -64,6 +66,9 @@ export function AppRoutes() {
         <Route path="route" element={<RoutePage />} />
         <Route path="handoff" element={<HandoffScreen />} />
         <Route path="partners" element={<PartnersPage />} />
+        {/* Sprint 005a (#96, spec #86 story 30): public, no RequireRole, signed in or out. */}
+        <Route path="showcase" element={<ShowcaseGalleryPage />} />
+        <Route path="showcase/:projectId" element={<ShowcaseDetailPage />} />
         <Route path="privacy" element={<PrivacyPage />} />
         {/* Clerk's path routing owns the sub-paths (factor steps, SSO callback). */}
         <Route path="sign-in/*" element={<SignInScreen />} />
