@@ -8,6 +8,16 @@ Venture Route turns a founder's plain-language venture brief into the smallest c
 
 It is not an AI matcher. MeTTa relationship rules over inspectable facts decide eligibility, evidence, availability, delivery-mode fit, reusable-IP fit, partner fit and gaps. A language model may make intake conversational and explain a computed route, but it never selects people, invents evidence, or sets the route status. Those rules are non-negotiable and are listed in `AGENTS.md`.
 
+## Demo links
+
+| What | Link |
+|---|---|
+| Live demo | _to be added by the Operator_ |
+| Demo video (YouTube) | _to be added by the Operator_ |
+| Pitch deck (Canva, 12 slides) | _to be added by the Operator_ |
+
+Founder: **Njuguna Njenga** (Operator). Other team members: _to be named_ (Q-08).
+
 ## What runs today
 
 - **Engine** (`services/engine`): FastAPI with the official Hyperon runtime (`hyperon==0.2.10`) in-process, seven named MeTTa rules over a fictional seed graph, a deterministic team assembler, and a language-model adapter that only narrates. `POST /api/route` answers the structured form; `POST /api/conversation` answers chat. Every result carries typed reasoning paths.

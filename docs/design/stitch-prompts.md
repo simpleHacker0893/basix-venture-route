@@ -355,6 +355,48 @@ Right panel as in 1.1 with filled chips "Skills: Python, AI/MeTTa, UI/UX", "Mode
 
 ---
 
+## Batch 6 — Builder Showcase (Sprint 005a, Q-17, D-43)
+
+### 6.1 Showcase gallery
+
+```text
+Design the "Showcase" gallery screen for Venture Route at 1440 px desktop, following the project design system exactly. Calm, editorial, trustworthy. No illustrations, gradients or emoji. Visible to signed-out visitors.
+
+Navigation: logo "Venture Route", section links "How it works", "Showcase" (active, underlined), "Requests", and a secondary button "Sign in" on the right.
+
+Container 1200 px. Display title "Showcase", caption "Projects that builders in the BASIX cohorts have shipped. Each entry is reviewed by a BASIX admin before it appears here."
+
+Control row: a search input "Search by title" with a search icon, 360 px wide. Next to it filter chips in three groups separated by thin dividers: skills "Python", "AI/MeTTa", "Mobile", "UI/UX"; verticals "Health", "Agri", "Education"; and a toggle chip "Licensable IP". "Health" is selected. On the right, a caption "Most recently confirmed first".
+
+A three-column grid of six project cards. Each card: a 16:9 thumbnail area that is a plain surface-strong block with a small play icon and the label "Pitch video" (or "No video" in ink-3 on two cards), then the project title, builder line "by Amina Otieno · Lakeview cohort 2026", a two-line description, vertical pill, skill chips (up to three, then "+2"), a small "Licensable" pill on two cards, a row of three small ghost link labels "Live", "Demo", "Deck" with an external-link icon, and an amber "Demo data" pill. Titles: "Clinic triage intake flow", "Shamba records ledger", "Maternal visit reminder bot", "Crop price SMS digest", "School fees tracker", "Rural pharmacy stock map". All people and projects are fictional demo data.
+
+Below the grid a pager "Showing 1–6 of 14" with ghost "Previous" and secondary "Next".
+
+Include an empty-state inset at the bottom labelled "Empty state": text "No showcase entries match these filters." and a ghost button "Clear filters".
+```
+
+### 6.2 Showcase detail
+
+```text
+Design the "Showcase project" detail screen for Venture Route at 1440 px desktop, following the project design system exactly. Calm, editorial, trustworthy. No illustrations, gradients or emoji. Visible to signed-out visitors.
+
+Navigation as in the Showcase gallery, "Showcase" active, secondary button "Sign in" on the right.
+
+Container 1200 px with a back link "← Back to Showcase". Header: display title "Clinic triage intake flow", a line "Health · Completed Aug 2026", pills "Licensable" and amber "Demo data".
+
+Two columns. Left 760 px:
+1. A 16:9 video facade: a surface-strong block with a large centred play button and the caption "Pitch video · loads from YouTube when you press play". Nothing is embedded before the click.
+2. A button row: secondary "Live app", secondary "Demo", secondary "Pitch deck", each with a small external-link icon, and a 13 px ink-3 caption "Opens in a new tab".
+3. A card "About this project" with a four-line description of a clinic intake flow that sorts patients by urgency.
+4. A card "Demonstrated skills" with chips "Python", "AI/MeTTa", "UI/UX".
+
+Right 400 px, a builder card: name "Amina Otieno" as a heading, line "Backend builder · Lakeview cohort 2026 · Nairobi Technical University", pill "Confirmed by admin". Section "Verified skills": rows "Python" with evidence badge "Both", "AI/MeTTa" with badge "Credential". Section labelled "Self-described" in ink-3: plain outline chips "FastAPI", "Data cleaning", "Swahili copywriting". Section "Certifications": two rows each with title, issuer, mono issue date "12 Mar 2026" and a ghost link "Verify". At the bottom a primary button "View builder" and under it a 13 px ink-3 caption "Contact details are shown only to signed-in founders."
+
+Do not show an email address, phone number or any contact detail anywhere on this screen. All people and projects are fictional demo data.
+```
+
+---
+
 ## Return prompt for Claude Code (paste after exports are committed)
 
 ```text
