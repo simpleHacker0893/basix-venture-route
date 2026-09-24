@@ -7,6 +7,7 @@ scenarios deep-equal before and after), must be idempotent (a second run changes
 must never touch a real Clerk sign-up.
 """
 
+import json
 import sys
 from pathlib import Path
 from typing import Any
@@ -18,7 +19,9 @@ from sqlalchemy import text
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 from app.engine.metta_engine import MettaRouteEngine
-from app.engine.projection import reproject
+from app.engine.projection import render_program, reproject
+from app.marketplace import repo
+from app.marketplace.models import User
 from app.models.brief import VentureBrief
 from app.routing.route_service import RouteService
 from tests.conftest import Actor
@@ -27,7 +30,9 @@ SCRIPTS = Path(__file__).resolve().parents[1] / "scripts"
 sys.path.insert(0, str(SCRIPTS))
 
 from seed_showcase_demo import (  # noqa: E402
+    ADMIN_CLERK_ID,
     DEMO_PATH,
+    SeedError,
     load_demo,
     main,
     seed_and_reproject,
@@ -53,6 +58,8 @@ TABLES = (
     "availability",
     "confirmations",
 )
+
+OPERATOR = "demo-njuguna-njenga"
 
 EXPECTED_TITLES = ["Venture Route", "Crop price SMS digest", "School fees tracker"]
 
@@ -139,7 +146,7 @@ async def test_after_the_seed_the_gallery_lists_exactly_the_three_entries(
     assert all(item["demoData"] for item in body["items"])
     assert [item["licensable"] for item in body["items"]] == [False, False, True]
 
-    for item in body["items"]:
+    for item in body["items"][1:]:  # the fictional builders
         detail = await api.get(f"/api/showcase/{item['id']}")
         assert detail.status_code == 200, detail.text
         builder = detail.json()["builder"]
@@ -147,6 +154,83 @@ async def test_after_the_seed_the_gallery_lists_exactly_the_three_entries(
         assert 2 <= len(builder["skillSet"]) <= 3
         (certification,) = builder["certifications"]
         assert certification["skillId"] is None
+
+
+async def test_the_seed_invents_no_facts_about_the_operator(
+    api: AsyncClient, db_session: AsyncSession, engine: MettaRouteEngine
+) -> None:
+    """R26 (AGENTS.md rule 10): Njuguna Njenga is the one real person in the seed. His profile
+    carries his name and the Venture Route entry only: no cohort, certification or chips."""
+    await seed_and_reproject(db_session, engine, load_demo(DEMO_PATH))
+
+    (operator,) = [
+        builder
+        for builder in await repo.confirmed_builders(db_session)
+        if builder.builder_id == OPERATOR
+    ]
+    lines = render_program([operator])
+    assert not [
+        line
+        for line in lines
+        if line.startswith(("(belongs-to", "(certified", "(has-skill-set", "(suggested-skill"))
+    ]
+    assert not [line for line in lines if line.startswith(("(earned", "(available"))]
+
+    page = (await api.get("/api/showcase")).json()
+    (entry,) = [item for item in page["items"] if item["builderId"] == OPERATOR]
+    assert entry["cohortId"] is None
+    detail = (await api.get(f"/api/showcase/{entry['id']}")).json()
+    builder = detail["builder"]
+    assert builder["displayName"] == "Njuguna Njenga"
+    assert builder["certifications"] == []
+    assert builder["skillSet"] == []
+    assert builder["cohortId"] is None
+    assert (builder["githubUrl"], builder["linkedinUrl"]) == (None, None)
+    assert detail["pitchVideoUrl"] is None
+    assert all(
+        (detail[key] or "https://example.org/").startswith("https://example.org/")
+        for key in ("liveUrl", "demoUrl", "pitchDeckUrl")
+    )
+
+
+async def _counts(session: AsyncSession) -> dict[str, int]:
+    return {table: len(rows) for table, rows in (await _snapshot(session)).items()}
+
+
+async def test_a_non_seed_user_holding_the_seed_admin_clerk_id_aborts_with_nothing_written(
+    api: AsyncClient, db_session: AsyncSession, engine: MettaRouteEngine
+) -> None:
+    db_session.add(User(clerk_id=ADMIN_CLERK_ID, email="someone@example.com", role="admin"))
+    await db_session.commit()
+    before = await _snapshot(db_session)
+
+    with pytest.raises(SeedError):
+        await seed_and_reproject(db_session, engine, load_demo(DEMO_PATH))
+
+    await db_session.rollback()
+    assert await _snapshot(db_session) == before
+
+
+async def test_a_real_profile_holding_a_seed_builder_id_aborts_with_nothing_written(
+    api: AsyncClient,
+    db_session: AsyncSession,
+    engine: MettaRouteEngine,
+    pending_builder: Actor,
+) -> None:
+    profile = await repo.profile_for_user(db_session, pending_builder.user_id)
+    assert profile is not None
+    profile.builder_id = "demo-achieng-owino"
+    db_session.add(profile)
+    await db_session.commit()
+    before = await _snapshot(db_session)
+
+    with pytest.raises(SeedError):
+        await seed_and_reproject(db_session, engine, load_demo(DEMO_PATH))
+
+    await db_session.rollback()
+    after = await _snapshot(db_session)
+    assert after == before
+    assert (await _counts(db_session))["confirmations"] == 0
 
 
 async def test_seed_builders_have_no_availability_and_no_mobile_skill(
@@ -244,3 +328,13 @@ def test_the_demo_file_validates_ids_and_links() -> None:
     for entry in demo.entries:
         assert "mobile" not in entry.skills
         assert isinstance(UUID(str(entry.project_id)), UUID)
+
+
+def test_the_demo_file_refuses_invented_facts_about_the_operator(tmp_path: Path) -> None:
+    raw = json.loads(DEMO_PATH.read_text(encoding="utf-8"))
+    raw["entries"][0]["owner"]["cohort"] = "cohort-2025c"
+    path = tmp_path / "invented.json"
+    path.write_text(json.dumps(raw), encoding="utf-8")
+
+    with pytest.raises(SeedError, match="cohort"):
+        load_demo(path)

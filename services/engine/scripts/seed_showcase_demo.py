@@ -1,9 +1,14 @@
 """Seed the Showcase demo: Venture Route itself plus fictional entries (Sprint 005a, #107).
 
 Reads `seed/showcase_demo.json` (Operator-editable: titles, descriptions, links) and writes, for
-each entry, a confirmed seed builder (user, profile, one skill-less certification) and a
-confirmed, showcased project, plus the `confirmations` rows (account, credential, project,
-showcase) an admin decision would leave behind, signed by a seed admin. Then it reprojects once.
+each entry, a confirmed seed builder (user, profile) and a confirmed, showcased project, plus the
+`confirmations` rows (account, project, showcase, and credential where there is one) an admin
+decision would leave behind, signed by a seed admin. Then it reprojects once.
+
+The Operator (`"operator": true`, Njuguna Njenga) is the one real person in the file. The seed
+invents no facts about him (AGENTS.md rule 10, ruling R26): his profile carries his name and the
+Venture Route entry only, with no cohort, certification, skill chips, headline or profile links.
+Fictional builders each get a cohort, 2-3 skill chips and one skill-less certification.
 
 Guarantees:
 
@@ -42,7 +47,14 @@ from uuid import UUID, uuid5
 os.environ.setdefault("LLM_PROVIDER", "null")
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from pydantic import BaseModel, ConfigDict, Field, ValidationError, field_validator  # noqa: E402
+from pydantic import (  # noqa: E402
+    BaseModel,
+    ConfigDict,
+    Field,
+    ValidationError,
+    field_validator,
+    model_validator,
+)
 from sqlalchemy import or_  # noqa: E402
 from sqlmodel import SQLModel, col, select  # noqa: E402
 from sqlmodel.ext.asyncio.session import AsyncSession  # noqa: E402
@@ -72,9 +84,11 @@ ADMIN_KEY = "seed-basix-admin"
 ADMIN_CLERK_ID = "seed_basix_admin"
 EMAIL_DOMAIN = "seed.venture-route.invalid"
 
-# Seed builders: never a location, rate or availability the demo depends on (no ranges at all).
-SEED_LOCATION = "Nairobi"
-SEED_DAY_RATE = 150
+# Schema placeholders, not claims: the store requires a location, a day rate and one mode on
+# every profile. The Showcase never displays them and no route reads them (seed builders have no
+# availability rows, so `available-for-brief` never holds for them).
+PLACEHOLDER_LOCATION = "Schema placeholder"
+PLACEHOLDER_DAY_RATE = 1
 
 # Gallery order is newest confirmation first: entry 0 gets the latest instant.
 SHOWCASE_CONFIRMED_BASE = datetime(2026, 9, 22, 9, 0, tzinfo=UTC)
@@ -107,10 +121,12 @@ class DemoCertification(_Wire):
 class DemoOwner(_Wire):
     builder_id: str = Field(alias="builderId", max_length=60)
     name: str = Field(min_length=1, max_length=80)
+    # The one real person (the Operator): nothing but the name may be stated about him.
+    operator: bool = False
     headline: str = Field(default="", max_length=120)
     cohort: str | None = Field(default=None, min_length=1, max_length=40)
-    skill_set: list[str] = Field(alias="skillSet", min_length=2, max_length=3)
-    certification: DemoCertification
+    skill_set: list[str] = Field(default=[], alias="skillSet", max_length=3)
+    certification: DemoCertification | None = None
     github_url: str | None = Field(default=None, alias="githubUrl")
     linkedin_url: str | None = Field(default=None, alias="linkedinUrl")
 
@@ -130,6 +146,27 @@ class DemoOwner(_Wire):
         if len({label.lower() for label in labels}) != len(labels):
             raise ValueError("skillSet must not repeat a label regardless of case")
         return labels
+
+    @model_validator(mode="after")
+    def _facts_match_the_person(self) -> DemoOwner:
+        if self.operator:
+            stated = [
+                name
+                for name, value in (
+                    ("headline", self.headline),
+                    ("cohort", self.cohort),
+                    ("skillSet", self.skill_set),
+                    ("certification", self.certification),
+                    ("githubUrl", self.github_url),
+                    ("linkedinUrl", self.linkedin_url),
+                )
+                if value
+            ]
+            if stated:
+                raise ValueError(f"the operator's profile states only the name, not {stated}")
+        elif self.certification is None or not 2 <= len(self.skill_set) <= 3:
+            raise ValueError("a fictional builder needs 2-3 skillSet chips and a certification")
+        return self
 
     @field_validator("github_url")
     @classmethod
@@ -293,6 +330,19 @@ async def _confirm(session: AsyncSession, kind: str, target: UUID, admin_id: UUI
     )
 
 
+async def _drop_seed_credential(session: AsyncSession, credential_id: UUID) -> None:
+    """Delete the seed's own credential at its fixed id, and its seed confirmation, if present."""
+    confirmation = await session.get(
+        Confirmation, seed_id("confirmation-credential", str(credential_id))
+    )
+    if confirmation is not None:
+        await session.delete(confirmation)
+    credential = await session.get(Credential, credential_id)
+    if credential is not None:
+        await session.delete(credential)
+    await session.flush()
+
+
 async def seed(session: AsyncSession, demo: ShowcaseDemo) -> tuple[int, int]:
     """Write every seed row and commit; returns (entries, confirmations)."""
     await _refuse_real_accounts(session, demo)
@@ -338,8 +388,8 @@ async def seed(session: AsyncSession, demo: ShowcaseDemo) -> tuple[int, int]:
                 "display_name": owner.name,
                 "headline": owner.headline,
                 "cohort_id": owner.cohort,
-                "location": SEED_LOCATION,
-                "day_rate": SEED_DAY_RATE,
+                "location": PLACEHOLDER_LOCATION,
+                "day_rate": PLACEHOLDER_DAY_RATE,
                 "supports_remote": True,
                 "supports_hybrid": False,
                 "supports_onsite": False,
@@ -358,22 +408,26 @@ async def seed(session: AsyncSession, demo: ShowcaseDemo) -> tuple[int, int]:
         )
         await session.flush()
         cert = owner.certification
-        await _put(
-            session,
-            Credential,
-            owner.credential_id,
-            {
-                "id": owner.credential_id,
-                "profile_id": owner.profile_id,
-                "title": cert.title,
-                "issuer": cert.issuer,
-                "skill_id": None,
-                "status": "confirmed",
-                "issued_on": cert.issued_on,
-                "credential_url": None,
-                "demo_data": True,
-            },
-        )
+        if cert is None:
+            # No certification is stated (the Operator): drop one an earlier seed version wrote.
+            await _drop_seed_credential(session, owner.credential_id)
+        else:
+            await _put(
+                session,
+                Credential,
+                owner.credential_id,
+                {
+                    "id": owner.credential_id,
+                    "profile_id": owner.profile_id,
+                    "title": cert.title,
+                    "issuer": cert.issuer,
+                    "skill_id": None,
+                    "status": "confirmed",
+                    "issued_on": cert.issued_on,
+                    "credential_url": None,
+                    "demo_data": True,
+                },
+            )
         await _put(
             session,
             Project,
@@ -415,12 +469,11 @@ async def seed(session: AsyncSession, demo: ShowcaseDemo) -> tuple[int, int]:
                 (entry.project_id, skill),
                 {"project_id": entry.project_id, "skill_id": skill, "demo_data": True},
             )
-        for kind, target in (
-            ("account", owner.user_id),
-            ("credential", owner.credential_id),
-            ("project", entry.project_id),
-            ("showcase", entry.project_id),
-        ):
+        decided = [("account", owner.user_id), ("project", entry.project_id)]
+        if cert is not None:
+            decided.append(("credential", owner.credential_id))
+        decided.append(("showcase", entry.project_id))
+        for kind, target in decided:
             await _confirm(session, kind, target, admin_id)
             confirmations += 1
     await session.commit()

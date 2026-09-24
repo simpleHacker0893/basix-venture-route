@@ -1,12 +1,17 @@
 {
-  "_comment": "Showcase demo seed (#107). Operator-editable: titles, descriptions and links. Every person except the Operator (Njuguna Njenga) is fictional; every row is demo data. Entry order is gallery order (the first entry shows first). Links must be https:// (no localhost or IP literals); pitchVideoUrl is a YouTube link or null. Builder ids must start with demo- and never change once seeded. Skills come from the nine-skill vocabulary and never include mobile. Run: uv run python scripts/seed_showcase_demo.py",
+  "_comment": "Showcase demo seed (#107). Operator-editable: titles, descriptions and links. The first entry is Venture Route by Njuguna Njenga, the Operator and the one real person in this file (\"operator\": true): his profile carries his name and this entry only, with no cohort, certification, skill chips or profile links, because the seed invents no facts about a real person (AGENTS.md rule 10). The other builders and their entries are fictional. Every row is demo data. Schema placeholders, not claims: every seed profile gets location \"Schema placeholder\", day rate 1 and remote mode because the store requires them; they are never shown on the Showcase and never routed (seed builders have no availability). Entry order is gallery order. Links must be https:// (no localhost or IP literals); pitchVideoUrl is a YouTube link or null. Builder ids start with demo- and never change once seeded. Skills come from the nine-skill vocabulary and never include mobile. Removing an entry does not delete its rows. Run: uv run python scripts/seed_showcase_demo.py",
   "entries": [
     {
       "key": "venture-route",
       "title": "Venture Route",
       "description": "Turns a founder's venture brief into a staffing route: the verified builders, partner and cohort fit, reusable IP and the gaps, each with the reasoning path MeTTa matched. Built for the Basix ecosystem.",
       "vertical": "education",
-      "skills": ["ai-metta", "python", "frontend", "backend"],
+      "skills": [
+        "ai-metta",
+        "python",
+        "frontend",
+        "backend"
+      ],
       "licensable": false,
       "completedOn": "2026-09-22",
       "liveUrl": "https://example.org/venture-route/live",
@@ -16,16 +21,7 @@
       "owner": {
         "builderId": "demo-njuguna-njenga",
         "name": "Njuguna Njenga",
-        "headline": "Builder of Venture Route",
-        "cohort": "cohort-2025c",
-        "skillSet": ["MeTTa reasoning", "FastAPI", "React"],
-        "certification": {
-          "title": "Symbolic AI Foundations",
-          "issuer": "Lakeview Open Academy",
-          "issuedOn": "2026-03-14"
-        },
-        "githubUrl": null,
-        "linkedinUrl": null
+        "operator": true
       }
     },
     {
@@ -33,7 +29,10 @@
       "title": "Crop price SMS digest",
       "description": "A daily SMS digest of market prices for maize, beans and tomatoes across county markets, so smallholder farmers know where to sell before they travel.",
       "vertical": "agri",
-      "skills": ["data", "backend"],
+      "skills": [
+        "data",
+        "backend"
+      ],
       "licensable": false,
       "completedOn": "2026-07-30",
       "liveUrl": "https://example.org/crop-price-digest/live",
@@ -45,7 +44,10 @@
         "name": "Achieng Owino",
         "headline": "Data pipelines for farmers",
         "cohort": "cohort-2026b",
-        "skillSet": ["SMS gateways", "PostgreSQL"],
+        "skillSet": [
+          "SMS gateways",
+          "PostgreSQL"
+        ],
         "certification": {
           "title": "Data Pipelines in Practice",
           "issuer": "Riverbend Data School",
@@ -60,7 +62,10 @@
       "title": "School fees tracker",
       "description": "Parents see what they owe and what they paid per term; bursars reconcile mobile money receipts against a class list in one screen. Licensable to school networks.",
       "vertical": "education",
-      "skills": ["frontend", "ui-ux"],
+      "skills": [
+        "frontend",
+        "ui-ux"
+      ],
       "licensable": true,
       "completedOn": "2026-06-18",
       "liveUrl": null,
@@ -72,7 +77,11 @@
         "name": "Imani Kariuki",
         "headline": "Interfaces for schools",
         "cohort": "cohort-2026a",
-        "skillSet": ["Figma", "Accessibility", "Design systems"],
+        "skillSet": [
+          "Figma",
+          "Accessibility",
+          "Design systems"
+        ],
         "certification": {
           "title": "Inclusive Interface Design",
           "issuer": "Hillcrest Design Institute",
