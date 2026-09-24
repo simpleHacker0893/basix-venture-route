@@ -96,7 +96,7 @@ def render_program(builders: list[ConfirmedBuilder]) -> list[str]:
             lines.append(f"(built {b.builder_id} {proj})")
             lines.extend(f"(demonstrates {proj} {skill})" for skill in project.skill_ids)
             lines.append(f"(confirmed {ADMIN_SYMBOL} {proj})")
-            if project.showcased:
+            if project.showcase_visible:
                 lines.append(f"(showcases {b.builder_id} {proj})")
             if project.licensable:
                 lines.append(f"(licensable {proj})")

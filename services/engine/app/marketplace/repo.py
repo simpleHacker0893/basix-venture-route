@@ -11,8 +11,9 @@ from datetime import date, datetime
 from typing import Any
 from uuid import UUID
 
-from sqlalchemy import ColumnElement, and_
+from sqlalchemy import ColumnElement, and_, exists, literal, or_
 from sqlalchemy.exc import IntegrityError
+from sqlalchemy.orm import aliased
 from sqlmodel import col, func, select
 from sqlmodel.ext.asyncio.session import AsyncSession
 from sqlmodel.sql.expression import Select
@@ -161,7 +162,7 @@ async def replace_availability(
 def showcase_visible() -> ColumnElement[bool]:
     """The one public Showcase visibility predicate (spec #86): showcased, showcase confirmed,
     project confirmed and owner account confirmed. The statement must join Project to Profile
-    and User."""
+    and User; `visible_showcase_projects()` is the statement that does."""
     return and_(
         col(Project.showcased).is_(True),
         col(Project.showcase_status) == "confirmed",
@@ -170,18 +171,40 @@ def showcase_visible() -> ColumnElement[bool]:
     )
 
 
+def visible_showcase_projects() -> Select[tuple[Project, Profile]]:
+    """Every publicly visible showcase entry with its owner's profile: the Profile and User joins
+    plus `showcase_visible()`. The gallery, the detail page and the projection all start here, so
+    visibility is decided in exactly one place."""
+    return (
+        select(Project, Profile)
+        .join(Profile, col(Profile.id) == col(Project.profile_id))
+        .join(User, col(User.id) == col(Profile.user_id))
+        .where(showcase_visible())
+    )
+
+
 async def confirmed_rows_for(session: AsyncSession, profile_id: UUID) -> ConfirmedRows:
+    return (await confirmed_rows_for_many(session, [profile_id]))[profile_id]
+
+
+async def confirmed_rows_for_many(
+    session: AsyncSession, profile_ids: Sequence[UUID]
+) -> dict[UUID, ConfirmedRows]:
+    """`ConfirmedRows` for each profile in four queries, however many profiles (no N+1)."""
+    ids = list(dict.fromkeys(profile_ids))
+    if not ids:
+        return {}
     credentials = (
         await session.exec(
             select(Credential)
-            .where(Credential.profile_id == profile_id, Credential.status == "confirmed")
+            .where(col(Credential.profile_id).in_(ids), Credential.status == "confirmed")
             .order_by(col(Credential.created_at))
         )
     ).all()
     projects = (
         await session.exec(
             select(Project)
-            .where(Project.profile_id == profile_id, Project.status == "confirmed")
+            .where(col(Project.profile_id).in_(ids), Project.status == "confirmed")
             .order_by(col(Project.created_at))
         )
     ).all()
@@ -198,39 +221,159 @@ async def confirmed_rows_for(session: AsyncSession, profile_id: UUID) -> Confirm
     skills_by_project: dict[UUID, list[str]] = {}
     for link in links:
         skills_by_project.setdefault(link.project_id, []).append(link.skill_id)
-    visible = set(
-        (
-            await session.exec(
-                select(Project.id)
-                .join(Profile, col(Profile.id) == col(Project.profile_id))
-                .join(User, col(User.id) == col(Profile.user_id))
-                .where(Project.profile_id == profile_id, showcase_visible())
-            )
+    visible = {
+        row.id
+        for row, _profile in (
+            await session.exec(visible_showcase_projects().where(col(Project.profile_id).in_(ids)))
         ).all()
+    }
+    return {
+        profile_id: ConfirmedRows(
+            credentials=tuple(
+                ConfirmedCredential(credential_id=str(row.id), skill_id=row.skill_id)
+                for row in credentials
+                if row.profile_id == profile_id and row.skill_id is not None
+            ),
+            # A skill-less certification (#88) proves nothing: it only ever becomes `certified`.
+            certifications=tuple(
+                ConfirmedCertification(credential_id=str(row.id), issuer=row.issuer)
+                for row in credentials
+                if row.profile_id == profile_id and row.skill_id is None
+            ),
+            projects=tuple(
+                ConfirmedProject(
+                    project_id=str(row.id),
+                    skill_ids=tuple(sorted(skills_by_project.get(row.id, []))),
+                    licensable=row.licensable,
+                    vertical=row.vertical,
+                    showcase_visible=row.id in visible,
+                )
+                for row in projects
+                if row.profile_id == profile_id
+            ),
+        )
+        for profile_id in ids
+    }
+
+
+# -- public Showcase reads (Sprint 005a, spec #86, #101) ------------------------------------------
+# Unauthenticated. Every statement starts from `visible_showcase_projects()`.
+
+_LIKE_ESCAPE = "\\"
+
+
+def _like_escaped(term: str) -> str:
+    """`term` with LIKE's wildcards made literal, so `%` and `_` in a search match themselves."""
+    for char in (_LIKE_ESCAPE, "%", "_"):
+        term = term.replace(char, _LIKE_ESCAPE + char)
+    return term
+
+
+def _demonstrates(skill: str) -> ColumnElement[bool]:
+    return exists(
+        select(ProjectSkill.project_id).where(
+            col(ProjectSkill.project_id) == col(Project.id), ProjectSkill.skill_id == skill
+        )
     )
-    return ConfirmedRows(
-        credentials=tuple(
-            ConfirmedCredential(credential_id=str(row.id), skill_id=row.skill_id)
-            for row in credentials
-            if row.skill_id is not None
-        ),
-        # A skill-less certification (#88) proves nothing: it only ever becomes `certified`.
-        certifications=tuple(
-            ConfirmedCertification(credential_id=str(row.id), issuer=row.issuer)
-            for row in credentials
-            if row.skill_id is None
-        ),
-        projects=tuple(
-            ConfirmedProject(
-                project_id=str(row.id),
-                skill_ids=tuple(sorted(skills_by_project.get(row.id, []))),
-                licensable=row.licensable,
-                vertical=row.vertical,
-                showcased=row.id in visible,
-            )
-            for row in projects
-        ),
+
+
+def _verifies(skill: str) -> ColumnElement[bool]:
+    """The SQL form of `verification.verified_skills` for the owner of the outer Project: a
+    confirmed credential or any confirmed project of theirs proves `skill`."""
+    proof = aliased(Project)
+    by_credential = exists(
+        select(Credential.id).where(
+            col(Credential.profile_id) == col(Project.profile_id),
+            Credential.status == "confirmed",
+            Credential.skill_id == skill,
+        )
     )
+    by_project = exists(
+        select(ProjectSkill.project_id)
+        .join(proof, col(proof.id) == col(ProjectSkill.project_id))
+        .where(
+            col(proof.profile_id) == col(Project.profile_id),
+            col(proof.status) == "confirmed",
+            ProjectSkill.skill_id == skill,
+        )
+    )
+    return or_(by_credential, by_project)
+
+
+def _self_describes(skill: str) -> ColumnElement[bool]:
+    """A `skill_set` or `suggested_skills` label equal to `skill`, case-insensitively."""
+    labels = (
+        func.unnest(func.array_cat(col(Profile.skill_set), col(Profile.suggested_skills)))
+        .table_valued("label")
+        .render_derived(name="chips")
+    )
+    return exists(
+        select(literal(1))
+        .select_from(labels)
+        .where(func.lower(labels.c.label) == func.lower(literal(skill)))
+    )
+
+
+async def showcase_page(
+    session: AsyncSession,
+    *,
+    skill: str | None,
+    vertical: str | None,
+    licensable: bool | None,
+    q: str | None,
+    limit: int,
+    offset: int,
+) -> tuple[list[tuple[Project, Profile]], int]:
+    """One gallery page, newest confirmation first then id, and the filtered total."""
+    statement = visible_showcase_projects()
+    if skill is not None:
+        statement = statement.where(
+            or_(_demonstrates(skill), _verifies(skill), _self_describes(skill))
+        )
+    if vertical is not None:
+        statement = statement.where(Project.vertical == vertical)
+    if licensable is not None:
+        statement = statement.where(Project.licensable == licensable)
+    if q:
+        statement = statement.where(
+            col(Project.title).ilike(f"%{_like_escaped(q)}%", escape=_LIKE_ESCAPE)
+        )
+    total = (await session.exec(select(func.count()).select_from(statement.subquery()))).one()
+    ordered = (
+        statement.order_by(col(Project.showcase_confirmed_at).desc().nulls_last(), col(Project.id))
+        .limit(limit)
+        .offset(offset)
+    )
+    rows = [(project, profile) for project, profile in (await session.exec(ordered)).all()]
+    return rows, int(total)
+
+
+async def visible_showcase_project(
+    session: AsyncSession, project_id: UUID
+) -> tuple[Project, Profile] | None:
+    row = (await session.exec(visible_showcase_projects().where(Project.id == project_id))).first()
+    return None if row is None else (row[0], row[1])
+
+
+async def skill_ids_by_project(
+    session: AsyncSession, project_ids: Sequence[UUID]
+) -> dict[UUID, list[str]]:
+    """Each project's demonstrated skill ids in seed skill order, in two queries."""
+    out: dict[UUID, list[str]] = {project_id: [] for project_id in project_ids}
+    if not out:
+        return out
+    links = (
+        await session.exec(select(ProjectSkill).where(col(ProjectSkill.project_id).in_(list(out))))
+    ).all()
+    order = {skill: index for index, skill in enumerate(await skill_names(session))}
+    for link in links:
+        out[link.project_id].append(link.skill_id)
+    return {pid: sorted(skills, key=lambda s: order.get(s, 99)) for pid, skills in out.items()}
+
+
+async def confirmed_credentials_for(session: AsyncSession, profile_id: UUID) -> list[Credential]:
+    """The builder's confirmed credentials, with or without a vocabulary skill (#101 panel)."""
+    return [row for row in await credentials_for(session, profile_id) if row.status == "confirmed"]
 
 
 # -- proof rows a builder owns ------------------------------------------------

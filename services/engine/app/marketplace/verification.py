@@ -29,9 +29,10 @@ class ConfirmedProject:
     skill_ids: tuple[SkillId, ...]
     licensable: bool
     vertical: str
-    # True only when the entry passes the one public visibility rule (repo.showcase_visible):
-    # display-only, read by no rule and by no verification (D-52).
-    showcased: bool = False
+    # True only when the entry passes the one public visibility rule
+    # (repo.visible_showcase_projects): display-only, read by no rule and by no verification
+    # (D-52).
+    showcase_visible: bool = False
 
 
 @dataclass(frozen=True)
