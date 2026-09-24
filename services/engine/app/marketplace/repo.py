@@ -11,6 +11,7 @@ from datetime import date, datetime
 from typing import Any
 from uuid import UUID
 
+from sqlalchemy import ColumnElement, and_
 from sqlalchemy.exc import IntegrityError
 from sqlmodel import col, func, select
 from sqlmodel.ext.asyncio.session import AsyncSession
@@ -32,6 +33,7 @@ from app.marketplace.models import (
 )
 from app.marketplace.verification import (
     ConfirmedBuilder,
+    ConfirmedCertification,
     ConfirmedCredential,
     ConfirmedProject,
     ConfirmedRows,
@@ -156,6 +158,18 @@ async def replace_availability(
 # -- confirmed rows: the one input verification and projection share ------------------------------
 
 
+def showcase_visible() -> ColumnElement[bool]:
+    """The one public Showcase visibility predicate (spec #86): showcased, showcase confirmed,
+    project confirmed and owner account confirmed. The statement must join Project to Profile
+    and User."""
+    return and_(
+        col(Project.showcased).is_(True),
+        col(Project.showcase_status) == "confirmed",
+        col(Project.status) == "confirmed",
+        col(User.status) == "confirmed",
+    )
+
+
 async def confirmed_rows_for(session: AsyncSession, profile_id: UUID) -> ConfirmedRows:
     credentials = (
         await session.exec(
@@ -184,12 +198,27 @@ async def confirmed_rows_for(session: AsyncSession, profile_id: UUID) -> Confirm
     skills_by_project: dict[UUID, list[str]] = {}
     for link in links:
         skills_by_project.setdefault(link.project_id, []).append(link.skill_id)
+    visible = set(
+        (
+            await session.exec(
+                select(Project.id)
+                .join(Profile, col(Profile.id) == col(Project.profile_id))
+                .join(User, col(User.id) == col(Profile.user_id))
+                .where(Project.profile_id == profile_id, showcase_visible())
+            )
+        ).all()
+    )
     return ConfirmedRows(
         credentials=tuple(
             ConfirmedCredential(credential_id=str(row.id), skill_id=row.skill_id)
             for row in credentials
-            # A skill-less certification (#88) proves nothing; its display facts belong to #98.
             if row.skill_id is not None
+        ),
+        # A skill-less certification (#88) proves nothing: it only ever becomes `certified`.
+        certifications=tuple(
+            ConfirmedCertification(credential_id=str(row.id), issuer=row.issuer)
+            for row in credentials
+            if row.skill_id is None
         ),
         projects=tuple(
             ConfirmedProject(
@@ -197,6 +226,7 @@ async def confirmed_rows_for(session: AsyncSession, profile_id: UUID) -> Confirm
                 skill_ids=tuple(sorted(skills_by_project.get(row.id, []))),
                 licensable=row.licensable,
                 vertical=row.vertical,
+                showcased=row.id in visible,
             )
             for row in projects
         ),
@@ -343,6 +373,8 @@ async def confirmed_builders(session: AsyncSession) -> list[ConfirmedBuilder]:
                 cohort_id=profile.cohort_id,
                 self_described=tuple(profile.self_described_skills),
                 rows=await confirmed_rows_for(session, profile.id),
+                skill_set=tuple(profile.skill_set),
+                suggested_skills=tuple(profile.suggested_skills),
             )
         )
     return out
