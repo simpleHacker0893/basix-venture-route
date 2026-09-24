@@ -21,6 +21,7 @@ import {
   ShowcaseProject,
   SkillSuggestions,
   type AdminDecision as AdminDecisionT,
+  type AdminDecisionKind,
   type Bid as BidT,
   type BidCreateInput,
   type Booking as BookingT,
@@ -32,7 +33,6 @@ import {
   type CredentialInput,
   type Dashboard as DashboardT,
   type DecidedQueue as DecidedQueueT,
-  type DecisionKind,
   type Eligibility as EligibilityT,
   type PendingQueue as PendingQueueT,
   type ProfileInput,
@@ -110,9 +110,9 @@ export type MarketplaceApi = {
   /** GET /api/admin/decided: confirmed and rejected rows with their latest decision (#49). */
   getDecided(): Promise<DecidedQueueT>;
   /** POST /api/admin/confirm/{kind}/{id}: the engine reprojects in the same request (D-15). */
-  confirm(kind: DecisionKind, id: string): Promise<AdminDecisionT>;
+  confirm(kind: AdminDecisionKind, id: string): Promise<AdminDecisionT>;
   /** POST /api/admin/reject/{kind}/{id}: the engine reprojects in the same request (D-15). */
-  reject(kind: DecisionKind, id: string): Promise<AdminDecisionT>;
+  reject(kind: AdminDecisionKind, id: string): Promise<AdminDecisionT>;
   // -- Sprint 005a (#96, spec #86): the public Showcase, résumé skill suggestions and the
   // showcase editor. Public reads (`showcase.list`/`showcase.get`) carry no bearer token, even
   // when the caller is signed in (`/api/showcase*` is not a guarded prefix, `client.ts`).

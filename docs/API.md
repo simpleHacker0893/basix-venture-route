@@ -400,6 +400,42 @@ followed by `suggestedSkills`, shown as "Self-described"; `certifications` lists
 credentials only (with or without a vocabulary skill). A hidden, unknown or malformed id answers
 `404 {"detail": "showcase entry not found"}`, the same body in every case.
 
+### Demo seed (#107)
+
+The gallery opens with seeded content: **Venture Route** itself plus two fictional entries,
+*Crop price SMS digest* and *School fees tracker*. The content lives in
+`services/engine/seed/showcase_demo.json`, which the Operator edits (titles, descriptions,
+`liveUrl`/`demoUrl`/`pitchDeckUrl`, and `pitchVideoUrl`, a YouTube link or `null`); links obey
+the same rules as the builder endpoints. Entry order is gallery order.
+
+Venture Route's owner is Njuguna Njenga (`demo-njuguna-njenga`), the Operator and the one real
+person in the file (`"operator": true`). The seed invents no facts about him (AGENTS.md rule 10):
+his profile carries his name and the Venture Route entry only, with example.org placeholder
+links and no video, and no cohort, certification, skill chips, headline or profile links; the
+file is refused if any of those are added. The fictional builders each get a cohort, 2–3
+`skillSet` chips and one confirmed skill-less certification.
+
+`scripts/seed_showcase_demo.py` writes the rows (all `demoData: true`): per entry a confirmed
+seed builder with a `demo-` builder id, a `seed_demo_<slug>` placeholder Clerk id no Clerk session
+can carry, a `.invalid` email, no availability and never `mobile`; a confirmed, showcased
+project; and the `confirmations` rows (account, project, showcase, and credential where there is
+one) signed by the seed admin `seed_basix_admin`, who cannot sign in. Location
+`Schema placeholder`, day rate 1 and remote mode are schema placeholders, not claims: the store
+requires them, the Showcase never shows them and no route reads them. Row ids are fixed uuid5
+values, so re-running updates in place and changes nothing. It reprojects once and exits non-zero
+on any error. The five demo scenarios route identically before and after (spec #86 Testing 7).
+
+`docker compose up` runs it after `alembic upgrade head` (the one-shot `seed` service); by hand:
+`cd services/engine && uv run python scripts/seed_showcase_demo.py [--file <json>]`. Operational
+notes:
+
+- Removing an entry from the JSON does not delete its rows; delete them by hand or reset the db.
+- Seed confirmations appear in the admin Decided list. A Reverse there is undone by the next
+  `docker compose up`, which re-confirms every seed row.
+- If a non-seed account already holds a seed Clerk id, email or `demo-` builder id, the seed
+  aborts with nothing written and exits non-zero; the engine service, which waits for the seed to
+  succeed, then does not start until the clash is removed.
+
 ## Requests: `/api/requests` (Sprint 004)
 
 A request is a founder's published brief: the exact `VentureBrief` the engine routed plus a
@@ -604,24 +640,37 @@ Role `admin`. Admins are never user-chosen: the webhook assigns the role to emai
 
 ### GET /api/admin/pending
 
-`PendingQueue`: `{ "accounts": [...], "credentials": [...], "projects": [...] }`. Accounts are
-pending founders and builders (`id`, `clerkId`, `email`, `role`, `builderId`, `displayName`,
-`cohortId`, `submittedAt`); credentials and projects carry their builder's slug and display name
-plus the row fields. Every row has `demoData: true`.
+`PendingQueue`: `{ "accounts": [...], "credentials": [...], "projects": [...], "showcase": [...] }`.
+Accounts are pending founders and builders (`id`, `clerkId`, `email`, `role`, `builderId`,
+`displayName`, `cohortId`, `submittedAt`); credentials and projects carry their builder's slug and
+display name plus the row fields. Credentials include `issuedOn` and `credentialUrl` (both
+nullable) and a skill-less certification has `skillId: null`. Every row has `demoData: true`.
+
+`showcase` (Sprint 005a, #103) lists every project with `showcased: true` and
+`showcaseStatus: "pending"`, whatever the project's or account's own status. Each row is the card
+preview: `id` (the project id), `builderId`, `displayName`, `cohortId`, `title`, `description`,
+`vertical`, `licensable`, `skillIds`, the four links `liveUrl`, `demoUrl`, `pitchVideoUrl`,
+`pitchDeckUrl`, `pitchVideoId` (the parsed 11-character YouTube id, or `null`), `showcaseStatus`,
+plus `projectStatus` and `accountConfirmed` for the "Project not yet confirmed" / "Account not
+confirmed" warnings: an entry can be confirmed before both are, but stays private until they are
+(the single visibility rule, see `GET /api/showcase`).
 
 ### GET /api/admin/decided
 
-`DecidedQueue`: the same three lists with the rows an admin has already confirmed or rejected
+`DecidedQueue`: the same four lists with the rows an admin has already confirmed or rejected
 (spec #35 story 24, #49). Each row carries its pending counterpart's fields plus `status`
 (`confirmed` | `rejected`) and `decidedAt`, the timestamp of the latest `confirmations` row for
 that target (ISO date-time with offset), oldest decision first. Pending rows and admin accounts
 never appear. A mistaken decision is reversed by calling the opposite endpoint below; the `/admin`
-Decided tab's Reverse button does exactly that.
+Decided tab's Reverse button does exactly that. A `showcase` row's `status` is its
+`showcaseStatus`; an entry the builder edits goes back to pending, and one the builder withdraws
+(`showcased: false`) leaves both lists.
 
 ### POST /api/admin/confirm/{kind}/{id}, POST /api/admin/reject/{kind}/{id}
 
-`kind` is `account`, `credential` or `project` (`422` otherwise); `id` is the row UUID (`404`
-`{"detail": "no pending <kind> <id>"}` when unknown). Any transition is allowed so a mistake can
+`kind` is `account`, `credential`, `project` or `showcase` (`422` otherwise); `id` is the row
+UUID (`404` `{"detail": "no pending <kind> <id>"}` when unknown; for `showcase` the id is a
+project id, so any other id is `404`). Any transition is allowed so a mistake can
 be reversed; every decision appends a `confirmations` row. The status is committed, then the
 engine rebuilds its space in the same request (D-15) and answers:
 
@@ -632,6 +681,14 @@ engine rebuilds its space in the same request (D-15) and answers:
 Only builders whose account is confirmed produce atoms; rejecting an account removes the builder
 from the graph on that rebuild, rejecting a project drops its `demonstrates` facts so evidence
 falls back to `credential`. Reprojection on demo-size data takes well under a second.
+
+`showcase` decides the Showcase entry, not the project: confirm sets `showcaseStatus: "confirmed"`
+and stamps `showcase_confirmed_at` (the gallery's sort key); reject sets `"rejected"` and clears
+it. Both log a `confirmations` row of kind `showcase` and reproject, because a publicly visible
+entry is the display-only fact `(showcases <builder> <project>)` that no rule reads (D-52). An
+entry the builder has withdrawn (`showcased: false`) answers `409`
+`{"detail": "Builder has withdrawn this entry"}` and nothing is logged. No token `401`, a
+non-admin `403`.
 
 ## Webhook: POST /api/webhooks/clerk
 
