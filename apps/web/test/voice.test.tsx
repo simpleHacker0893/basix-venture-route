@@ -7,7 +7,7 @@
 import { act, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { useState } from "react";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 import type { VoiceErrorCode } from "../src/voice/provider";
 import { createFakeVoiceProvider, installWindowHook, type ChloeVoiceWindowHook } from "../src/voice/fakeVoiceProvider";
@@ -315,6 +315,29 @@ describe("voice device layer", () => {
     expect(held.spoken).toEqual(["hi there"]);
 
     held.finishSpeaking();
+    expect(await screen.findByTestId("status")).toHaveTextContent("idle");
+  });
+
+  it("a speak() that rejects still leaves status idle instead of stuck on speaking (carry-over ruling)", async () => {
+    const fake = createFakeVoiceProvider();
+    const voice = { ...fake, speak: vi.fn().mockRejectedValueOnce(new Error("x")) };
+    function SayProbe() {
+      const session = useVoice();
+      return (
+        <div>
+          <div data-testid="status">{session.status}</div>
+          <button onClick={() => void session.say("hi there").catch(() => undefined)}>say</button>
+        </div>
+      );
+    }
+    const user = userEvent.setup();
+    render(
+      <VoiceSessionProvider voice={voice}>
+        <SayProbe />
+      </VoiceSessionProvider>,
+    );
+
+    await user.click(screen.getByRole("button", { name: "say" }));
     expect(await screen.findByTestId("status")).toHaveTextContent("idle");
   });
 

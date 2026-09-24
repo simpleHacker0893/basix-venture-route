@@ -130,8 +130,13 @@ export function VoiceSessionProvider({ voice, children }: Props) {
       const play = async () => {
         if (turn !== generation.current) return;
         dispatch({ type: "speaking-started", text });
-        await voice.speak(text);
-        if (turn === generation.current && queued.current === 1) dispatch({ type: "speaking-ended" });
+        // A rejecting speak() must not leave status stuck on "speaking": the dispatch runs
+        // whether the provider resolved or threw, then the rejection still propagates.
+        try {
+          await voice.speak(text);
+        } finally {
+          if (turn === generation.current && queued.current === 1) dispatch({ type: "speaking-ended" });
+        }
       };
       // An idle queue starts at once, synchronously, so a line said inside a click handler is
       // spoken inside that user gesture (the greeting, requirements.md §Business rules).

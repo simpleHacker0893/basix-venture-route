@@ -9,15 +9,22 @@ export function VoiceToggle() {
   const chloe = useChloe();
   if (!chloe || !chloe.provider) return null;
   return (
-    <button
-      type="button"
-      role="switch"
-      aria-checked={chloe.enabled}
-      disabled={!chloe.supported}
-      onClick={chloe.toggleVoice}
-      className="h-8 rounded-pill border border-border bg-surface-strong px-3 text-[13px] text-ink-2 aria-checked:border-accent-green aria-checked:text-ink disabled:opacity-60"
-    >
-      Voice: Chloe
-    </button>
+    <div className="flex items-center gap-3 pb-1">
+      <span className="text-[13px] font-medium text-ink">Voice: Chloe</span>
+      <button
+        type="button"
+        role="switch"
+        aria-checked={chloe.enabled}
+        aria-label="Voice: Chloe"
+        disabled={!chloe.supported}
+        onClick={chloe.toggleVoice}
+        className="relative h-6 w-11 rounded-full border border-border bg-border-strong p-0.5 transition-colors focus:outline-none focus:ring-1 focus:ring-accent-green aria-checked:border-accent-green aria-checked:bg-accent-green disabled:opacity-60"
+      >
+        <span
+          aria-hidden="true"
+          className={`block h-5 w-5 rounded-full bg-surface-strong transition-transform ${chloe.enabled ? "translate-x-5" : "translate-x-0"}`}
+        />
+      </button>
+    </div>
   );
 }

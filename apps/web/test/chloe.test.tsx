@@ -15,17 +15,20 @@ import { FORM_FALLBACK_HINT } from "../src/chloe/engineHints";
 import {
   CONFIRM_NO_REPLY,
   CONFIRM_PROMPT,
+  CONSENT_CAPTION,
   GREETING,
   MIC_ERRORS,
   OFFLINE_ASSISTANT,
   QUESTIONS,
   spokenForm,
   UNREACHABLE,
+  UNSUPPORTED_CAPTION,
 } from "../src/chloe/script";
 import snapshot from "../src/offline/snapshot.json";
 import { createFakeVoiceProvider, type FakeVoiceProvider } from "../src/voice/fakeVoiceProvider";
 import { selectProvider } from "../src/voice/selectProvider";
 import { useVoice, VoiceSessionProvider } from "../src/voice/VoiceSession";
+import { createWebSpeechProvider } from "../src/voice/webSpeechProvider";
 import { clarificationFor, engineFetch, jsonResponse, renderApp, SEED_BRIEFS, type FetchLike } from "./fakeEngine";
 
 const CAPTION = /Routes are computed by MeTTa rules over demo records\. The assistant only translates your/;
@@ -466,5 +469,67 @@ describe("Chloe on /route", () => {
     await enableVoice(user);
     await new Promise((resolve) => setTimeout(resolve, 20));
     expect(voice.spoken).toEqual([GREETING]);
+  });
+
+  it("an unsupported browser disables the switch, shows the caption, and hides the mic (Sprint 006 acceptance Must 7)", async () => {
+    const voice = createWebSpeechProvider(window);
+    renderApp("/route", engineFetch(), { voice });
+
+    const toggle = await screen.findByRole("switch", { name: "Voice: Chloe" });
+    expect(toggle).toBeDisabled();
+    expect(await screen.findByText(UNSUPPORTED_CAPTION)).toBeInTheDocument();
+    expect(screen.queryByTestId("mic-button")).not.toBeInTheDocument();
+  });
+
+  it("with no voice provider the switch is absent (Sprint 006 acceptance Must 7)", async () => {
+    renderApp("/route", engineFetch(), { voice: null });
+    await screen.findByRole("heading", { level: 1, name: "Describe your MVP" });
+    expect(screen.queryByRole("switch", { name: "Voice: Chloe" })).not.toBeInTheDocument();
+  });
+
+  it("the consent caption is present while voice is on (Sprint 006 acceptance Should 2)", async () => {
+    const voice = createFakeVoiceProvider();
+    const user = userEvent.setup();
+    renderApp("/route", engineFetch(), { voice });
+
+    await enableVoice(user);
+    expect(screen.getByText(CONSENT_CAPTION)).toBeInTheDocument();
+  });
+
+  it("'Stop Chloe' hides the speaking indicator and empties the queue (Sprint 006 acceptance Should 2)", async () => {
+    const voice = createFakeVoiceProvider({ holdUtterances: true });
+    const user = userEvent.setup();
+    renderApp("/route", engineFetch(), { voice });
+
+    await openScenarioInChat(user, "Health pilot");
+    await enableVoice(user);
+    // The greeting is being spoken (held); the read-back and confirm prompt wait in the queue.
+    expect(voice.spoken).toEqual([GREETING]);
+    expect(await screen.findByText("Chloe is speaking")).toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: "Stop Chloe" }));
+    expect(screen.queryByText("Chloe is speaking")).not.toBeInTheDocument();
+
+    act(() => voice.finishSpeaking());
+    await new Promise((resolve) => setTimeout(resolve, 20));
+    expect(voice.spoken).toEqual([GREETING]);
+  });
+
+  it("a brief completed while voice was off still gets a read-back once voice is turned on after a remount (ruling R21)", async () => {
+    const voice = createFakeVoiceProvider();
+    const user = userEvent.setup();
+    renderApp("/route", engineFetch(), { voice });
+
+    // The brief becomes complete while voice is off, and ChloeProvider remounts (leave and
+    // return) before voice is ever turned on: a naive seed-on-mount would mark it "already
+    // confirmed" and skip the read-back forever.
+    await openScenarioInChat(user, "Health pilot");
+    await leaveAndReturn(user);
+    await screen.findByRole("heading", { level: 1, name: "Describe your MVP" });
+
+    await enableVoice(user);
+    await waitFor(() => expect(voice.spoken).toContain(CONFIRM_PROMPT));
+    const readBack = voice.spoken.find((line) => line.startsWith("Here's your brief so far."));
+    expect(readBack).toBeDefined();
   });
 });

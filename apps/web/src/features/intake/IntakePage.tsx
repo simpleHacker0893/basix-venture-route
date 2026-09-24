@@ -2,6 +2,7 @@ import { VentureBrief } from "@venture-route/contracts";
 import { useEffect } from "react";
 import { useSearchParams } from "react-router";
 
+import { SpeakingIndicator } from "../../chloe/ui/SpeakingIndicator";
 import { VoiceToggle } from "../../chloe/ui/VoiceToggle";
 import { ApiBanner } from "../../components/ApiBanner";
 import { toBriefInput } from "../../lib/brief";
@@ -38,7 +39,7 @@ export function IntakePage() {
       <ApiBanner />
       <div className="grid grid-cols-12 items-start gap-6">
         <div className="col-span-12 flex flex-col gap-8 lg:col-span-8">
-          <div className="flex flex-wrap items-start justify-between gap-4 border-b border-border pb-6">
+          <div className="flex flex-wrap items-end justify-between gap-4 border-b border-border pb-6">
             <div>
               <h1 className="font-display text-[36px] font-medium leading-tight">Describe your MVP</h1>
               <p className="text-ink-2">Plain language is fine. We will ask for anything missing.</p>
@@ -60,6 +61,7 @@ export function IntakePage() {
           ) : (
             <>
               <ChatThread turns={state.turns} />
+              <SpeakingIndicator />
               {state.busy && (
                 <p role="status" className="text-[13px] text-ink-3">
                   Assistant is thinking…
