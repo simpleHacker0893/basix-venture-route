@@ -29,14 +29,27 @@ class ConfirmedProject:
     skill_ids: tuple[SkillId, ...]
     licensable: bool
     vertical: str
+    # True only when the entry passes the one public visibility rule (repo.showcase_visible):
+    # display-only, read by no rule and by no verification (D-52).
+    showcased: bool = False
+
+
+@dataclass(frozen=True)
+class ConfirmedCertification:
+    """A confirmed credential with no vocabulary skill (#88): display-only, proves nothing."""
+
+    credential_id: str
+    issuer: str
 
 
 @dataclass(frozen=True)
 class ConfirmedRows:
-    """Everything confirmed about one builder: credentials and projects with status confirmed."""
+    """Everything confirmed about one builder: credentials and projects with status confirmed.
+    `certifications` are the skill-less credentials; `verified_skills` never reads them."""
 
     credentials: tuple[ConfirmedCredential, ...] = field(default_factory=tuple)
     projects: tuple[ConfirmedProject, ...] = field(default_factory=tuple)
+    certifications: tuple[ConfirmedCertification, ...] = field(default_factory=tuple)
 
 
 @dataclass(frozen=True)
@@ -51,6 +64,9 @@ class ConfirmedBuilder:
     cohort_id: str | None
     self_described: tuple[str, ...]
     rows: ConfirmedRows
+    # Free-text skill chips (#88, D-52): display-only facts, never evidence (AGENTS.md rule 4).
+    skill_set: tuple[str, ...] = ()
+    suggested_skills: tuple[str, ...] = ()
 
 
 def verified_skills(rows: ConfirmedRows) -> dict[SkillId, Evidence]:
