@@ -69,7 +69,7 @@ function decidedRows(queue: DecidedQueue): DecidedRowData[] {
       kind: "credential" as const,
       id: credential.id,
       label: credential.title,
-      sub: `${credential.issuer} · ${SKILL_LABELS[credential.skillId]}`,
+      sub: `${credential.issuer} · ${credential.skillId ? SKILL_LABELS[credential.skillId] : "No vocabulary skill"}`,
       builder: credential.displayName,
       status: credential.status,
       decidedAt: credential.decidedAt,
@@ -131,6 +131,9 @@ export function AdminHome() {
           accounts: kind === "account" ? current.accounts.filter((row) => row.id !== id) : current.accounts,
           credentials: kind === "credential" ? current.credentials.filter((row) => row.id !== id) : current.credentials,
           projects: kind === "project" ? current.projects.filter((row) => row.id !== id) : current.projects,
+          // The showcase admin kind (#103) isn't wired into this screen yet; carry the list
+          // through unchanged so `PendingQueue`'s new field doesn't break this update.
+          showcase: current.showcase,
         };
       });
       setExpanded((current) => (current === id ? null : current));
@@ -284,7 +287,11 @@ export function AdminHome() {
                     key={credential.id}
                     {...rowProps("credential", credential.id, credential.title, credentialPreview(credential))}
                     detail={<CredentialDetail credential={credential} />}
-                    cells={[credential.displayName, SKILL_LABELS[credential.skillId], submitted(credential.submittedAt)]}
+                    cells={[
+                      credential.displayName,
+                      credential.skillId ? SKILL_LABELS[credential.skillId] : "No vocabulary skill",
+                      submitted(credential.submittedAt),
+                    ]}
                     sub={credential.issuer}
                   />
                 ))}
@@ -586,7 +593,10 @@ function CredentialDetail({ credential }: Readonly<{ credential: PendingCredenti
         { label: "Credential", value: credential.title },
         { label: "Issuer", value: credential.issuer },
         { label: "Builder", value: `${credential.displayName} (${credential.builderId})` },
-        { label: "Skill", value: SKILL_LABELS[credential.skillId] },
+        {
+          label: "Skill",
+          value: credential.skillId ? SKILL_LABELS[credential.skillId] : "No vocabulary skill",
+        },
       ]}
     />
   );

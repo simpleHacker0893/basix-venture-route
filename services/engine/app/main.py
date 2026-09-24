@@ -26,6 +26,7 @@ from app.api.internal import router as internal_router
 from app.api.me import router as me_router
 from app.api.requests import router as requests_router
 from app.api.route import router as route_router
+from app.api.skills import router as skills_router
 from app.api.webhooks import router as webhooks_router
 from app.auth.clerk import JwksCache, fetch_jwks_over_http
 from app.auth.webhook import ClerkAdmin, HttpClerkAdmin, NullClerkAdmin
@@ -34,6 +35,7 @@ from app.db.session import SessionFactory, create_session_factory, create_store_
 from app.engine.errors import EngineError
 from app.engine.metta_engine import MettaRouteEngine
 from app.engine.projection import reproject
+from app.llm.base import LlmAdapter
 from app.llm.factory import select_adapter
 from app.models.brief import load_seed_briefs
 from app.models.chat import ValidationErrorResponse
@@ -51,6 +53,7 @@ def create_app(
     session_factory: SessionFactory | None | object = _UNSET,
     clerk_admin: ClerkAdmin | None = None,
     clock: Clock | None = None,
+    llm_adapter: LlmAdapter | None = None,
 ) -> FastAPI:
     resolved = settings or get_settings()
 
@@ -63,7 +66,7 @@ def create_app(
         }
         app.state.route_service = RouteService(route_engine)
         app.state.known_entities = route_engine.known_entities()
-        app.state.llm_adapter = select_adapter(resolved)
+        app.state.llm_adapter = llm_adapter or select_adapter(resolved)
         # Wall clock unless a test injects a fixed instant (upcoming bookings, #66).
         app.state.clock = clock or (lambda: datetime.now(UTC))
 
@@ -124,6 +127,7 @@ def create_app(
     app.include_router(route_router)
     app.include_router(conversation_router)
     app.include_router(me_router)
+    app.include_router(skills_router)
     app.include_router(builders_router)
     app.include_router(requests_router)
     app.include_router(bids_router)

@@ -9,7 +9,6 @@ import type {
   Credential,
   CredentialInput,
   ProfileInput,
-  Project,
   ProjectInput,
 } from "@venture-route/contracts";
 import { render, screen, waitFor, within } from "@testing-library/react";
@@ -53,12 +52,16 @@ function profile(overrides: Partial<BuilderProfile> = {}): BuilderProfile {
     ],
     accountStatus: "pending",
     confirmed: false,
+    skillSet: [],
+    suggestedSkills: [],
+    githubUrl: null,
+    linkedinUrl: null,
     demoData: true,
     ...overrides,
   };
 }
 
-const noRows = { listCredentials: async (): Promise<Credential[]> => [], listProjects: async (): Promise<Project[]> => [] };
+const noRows = { listCredentials: async (): Promise<Credential[]> => [], listProjects: async () => [] };
 
 describe("/profile", () => {
   it("shows the pending banner, the Both badge on python and display-only wording on backend", async () => {
@@ -138,7 +141,16 @@ describe("/profile", () => {
       ...noRows,
       postCredential: async (input) => {
         posted.push(input);
-        return { id: "cred-1", ...input, status: "pending", demoData: true };
+        return {
+          id: "cred-1",
+          ...input,
+          // The server always returns a fully-populated row; unset optional fields on the
+          // request come back null, never absent (W0 integration fix).
+          issuedOn: input.issuedOn ?? null,
+          credentialUrl: input.credentialUrl ?? null,
+          status: "pending",
+          demoData: true,
+        };
       },
     });
 
@@ -167,7 +179,20 @@ describe("/profile/projects/new", () => {
       ...noRows,
       postProject: async (input) => {
         posted.push(input);
-        return { id: "proj-1", ...input, status: "pending", demoData: true };
+        return {
+          id: "proj-1",
+          ...input,
+          status: "pending",
+          demoData: true,
+          // Since #94 (ruling R17) the engine returns the ShowcaseProject shape.
+          description: "",
+          liveUrl: null,
+          demoUrl: null,
+          pitchVideoUrl: null,
+          pitchDeckUrl: null,
+          showcased: false,
+          showcaseStatus: "none",
+        };
       },
     });
 

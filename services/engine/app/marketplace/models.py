@@ -18,7 +18,9 @@ from sqlalchemy import (
     Index,
     String,
     UniqueConstraint,
+    false,
     func,
+    text,
     true,
 )
 from sqlalchemy.dialects.postgresql import JSONB
@@ -26,7 +28,7 @@ from sqlmodel import Field, SQLModel
 
 USER_ROLES = ("founder", "builder", "admin")
 RECORD_STATUSES = ("pending", "confirmed", "rejected")
-CONFIRMATION_KINDS = ("account", "credential", "project")
+CONFIRMATION_KINDS = ("account", "credential", "project", "showcase")
 CONFIRMATION_DECISIONS = ("confirmed", "rejected")
 # Sprint 004 (spec #52 §Store): requests, bids, bookings.
 REQUEST_STATUSES = ("open", "closed")
@@ -36,6 +38,10 @@ BOOKING_STATES = ("proposed", "accepted", "countered", "confirmed")
 BOOKING_DURATIONS = (30, 45)
 BID_MESSAGE_MAX = 1000
 BOOKING_NOTE_MAX = 500
+# Sprint 005a (spec #86 §Store, #88): the Showcase, the skill set, profile links, certifications.
+SHOWCASE_STATUSES = ("none", "pending", "confirmed", "rejected")
+PROJECT_DESCRIPTION_MAX = 1000
+LINK_MAX = 500
 
 
 def _now() -> datetime:
@@ -48,6 +54,16 @@ def _in(column: str, values: tuple[str, ...]) -> str:
 
 def demo_data_check(table: str) -> CheckConstraint:
     return CheckConstraint("demo_data", name=f"ck_{table}_demo_data")
+
+
+def link_check(table: str, column: str) -> CheckConstraint:
+    return CheckConstraint(
+        f"char_length({column}) <= {LINK_MAX}", name=f"ck_{table}_{column}_length"
+    )
+
+
+def text_array() -> Column[list[str]]:
+    return Column(ARRAY(String), nullable=False, server_default="{}")
 
 
 class DemoRow(SQLModel):
@@ -87,6 +103,8 @@ class Profile(UuidRow, table=True):
         CheckConstraint(
             "supports_remote OR supports_hybrid OR supports_onsite", name="ck_profiles_mode"
         ),
+        link_check("profiles", "github_url"),
+        link_check("profiles", "linkedin_url"),
     )
 
     user_id: UUID = Field(foreign_key="users.id", unique=True)
@@ -99,15 +117,18 @@ class Profile(UuidRow, table=True):
     supports_remote: bool = Field(default=False)
     supports_hybrid: bool = Field(default=False)
     supports_onsite: bool = Field(default=False)
-    self_described_skills: list[str] = Field(
-        default_factory=list,
-        sa_column=Column(ARRAY(String), nullable=False, server_default="{}"),
-    )
+    self_described_skills: list[str] = Field(default_factory=list, sa_column=text_array())
     phone: str | None = Field(default=None)
     linkedin: str | None = Field(default=None)
     share_email: bool = Field(default=False)
     share_phone: bool = Field(default=False)
     share_linkedin: bool = Field(default=False)
+    # Sprint 005a (#88): display-only skill labels and links; `suggested_skills` is its own
+    # column, apart from `skill_set` (Operator ruling 2026-09-24, amends spec #86).
+    skill_set: list[str] = Field(default_factory=list, sa_column=text_array())
+    suggested_skills: list[str] = Field(default_factory=list, sa_column=text_array())
+    github_url: str | None = Field(default=None)
+    linkedin_url: str | None = Field(default=None)
 
 
 class Skill(DemoRow, table=True):
@@ -123,13 +144,17 @@ class Credential(UuidRow, table=True):
     __table_args__ = (
         demo_data_check("credentials"),
         CheckConstraint(_in("status", RECORD_STATUSES), name="ck_credentials_status"),
+        link_check("credentials", "credential_url"),
     )
 
     profile_id: UUID = Field(foreign_key="profiles.id", index=True)
     title: str
     issuer: str
-    skill_id: str = Field(foreign_key="skills.id")
+    # NULL since 0003 (#88): a certification that proves no graph skill.
+    skill_id: str | None = Field(default=None, foreign_key="skills.id")
     status: str = Field(default="pending")
+    issued_on: date | None = Field(default=None)
+    credential_url: str | None = Field(default=None)
 
 
 class Project(UuidRow, table=True):
@@ -137,6 +162,22 @@ class Project(UuidRow, table=True):
     __table_args__ = (
         demo_data_check("projects"),
         CheckConstraint(_in("status", RECORD_STATUSES), name="ck_projects_status"),
+        CheckConstraint(
+            f"char_length(description) <= {PROJECT_DESCRIPTION_MAX}",
+            name="ck_projects_description_length",
+        ),
+        link_check("projects", "live_url"),
+        link_check("projects", "demo_url"),
+        link_check("projects", "pitch_video_url"),
+        link_check("projects", "pitch_deck_url"),
+        CheckConstraint(
+            _in("showcase_status", SHOWCASE_STATUSES), name="ck_projects_showcase_status"
+        ),
+        Index(
+            "ix_projects_showcase_status_confirmed_at",
+            "showcase_status",
+            text("showcase_confirmed_at DESC"),
+        ),
     )
 
     profile_id: UUID = Field(foreign_key="profiles.id", index=True)
@@ -145,6 +186,16 @@ class Project(UuidRow, table=True):
     licensable: bool = Field(default=False)
     completed_on: date
     status: str = Field(default="pending")
+    # Sprint 005a (#88): the Showcase entry. Visible only when showcased, showcase_status is
+    # confirmed, the project is confirmed and the owner's account is confirmed.
+    description: str = Field(default="", sa_column_kwargs={"server_default": ""})
+    live_url: str | None = Field(default=None)
+    demo_url: str | None = Field(default=None)
+    pitch_video_url: str | None = Field(default=None)
+    pitch_deck_url: str | None = Field(default=None)
+    showcased: bool = Field(default=False, sa_column_kwargs={"server_default": false()})
+    showcase_status: str = Field(default="none", sa_column_kwargs={"server_default": "none"})
+    showcase_confirmed_at: datetime | None = Field(default=None, sa_type=DateTime(timezone=True))
 
 
 class ProjectSkill(DemoRow, table=True):

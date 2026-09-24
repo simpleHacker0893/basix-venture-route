@@ -5,7 +5,7 @@
  */
 import type { ChatResponse, PartialBriefInput, VentureBrief, VentureRoute } from "@venture-route/contracts";
 
-export type Turn = { role: "founder" | "assistant"; text: string };
+export type Turn = { role: "founder" | "assistant" | "chloe"; text: string };
 
 /** The founder flow lives on /route: intake → review → result (blueprint router). */
 export type View = "intake" | "review" | "result";
@@ -26,6 +26,12 @@ export type RoutingAction =
   | { type: "brief-changed"; brief: PartialBriefInput | null }
   | { type: "view-changed"; view: View }
   | { type: "founder-said"; text: string }
+  /**
+   * Chloe's spoken lines, appended to the thread for an inspectable transcript (Sprint 006, D-51).
+   * Display-only: chloe turns are never posted (sendTurn unchanged) or exported (handoffText
+   * reads brief and route only).
+   */
+  | { type: "chloe-said"; text: string }
   | { type: "request-started" }
   | { type: "response-received"; response: ChatResponse }
   | { type: "engine-unreachable"; message: string }
@@ -56,6 +62,8 @@ export function routingReducer(state: RoutingState, action: RoutingAction): Rout
       return { ...state, view: action.view, lastResponse: dropStaleError(state.lastResponse) };
     case "founder-said":
       return { ...state, turns: [...state.turns, { role: "founder", text: action.text }] };
+    case "chloe-said":
+      return { ...state, turns: [...state.turns, { role: "chloe", text: action.text }] };
     case "request-started":
       return { ...state, busy: true };
     case "response-received": {

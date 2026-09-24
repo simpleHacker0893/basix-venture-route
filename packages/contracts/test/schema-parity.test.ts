@@ -28,6 +28,8 @@ import {
   Ecosystem,
   Gap,
   PendingQueue,
+  PendingShowcase,
+  DecidedShowcase,
   ProfileInput,
   Project,
   ProjectInput,
@@ -35,6 +37,13 @@ import {
   Request,
   RequestCreate,
   RoleResponse,
+  ShowcaseCard,
+  ShowcaseDetail,
+  ShowcaseEdit,
+  ShowcasePage,
+  ShowcaseProject,
+  SkillSuggestRequest,
+  SkillSuggestions,
   VentureBrief,
   VentureRoute,
 } from "../src/index.js";
@@ -91,6 +100,9 @@ const cases: [keyof typeof exported, z.ZodType][] = [
   ["Project", Project],
   ["PendingQueue", PendingQueue],
   ["DecidedQueue", DecidedQueue],
+  // Sprint 005a admin card preview (spec #86 story 48), registered on their own too.
+  ["PendingShowcase", PendingShowcase],
+  ["DecidedShowcase", DecidedShowcase],
   ["AdminDecision", AdminDecision],
   ["Candidate", Candidate],
   // Sprint 004 (#54): requests, bids, bookings, eligibility, dashboard.
@@ -103,6 +115,14 @@ const cases: [keyof typeof exported, z.ZodType][] = [
   ["Booking", Booking],
   ["Eligibility", Eligibility],
   ["Dashboard", Dashboard],
+  // Sprint 005a (#86): showcase and skill suggestion contracts.
+  ["ShowcaseCard", ShowcaseCard],
+  ["ShowcaseDetail", ShowcaseDetail],
+  ["ShowcaseEdit", ShowcaseEdit],
+  ["ShowcasePage", ShowcasePage],
+  ["ShowcaseProject", ShowcaseProject],
+  ["SkillSuggestRequest", SkillSuggestRequest],
+  ["SkillSuggestions", SkillSuggestions],
 ];
 
 describe("Zod JSON Schema equals Pydantic JSON Schema", () => {

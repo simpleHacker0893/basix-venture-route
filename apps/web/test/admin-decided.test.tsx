@@ -30,7 +30,7 @@ const PROJECT_ID = "9a8b7c6d-1111-4222-8333-444455556666";
 const ACCOUNT_ID = "0a1b2c3d-0000-4000-8000-000000000001";
 
 function pending(): PendingQueue {
-  return { accounts: [], credentials: [], projects: [] };
+  return { accounts: [], credentials: [], projects: [], showcase: [] };
 }
 
 function decided(): DecidedQueue {
@@ -58,6 +58,8 @@ function decided(): DecidedQueue {
         title: "Rust Advanced Concurrency",
         issuer: "MeTTa OmniUniversity",
         skillId: "rust",
+        issuedOn: null,
+        credentialUrl: null,
         submittedAt: "2026-09-21T10:00:00+03:00",
         status: "confirmed",
         decidedAt: "2026-09-23T11:30:00+03:00",
@@ -80,6 +82,7 @@ function decided(): DecidedQueue {
         demoData: true,
       },
     ],
+    showcase: [],
   };
 }
 

@@ -97,6 +97,10 @@ const profile: BuilderProfile = {
   contact: { email: "naomi@example.com", phone: null, linkedin: null },
   sharing: { email: true, phone: false, linkedin: false },
   accountStatus: "confirmed",
+  skillSet: [],
+  suggestedSkills: [],
+  githubUrl: null,
+  linkedinUrl: null,
 };
 
 type Overrides = Parameters<typeof fakeMarketplace>[0];

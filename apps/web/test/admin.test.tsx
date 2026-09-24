@@ -54,6 +54,8 @@ function queue(): PendingQueue {
         title: "Rust Advanced Concurrency",
         issuer: "MeTTa OmniUniversity",
         skillId: "rust",
+        issuedOn: null,
+        credentialUrl: null,
         submittedAt: "2026-09-21T10:00:00+03:00",
         demoData: true,
       },
@@ -72,11 +74,12 @@ function queue(): PendingQueue {
         demoData: true,
       },
     ],
+    showcase: [],
   };
 }
 
 function decided(): DecidedQueue {
-  return { accounts: [], credentials: [], projects: [] };
+  return { accounts: [], credentials: [], projects: [], showcase: [] };
 }
 
 function decision(kind: DecisionKind, id: string, status: AdminDecision["status"], projectedRows: number): AdminDecision {

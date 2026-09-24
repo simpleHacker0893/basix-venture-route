@@ -14,6 +14,7 @@ from typing import Any
 import pytest
 from pydantic import ValidationError
 
+from app.marketplace.schemas import ProfileInput
 from app.models.brief import VentureBrief
 
 SCRIPTS = Path(__file__).resolve().parents[1] / "scripts"
@@ -44,10 +45,12 @@ def test_export_covers_the_shared_contracts() -> None:
         "CredentialInput",
         "Dashboard",
         "DecidedQueue",
+        "DecidedShowcase",
         "Ecosystem",
         "Eligibility",
         "Gap",
         "PendingQueue",
+        "PendingShowcase",
         "ProfileInput",
         "Project",
         "ProjectInput",
@@ -55,6 +58,14 @@ def test_export_covers_the_shared_contracts() -> None:
         "Request",
         "RequestCreate",
         "RoleResponse",
+        # Sprint 005a showcase and skill suggestion contracts (spec #86).
+        "ShowcaseCard",
+        "ShowcaseDetail",
+        "ShowcaseEdit",
+        "ShowcasePage",
+        "ShowcaseProject",
+        "SkillSuggestRequest",
+        "SkillSuggestions",
         "VentureBrief",
         "VentureRoute",
     ]
@@ -98,3 +109,43 @@ def test_brief_rejects_each_invalid_case_with_a_field_specific_message(
     assert fragment in error["msg"]
     location = ".".join(str(part) for part in error["loc"]) or field
     assert field in location or field in error["msg"]
+
+
+BUILDER_PROFILE: dict[str, Any] = {
+    "displayName": "Amina Otieno",
+    "location": "Nairobi",
+    "dayRate": 150,
+    "modes": {"remote": True, "hybrid": False, "onSite": False},
+    "selfDescribedSkills": [],
+    "sharing": {"email": True, "phone": False, "linkedin": False},
+    "availability": [],
+}
+
+
+@pytest.mark.parametrize(
+    ("override", "field"),
+    [
+        # `SkillSetEntry` strips whitespace before the length check, so "   " strips to "" and
+        # fails `min_length=1` rather than being silently accepted as a blank chip.
+        ({"skillSet": ["   "]}, "skillSet"),
+        ({"skillSet": ["Python", "python"]}, "skillSet"),
+        (
+            {
+                "skillSet": [f"skill-{i}" for i in range(15)],
+                "suggestedSkills": [f"more-{i}" for i in range(10)],
+            },
+            "suggestedSkills",
+        ),
+        ({"skillSet": ["Python"], "suggestedSkills": ["python"]}, "suggestedSkills"),
+    ],
+)
+def test_profile_input_skill_labels_validation_names_the_field(
+    override: dict[str, Any], field: str
+) -> None:
+    with pytest.raises(ValidationError) as excinfo:
+        ProfileInput.model_validate({**BUILDER_PROFILE, **override})
+
+    errors = excinfo.value.errors()
+    assert len(errors) == 1
+    location = ".".join(str(part) for part in errors[0]["loc"])
+    assert location.split(".")[0] == field

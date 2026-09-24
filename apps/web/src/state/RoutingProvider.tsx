@@ -48,6 +48,7 @@ export function RoutingProvider({ source, children }: { source: RouteSource; chi
         if (turn.userMessage) dispatch({ type: "founder-said", text: turn.userMessage });
         return run(() => source.postConversation(turn));
       },
+      noteChloe: (text) => dispatch({ type: "chloe-said", text }),
       setBrief: (brief) => dispatch({ type: "brief-changed", brief }),
       showView: (view) => dispatch({ type: "view-changed", view }),
       hydrate: (brief, route) => dispatch({ type: "hydrated", brief, route }),

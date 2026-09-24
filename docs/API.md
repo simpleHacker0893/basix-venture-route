@@ -11,7 +11,7 @@ camelCase on the wire, dates are ISO date-only strings, money is integer USD per
 |---|---|---|
 | Health | `GET /health` | none |
 | Routing | `POST /api/route`, `POST /api/conversation`, `GET /api/scenarios`, `GET /api/ecosystem` | none |
-| Builder | `POST /api/me/role`; `GET`/`PUT /api/me/profile`; `GET`/`POST /api/me/credentials`; `GET`/`POST /api/me/projects` | Clerk session, role `builder` (`/role`: any session) |
+| Builder | `POST /api/me/role`; `GET`/`PUT /api/me/profile`; `GET`/`POST /api/me/credentials`; `GET`/`POST /api/me/projects`; `PUT /api/me/projects/{id}/showcase` | Clerk session, role `builder` (`/role`: any session) |
 | Founder | `GET /api/builders/{builderId}` | Clerk session, role `founder` or `admin` |
 | Admin | `GET /api/admin/pending`; `GET /api/admin/decided`; `POST /api/admin/confirm/{kind}/{id}`; `POST /api/admin/reject/{kind}/{id}` | Clerk session, role `admin` |
 | Webhook | `POST /api/webhooks/clerk` | Svix signature |
@@ -193,15 +193,28 @@ creates or replaces the profile (`ProfileInput`) and never touches the account s
   "selfDescribedSkills": ["python", "backend"],
   "phone": "+254700000000", "linkedin": "linkedin.com/in/jane-mwangi",
   "sharing": { "email": true, "phone": false, "linkedin": true },
-  "availability": [{ "start": "2026-09-22", "end": "2026-10-20" }]
+  "availability": [{ "start": "2026-09-22", "end": "2026-10-20" }],
+  "skillSet": ["Kotlin", "Figma"], "suggestedSkills": ["GraphQL"],
+  "githubUrl": "https://github.com/jane-mwangi",
+  "linkedinUrl": "https://www.linkedin.com/in/jane-mwangi"
 }
 ```
 
 Rules: display name 1–80 characters with a letter or digit, at least one delivery mode, up to
 nine self-described skills from the nine skill ids, up to twelve availability ranges with
-`end ≥ start`. Response `BuilderProfile` adds `builderId` (a slug from the display name,
+`end ≥ start`. Sprint 005a (#94) adds four optional fields, all display-only (never an engine
+input that a rule reads, D-52): `skillSet` (picked by hand) and `suggestedSkills` (résumé chips
+the builder accepted) are free-text labels, each trimmed, 1–40 characters, at most 20 entries
+across both lists and unique across both lists regardless of case; `selfDescribedSkills` is
+unchanged. `githubUrl` and `linkedinUrl` must be `https://` links on `github.com` /
+`www.github.com` and `linkedin.com` / `www.linkedin.com` (≤500 characters, no port); a blank
+value is stored as `null`, surrounding whitespace is trimmed. A violation answers `422` whose
+`message` starts with the field name, e.g. `githubUrl: must be a GitHub link (github.com or
+www.github.com)`. `linkedinUrl` is a public profile link, apart from the older `linkedin` contact
+field and its sharing toggle. Response `BuilderProfile` adds `builderId` (a slug from the display name,
 suffixed `-2`, `-3` on collision, immutable afterwards, D-24), `contact` (email from the
-account), `skills`, `accountStatus` (`pending | confirmed | rejected`), `confirmed` and `demoData`.
+account), `skills`, `accountStatus` (`pending | confirmed | rejected`), `confirmed`, `skillSet`,
+`suggestedSkills`, `githubUrl`, `linkedinUrl` and `demoData`.
 
 One skill shape everywhere: `{ "id": "python", "name": "Python", "status": "verified", "evidence": "both" }`.
 `status` is `verified` only when a confirmed credential or confirmed project proves the skill
@@ -218,8 +231,83 @@ Role `builder`; `404 {"detail": "no profile yet"}` until the profile exists. Pro
 { "title": "Clinic triage intake flow", "vertical": "health", "licensable": true, "completedOn": "2026-08-30", "skillIds": ["python", "ui-ux"] }
 ```
 
-`Credential` and `Project` responses echo the input plus `id`, `status` and `demoData`. A project
-takes one to five skill ids and a seed vertical.
+`Credential` responses echo the input plus `id`, `status` and `demoData`. A project takes one to
+five skill ids and a seed vertical. Since Sprint 005a (#94) both `GET /api/me/projects` and the
+`201` of `POST /api/me/projects` answer the builder's own view, `ShowcaseProject`: the input plus
+`id`, `status`, `demoData` and the project's Showcase entry (`description`, `liveUrl`, `demoUrl`,
+`pitchVideoUrl`, `pitchDeckUrl`, `showcased`, `showcaseStatus`), so the profile page can show each
+project's status pill. A new project starts with `description: ""`, null links, `showcased: false`
+and `showcaseStatus: "none"`. `ShowcaseProject` is a superset of the older `Project` shape; a
+client that parses `Project` strictly must switch to `ShowcaseProject`.
+
+A credential may also carry `issuedOn` (a date) and `credentialUrl` (an `https://` link, same
+link rules as the Showcase, blank → `null`), and `skillId` is optional since Sprint 005a (#94):
+a certification outside the nine-skill vocabulary is stored with `skillId: null`, goes through
+the same admin review, and never proves a skill (it is never a `proves` fact, D-52).
+
+```json
+{ "title": "AWS Cloud Practitioner", "issuer": "Amazon Web Services", "issuedOn": "2026-05-14", "credentialUrl": "https://www.credly.com/badges/abc123" }
+```
+
+### PUT /api/me/projects/{id}/showcase
+
+Role `builder`, owner only: another builder's project, an unknown id or a malformed id answers
+`404 {"detail": "project not found"}` (never `403`, so ids of other builders' projects are not
+confirmed). No token → `401`; a founder or admin token → `403`. Body `ShowcaseEdit`:
+
+```json
+{
+  "description": "A field survey app for smallholder farmers.",
+  "liveUrl": "https://survey.example.com", "demoUrl": "https://demo.example.com/survey",
+  "pitchVideoUrl": "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
+  "pitchDeckUrl": "https://slides.example.com/deck",
+  "showcased": true
+}
+```
+
+Rules: `description` at most 1000 characters. Every link is optional, `https://` only, at most
+500 characters, no localhost, IP-literal or IDN-lookalike host; a blank link is stored as `null`
+and surrounding whitespace is trimmed. `pitchVideoUrl` must be a YouTube video link
+(`watch?v=`, `youtu.be/`, `shorts/` or `embed/`) and is stored and returned in one canonical
+form, `https://www.youtube.com/watch?v=<id>` (extra parameters such as `&t=`, `&list=` or `si=`
+are dropped), so two links to the same video compare equal. A violation answers `422` whose `message`
+starts with the field name, e.g. `pitchVideoUrl: must be a YouTube video link (…)`.
+
+Status rule: when every field (links compared after normalising) equals what is stored, nothing
+changes and the current state is returned, with one exception: `showcased: true` on a `rejected`
+entry is a resubmission and goes back to `pending` even if nothing else changed. Otherwise the fields are saved and `showcase_confirmed_at` is cleared; `showcased: true`
+sets `showcaseStatus: "pending"` (an admin must confirm the entry, again after any edit) and
+`showcased: false` sets `"none"`. The entry is public only when `showcased`, `showcaseStatus` is
+`confirmed`, the project is confirmed and the owner's account is confirmed.
+
+Response `200` `ShowcaseProject`: the `Project` fields plus `description`, the four links,
+`showcased` and `showcaseStatus` (`none | pending | confirmed | rejected`).
+
+### POST /api/me/skills/suggest (Sprint 005a, D-50)
+
+Role `builder` (no token `401`, another role `403`). Pasted résumé text in, skill chips out:
+
+```json
+{ "resumeText": "Five years building Python backends and UI/UX design for clinics…" }
+```
+
+`resumeText` is 50–20,000 characters (otherwise `422` naming `resumeText`, never quoting it).
+The text goes to Claude Haiku 4.5 (`claude-haiku-4-5`) through `app/llm` with a strict output
+schema, a 10-second timeout and no retries. It is never stored, never logged and never echoed.
+
+```json
+{ "available": true,
+  "suggestions": [{ "label": "UI/UX design", "skillId": "ui-ux" },
+                  { "label": "Figma", "skillId": null }] }
+```
+
+A label matching one of the nine skills (by display name or id, ignoring case and punctuation)
+carries that `skillId` and the vocabulary display name; any other label is free text, trimmed,
+at most 40 characters (longer ones are dropped). Duplicates are dropped case-insensitively; at
+most 20 suggestions. With no model configured (null adapter, no `ANTHROPIC_API_KEY`), a timeout
+or any provider error the answer is `200 { "available": false, "suggestions": [] }`, never a
+5xx. Suggestions are display-only: the builder accepts them one at a time into
+`suggestedSkills` on the profile; nothing here reaches routing.
 
 ## Founder: GET /api/builders/{builderId}
 

@@ -7,8 +7,12 @@ import { MarketplaceApiProvider } from "./api/MarketplaceApiProvider";
 import type { RouteSource } from "./api/source";
 import type { AuthState } from "./auth/authContext";
 import { AuthProvider } from "./auth/AuthProvider";
+import { spokenForm } from "./chloe/script";
 import { AppRoutes } from "./router";
 import { RoutingProvider } from "./state/RoutingProvider";
+import { createVoiceProvider } from "./voice/selectProvider";
+import type { VoiceProvider } from "./voice/provider";
+import { VoiceSessionProvider } from "./voice/VoiceSession";
 
 type AppProps = {
   /** Tests mount the app at a path without touching window.location. */
@@ -19,15 +23,22 @@ type AppProps = {
   auth?: AuthState;
   /** Tests inject a fake marketplace API. */
   marketplace?: MarketplaceApi;
+  /** Tests inject a voice provider, or null for none; undefined uses createVoiceProvider(). */
+  voice?: VoiceProvider | null;
 };
 
-export function App({ initialPath, source, auth, marketplace }: AppProps) {
+export function App({ initialPath, source, auth, marketplace, voice }: AppProps) {
   const resolvedSource = useMemo(() => source ?? createDefaultSource(), [source]);
+  const resolvedVoice = useMemo(() => (voice === undefined ? createVoiceProvider({ transform: spokenForm }) : voice), [voice]);
   const tree = (
     <AuthProvider auth={auth}>
       <MarketplaceApiProvider marketplace={marketplace}>
         <RoutingProvider source={resolvedSource}>
-          <AppRoutes />
+          {/* Ticket #102 may move this above the founder routes; wrapping AppRoutes is enough
+              while Chloe (apps/web/src/chloe/*) has no consumer yet. */}
+          <VoiceSessionProvider voice={resolvedVoice}>
+            <AppRoutes />
+          </VoiceSessionProvider>
         </RoutingProvider>
       </MarketplaceApiProvider>
     </AuthProvider>

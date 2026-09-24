@@ -143,7 +143,7 @@ async def test_admin_reaches_admin_pending(
     response = await api.get("/api/admin/pending", headers=bearer(sub="user_admin", role="admin"))
 
     assert response.status_code == 200
-    assert response.json() == {"accounts": [], "credentials": [], "projects": []}
+    assert response.json() == {"accounts": [], "credentials": [], "projects": [], "showcase": []}
 
 
 async def test_placeholder_jwks_url_is_401_never_500(
