@@ -9,7 +9,8 @@
         "enum": [
           "account",
           "credential",
-          "project"
+          "project",
+          "showcase"
         ],
         "type": "string"
       },

@@ -320,9 +320,16 @@ export const DecidedQueue = z.strictObject({
 });
 export type DecidedQueue = z.infer<typeof DecidedQueue>;
 
+/**
+ * Every kind an admin decides on. `showcase` (#103) has its own tab in the admin UI (#106), so
+ * `DecisionKind` keeps the three row kinds the existing tabs render until that ticket lands.
+ */
+export const AdminDecisionKind = z.enum(["account", "credential", "project", "showcase"]);
+export type AdminDecisionKind = z.infer<typeof AdminDecisionKind>;
+
 export const AdminDecision = z.strictObject({
   id: z.string(),
-  kind: DecisionKind,
+  kind: AdminDecisionKind,
   status: z.enum(["confirmed", "rejected"]),
   /** Atoms projected from confirmed rows after this decision (D-15). */
   projectedRows: z.int().min(0),
