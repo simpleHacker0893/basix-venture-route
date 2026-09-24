@@ -45,7 +45,14 @@ export default defineConfig({
       timeout: 180_000,
       // No-key run (D-33): the placeholder key keeps this suite deterministic on a machine
       // whose root .env holds a real Clerk key; the Clerk smoke has its own config.
-      env: { VITE_API_URL: "http://localhost:8000", VITE_OFFLINE_DEMO: "0", VITE_CLERK_PUBLISHABLE_KEY: "pk_test_replace-me" },
+      // VITE_VOICE_PROVIDER=fake (Sprint 006 #108): the build exposes window.__chloeVoice so
+      // Playwright can drive Chloe without a real microphone or speaker (e2e/chloe.spec.ts).
+      env: {
+        VITE_API_URL: "http://localhost:8000",
+        VITE_OFFLINE_DEMO: "0",
+        VITE_CLERK_PUBLISHABLE_KEY: "pk_test_replace-me",
+        VITE_VOICE_PROVIDER: "fake",
+      },
     },
     {
       command:
