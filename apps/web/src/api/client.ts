@@ -6,11 +6,13 @@
  */
 import {
   ChatResponse,
+  Ecosystem,
   ValidationErrorResponse,
   VentureBrief,
   VentureRoute,
   type ChatResponse as ChatResponseT,
   type ChatTurnInput,
+  type Ecosystem as EcosystemT,
   type VentureBrief as VentureBriefT,
   type VentureRoute as VentureRouteT,
 } from "@venture-route/contracts";
@@ -135,5 +137,6 @@ export function createApiSource(baseUrl: string, fetchLike: FetchLike = fetch, g
       request("/api/route", VentureRoute, jsonPost(brief)),
     postConversation: (turn: ChatTurnInput): Promise<ChatResponseT> =>
       request("/api/conversation", ChatResponse, jsonPost(turn)),
+    getEcosystem: (): Promise<EcosystemT> => request("/api/ecosystem", Ecosystem),
   };
 }

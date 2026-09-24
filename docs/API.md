@@ -10,7 +10,7 @@ camelCase on the wire, dates are ISO date-only strings, money is integer USD per
 | Area | Endpoints | Auth |
 |---|---|---|
 | Health | `GET /health` | none |
-| Routing | `POST /api/route`, `POST /api/conversation`, `GET /api/scenarios` | none |
+| Routing | `POST /api/route`, `POST /api/conversation`, `GET /api/scenarios`, `GET /api/ecosystem` | none |
 | Builder | `POST /api/me/role`; `GET`/`PUT /api/me/profile`; `GET`/`POST /api/me/credentials`; `GET`/`POST /api/me/projects` | Clerk session, role `builder` (`/role`: any session) |
 | Founder | `GET /api/builders/{builderId}` | Clerk session, role `founder` or `admin` |
 | Admin | `GET /api/admin/pending`; `POST /api/admin/confirm/{kind}/{id}`; `POST /api/admin/reject/{kind}/{id}` | Clerk session, role `admin` |
@@ -149,6 +149,22 @@ The five seed briefs from `services/engine/seed/briefs.json`, in seed order, as
 `VentureBrief[]` so the UI can preload the demo scenarios (`brief-health-01`, `brief-agri-01`,
 `brief-constrained-01`, `brief-budget-01`, `brief-onsite-01`). Every brief carries
 `demoData: true`.
+
+## GET /api/ecosystem
+
+The seed ecosystem the footer's Partners page shows (#79): partners with the verticals they
+support, universities with their cohorts, and the licensable assets `reuse-fit` can offer. Read
+from graph predicates with plain `match` queries, no rule involved; every entity is fictional.
+The offline snapshot carries the same object.
+
+```json
+{
+  "partners": [{ "partnerId": "amani-health", "verticals": ["health"] }, "..."],
+  "universities": [{ "universityId": "omni-university", "cohorts": ["cohort-2026a"] }, "..."],
+  "assets": [{ "assetId": "asset-afya-triage", "title": "Afya Triage", "vertical": "health" }, "..."],
+  "demoData": true
+}
+```
 
 ## Builder: `/api/me/*`
 

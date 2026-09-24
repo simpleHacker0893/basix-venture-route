@@ -540,5 +540,71 @@
       ],
       "summary": "No eligible builder for ai-metta, python, ui-ux (3 location gaps). Review the next actions on each gap."
     }
+  },
+  "ecosystem": {
+    "partners": [
+      {
+        "partnerId": "afya-plus",
+        "verticals": [
+          "health"
+        ]
+      },
+      {
+        "partnerId": "amani-health",
+        "verticals": [
+          "health"
+        ]
+      },
+      {
+        "partnerId": "elimu-education",
+        "verticals": [
+          "education"
+        ]
+      },
+      {
+        "partnerId": "shamba-agri",
+        "verticals": [
+          "agri"
+        ]
+      }
+    ],
+    "universities": [
+      {
+        "universityId": "lakeside-university",
+        "cohorts": [
+          "cohort-2026b"
+        ]
+      },
+      {
+        "universityId": "omni-university",
+        "cohorts": [
+          "cohort-2026a"
+        ]
+      },
+      {
+        "universityId": "savanna-institute",
+        "cohorts": [
+          "cohort-2025c"
+        ]
+      }
+    ],
+    "assets": [
+      {
+        "assetId": "asset-afya-triage",
+        "title": "Afya Triage",
+        "vertical": "health"
+      },
+      {
+        "assetId": "asset-elimu-quiz",
+        "title": "Elimu Quiz",
+        "vertical": "education"
+      },
+      {
+        "assetId": "asset-shamba-records",
+        "title": "Shamba Records",
+        "vertical": "agri"
+      }
+    ],
+    "demoData": true
   }
 }
