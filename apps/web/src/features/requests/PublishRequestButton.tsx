@@ -11,13 +11,14 @@
  */
 import type { VentureBrief, VentureRoute } from "@venture-route/contracts";
 import { useState } from "react";
-import { useNavigate } from "react-router";
+import { Link, useNavigate } from "react-router";
 
 import { Button } from "@/components/ui/button";
 
 import { ApiValidationError } from "../../api/client";
 import { useMarketplaceApi } from "../../api/marketplaceContext";
 import { useAuthState } from "../../auth/authContext";
+import { SIGN_IN_TO_PUBLISH, stashAvailable, writeStash } from "../../lib/publishStash";
 import { routeSnapshot } from "../../lib/routeSnapshot";
 import { errorMessage } from "../builder/formStyles";
 
@@ -30,7 +31,31 @@ export function PublishRequestButton({ brief, route }: Props) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  if (!auth.isLoaded || !auth.isSignedIn || auth.role !== "founder") return null;
+  if (!auth.isLoaded || !auth.configured) return null;
+  if (!auth.isSignedIn) {
+    // A visitor who routed before signing in keeps the brief: stash it, then sign in and come
+    // back to /route, which restores the stash on mount. Without storage, a plain link.
+    if (!stashAvailable()) {
+      return (
+        <Button asChild variant="secondary">
+          <Link to={SIGN_IN_TO_PUBLISH}>Sign in to publish</Link>
+        </Button>
+      );
+    }
+    return (
+      <Button
+        type="button"
+        variant="secondary"
+        onClick={() => {
+          writeStash({ brief, route });
+          void navigate(SIGN_IN_TO_PUBLISH);
+        }}
+      >
+        Sign in to publish
+      </Button>
+    );
+  }
+  if (auth.role !== "founder") return null;
 
   async function publish() {
     setBusy(true);
