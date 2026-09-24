@@ -9,11 +9,12 @@ import { Button } from "@/components/ui/button";
 import { ApiNotFoundError, ApiValidationError } from "../../api/client";
 import { DemoDataPill } from "../../components/DemoDataPill";
 import { SKILLS, SKILL_LABELS } from "../../lib/brief";
-import { splitFieldMessages } from "../../lib/validationError";
+import { CREDENTIAL_FIELDS, splitFieldMessages } from "../../lib/validationError";
 import { errorMessage, helpClass, inputClass, labelClass } from "./formStyles";
 import { Card, FieldError, StatusPill } from "./StatusPill";
 
-const CREDENTIAL_FIELDS = ["title", "issuer", "skillId"] as const;
+/** Skill-less certifications (spec #86 story 15): display only, never a `proves` fact (D-52). */
+const NO_VOCABULARY_SKILL = "Display only · no vocabulary skill";
 
 type CredentialsCardProps = Readonly<{
   credentials: Credential[];
@@ -26,12 +27,20 @@ export function CredentialsCard({ credentials, hasProfile, onAdd }: CredentialsC
   const [title, setTitle] = useState("");
   const [issuer, setIssuer] = useState("");
   const [skillId, setSkillId] = useState("");
+  const [issuedOn, setIssuedOn] = useState("");
+  const [credentialUrl, setCredentialUrl] = useState("");
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [busy, setBusy] = useState(false);
 
   async function submit(event: FormEvent) {
     event.preventDefault();
-    const parsed = CredentialInput.safeParse({ title: title.trim(), issuer: issuer.trim(), skillId: skillId || undefined });
+    const parsed = CredentialInput.safeParse({
+      title: title.trim(),
+      issuer: issuer.trim(),
+      skillId: skillId || undefined,
+      issuedOn: issuedOn || undefined,
+      credentialUrl: credentialUrl.trim() || undefined,
+    });
     if (!parsed.success) {
       const next: Record<string, string> = {};
       for (const issue of parsed.error.issues) {
@@ -48,6 +57,8 @@ export function CredentialsCard({ credentials, hasProfile, onAdd }: CredentialsC
       setTitle("");
       setIssuer("");
       setSkillId("");
+      setIssuedOn("");
+      setCredentialUrl("");
     } catch (cause) {
       if (cause instanceof ApiValidationError) {
         setErrors(Object.fromEntries(splitFieldMessages(cause.message, CREDENTIAL_FIELDS, {}).map((m) => [m.field, m.text])));
@@ -72,8 +83,7 @@ export function CredentialsCard({ credentials, hasProfile, onAdd }: CredentialsC
               <div className="flex flex-col gap-0.5">
                 <span className="text-sm font-medium text-ink">{credential.title}</span>
                 <span className="text-[12px] text-ink-3">
-                  {credential.issuer} ·{" "}
-                  {credential.skillId ? SKILL_LABELS[credential.skillId] : "No vocabulary skill"}
+                  {credential.issuer} · {credential.skillId ? SKILL_LABELS[credential.skillId] : NO_VOCABULARY_SKILL}
                 </span>
               </div>
               <div className="flex items-center gap-2">
@@ -155,6 +165,44 @@ export function CredentialsCard({ credentials, hasProfile, onAdd }: CredentialsC
               ))}
             </select>
             <FieldError field="skillId" errors={errors} />
+          </div>
+          <div className="flex flex-col gap-1">
+            <label htmlFor="credential-issued-on" className={labelClass}>
+              Issue date
+            </label>
+            <input
+              id="credential-issued-on"
+              type="date"
+              value={issuedOn}
+              aria-invalid={errors.issuedOn ? true : undefined}
+              aria-describedby={describedBy("issuedOn")}
+              onChange={(e) => {
+                setIssuedOn(e.target.value);
+                setErrors({});
+              }}
+              className={`${inputClass} font-mono`}
+            />
+            <FieldError field="issuedOn" errors={errors} />
+          </div>
+          <div className="flex flex-col gap-1 md:col-span-2">
+            <label htmlFor="credential-url" className={labelClass}>
+              Verification link
+            </label>
+            <input
+              id="credential-url"
+              autoComplete="url"
+              maxLength={500}
+              placeholder="https://…"
+              value={credentialUrl}
+              aria-invalid={errors.credentialUrl ? true : undefined}
+              aria-describedby={describedBy("credentialUrl")}
+              onChange={(e) => {
+                setCredentialUrl(e.target.value);
+                setErrors({});
+              }}
+              className={inputClass}
+            />
+            <FieldError field="credentialUrl" errors={errors} />
           </div>
         </div>
         <Button type="submit" variant="outline" size="sm" className="w-fit" disabled={busy || !hasProfile} aria-busy={busy}>

@@ -10,12 +10,15 @@ import type {
   CredentialInput,
   ProfileInput,
   ProjectInput,
+  ShowcaseEditInput,
+  ShowcaseProject,
+  SkillSuggestions,
 } from "@venture-route/contracts";
 import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it } from "vitest";
 
-import { ApiNotFoundError } from "../src/api/client";
+import { ApiNotFoundError, ApiValidationError } from "../src/api/client";
 import { createOfflineSource } from "../src/api/offline";
 import { App } from "../src/App";
 import type { AuthState } from "../src/auth/authContext";
@@ -213,5 +216,361 @@ describe("/profile/projects/new", () => {
       ]),
     );
     expect(await screen.findByRole("heading", { level: 1, name: "Your profile" })).toBeInTheDocument();
+  });
+});
+
+function showcaseProject(overrides: Partial<ShowcaseProject> = {}): ShowcaseProject {
+  return {
+    id: "proj-1",
+    title: "Venture Route",
+    vertical: "education",
+    licensable: false,
+    completedOn: "2026-08-31",
+    skillIds: ["python"],
+    status: "confirmed",
+    demoData: true,
+    description: "",
+    liveUrl: null,
+    demoUrl: null,
+    pitchVideoUrl: null,
+    pitchDeckUrl: null,
+    showcased: false,
+    showcaseStatus: "none",
+    ...overrides,
+  };
+}
+
+describe("/profile skill set and résumé suggestions (spec #86 stories 17-28)", () => {
+  it("suggests the nine vocabulary skills, accepts free text, and ignores a case-insensitive duplicate (acceptance §Part A Should 1)", async () => {
+    const user = userEvent.setup();
+    const marketplace = fakeMarketplace({
+      getProfile: async () => profile({ accountStatus: "confirmed", confirmed: true }),
+      ...noRows,
+    });
+
+    render(<App initialPath="/profile" source={source} auth={builderAuth} marketplace={marketplace} />);
+
+    const input = await screen.findByLabelText("Skill set");
+    const options = document.querySelectorAll<HTMLOptionElement>(`#${input.getAttribute("list")} option`);
+    expect([...options].map((o) => o.value)).toEqual([
+      "Python",
+      "AI / MeTTa",
+      "UI/UX design",
+      "Frontend",
+      "Backend",
+      "Domain research",
+      "Mobile",
+      "Rust",
+      "Data engineering",
+    ]);
+
+    const add = screen.getByRole("button", { name: "Add skill" });
+    await user.type(input, "Growth hacking");
+    await user.click(add);
+    expect(screen.getByText("Growth hacking")).toBeInTheDocument();
+    expect(screen.getByText("1 / 20")).toBeInTheDocument();
+
+    await user.type(input, "growth hacking");
+    await user.click(add);
+    expect(screen.getByText("1 / 20")).toBeInTheDocument();
+    expect(screen.getAllByText(/growth hacking/i)).toHaveLength(1);
+
+    await user.click(screen.getByRole("button", { name: "Remove Growth hacking" }));
+    expect(screen.getByText("0 / 20")).toBeInTheDocument();
+  });
+
+  it("saves GitHub and LinkedIn profile links regardless of contact sharing (stories 27-28)", async () => {
+    const user = userEvent.setup();
+    const saved: ProfileInput[] = [];
+    const marketplace = fakeMarketplace({
+      getProfile: async () => profile({ accountStatus: "confirmed", confirmed: true, sharing: { email: false, phone: false, linkedin: false } }),
+      ...noRows,
+      putProfile: async (input) => {
+        saved.push(input);
+        return profile({ ...input, accountStatus: "confirmed", confirmed: true });
+      },
+    });
+
+    render(<App initialPath="/profile" source={source} auth={builderAuth} marketplace={marketplace} />);
+
+    const form = await screen.findByRole("form", { name: "Builder profile" });
+    await user.type(within(form).getByLabelText("GitHub profile"), "https://github.com/amina-otieno");
+    await user.type(within(form).getByLabelText("LinkedIn profile"), "https://www.linkedin.com/in/amina-otieno");
+    await user.click(within(form).getByRole("button", { name: "Save profile" }));
+
+    await waitFor(() => expect(saved).toHaveLength(1));
+    expect(saved[0]).toMatchObject({
+      githubUrl: "https://github.com/amina-otieno",
+      linkedinUrl: "https://www.linkedin.com/in/amina-otieno",
+    });
+  });
+
+  it("accepts a résumé suggestion as self-described, saved to suggestedSkills and never skillSet (stories 20-23, 26)", async () => {
+    const user = userEvent.setup();
+    const saved: ProfileInput[] = [];
+    const marketplace = fakeMarketplace({
+      getProfile: async () => profile({ accountStatus: "confirmed", confirmed: true }),
+      ...noRows,
+      suggestSkills: async (): Promise<SkillSuggestions> => ({
+        available: true,
+        suggestions: [{ label: "Rust", skillId: "rust" }],
+      }),
+      putProfile: async (input) => {
+        saved.push(input);
+        return profile({ ...input, accountStatus: "confirmed", confirmed: true });
+      },
+    });
+
+    render(<App initialPath="/profile" source={source} auth={builderAuth} marketplace={marketplace} />);
+
+    expect(
+      await screen.findByText("Your text is sent to Anthropic's Claude to suggest skills and is not stored."),
+    ).toBeInTheDocument();
+    const textarea = screen.getByLabelText("Suggest from résumé");
+    await user.type(textarea, "x".repeat(60));
+    await user.click(screen.getByRole("button", { name: "Suggest skills" }));
+
+    expect(textarea).toHaveAccessibleDescription("Your text is sent to Anthropic's Claude to suggest skills and is not stored.");
+
+    const suggestions = await screen.findByRole("list", { name: "Résumé suggestions" });
+    const chip = within(suggestions).getByText("Rust");
+    expect(chip).toBeInTheDocument();
+    await user.click(within(suggestions).getByRole("button", { name: "Accept Rust" }));
+
+    expect(screen.queryByRole("list", { name: "Résumé suggestions" })).not.toBeInTheDocument();
+    const selfDescribed = screen.getByRole("list", { name: "Suggested skills" });
+    expect(within(selfDescribed).getByText("Rust")).toBeInTheDocument();
+    expect(screen.getByText("Save your profile to keep these.")).toBeInTheDocument();
+    // "Self-described" is shown as a badge on both chip groups (hand-picked and résumé-accepted).
+    expect(screen.getAllByText("Self-described")).toHaveLength(2);
+    // The picker's own counter is the combined total across both lists (fix round 1, item 2):
+    // one accepted suggestion and zero hand-picked skills reads "1 / 20", not "0 / 19".
+    expect(screen.getByText("1 / 20")).toBeInTheDocument();
+
+    const form = await screen.findByRole("form", { name: "Builder profile" });
+    await user.click(within(form).getByRole("button", { name: "Save profile" }));
+    await waitFor(() => expect(saved).toHaveLength(1));
+    expect(saved[0]!.suggestedSkills).toEqual(["Rust"]);
+    expect(saved[0]!.skillSet).toEqual([]);
+  });
+
+  it("ignores a duplicate typed into the picker even when it only duplicates an accepted résumé chip (fix round 1, item 1)", async () => {
+    const user = userEvent.setup();
+    const marketplace = fakeMarketplace({
+      getProfile: async () => profile({ accountStatus: "confirmed", confirmed: true }),
+      ...noRows,
+      suggestSkills: async (): Promise<SkillSuggestions> => ({
+        available: true,
+        suggestions: [{ label: "Rust", skillId: "rust" }],
+      }),
+    });
+
+    render(<App initialPath="/profile" source={source} auth={builderAuth} marketplace={marketplace} />);
+
+    const textarea = await screen.findByLabelText("Suggest from résumé");
+    await user.type(textarea, "x".repeat(60));
+    await user.click(screen.getByRole("button", { name: "Suggest skills" }));
+    const suggestions = await screen.findByRole("list", { name: "Résumé suggestions" });
+    await user.click(within(suggestions).getByRole("button", { name: "Accept Rust" }));
+    await screen.findByRole("list", { name: "Suggested skills" });
+
+    const skillInput = screen.getByLabelText("Skill set");
+    await user.type(skillInput, "rust");
+    await user.click(screen.getByRole("button", { name: "Add skill" }));
+
+    // Not added to skillSet: the picker checks the combined list (skillSet + suggestedSkills)
+    // case-insensitively, so "rust" here would otherwise 422 against the engine's own check.
+    // No `skillSet` chip list renders at all: nothing was ever added to it.
+    expect(screen.queryByRole("list", { name: "Skill set" })).not.toBeInTheDocument();
+    expect(screen.getByText("1 / 20")).toBeInTheDocument();
+  });
+
+  it("keeps a résumé chip on screen and shows why when it duplicates the skill set or the 20-skill cap is reached (fix round 1, item 3)", async () => {
+    const user = userEvent.setup();
+    const existing = Array.from({ length: 19 }, (_, i) => `Existing skill ${i}`);
+    const marketplace = fakeMarketplace({
+      getProfile: async () => profile({ accountStatus: "confirmed", confirmed: true, skillSet: ["Rust", ...existing] }),
+      ...noRows,
+      suggestSkills: async (): Promise<SkillSuggestions> => ({
+        available: true,
+        suggestions: [
+          { label: "rust", skillId: "rust" },
+          { label: "Go", skillId: null },
+        ],
+      }),
+    });
+
+    render(<App initialPath="/profile" source={source} auth={builderAuth} marketplace={marketplace} />);
+
+    const textarea = await screen.findByLabelText("Suggest from résumé");
+    await user.type(textarea, "x".repeat(60));
+    await user.click(screen.getByRole("button", { name: "Suggest skills" }));
+    const suggestions = await screen.findByRole("list", { name: "Résumé suggestions" });
+
+    await user.click(within(suggestions).getByRole("button", { name: "Accept rust" }));
+    expect(within(suggestions).getByText("rust")).toBeInTheDocument();
+    expect(within(suggestions).getByText("Already in your skill set")).toBeInTheDocument();
+
+    await user.click(within(suggestions).getByRole("button", { name: "Accept Go" }));
+    expect(within(suggestions).getByText("Go")).toBeInTheDocument();
+    expect(within(suggestions).getByText("20-skill limit reached")).toBeInTheDocument();
+
+    expect(screen.queryByRole("list", { name: "Suggested skills" })).not.toBeInTheDocument();
+  });
+
+  it('keeps the Suggest button named "Suggest skills" but disabled, describing "Suggestions need the assistant; add skills by hand." when unavailable, while the manual picker keeps working (story 25, fix round 1, item 4)', async () => {
+    const user = userEvent.setup();
+    const marketplace = fakeMarketplace({
+      getProfile: async () => profile({ accountStatus: "confirmed", confirmed: true }),
+      ...noRows,
+      suggestSkills: async (): Promise<SkillSuggestions> => ({ available: false, suggestions: [] }),
+    });
+
+    render(<App initialPath="/profile" source={source} auth={builderAuth} marketplace={marketplace} />);
+
+    const textarea = await screen.findByLabelText("Suggest from résumé");
+    await user.type(textarea, "x".repeat(60));
+    await user.click(screen.getByRole("button", { name: "Suggest skills" }));
+
+    const button = await screen.findByRole("button", { name: "Suggest skills" });
+    expect(button).toBeDisabled();
+    expect(button).toHaveAccessibleDescription("Suggestions need the assistant; add skills by hand.");
+    expect(screen.getByText("Suggestions need the assistant; add skills by hand.")).toBeInTheDocument();
+
+    const skillInput = screen.getByLabelText("Skill set");
+    await user.type(skillInput, "Growth hacking");
+    await user.click(screen.getByRole("button", { name: "Add skill" }));
+    expect(screen.getByText("Growth hacking")).toBeInTheDocument();
+  });
+});
+
+describe("/profile 422 field messages (Ruling R24)", () => {
+  it("shows a 422 message under pitchVideoUrl in the Showcase editor", async () => {
+    const user = userEvent.setup();
+    const marketplace = fakeMarketplace({
+      getProfile: async () => profile({ accountStatus: "confirmed", confirmed: true }),
+      listCredentials: async () => [],
+      listProjects: async () => [showcaseProject()],
+      saveShowcase: async () => {
+        throw new ApiValidationError({ type: "validation-error", message: "pitchVideoUrl: only YouTube links are supported" });
+      },
+    });
+
+    render(<App initialPath="/profile" source={source} auth={builderAuth} marketplace={marketplace} />);
+
+    const projects = await screen.findByRole("list", { name: "Projects" });
+    const row = within(projects).getByRole("listitem", { name: "Venture Route" });
+    await user.click(within(row).getByRole("button", { name: "Edit showcase" }));
+    const editor = within(row).getByRole("form", { name: "Showcase details for Venture Route" });
+    await user.type(within(editor).getByLabelText("YouTube pitch link"), "https://example.com/not-youtube");
+    await user.click(within(editor).getByRole("button", { name: "Save showcase details" }));
+
+    expect(await within(editor).findByText("only YouTube links are supported")).toBeInTheDocument();
+  });
+
+  it("shows a 422 message under githubUrl on the profile form", async () => {
+    const user = userEvent.setup();
+    const marketplace = fakeMarketplace({
+      getProfile: async () => profile({ accountStatus: "confirmed", confirmed: true }),
+      ...noRows,
+      putProfile: async () => {
+        throw new ApiValidationError({ type: "validation-error", message: "githubUrl: host must be github.com" });
+      },
+    });
+
+    render(<App initialPath="/profile" source={source} auth={builderAuth} marketplace={marketplace} />);
+
+    const form = await screen.findByRole("form", { name: "Builder profile" });
+    await user.type(within(form).getByLabelText("GitHub profile"), "https://example.com/amina");
+    await user.click(within(form).getByRole("button", { name: "Save profile" }));
+
+    expect(await within(form).findByText("host must be github.com")).toBeInTheDocument();
+  });
+});
+
+describe("/profile certifications (spec #86 stories 14-16)", () => {
+  it("adds a certification with an issue date and a verification link, with no vocabulary skill", async () => {
+    const user = userEvent.setup();
+    const posted: CredentialInput[] = [];
+    const marketplace = fakeMarketplace({
+      getProfile: async () => profile({ accountStatus: "confirmed", confirmed: true }),
+      ...noRows,
+      postCredential: async (input) => {
+        posted.push(input);
+        return {
+          id: "cred-2",
+          title: input.title,
+          issuer: input.issuer,
+          skillId: input.skillId ?? null,
+          issuedOn: input.issuedOn ?? null,
+          credentialUrl: input.credentialUrl ?? null,
+          status: "pending",
+          demoData: true,
+        };
+      },
+    });
+
+    render(<App initialPath="/profile" source={source} auth={builderAuth} marketplace={marketplace} />);
+
+    const form = await screen.findByRole("form", { name: "Add credential" });
+    await user.type(within(form).getByLabelText("Credential title"), "Public speaking workshop");
+    await user.type(within(form).getByLabelText("Issuer"), "Toastmasters Nairobi");
+    await user.type(within(form).getByLabelText("Issue date"), "2026-05-01");
+    await user.type(within(form).getByLabelText("Verification link"), "https://example.org/cert/123");
+    await user.click(within(form).getByRole("button", { name: "Add credential" }));
+
+    await waitFor(() => expect(posted).toHaveLength(1));
+    expect(posted[0]).toMatchObject({
+      title: "Public speaking workshop",
+      issuer: "Toastmasters Nairobi",
+      issuedOn: "2026-05-01",
+      credentialUrl: "https://example.org/cert/123",
+    });
+
+    const credentials = await screen.findByRole("list", { name: "Credentials" });
+    const row = within(credentials).getByRole("listitem", { name: "Public speaking workshop" });
+    expect(within(row).getByText(/Display only · no vocabulary skill/)).toBeInTheDocument();
+  });
+});
+
+describe("/profile Showcase editor (spec #86 stories 1-6)", () => {
+  it("shows the status pill and pending note, and saving sends the entry to review", async () => {
+    const user = userEvent.setup();
+    const saved: { projectId: string; body: ShowcaseEditInput }[] = [];
+    const marketplace = fakeMarketplace({
+      getProfile: async () => profile({ accountStatus: "confirmed", confirmed: true }),
+      listCredentials: async () => [],
+      listProjects: async () => [showcaseProject()],
+      saveShowcase: async (projectId, body) => {
+        saved.push({ projectId, body });
+        return showcaseProject({ ...body, showcaseStatus: "pending" });
+      },
+    });
+
+    render(<App initialPath="/profile" source={source} auth={builderAuth} marketplace={marketplace} />);
+
+    const projects = await screen.findByRole("list", { name: "Projects" });
+    const row = within(projects).getByRole("listitem", { name: "Venture Route" });
+    expect(within(row).getByText("Not shown")).toBeInTheDocument();
+    const toggle = within(row).getByRole("button", { name: "Edit showcase" });
+    expect(toggle).toHaveAttribute("aria-expanded", "false");
+    await user.click(toggle);
+    // The toggle keeps its name "Edit showcase" — collapse state is `aria-expanded`, not a
+    // renamed "Close" button (fix round 1, item 9).
+    expect(within(row).getByRole("button", { name: "Edit showcase" })).toHaveAttribute("aria-expanded", "true");
+
+    const editor = within(row).getByRole("form", { name: "Showcase details for Venture Route" });
+    await user.type(within(editor).getByLabelText("Description"), "The MeTTa-routed marketplace.");
+    await user.click(within(editor).getByRole("checkbox", { name: "Show on Showcase" }));
+    await user.click(within(editor).getByRole("button", { name: "Save showcase details" }));
+
+    await waitFor(() => expect(saved).toHaveLength(1));
+    expect(saved[0]!.projectId).toBe("proj-1");
+    expect(saved[0]!.body).toMatchObject({ description: "The MeTTa-routed marketplace.", showcased: true });
+
+    expect(await within(row).findByText("Pending review")).toBeInTheDocument();
+    expect(
+      within(row).getByText("A BASIX admin reviews every change before it goes live."),
+    ).toBeInTheDocument();
   });
 });
