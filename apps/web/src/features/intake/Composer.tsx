@@ -3,7 +3,8 @@ import { useState, type FormEvent } from "react";
 import { Button } from "@/components/ui/button";
 
 import { MicButton } from "../../chloe/ui/MicButton";
-import { MicErrorLine } from "../../chloe/ui/VoiceCaptions";
+import { ConsentCaption, MicErrorLine, UnsupportedCaption } from "../../chloe/ui/VoiceCaptions";
+import { useChloe } from "../../chloe/useChloe";
 
 type ComposerProps = Readonly<{
   busy: boolean;
@@ -14,6 +15,12 @@ type ComposerProps = Readonly<{
 /** The founder's composer: a two-line text area, Send, and the "Use the form instead" fallback. */
 export function Composer({ busy, onSend, onUseForm }: ComposerProps) {
   const [text, setText] = useState("");
+  const chloe = useChloe();
+  // While the mic is held, the box shows the in-progress recognition instead of the typed draft;
+  // the draft itself is untouched and comes back once the interim transcript clears (blueprint
+  // `Composer.tsx`: "interim overlay").
+  const listening = chloe?.status === "listening";
+  const displayed = listening ? chloe.interim : text;
 
   function submit(event: FormEvent) {
     event.preventDefault();
@@ -38,10 +45,13 @@ export function Composer({ busy, onSend, onUseForm }: ComposerProps) {
           name="reply"
           autoComplete="off"
           rows={2}
-          value={text}
-          onChange={(event) => setText(event.target.value)}
+          value={displayed}
+          readOnly={listening}
+          onChange={(event) => {
+            if (!listening) setText(event.target.value);
+          }}
           placeholder="Reply here…"
-          className="w-full resize-none border-0 bg-transparent leading-relaxed text-ink placeholder:text-ink-3 focus:outline-none"
+          className={`w-full resize-none border-0 bg-transparent leading-relaxed text-ink placeholder:text-ink-3 focus:outline-none ${listening ? "italic text-ink-3" : ""}`}
         />
         <div className="flex items-center justify-between border-t border-border pt-3">
           <span className="text-[13px] text-ink-3">Plain language: dates, budget, team roles.</span>
@@ -54,6 +64,8 @@ export function Composer({ busy, onSend, onUseForm }: ComposerProps) {
         </div>
       </form>
       <MicErrorLine />
+      <ConsentCaption />
+      <UnsupportedCaption />
       <div className="px-1">
         <button
           type="button"

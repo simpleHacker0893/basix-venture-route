@@ -1,3 +1,4 @@
+import { Mic } from "lucide-react";
 import { useEffect, useRef, type KeyboardEvent } from "react";
 
 import { useRouting } from "../../state/routingContext";
@@ -58,20 +59,23 @@ export function MicButton({ onDictation }: MicButtonProps) {
   }
 
   return (
-    <button
-      type="button"
-      data-testid="mic-button"
-      aria-label="Hold to talk"
-      aria-pressed={chloe.status === "listening"}
-      disabled={state.busy}
-      onPointerDown={press}
-      onPointerUp={() => void release()}
-      onPointerLeave={() => void release()}
-      onKeyDown={onKeyDown}
-      onKeyUp={onKeyUp}
-      className="h-9 rounded-pill border border-border px-3 text-[13px] text-ink-2 aria-pressed:border-accent-green disabled:opacity-60"
-    >
-      Hold to talk
-    </button>
+    <div className="flex flex-shrink-0 flex-col items-center">
+      <button
+        type="button"
+        data-testid="mic-button"
+        aria-label="Hold to talk"
+        aria-pressed={chloe.status === "listening"}
+        disabled={state.busy}
+        onPointerDown={press}
+        onPointerUp={() => void release()}
+        onPointerLeave={() => void release()}
+        onKeyDown={onKeyDown}
+        onKeyUp={onKeyUp}
+        className="flex h-12 w-12 items-center justify-center rounded-full border border-border bg-surface-strong text-ink-2 transition-all aria-pressed:border-transparent aria-pressed:bg-accent-green aria-pressed:text-surface-strong aria-pressed:ring-4 aria-pressed:ring-accent-green/20 disabled:opacity-60"
+      >
+        <Mic aria-hidden="true" className="h-6 w-6" />
+      </button>
+      <span className="mt-1.5 text-[11px] font-medium text-ink-2">Hold to talk</span>
+    </div>
   );
 }
