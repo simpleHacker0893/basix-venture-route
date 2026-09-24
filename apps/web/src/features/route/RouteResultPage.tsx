@@ -2,6 +2,7 @@ import type { VentureBrief, VentureRoute } from "@venture-route/contracts";
 import { useState } from "react";
 import { Link } from "react-router";
 
+import { SpeakingIndicator } from "../../chloe/ui/SpeakingIndicator";
 import { ApiBanner } from "../../components/ApiBanner";
 import { Button } from "@/components/ui/button";
 import type { BriefPatch } from "../../lib/nextActions";
@@ -37,6 +38,7 @@ export function RouteResult({ brief, route, onPatch, onChangeBrief, onWhy, publi
           <StatusBadge status={route.status} />
         </div>
         <p className="max-w-3xl text-ink-2">{route.summary}</p>
+        <SpeakingIndicator />
         <div className="flex flex-wrap gap-2">
           <Button type="button" variant="secondary" onClick={onChangeBrief}>
             Change brief

@@ -12,10 +12,14 @@
  * captions that asserted things the product does not know ("Broadcasting to cohort").
  */
 import type { Dashboard, Request } from "@venture-route/contracts";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router";
 
 import { useMarketplaceApi } from "../../api/marketplaceContext";
+import { dashboardReadAloud } from "../../chloe/script";
+import { ReadAloudButton } from "../../chloe/ui/ReadAloudButton";
+import { SpeakingIndicator } from "../../chloe/ui/SpeakingIndicator";
+import { useReadAloud } from "../../chloe/useReadAloud";
 import { DemoDataPill } from "../../components/DemoDataPill";
 import { VERTICAL_LABELS } from "../../lib/brief";
 import { isoDate, usd } from "../../lib/format";
@@ -55,6 +59,8 @@ export function DashboardPage() {
   const [data, setData] = useState<Dashboard | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [routing, setRouting] = useState<string | null>(null);
+  // Chloe reads the counts and the next interview (#102): templated from this one response only.
+  const readAloud = useReadAloud(useMemo(() => (data ? [dashboardReadAloud(data)] : null), [data]));
 
   useEffect(() => {
     let cancelled = false;
@@ -96,13 +102,17 @@ export function DashboardPage() {
             Active venture briefs, deterministic routing outputs, and incoming builder candidate bids.
           </p>
         </div>
-        <Link
-          to="/route"
-          className="rounded-md bg-accent-green px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-accent-green-hover"
-        >
-          New brief
-        </Link>
+        <div className="flex flex-wrap items-center gap-2">
+          <ReadAloudButton readAloud={readAloud} />
+          <Link
+            to="/route"
+            className="rounded-md bg-accent-green px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-accent-green-hover"
+          >
+            New brief
+          </Link>
+        </div>
       </header>
+      <SpeakingIndicator />
 
       {loadError ? (
         <p role="alert" className="rounded-card border border-danger/40 bg-surface-strong px-3 py-2 text-[13px] text-danger">

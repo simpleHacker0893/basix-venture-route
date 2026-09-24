@@ -7,6 +7,7 @@ import { MarketplaceApiProvider } from "./api/MarketplaceApiProvider";
 import type { RouteSource } from "./api/source";
 import type { AuthState } from "./auth/authContext";
 import { AuthProvider } from "./auth/AuthProvider";
+import { FounderVoiceProvider } from "./chloe/FounderVoiceProvider";
 import { spokenForm } from "./chloe/script";
 import { AppRoutes } from "./router";
 import { RoutingProvider } from "./state/RoutingProvider";
@@ -34,10 +35,12 @@ export function App({ initialPath, source, auth, marketplace, voice }: AppProps)
     <AuthProvider auth={auth}>
       <MarketplaceApiProvider marketplace={marketplace}>
         <RoutingProvider source={resolvedSource}>
-          {/* Ticket #102 may move this above the founder routes; wrapping AppRoutes is enough
-              while Chloe (apps/web/src/chloe/*) has no consumer yet. */}
+          {/* One voice session above every route (#102): the top-nav switch, /route's Chloe and
+              the dashboard and booking read-aloud all share it. */}
           <VoiceSessionProvider voice={resolvedVoice}>
-            <AppRoutes />
+            <FounderVoiceProvider>
+              <AppRoutes />
+            </FounderVoiceProvider>
           </VoiceSessionProvider>
         </RoutingProvider>
       </MarketplaceApiProvider>
