@@ -5,10 +5,11 @@
  * React, no provider calls: Chloe never sets or infers the route status here (AGENTS.md rules
  * 1-3).
  */
-import type { BriefField, PartialBriefInput, VentureRoute } from "@venture-route/contracts";
+import type { Booking, BriefField, Dashboard, PartialBriefInput, VentureRoute } from "@venture-route/contracts";
 
 import { FIELD_LABELS, MODE_LABELS, SKILL_LABELS, VERTICAL_LABELS } from "../lib/brief";
 import { dateRange, STATUS_LABEL, usd } from "../lib/format";
+import { formatNairobiSpoken } from "../lib/nairobi";
 import { splitFieldMessages } from "../lib/validationError";
 import type { VoiceErrorCode } from "../voice/provider";
 
@@ -72,6 +73,36 @@ export function speakRoute(route: VentureRoute): string[] {
   }
   lines.push("The full route is on screen, with the evidence behind each choice.");
   return lines;
+}
+
+function counted(n: number, one: string, many: string): string {
+  return `${n} ${n === 1 ? one : many}`;
+}
+
+/**
+ * /dashboard read-aloud (#102, spec #86 stories 69-72): the counts and the next upcoming
+ * interview, templated only from GET /api/me/dashboard (`upcomingBookings` is soonest first).
+ * Never the founder's name (Q-22).
+ */
+export function dashboardReadAloud(dashboard: Dashboard): string {
+  const next = dashboard.upcomingBookings[0];
+  const interview = next ? `an interview on ${formatNairobiSpoken(next.proposedStartLocal)}` : "no upcoming interviews";
+  return (
+    `You have ${counted(dashboard.counts.openRequests, "open request", "open requests")}, ` +
+    `${counted(dashboard.counts.bidsReceived, "bid", "bids")}, and ${interview}.`
+  );
+}
+
+const BOOKING_STATE_SPOKEN: Record<Booking["state"], string> = {
+  proposed: "Proposed",
+  countered: "Countered",
+  accepted: "Accepted",
+  confirmed: "Confirmed",
+};
+
+/** /bookings/:id read-aloud (#102): the state and the latest proposal in Africa/Nairobi time. */
+export function bookingReadAloud(booking: Booking): string {
+  return `${BOOKING_STATE_SPOKEN[booking.state]}: ${formatNairobiSpoken(booking.proposedStartLocal)}, ${booking.durationMin} minutes.`;
 }
 
 export const OFFLINE_ASSISTANT =

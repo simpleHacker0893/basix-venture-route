@@ -3,6 +3,7 @@ import { Link } from "react-router";
 
 import { useAuthState } from "../auth/authContext";
 import { ROLE_HOME } from "../auth/config";
+import { FounderVoiceToggle } from "../chloe/ui/FounderVoiceToggle";
 
 const HOME_LABEL = { founder: "Route my venture", builder: "Your profile", admin: "Confirmation queue" } as const;
 
@@ -11,7 +12,8 @@ const HOME_LABEL = { founder: "Route my venture", builder: "Your profile", admin
  * the "BASIX Edition" badge, section links, secondary "Sign in", primary "Route my venture".
  * Signed in, the secondary slot becomes the role home link plus "Sign out". Sprint 005a (#96,
  * spec #86 story 30) adds a public **Showcase** link, on desktop and in a mobile menu, signed in
- * or out.
+ * or out. Sprint 005a (#102) adds the founder-wide "Voice: Chloe" switch for signed-in founders,
+ * on desktop and in the mobile menu.
  */
 export function TopNav() {
   const auth = useAuthState();
@@ -54,6 +56,7 @@ export function TopNav() {
         <div className="hidden items-center gap-8 text-sm font-medium text-ink md:flex">{sectionLinks}</div>
         <div className="flex items-center gap-3">
           <div className="hidden items-center gap-3 md:flex">
+            <FounderVoiceToggle className="pb-0" />
             {signedIn ? (
               <>
                 {auth.role === "founder" ? null : (
@@ -93,6 +96,7 @@ export function TopNav() {
         <nav id="mobile-menu" aria-label="Mobile" className="border-t border-border px-6 py-4 md:hidden">
           <div className="flex flex-col gap-4 text-sm font-medium text-ink">{sectionLinks}</div>
           <div className="mt-4 flex flex-col gap-3">
+            <FounderVoiceToggle className="pb-0" />
             {signedIn ? (
               <>
                 {auth.role === "founder" ? null : (

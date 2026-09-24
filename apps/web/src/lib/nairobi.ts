@@ -25,3 +25,33 @@ export function formatNairobiTime(local: string): string {
   const match = LOCAL.exec(local);
   return match ? `${match[4]}:${match[5]} EAT` : local;
 }
+
+const SPOKEN_DAYS = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+const SPOKEN_MONTHS = [
+  "January",
+  "February",
+  "March",
+  "April",
+  "May",
+  "June",
+  "July",
+  "August",
+  "September",
+  "October",
+  "November",
+  "December",
+];
+
+/**
+ * The same engine string in words for Chloe (#102): "Thursday 1 October at 10:30". Like
+ * `formatNairobi`, the date and clock time come straight from the string; no zone arithmetic.
+ */
+export function formatNairobiSpoken(local: string): string {
+  const match = LOCAL.exec(local);
+  if (!match) return local;
+  const [, y, m, d, hh, mm] = match;
+  const month = Number(m);
+  const day = Number(d);
+  const weekday = SPOKEN_DAYS[new Date(Date.UTC(Number(y), month - 1, day)).getUTCDay()] ?? "";
+  return `${weekday} ${day} ${SPOKEN_MONTHS[month - 1] ?? ""} at ${hh}:${mm}`;
+}

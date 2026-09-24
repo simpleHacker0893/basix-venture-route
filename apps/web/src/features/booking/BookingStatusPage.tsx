@@ -12,12 +12,16 @@
  * Substitutions from the export: "Join room", "Reschedule", the Google Meet line.
  */
 import type { AvailabilityRange, Booking } from "@venture-route/contracts";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link, useParams } from "react-router";
 
 import { ApiUnreachableError, ApiValidationError } from "../../api/client";
 import { useMarketplaceApi } from "../../api/marketplaceContext";
 import { useAuthState } from "../../auth/authContext";
+import { bookingReadAloud } from "../../chloe/script";
+import { ReadAloudButton } from "../../chloe/ui/ReadAloudButton";
+import { SpeakingIndicator } from "../../chloe/ui/SpeakingIndicator";
+import { useReadAloud } from "../../chloe/useReadAloud";
 import { DemoDataPill } from "../../components/DemoDataPill";
 import { actionsFor, type BookingAction as Action, type BookingRole as Role } from "../../lib/bookingActions";
 import { formatNairobi } from "../../lib/nairobi";
@@ -59,6 +63,12 @@ export function BookingStatusPage() {
   const [availability, setAvailability] = useState<readonly AvailabilityRange[] | null>(null);
   const [draft, setDraft] = useState<SlotDraft>(EMPTY_SLOT);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+  // Founders only (#102): Chloe reads the state and the latest proposal from this row. She only
+  // speaks; every action on this screen stays a button.
+  const readAloud = useReadAloud(
+    useMemo(() => (booking ? [bookingReadAloud(booking)] : null), [booking]),
+    auth.role === "founder",
+  );
 
   const reload = useCallback(async () => {
     try {
@@ -184,6 +194,10 @@ export function BookingStatusPage() {
             </p>
             <p className="text-[13px] text-ink-muted">{STATE_CAPTION[booking.state]}</p>
             {booking.note ? <p className="text-[13px] text-ink-2">“{booking.note}”</p> : null}
+            <div>
+              <ReadAloudButton readAloud={readAloud} />
+            </div>
+            <SpeakingIndicator />
           </header>
 
           <section aria-labelledby="lifecycle-heading" className="flex flex-col gap-3">
