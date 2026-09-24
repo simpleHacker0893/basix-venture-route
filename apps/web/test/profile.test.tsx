@@ -10,6 +10,9 @@ import type {
   CredentialInput,
   ProfileInput,
   ProjectInput,
+  ShowcaseEditInput,
+  ShowcaseProject,
+  SkillSuggestions,
 } from "@venture-route/contracts";
 import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
@@ -213,5 +216,239 @@ describe("/profile/projects/new", () => {
       ]),
     );
     expect(await screen.findByRole("heading", { level: 1, name: "Your profile" })).toBeInTheDocument();
+  });
+});
+
+function showcaseProject(overrides: Partial<ShowcaseProject> = {}): ShowcaseProject {
+  return {
+    id: "proj-1",
+    title: "Venture Route",
+    vertical: "education",
+    licensable: false,
+    completedOn: "2026-08-31",
+    skillIds: ["python"],
+    status: "confirmed",
+    demoData: true,
+    description: "",
+    liveUrl: null,
+    demoUrl: null,
+    pitchVideoUrl: null,
+    pitchDeckUrl: null,
+    showcased: false,
+    showcaseStatus: "none",
+    ...overrides,
+  };
+}
+
+describe("/profile skill set and résumé suggestions (spec #86 stories 17-28)", () => {
+  it("suggests the nine vocabulary skills, accepts free text, and ignores a case-insensitive duplicate (acceptance §Part A Should 1)", async () => {
+    const user = userEvent.setup();
+    const marketplace = fakeMarketplace({
+      getProfile: async () => profile({ accountStatus: "confirmed", confirmed: true }),
+      ...noRows,
+    });
+
+    render(<App initialPath="/profile" source={source} auth={builderAuth} marketplace={marketplace} />);
+
+    const input = await screen.findByLabelText("Skill set");
+    const options = document.querySelectorAll<HTMLOptionElement>(`#${input.getAttribute("list")} option`);
+    expect([...options].map((o) => o.value)).toEqual([
+      "Python",
+      "AI / MeTTa",
+      "UI/UX design",
+      "Frontend",
+      "Backend",
+      "Domain research",
+      "Mobile",
+      "Rust",
+      "Data engineering",
+    ]);
+
+    const add = screen.getByRole("button", { name: "Add skill" });
+    await user.type(input, "Growth hacking");
+    await user.click(add);
+    expect(screen.getByText("Growth hacking")).toBeInTheDocument();
+    expect(screen.getByText("1 / 20")).toBeInTheDocument();
+
+    await user.type(input, "growth hacking");
+    await user.click(add);
+    expect(screen.getByText("1 / 20")).toBeInTheDocument();
+    expect(screen.getAllByText(/growth hacking/i)).toHaveLength(1);
+
+    await user.click(screen.getByRole("button", { name: "Remove Growth hacking" }));
+    expect(screen.getByText("0 / 20")).toBeInTheDocument();
+  });
+
+  it("saves GitHub and LinkedIn profile links regardless of contact sharing (stories 27-28)", async () => {
+    const user = userEvent.setup();
+    const saved: ProfileInput[] = [];
+    const marketplace = fakeMarketplace({
+      getProfile: async () => profile({ accountStatus: "confirmed", confirmed: true, sharing: { email: false, phone: false, linkedin: false } }),
+      ...noRows,
+      putProfile: async (input) => {
+        saved.push(input);
+        return profile({ ...input, accountStatus: "confirmed", confirmed: true });
+      },
+    });
+
+    render(<App initialPath="/profile" source={source} auth={builderAuth} marketplace={marketplace} />);
+
+    const form = await screen.findByRole("form", { name: "Builder profile" });
+    await user.type(within(form).getByLabelText("GitHub profile"), "https://github.com/amina-otieno");
+    await user.type(within(form).getByLabelText("LinkedIn profile"), "https://www.linkedin.com/in/amina-otieno");
+    await user.click(within(form).getByRole("button", { name: "Save profile" }));
+
+    await waitFor(() => expect(saved).toHaveLength(1));
+    expect(saved[0]).toMatchObject({
+      githubUrl: "https://github.com/amina-otieno",
+      linkedinUrl: "https://www.linkedin.com/in/amina-otieno",
+    });
+  });
+
+  it("accepts a résumé suggestion as self-described, saved to suggestedSkills and never skillSet (stories 20-23, 26)", async () => {
+    const user = userEvent.setup();
+    const saved: ProfileInput[] = [];
+    const marketplace = fakeMarketplace({
+      getProfile: async () => profile({ accountStatus: "confirmed", confirmed: true }),
+      ...noRows,
+      suggestSkills: async (): Promise<SkillSuggestions> => ({
+        available: true,
+        suggestions: [{ label: "Rust", skillId: "rust" }],
+      }),
+      putProfile: async (input) => {
+        saved.push(input);
+        return profile({ ...input, accountStatus: "confirmed", confirmed: true });
+      },
+    });
+
+    render(<App initialPath="/profile" source={source} auth={builderAuth} marketplace={marketplace} />);
+
+    expect(
+      await screen.findByText("Your text is sent to Anthropic's Claude to suggest skills and is not stored."),
+    ).toBeInTheDocument();
+    const textarea = screen.getByLabelText("Suggest from résumé");
+    await user.type(textarea, "x".repeat(60));
+    await user.click(screen.getByRole("button", { name: "Suggest skills" }));
+
+    const suggestions = await screen.findByRole("list", { name: "Résumé suggestions" });
+    const chip = within(suggestions).getByText("Rust");
+    expect(chip).toBeInTheDocument();
+    await user.click(within(suggestions).getByRole("button", { name: "Accept Rust" }));
+
+    expect(screen.queryByRole("list", { name: "Résumé suggestions" })).not.toBeInTheDocument();
+    const selfDescribed = screen.getByRole("list", { name: "Suggested skills" });
+    expect(within(selfDescribed).getByText("Rust")).toBeInTheDocument();
+    expect(screen.getByText("Self-described")).toBeInTheDocument();
+
+    const form = await screen.findByRole("form", { name: "Builder profile" });
+    await user.click(within(form).getByRole("button", { name: "Save profile" }));
+    await waitFor(() => expect(saved).toHaveLength(1));
+    expect(saved[0]!.suggestedSkills).toEqual(["Rust"]);
+    expect(saved[0]!.skillSet).toEqual([]);
+  });
+
+  it('disables the Suggest button with "Suggestions need the assistant; add skills by hand." when unavailable, while the manual picker keeps working (story 25)', async () => {
+    const user = userEvent.setup();
+    const marketplace = fakeMarketplace({
+      getProfile: async () => profile({ accountStatus: "confirmed", confirmed: true }),
+      ...noRows,
+      suggestSkills: async (): Promise<SkillSuggestions> => ({ available: false, suggestions: [] }),
+    });
+
+    render(<App initialPath="/profile" source={source} auth={builderAuth} marketplace={marketplace} />);
+
+    const textarea = await screen.findByLabelText("Suggest from résumé");
+    await user.type(textarea, "x".repeat(60));
+    await user.click(screen.getByRole("button", { name: "Suggest skills" }));
+
+    const disabled = await screen.findByRole("button", { name: "Suggestions need the assistant; add skills by hand." });
+    expect(disabled).toBeDisabled();
+
+    const skillInput = screen.getByLabelText("Skill set");
+    await user.type(skillInput, "Growth hacking");
+    await user.click(screen.getByRole("button", { name: "Add skill" }));
+    expect(screen.getByText("Growth hacking")).toBeInTheDocument();
+  });
+});
+
+describe("/profile certifications (spec #86 stories 14-16)", () => {
+  it("adds a certification with an issue date and a verification link, with no vocabulary skill", async () => {
+    const user = userEvent.setup();
+    const posted: CredentialInput[] = [];
+    const marketplace = fakeMarketplace({
+      getProfile: async () => profile({ accountStatus: "confirmed", confirmed: true }),
+      ...noRows,
+      postCredential: async (input) => {
+        posted.push(input);
+        return {
+          id: "cred-2",
+          title: input.title,
+          issuer: input.issuer,
+          skillId: input.skillId ?? null,
+          issuedOn: input.issuedOn ?? null,
+          credentialUrl: input.credentialUrl ?? null,
+          status: "pending",
+          demoData: true,
+        };
+      },
+    });
+
+    render(<App initialPath="/profile" source={source} auth={builderAuth} marketplace={marketplace} />);
+
+    const form = await screen.findByRole("form", { name: "Add credential" });
+    await user.type(within(form).getByLabelText("Credential title"), "Public speaking workshop");
+    await user.type(within(form).getByLabelText("Issuer"), "Toastmasters Nairobi");
+    await user.type(within(form).getByLabelText("Issue date"), "2026-05-01");
+    await user.type(within(form).getByLabelText("Verification link"), "https://example.org/cert/123");
+    await user.click(within(form).getByRole("button", { name: "Add credential" }));
+
+    await waitFor(() => expect(posted).toHaveLength(1));
+    expect(posted[0]).toMatchObject({
+      title: "Public speaking workshop",
+      issuer: "Toastmasters Nairobi",
+      issuedOn: "2026-05-01",
+      credentialUrl: "https://example.org/cert/123",
+    });
+
+    const credentials = await screen.findByRole("list", { name: "Credentials" });
+    const row = within(credentials).getByRole("listitem", { name: "Public speaking workshop" });
+    expect(within(row).getByText(/Display only · no vocabulary skill/)).toBeInTheDocument();
+  });
+});
+
+describe("/profile Showcase editor (spec #86 stories 1-6)", () => {
+  it("shows the status pill and pending note, and saving sends the entry to review", async () => {
+    const user = userEvent.setup();
+    const saved: { projectId: string; body: ShowcaseEditInput }[] = [];
+    const marketplace = fakeMarketplace({
+      getProfile: async () => profile({ accountStatus: "confirmed", confirmed: true }),
+      listCredentials: async () => [],
+      listProjects: async () => [showcaseProject()],
+      saveShowcase: async (projectId, body) => {
+        saved.push({ projectId, body });
+        return showcaseProject({ ...body, showcaseStatus: "pending" });
+      },
+    });
+
+    render(<App initialPath="/profile" source={source} auth={builderAuth} marketplace={marketplace} />);
+
+    const projects = await screen.findByRole("list", { name: "Projects" });
+    const row = within(projects).getByRole("listitem", { name: "Venture Route" });
+    expect(within(row).getByText("Not shown")).toBeInTheDocument();
+    await user.click(within(row).getByRole("button", { name: "Edit showcase" }));
+
+    const editor = within(row).getByRole("form", { name: "Showcase details for Venture Route" });
+    await user.type(within(editor).getByLabelText("Description"), "The MeTTa-routed marketplace.");
+    await user.click(within(editor).getByRole("checkbox", { name: "Show on Showcase" }));
+    await user.click(within(editor).getByRole("button", { name: "Save showcase details" }));
+
+    await waitFor(() => expect(saved).toHaveLength(1));
+    expect(saved[0]!.projectId).toBe("proj-1");
+    expect(saved[0]!.body).toMatchObject({ description: "The MeTTa-routed marketplace.", showcased: true });
+
+    expect(await within(row).findByText("Pending review")).toBeInTheDocument();
+    expect(
+      within(row).getByText("A BASIX admin reviews every change before it goes live."),
+    ).toBeInTheDocument();
   });
 });
