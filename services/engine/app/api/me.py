@@ -223,6 +223,13 @@ async def create_credential(
     session: Annotated[AsyncSession, Depends(get_session)],
 ) -> CredentialOut:
     profile = await _own_profile(session, user)
+    # Skill-less certifications (spec #86 story 15) need the `credentials.skill_id` column
+    # nullable (#88) and the storage/projection changes in #94; until then this endpoint keeps
+    # its Sprint 003 behaviour of requiring a vocabulary skill.
+    if body.skill_id is None:
+        raise RequestValidationError(
+            [{"loc": ("body", "skillId"), "msg": "skillId is required", "type": "value_error"}]
+        )
     row = await repo.add_credential(
         session, profile.id, title=body.title, issuer=body.issuer, skill_id=body.skill_id
     )

@@ -72,7 +72,8 @@ export function CredentialsCard({ credentials, hasProfile, onAdd }: CredentialsC
               <div className="flex flex-col gap-0.5">
                 <span className="text-sm font-medium text-ink">{credential.title}</span>
                 <span className="text-[12px] text-ink-3">
-                  {credential.issuer} · {SKILL_LABELS[credential.skillId]}
+                  {credential.issuer} ·{" "}
+                  {credential.skillId ? SKILL_LABELS[credential.skillId] : "No vocabulary skill"}
                 </span>
               </div>
               <div className="flex items-center gap-2">
