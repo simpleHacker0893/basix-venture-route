@@ -14,6 +14,12 @@ export type RoutingContextValue = {
   routeBrief(brief: VentureBrief): Promise<void>;
   /** Chat path: one founder turn to POST /api/conversation. */
   sendTurn(turn: ChatTurnInput): Promise<void>;
+  /**
+   * A spoken line from Chloe, appended to the thread for an inspectable transcript. Display-only:
+   * never posted to the engine (sendTurn is unchanged) and never exported (handoffText reads
+   * brief and route only).
+   */
+  noteChloe(text: string): void;
   setBrief(brief: PartialBriefInput | null): void;
   showView(view: View): void;
   /** A stored brief and route enter the store as if just routed (dashboard "View route", stash restore). */
