@@ -11,6 +11,7 @@ import { Link } from "react-router";
 
 import { isoDate } from "../../lib/format";
 import { useAuthState } from "../../auth/authContext";
+import { DemoDataPill } from "../../components/DemoDataPill";
 import { EvidenceBadge } from "../route/Badges";
 
 const EXTERNAL_REL = "noopener noreferrer";
@@ -30,7 +31,7 @@ export function BuilderPanel({ builder }: Readonly<{ builder: ShowcaseBuilder }>
       <section aria-label="Verified skills" className="flex flex-col gap-3">
         <h3 className="text-[13px] font-semibold uppercase tracking-wide text-ink-3">Verified skills</h3>
         {builder.verifiedSkills.length > 0 ? (
-          <ul aria-label="Verified skills" className="flex flex-col divide-y divide-border">
+          <ul className="flex flex-col divide-y divide-border">
             {builder.verifiedSkills.map((skill) => (
               <li key={skill.id} className="flex items-center justify-between gap-3 py-2">
                 <span className="text-sm font-medium text-ink">{skill.name}</span>
@@ -67,7 +68,10 @@ export function BuilderPanel({ builder }: Readonly<{ builder: ShowcaseBuilder }>
           <ul className="flex flex-col gap-3">
             {builder.certifications.map((cert) => (
               <li key={cert.id} className="flex flex-col gap-1 rounded-card border border-border bg-surface-strong p-3">
-                <span className="text-sm font-medium text-ink">{cert.title}</span>
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="text-sm font-medium text-ink">{cert.title}</span>
+                  {cert.demoData ? <DemoDataPill /> : null}
+                </div>
                 <span className="text-[13px] text-ink-muted">{cert.issuer}</span>
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   {cert.issuedOn ? <span className="font-mono text-[12px] text-ink-3">{isoDate(cert.issuedOn)}</span> : null}

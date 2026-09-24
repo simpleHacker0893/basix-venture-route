@@ -135,6 +135,8 @@ describe("/showcase/:projectId (#105)", () => {
       "href",
       "https://example.org/verify/cred-1",
     );
+    // AGENTS.md non-negotiable 5: every seed-derived record shows its own Demo data pill.
+    expect(within(certs).getByText("Demo data")).toBeInTheDocument();
   });
 
   it("sends a signed-in founder to /builders/:id on View builder", async () => {
