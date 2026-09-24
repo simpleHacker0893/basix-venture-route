@@ -214,3 +214,23 @@ async def test_non_parties_get_404_and_no_session_401(
     assert anonymous.status_code == 401
     current = (await api.get("/api/me/bookings", headers=founder.headers)).json()[0]
     assert (current["state"], len(current["history"])) == ("proposed", 1)
+
+
+async def test_a_counter_with_a_bad_slot_on_a_confirmed_booking_is_409_not_422(
+    api: AsyncClient, founder: Actor, confirmed_builder: Actor
+) -> None:
+    """Requirements edge case: counter-proposal on a confirmed booking → 409, whatever the body."""
+    booking = await propose(api, founder)
+    assert (await act(api, confirmed_builder, booking["id"], "accept")).status_code == 200
+    assert (await act(api, founder, booking["id"], "confirm")).status_code == 200
+
+    response = await act(
+        api,
+        confirmed_builder,
+        booking["id"],
+        "counter",
+        {**COUNTER, "proposedStart": "2026-09-25T06:10:00Z"},
+    )
+
+    assert response.status_code == 409
+    assert "confirmed" in response.json()["detail"]

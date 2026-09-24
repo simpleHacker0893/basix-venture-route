@@ -83,7 +83,9 @@ def _on_the_table(history: list[HistoryEntry]) -> Proposal:
 
 
 def _counters_this_round(history: list[HistoryEntry]) -> dict[str, int]:
-    """Counters per side since the round began: at the last propose or founder counter."""
+    """Counters per side since the round began. A round opens with the founder's proposal or
+    with a founder counter; the opening entry belongs to the previous round, so a founder
+    counter never counts against the founder in the round it opens (review of #65)."""
     round_start = 0
     for index, entry in enumerate(history):
         if entry["action"] == "propose" or (
@@ -91,7 +93,7 @@ def _counters_this_round(history: list[HistoryEntry]) -> dict[str, int]:
         ):
             round_start = index
     counts = {actor: 0 for actor in ACTORS}
-    for entry in history[round_start:]:
+    for entry in history[round_start + 1 :]:
         if entry["action"] == "counter":
             counts[str(entry["actor"])] += 1
     return counts
@@ -101,6 +103,25 @@ def start(proposal: Proposal, now: datetime) -> tuple[str, list[HistoryEntry]]:
     """The founder's proposal: state `proposed` and the first history entry."""
     _require_aware(now, "now")
     return "proposed", [_entry("propose", "founder", "proposed", proposal, now)]
+
+
+def check(state: str, history: list[HistoryEntry], action: str, actor: str) -> str:
+    """The state the action would lead to, or `IllegalTransition(reason)`: the confirmed
+    guard, the vocabulary, the once-per-round counter rule and the table. Callers that must
+    validate a proposal body run this first so an illegal cell answers 409 before a bad slot
+    answers 422 (requirements edge case: counter on a confirmed booking → 409)."""
+    if state == "confirmed":
+        raise IllegalTransition("the booking is confirmed; no further action is possible")
+    if state not in STATES or action not in ACTIONS or actor not in ACTORS:
+        raise IllegalTransition(f"{action} by the {actor} is not a booking transition from {state}")
+    if action == "counter" and _counters_this_round(history)[actor] >= 1:
+        raise IllegalTransition(f"the {actor} already countered this round")
+    to_state = TABLE.get((state, action, actor))
+    if to_state is None:
+        raise IllegalTransition(
+            f"{action} is not allowed for the {actor} while the booking is {state}"
+        )
+    return to_state
 
 
 def transition(
@@ -114,19 +135,8 @@ def transition(
     """Apply one action; returns the new state and a new history list with one entry appended.
     Raises `IllegalTransition(reason)` for every cell outside the table."""
     _require_aware(now, "now")
-    if state == "confirmed":
-        raise IllegalTransition("the booking is confirmed; no further action is possible")
-    if state not in STATES or action not in ACTIONS or actor not in ACTORS:
-        raise IllegalTransition(f"{action} by the {actor} is not a booking transition from {state}")
-    if action == "counter":
-        if proposal is None:
-            raise IllegalTransition("counter needs a proposal")
-        if _counters_this_round(history)[actor] >= 1:
-            raise IllegalTransition(f"the {actor} already countered this round")
-    to_state = TABLE.get((state, action, actor))
-    if to_state is None:
-        raise IllegalTransition(
-            f"{action} is not allowed for the {actor} while the booking is {state}"
-        )
+    to_state = check(state, history, action, actor)
+    if action == "counter" and proposal is None:
+        raise IllegalTransition("counter needs a proposal")
     slot = proposal if action == "counter" and proposal is not None else _on_the_table(history)
     return to_state, [*history, _entry(action, actor, to_state, slot, now)]

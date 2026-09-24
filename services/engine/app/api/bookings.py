@@ -19,7 +19,7 @@ from sqlmodel.ext.asyncio.session import AsyncSession
 from app.auth.clerk import CurrentUser, require_role
 from app.db.session import get_session
 from app.marketplace import repo
-from app.marketplace.booking import IllegalTransition, Proposal, start, transition
+from app.marketplace.booking import IllegalTransition, Proposal, check, start, transition
 from app.marketplace.models import Booking, Profile, User
 from app.marketplace.models import Request as RequestRow
 from app.marketplace.schemas import (
@@ -153,6 +153,12 @@ async def _transition(
     history together, commit, and answer the re-read row."""
     row = await _party_booking(session, user, booking_id)
     actor = str(user.role)
+    # An illegal cell (e.g. any action on a confirmed booking) is 409 before the body is
+    # judged, so a bad slot on a confirmed booking never answers 422.
+    try:
+        check(row.state, list(row.history), action, actor)
+    except IllegalTransition as exc:
+        raise HTTPException(status_code=409, detail=exc.reason) from exc
     proposal: Proposal | None = None
     if proposal_body is not None:
         profile = await session.get(Profile, row.profile_id)

@@ -283,3 +283,18 @@ def test_vocabulary() -> None:
     assert STATES == ("proposed", "accepted", "countered", "confirmed")
     assert ACTIONS == ("accept", "counter", "confirm")
     assert ACTORS == ("founder", "builder")
+
+
+def test_the_founder_may_counter_again_in_the_next_round() -> None:
+    """A founder counter opens a new round (review of #65): propose → builder counter → founder
+    counter → builder counter → founder counter is legal; the booking can still end confirmed."""
+    state, history = _reproposed()
+    state, history = transition(state, history, "counter", "builder", SECOND, at(3))
+    assert state == "countered"
+
+    state, history = transition(state, history, "counter", "founder", THIRD, at(4))
+
+    assert (state, len(history)) == ("proposed", 5)
+    state, history = transition(state, history, "counter", "builder", SECOND, at(5))
+    state, history = transition(state, history, "confirm", "founder", None, at(6))
+    assert (state, len(history)) == ("confirmed", 7)
