@@ -11,6 +11,7 @@ import { SignInScreen } from "./features/auth/SignInScreen";
 import { AddProjectPage } from "./features/builder/AddProjectPage";
 import { ProfilePage } from "./features/builder/ProfilePage";
 import { CandidatePage } from "./features/candidate/CandidatePage";
+import { DashboardPage } from "./features/dashboard/DashboardPage";
 import { EcosystemPage } from "./features/ecosystem/EcosystemPage";
 import { HandoffScreen } from "./features/handoff/HandoffScreen";
 import { LandingPage } from "./features/landing/LandingPage";
@@ -81,6 +82,10 @@ export function AppRoutes() {
         </Route>
         <Route element={<RequireRole roles={["founder", "admin"]} />}>
           <Route path="builders/:builderId" element={<CandidatePage />} />
+        </Route>
+        <Route element={<RequireRole roles={["founder"]} />}>
+          {/* Sprint 004 screen 11: the founder dashboard fed by GET /api/me/dashboard. */}
+          <Route path="dashboard" element={<DashboardPage />} />
         </Route>
         <Route element={<RequireRole roles={["admin"]} />}>
           <Route path="admin" element={<AdminHome />} />
