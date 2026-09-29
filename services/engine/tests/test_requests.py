@@ -267,7 +267,7 @@ async def test_only_the_owning_founder_may_close(
     ] == "open"
 
 
-# -- Sprint 004 acceptance Must 1: the Health brief (#82) --------------------------------------------
+# -- Sprint 004 acceptance Must 1: the Health brief (#82) ----------------------------------------
 
 HEALTH = "brief-health-01"
 
