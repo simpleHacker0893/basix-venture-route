@@ -10,10 +10,11 @@
  */
 import { expect, test, type APIResponse, type Page } from "@playwright/test";
 
-import { routeScenario } from "../helpers";
 import { readState } from "./env";
 import { engineGet, expectRoleClaim, signInAs, signOut } from "./helpers";
 
+// Named to sort after marketplace.spec.ts and requests.spec.ts: those assume a founder with no briefs
+// and an unconfirmed builder, so this spec (which adds both) must run last.
 test.describe.configure({ mode: "serial" });
 
 const SCENARIO = "Health pilot";
@@ -73,7 +74,13 @@ test("admin confirms the builder's account and python credential", async ({ page
 test("founder routes the Health pilot and publishes it as a request", async ({ page }) => {
   await signInAs(page, "founder");
   await expectRoleClaim(page, "/api/me/dashboard");
-  await routeScenario(page, SCENARIO);
+  // Inlined routeScenario with a longer wait: by this point the run has confirmed several builders,
+  // so the engine's MeTTa route takes longer than the shared helper's 20 s.
+  await page.goto("/route");
+  await page.getByRole("button", { name: `Load scenario: ${SCENARIO}` }).click();
+  await expect(page.getByRole("heading", { level: 1, name: "Confirm your brief" })).toBeVisible();
+  await page.getByRole("button", { name: "Find my route" }).click();
+  await expect(page.getByRole("heading", { level: 1, name: "Your route through BASIX" })).toBeVisible({ timeout: 60_000 });
 
   await page.getByRole("button", { name: "Publish as request" }).click();
 
