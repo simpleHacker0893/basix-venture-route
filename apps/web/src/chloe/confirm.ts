@@ -3,8 +3,8 @@
  * blueprint.md `chloe/confirm.ts`). Pure text matching only; it never decides the route.
  */
 
-export const YES_PHRASES: readonly string[] = ["yes", "go ahead", "do it"];
-export const NO_PHRASES: readonly string[] = ["no", "wait", "not yet"];
+export const YES_PHRASES: readonly string[] = ["yes", "go ahead", "do it", "yeah", "yep", "sure"];
+export const NO_PHRASES: readonly string[] = ["no", "wait", "not yet", "nope"];
 
 /** Lowercase, strip punctuation, collapse whitespace. */
 export function normalise(text: string): string {
