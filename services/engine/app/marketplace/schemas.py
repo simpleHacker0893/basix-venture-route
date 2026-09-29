@@ -682,5 +682,6 @@ class SkillSuggestRequest(Wire):
 
     resume_text: Annotated[str, Field(min_length=50, max_length=20000)] = Field(alias="resumeText")
 
+
 # `PendingShowcase`/`DecidedShowcase` live with the other admin-queue row shapes above (next to
 # `PendingProject`/`DecidedProject`), wired into `PendingQueue`/`DecidedQueue`'s `showcase` list.
