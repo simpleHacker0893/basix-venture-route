@@ -57,6 +57,10 @@ export default defineConfig({
         ENGINE_DEV_QUERY: "0",
         CLERK_WEBHOOK_SIGNING_SECRET: identity.webhookSecret,
         ADMIN_EMAILS: identity.emails.admin,
+        // Passed through so the engine never depends on finding the repo-root .env (CI has none;
+        // without the JWKS URL every gated route answers 401, #77).
+        ...(env.CLERK_JWKS_URL ? { CLERK_JWKS_URL: env.CLERK_JWKS_URL } : {}),
+        ...(env.CLERK_SECRET_KEY ? { CLERK_SECRET_KEY: env.CLERK_SECRET_KEY } : {}),
       },
     },
     {
