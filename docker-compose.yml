@@ -3,7 +3,9 @@
 #
 # The engine always talks to the compose `db`, never to Neon: DATABASE_URL below is built from
 # the POSTGRES_* variables, so the Neon URL in `.env` is only for the Operator's own runs.
-# Migrate once after the first `up`: `docker compose run --rm engine alembic upgrade head`.
+# `up` runs the one-shot `seed` service first (Sprint 005a, #107): `alembic upgrade head`, then
+# `scripts/seed_showcase_demo.py` (idempotent Showcase demo rows from seed/showcase_demo.json);
+# the engine starts only after it exits 0, so its start-up projection includes the seed.
 services:
   db:
     # The Postgres major follows the Neon project (PostgreSQL 18, D-37).
@@ -22,12 +24,30 @@ services:
       timeout: 3s
       retries: 10
 
+  seed:
+    build:
+      context: ./services/engine
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DEMO_TODAY: ${DEMO_TODAY:-2026-09-22}
+      MIN_OVERLAP_DAYS: ${MIN_OVERLAP_DAYS:-2}
+      LLM_PROVIDER: "null"
+      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@db:5432/${POSTGRES_DB:-venture_route}
+    command: ["sh", "-c", "alembic upgrade head && python scripts/seed_showcase_demo.py"]
+    healthcheck:
+      disable: true
+    restart: "no"
+
   engine:
     build:
       context: ./services/engine
     depends_on:
       db:
         condition: service_healthy
+      seed:
+        condition: service_completed_successfully
     ports:
       - "${ENGINE_PORT:-8000}:8000"
     environment:

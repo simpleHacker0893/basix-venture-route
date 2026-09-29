@@ -54,6 +54,35 @@ jobs:
       - run: uv run python scripts/export_schema.py --check
       - run: uv run python scripts/export_offline_snapshot.py --check
 
+  chloe-contract-unchanged:
+    name: Chloe conversation contract unchanged (D-51)
+    runs-on: ubuntu-latest
+    # Skippable on master itself: D-51 only guards a branch that also carries other engine work
+    # (Sprint 005a Showcase) against Chloe (Sprint 006, #108) touching the frozen conversation
+    # contract; comparing master's own history to itself is a no-op anyway once the branch lands.
+    if: github.ref != 'refs/heads/master'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: git diff --stat origin/master -- the conversation contract paths
+        run: |
+          git fetch --no-tags origin master:refs/remotes/origin/master
+          DIFF=$(git diff --stat origin/master -- \
+            packages/contracts/src/chat.ts \
+            services/engine/app/models \
+            services/engine/app/conversation \
+            services/engine/seed/rules.metta \
+            services/engine/seed/facts.metta \
+            services/engine/seed/briefs.json)
+          if [ -n "$DIFF" ]; then
+            echo "$DIFF"
+            echo ""
+            echo "D-51 violation: Chloe (Sprint 006) must never touch the conversation contract, the engine's request/response models, the conversation orchestrator, or the seven MeTTa rules/facts/briefs. That work belongs to a different track on this branch."
+            exit 1
+          fi
+          echo "Conversation contract unchanged against origin/master."
+
   web:
     name: web (typecheck, lint, test, Playwright e2e)
     runs-on: ubuntu-latest

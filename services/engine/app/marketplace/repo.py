@@ -8,7 +8,7 @@ from __future__ import annotations
 import re
 from collections.abc import Iterable, Sequence
 from datetime import date, datetime
-from typing import Any
+from typing import Any, Literal
 from uuid import UUID
 
 from sqlalchemy import ColumnElement, and_, exists, literal, or_
@@ -657,6 +657,74 @@ async def decide(
     )
     await session.commit()
     return True
+
+
+# -- admin: showcase entries (Sprint 005a, spec #86, #103) ----------------------------------------
+# A Showcase entry is a project row's showcase columns; its review status is `showcase_status`,
+# independent of the project's own `status`. Visibility stays `showcase_visible()`'s alone.
+
+ShowcaseRow = tuple[Project, Profile, User, list[str]]
+
+
+async def _showcase_rows(session: AsyncSession, statuses: Sequence[str]) -> list[ShowcaseRow]:
+    """Showcased projects whose entry is in one of `statuses`, with owner profile, owner account
+    and demonstrated skills, oldest project first."""
+    statement = (
+        select(Project, Profile, User)
+        .join(Profile, col(Profile.id) == col(Project.profile_id))
+        .join(User, col(User.id) == col(Profile.user_id))
+        .where(col(Project.showcased).is_(True), col(Project.showcase_status).in_(list(statuses)))
+        .order_by(col(Project.created_at), col(Project.id))
+    )
+    triples = (await session.exec(statement)).all()
+    skills = await skill_ids_by_project(session, [project.id for project, _, _ in triples])
+    return [(project, profile, user, skills[project.id]) for project, profile, user in triples]
+
+
+async def pending_showcase(session: AsyncSession) -> list[ShowcaseRow]:
+    """Entries awaiting review, whatever the project's or the account's own status: the admin
+    preview carries both so the UI can warn that a confirmed entry would still be private."""
+    return await _showcase_rows(session, ["pending"])
+
+
+async def decided_showcase(
+    session: AsyncSession,
+) -> list[tuple[Project, Profile, User, list[str], datetime]]:
+    """Confirmed or rejected entries with their latest `showcase` decision, most recent last.
+    A builder edit sends an entry back to pending and a withdrawal to none, so neither is here."""
+    rows = await _showcase_rows(session, DECIDED_STATUSES)
+    decided = await latest_decisions(session, "showcase", (row[0].id for row in rows))
+    out = [(*row, decided.get(row[0].id, row[0].created_at)) for row in rows]
+    return sorted(out, key=lambda row: (row[4], row[0].id))
+
+
+async def decide_showcase(
+    session: AsyncSession,
+    project_id: UUID,
+    decision: str,
+    admin_user_id: UUID,
+    now: datetime,
+) -> Literal["decided", "missing", "withdrawn"]:
+    """Confirm (stamp `showcase_confirmed_at`) or reject (clear it) one entry, log the decision,
+    commit. Any transition between confirmed and rejected is allowed so a mistake can be
+    reversed (#49); an entry the builder has withdrawn (`showcased=false`) is left untouched."""
+    statement = select(Project).where(Project.id == project_id).with_for_update()
+    project = (await session.exec(statement)).first()
+    if project is None:
+        return "missing"
+    if not project.showcased:
+        await session.rollback()
+        return "withdrawn"
+    project.showcase_status = decision
+    project.showcase_confirmed_at = now if decision == "confirmed" else None
+    session.add(project)
+    session.add(
+        Confirmation(
+            kind="showcase", target_id=project_id, decision=decision, admin_user_id=admin_user_id
+        )
+    )
+    await session.commit()
+    return "decided"
 
 
 # -- requests (Sprint 004, spec #52 §Store, #59) --------------------------------------------------

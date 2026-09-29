@@ -379,7 +379,7 @@ class DecidedQueue(Wire):
 
 class AdminDecision(Wire):
     id: str
-    kind: Literal["account", "credential", "project"]
+    kind: Literal["account", "credential", "project", "showcase"]
     status: Literal["confirmed", "rejected"]
     projected_rows: int = Field(alias="projectedRows", ge=0, le=JS_SAFE_INT)
 

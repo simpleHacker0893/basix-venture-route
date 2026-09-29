@@ -4,7 +4,7 @@
  * marketplace API. The engine reprojects the graph and reports `projectedRows`; the screen only
  * posts the decision and renders what came back.
  */
-import type { AdminDecision, DecidedQueue, DecisionKind, PendingQueue } from "@venture-route/contracts";
+import type { AdminDecision, AdminDecisionKind, DecidedQueue, PendingQueue } from "@venture-route/contracts";
 import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
@@ -30,6 +30,7 @@ const founderAuth: AuthState = { ...adminAuth, role: "founder", getToken: async 
 
 const CREDENTIAL_ID = "5f1c2d3e-aaaa-4bbb-8ccc-ddddeeeeffff";
 const PROJECT_ID = "9a8b7c6d-1111-4222-8333-444455556666";
+const CERT_ID = "6c2d3e4f-bbbb-4ccc-9ddd-eeeeffff0000";
 
 function queue(): PendingQueue {
   return {
@@ -82,14 +83,14 @@ function decided(): DecidedQueue {
   return { accounts: [], credentials: [], projects: [], showcase: [] };
 }
 
-function decision(kind: DecisionKind, id: string, status: AdminDecision["status"], projectedRows: number): AdminDecision {
+function decision(kind: AdminDecisionKind, id: string, status: AdminDecision["status"], projectedRows: number): AdminDecision {
   return { id, kind, status, projectedRows };
 }
 
 describe("/admin", () => {
   it("shows the three tabs with counts, confirms the credential and reports projected_rows", async () => {
     const user = userEvent.setup();
-    const confirm = vi.fn(async (kind: DecisionKind, id: string) => decision(kind, id, "confirmed", 57));
+    const confirm = vi.fn(async (kind: AdminDecisionKind, id: string) => decision(kind, id, "confirmed", 57));
     const marketplace = fakeMarketplace({ getPending: async () => queue(), getDecided: async () => decided(), confirm });
 
     render(<App initialPath="/admin" source={source} auth={adminAuth} marketplace={marketplace} />);
@@ -114,7 +115,7 @@ describe("/admin", () => {
 
   it("rejects the project with its kind and id", async () => {
     const user = userEvent.setup();
-    const reject = vi.fn(async (kind: DecisionKind, id: string) => decision(kind, id, "rejected", 51));
+    const reject = vi.fn(async (kind: AdminDecisionKind, id: string) => decision(kind, id, "rejected", 51));
     const marketplace = fakeMarketplace({ getPending: async () => queue(), getDecided: async () => decided(), reject });
 
     render(<App initialPath="/admin" source={source} auth={adminAuth} marketplace={marketplace} />);
@@ -142,6 +143,40 @@ describe("/admin", () => {
     expect(preview).toHaveTextContent("(earned kofi-mensah cred-5f1c2d3e)");
     expect(preview).toHaveTextContent("(proves cred-5f1c2d3e rust)");
     expect(preview).toHaveTextContent("(confirmed admin-basix cred-5f1c2d3e)");
+  });
+
+  it("badges a skill-less certification and previews a certified fact, not a proves fact", async () => {
+    const user = userEvent.setup();
+    const withCert: PendingQueue = {
+      ...queue(),
+      credentials: [
+        ...queue().credentials,
+        {
+          id: CERT_ID,
+          builderId: "kofi-mensah",
+          displayName: "Kofi Mensah",
+          title: "AWS Cloud Practitioner",
+          issuer: "Amazon Web Services",
+          skillId: null,
+          issuedOn: null,
+          credentialUrl: null,
+          submittedAt: "2026-09-21T10:05:00+03:00",
+          demoData: true,
+        },
+      ],
+    };
+    const marketplace = fakeMarketplace({ getPending: async () => withCert, getDecided: async () => decided() });
+
+    render(<App initialPath="/admin" source={source} auth={adminAuth} marketplace={marketplace} />);
+
+    await user.click(await screen.findByRole("tab", { name: /Credentials/ }));
+    const row = await screen.findByRole("row", { name: /AWS Cloud Practitioner/ });
+    expect(within(row).getByText("No vocabulary skill: display only")).toBeInTheDocument();
+
+    await user.click(within(row).getByRole("button", { name: "Expand row" }));
+    const preview = await screen.findByRole("region", { name: "Projection preview" });
+    expect(preview).toHaveTextContent(`(certified kofi-mensah cred-${CERT_ID.replace(/-/g, "").slice(0, 8)} "Amazon Web Services")`);
+    expect(preview).not.toHaveTextContent("proves");
   });
 
   it("sends a founder away from /admin to the routing page", async () => {

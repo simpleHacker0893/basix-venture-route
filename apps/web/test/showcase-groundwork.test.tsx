@@ -66,9 +66,9 @@ describe("public Showcase routes (spec #86 stories 30-31, 39)", () => {
     expect(screen.getByRole("heading", { name: "Showcase" })).toBeInTheDocument();
   });
 
-  it("renders /showcase/:projectId without sign-in", () => {
+  it("renders /showcase/:projectId without sign-in", async () => {
     renderShell(undefined, "/showcase/venture-route");
 
-    expect(screen.getByRole("heading", { level: 1 })).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { level: 1 })).toBeInTheDocument();
   });
 });
