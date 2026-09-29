@@ -6,12 +6,14 @@ seed Constrained brief because the confirmed cast builder is eligible for it (th
 of Must 1 has the same shape).
 """
 
+from collections.abc import Callable
 from typing import Any
 
 import pytest
 from httpx import AsyncClient
+from sqlmodel.ext.asyncio.session import AsyncSession
 
-from tests.conftest import Actor
+from tests.conftest import Actor, Decide, _user, builder_profile_input
 
 pytestmark = pytest.mark.anyio
 
@@ -263,3 +265,52 @@ async def test_only_the_owning_founder_may_close(
     assert (await api.get(f"/api/requests/{mine['id']}", headers=founder.headers)).json()[
         "status"
     ] == "open"
+
+
+# -- Sprint 004 acceptance Must 1: the Health brief (#82) ----------------------------------------
+
+HEALTH = "brief-health-01"
+
+
+async def test_health_brief_publishes_and_a_python_verified_builder_reads_it_as_eligible(
+    api: AsyncClient,
+    founder: Actor,
+    db_session: AsyncSession,
+    bearer: Callable[..., dict[str, str]],
+    decide: Decide,
+) -> None:
+    """Must 1: the founder publishes from the Health brief; a builder whose `python` credential
+    the admin confirmed reads it with the engine's verdict (`python` only, no reason)."""
+    user = await _user(db_session, bearer, "user_python", "builder")
+    profile = await api.put(
+        "/api/me/profile", json=builder_profile_input("Python Builder"), headers=user.headers
+    )
+    credential = await api.post(
+        "/api/me/credentials",
+        json={"title": "Python 201", "issuer": "MeTTa OmniUniversity", "skillId": "python"},
+        headers=user.headers,
+    )
+    assert (profile.status_code, credential.status_code) == (200, 201)
+    builder = Actor(
+        clerk_id=user.clerk_id,
+        role="builder",
+        headers=user.headers,
+        user_id=user.user_id,
+        builder_id=profile.json()["builderId"],
+        ids={"account": str(user.user_id), "credential": credential.json()["id"]},
+    )
+    await decide(builder, {"account": "confirmed", "credential": "confirmed"})
+
+    created = await publish(api, founder, brief_id=HEALTH)
+    listed = (await api.get("/api/requests", headers=builder.headers)).json()
+    single = await api.get(f"/api/requests/{created['id']}/eligibility", headers=builder.headers)
+
+    assert created["vertical"] == "health"
+    assert created["brief"]["requiredSkills"] == ["python", "ai-metta", "ui-ux"]
+    assert [item["id"] for item in listed] == [created["id"]]
+    verdict = listed[0]["eligibility"]
+    assert verdict["eligible"] is True
+    assert verdict["skills"] == ["python"]
+    assert verdict["reason"] is None
+    assert verdict["path"]["rule"] == "eligible-builder"
+    assert single.json() == verdict
