@@ -137,18 +137,18 @@ jobs:
       # booking round-trip) on every push, against the postgres:18 service container migrated to
       # head. The Clerk dev keys are repository secrets the Operator adds (D-26); without them the
       # step skips with a message naming them, so forks and secret-less runs stay green.
-      # Informational until #77 is closed: the same suite passes 14/14 locally but five sign-in
-      # steps time out on GitHub runners (runs 35974489825 and its rerun, 2026-09-24). The step
-      # still runs and uploads its report; it no longer fails the job.
+      # Blocking again: the engine now receives CLERK_JWKS_URL (#77 root cause: without it the JWKS
+      # cache was empty and every token answered 401). It still skips cleanly when the secrets are
+      # absent (forks).
       - name: Clerk Playwright suite (skips without the Clerk dev keys)
-        continue-on-error: true
         env:
           VITE_CLERK_PUBLISHABLE_KEY: ${{ secrets.VITE_CLERK_PUBLISHABLE_KEY }}
           CLERK_SECRET_KEY: ${{ secrets.CLERK_SECRET_KEY }}
+          CLERK_JWKS_URL: ${{ secrets.CLERK_JWKS_URL }}
           ALEMBIC_DATABASE_URL: postgresql+asyncpg://postgres:postgres@localhost:5432/venture_route
         run: |
-          if [ -z "$VITE_CLERK_PUBLISHABLE_KEY" ] || [ -z "$CLERK_SECRET_KEY" ]; then
-            echo "Clerk suite skipped: repository secrets VITE_CLERK_PUBLISHABLE_KEY and CLERK_SECRET_KEY are not set (Operator step, D-26)."
+          if [ -z "$VITE_CLERK_PUBLISHABLE_KEY" ] || [ -z "$CLERK_SECRET_KEY" ] || [ -z "$CLERK_JWKS_URL" ]; then
+            echo "Clerk suite skipped: repository secrets VITE_CLERK_PUBLISHABLE_KEY, CLERK_SECRET_KEY and CLERK_JWKS_URL are not set (Operator step, D-26)."
             exit 0
           fi
           (cd services/engine && uv run alembic upgrade head)
