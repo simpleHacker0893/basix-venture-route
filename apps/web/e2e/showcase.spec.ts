@@ -162,13 +162,17 @@ test.describe("Showcase gallery: no sign-in needed", () => {
     await expect(page.getByRole("article")).toHaveCount(2);
 
     const toggle = page.getByRole("checkbox", { name: "Licensable IP" });
-    await toggle.check();
+    // The checkbox is controlled by URL-backed filter state that updates after the click, so click
+    // and wait for the state instead of check()/uncheck()'s immediate post-click assertion.
+    await toggle.click();
+    await expect(toggle).toBeChecked();
     await expect(page.getByRole("article")).toHaveCount(1);
-    expect(requests.at(-1)).toContain("licensable=true");
+    await expect.poll(() => requests.at(-1)).toContain("licensable=true");
 
-    await toggle.uncheck();
+    await toggle.click();
+    await expect(toggle).not.toBeChecked();
     await expect(page.getByRole("article")).toHaveCount(2);
-    expect(requests.at(-1)).not.toContain("licensable");
+    await expect.poll(() => requests.at(-1)).not.toContain("licensable");
   });
 
   test("every external link on the gallery has rel=noopener noreferrer", async ({ page }) => {
