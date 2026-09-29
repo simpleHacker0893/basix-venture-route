@@ -111,6 +111,8 @@ so the structured form is the only input path. If the model times out or errors,
 back to `NullAdapter` behaviour and `message` carries the form-fallback hint; the client never
 sees a `500`. A summary that names an entity outside the route is discarded for the template.
 
+Voice is a client-side skin over this endpoint (D-38, D-51): the founder's browser transcribes and speaks with the Web Speech API, and a spoken "yes" posts the same `{ "userMessage": "", "currentBrief": <brief> }` as the Find my route button. The engine has no voice endpoint and receives no audio.
+
 ## POST /api/route
 
 The structured-form path: a full `VentureBrief` in, a `VentureRoute` out, no language model
