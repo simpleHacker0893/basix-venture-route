@@ -59,6 +59,14 @@ class Settings(BaseSettings):
     openrouter_base_url: str = "https://openrouter.ai/api/v1"
     openrouter_intake_model: str | None = None
     openrouter_explain_model: str | None = None
+    # Voice (D-53): the public proxy /api/voice/* reuses the OpenRouter key and base URL above.
+    # No key, or no model (or voice) for an endpoint, means that endpoint answers 503.
+    voice_stt_model: str | None = None
+    voice_tts_model: str | None = None
+    voice_tts_voice: str | None = None
+    voice_tts_instructions: str | None = None
+    # Per client IP, shared by both voice endpoints, over a sliding 60-second window.
+    voice_rate_limit_per_minute: int = 20
     # Browser origins allowed to call the engine, comma-separated (D-30). Credentials stay off
     # in Sprint 002; Sprint 005 adds the Vercel origin on the host.
     cors_origins: str = DEFAULT_CORS_ORIGINS
@@ -85,7 +93,15 @@ class Settings(BaseSettings):
             return None
         return value
 
-    @field_validator("openrouter_intake_model", "openrouter_explain_model", mode="before")
+    @field_validator(
+        "openrouter_intake_model",
+        "openrouter_explain_model",
+        "voice_stt_model",
+        "voice_tts_model",
+        "voice_tts_voice",
+        "voice_tts_instructions",
+        mode="before",
+    )
     @classmethod
     def _blank_model_means_unset(cls, value: object) -> object:
         if isinstance(value, str) and not value.strip():

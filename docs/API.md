@@ -14,6 +14,7 @@ camelCase on the wire, dates are ISO date-only strings, money is integer USD per
 | Builder | `POST /api/me/role`; `GET`/`PUT /api/me/profile`; `GET`/`POST /api/me/credentials`; `GET`/`POST /api/me/projects`; `PUT /api/me/projects/{id}/showcase` | Clerk session, role `builder` (`/role`: any session) |
 | Founder | `GET /api/builders/{builderId}` | Clerk session, role `founder` or `admin` |
 | Showcase | `GET /api/showcase`, `GET /api/showcase/{projectId}` | none (a token is ignored) |
+| Voice | `POST /api/voice/transcribe`, `POST /api/voice/speak` | none (a token is ignored); per-IP rate limit |
 | Admin | `GET /api/admin/pending`; `GET /api/admin/decided`; `POST /api/admin/confirm/{kind}/{id}`; `POST /api/admin/reject/{kind}/{id}` | Clerk session, role `admin` |
 | Webhook | `POST /api/webhooks/clerk` | Svix signature |
 | Dev only | `POST /internal/query` | `ENGINE_DEV_QUERY=1` |
@@ -437,6 +438,56 @@ notes:
 - If a non-seed account already holds a seed Clerk id, email or `demo-` builder id, the seed
   aborts with nothing written and exits non-zero; the engine service, which waits for the seed to
   succeed, then does not start until the clash is removed.
+
+## Public voice: POST /api/voice/transcribe, POST /api/voice/speak (D-53, #126)
+
+Public, no auth: no token needed, and a token, if sent, is ignored (never `401`/`403`). The
+engine proxies OpenRouter speech so the browser never holds `OPENROUTER_API_KEY`. Both endpoints
+share one in-memory sliding-window limit per client IP (`request.client.host`, so uvicorn's
+proxy-headers setting decides it): `VOICE_RATE_LIMIT_PER_MINUTE` requests (default 20) in any 60
+seconds. Every request that passes the configuration check counts, including ones later refused
+with `413`, `415` or `422`; a `429` does not. Audio, text and upstream bodies are never stored
+or logged; a failure logs only the upstream status code or the exception class name. The
+upstream timeout is 30 seconds (5 to connect), with no retries. The request model is local to the voice router,
+not part of `packages/contracts`.
+
+| Status | Body | When |
+|---|---|---|
+| `503` | `{"detail": "voice not configured"}` | no OpenRouter key, or the endpoint's model (or, for speak, the voice) is unset |
+| `429` | `{"detail": "too many voice requests"}` | over the per-IP limit |
+| `502` | `{"detail": "voice provider unavailable"}` | OpenRouter answered non-2xx, timed out or failed, or (transcribe) its body had no `text` |
+
+### POST /api/voice/transcribe
+
+The raw recording is the request body (not multipart), its type in `Content-Type`. Parameters
+are stripped and the type lowercased, so `audio/webm;codecs=opus` is `audio/webm`. Checks run in
+this order after the two above:
+
+| Status | Body | When |
+|---|---|---|
+| `415` | `{"detail": "unsupported audio type"}` | type not `audio/webm`, `audio/mp4`, `audio/ogg` or `audio/mpeg` |
+| `413` | `{"detail": "recording over 5 MB"}` | `Content-Length` over 5 MB (before reading), or more than 5 MB actually received |
+| `422` | `{"detail": "empty recording"}` | empty body |
+
+The engine forwards `multipart/form-data` to `POST {OPENROUTER_BASE_URL}/audio/transcriptions`
+with `file=("audio.<ext>", bytes, type)` (`webm`, `mp4`, `ogg`, or `mp3` for `audio/mpeg`) and
+`model=VOICE_STT_MODEL`. Response `200`:
+
+```json
+{ "text": "We need a mobile builder in Nairobi for six weeks." }
+```
+
+### POST /api/voice/speak
+
+```json
+{ "text": "Here is the route I found." }
+```
+
+`text` is 1–4096 characters (otherwise `422`, `type: validation-error`). The engine forwards
+`{model: VOICE_TTS_MODEL, input: text, voice: VOICE_TTS_VOICE, instructions:
+VOICE_TTS_INSTRUCTIONS, response_format: "mp3"}` as JSON to `POST
+{OPENROUTER_BASE_URL}/audio/speech`; `instructions` is left out when unset. Response `200`,
+`Content-Type: audio/mpeg`, the MP3 bytes.
 
 ## Requests: `/api/requests` (Sprint 004)
 
