@@ -134,14 +134,17 @@ export function createOpenRouterProvider(win: Window = window, options: OpenRout
   function beginRecording(current: ListenSession, stream: MediaStream): void {
     current.stream = stream;
     const mime = pickMime();
-    let recorder: RecorderLike;
-    try {
-      recorder = new RecorderCtor!(stream, { mimeType: mime });
-    } catch {
+    const failToStart = (): void => {
       releaseStream(stream);
       session = null;
       current.handlers.onError({ code: "unknown" });
       current.handlers.onEnd();
+    };
+    let recorder: RecorderLike;
+    try {
+      recorder = new RecorderCtor!(stream, { mimeType: mime });
+    } catch {
+      failToStart();
       return;
     }
     const chunks: Blob[] = [];
@@ -160,8 +163,15 @@ export function createOpenRouterProvider(win: Window = window, options: OpenRout
       }
       transcribe(current, blob, type);
     };
+    try {
+      recorder.start();
+    } catch {
+      // Never leave a session whose stop() cannot end it: releaseMic() would hang.
+      recorder.onstop = null;
+      failToStart();
+      return;
+    }
     current.recorder = recorder;
-    recorder.start();
   }
 
   function startListening(handlers: ListenHandlers): void {

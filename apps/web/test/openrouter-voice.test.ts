@@ -56,6 +56,7 @@ type HarnessOptions = {
   getUserMedia?: () => Promise<unknown>;
   reply?: (url: string, init: RequestInit) => Promise<FakeResponse>;
   playRejects?: boolean;
+  startThrows?: boolean;
 };
 
 function createHarness(options: HarnessOptions = {}) {
@@ -80,6 +81,7 @@ function createHarness(options: HarnessOptions = {}) {
     this.ondataavailable = null;
     this.onstop = null;
     this.start = () => {
+      if (options.startThrows) throw new DOMException("cannot start", "NotSupportedError");
       this.state = "recording";
     };
     this.stop = () => {
@@ -334,6 +336,21 @@ describe("OpenRouter voice provider (D-53 seam)", () => {
     answer(jsonReply({ text: "too late" }));
     await flush();
     expect(events).toEqual([]);
+  });
+
+  it("a recorder.start() that throws is unknown, then onEnd, and releases the mic (#127 fix round 1)", async () => {
+    const h = createHarness({ startThrows: true });
+    const { handlers, events } = recordingHandlers();
+    h.provider.startListening(handlers);
+    await flush();
+    expect(events).toEqual(["error:unknown", "end"]);
+    expect(h.tracks[0]?.stop).toHaveBeenCalled();
+    // The session is over: a later stop or abort is a no-op, and nothing is sent.
+    h.provider.stopListening();
+    h.provider.abortListening();
+    await flush();
+    expect(events).toEqual(["error:unknown", "end"]);
+    expect(h.fetchLike).not.toHaveBeenCalled();
   });
 
   it("unsupported: startListening calls onEnd and touches nothing", () => {

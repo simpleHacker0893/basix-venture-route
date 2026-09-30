@@ -27,6 +27,7 @@ import {
 } from "../src/chloe/script";
 import snapshot from "../src/offline/snapshot.json";
 import { createFakeVoiceProvider, type FakeVoiceProvider } from "../src/voice/fakeVoiceProvider";
+import type { ListenHandlers } from "../src/voice/provider";
 import { selectProvider } from "../src/voice/selectProvider";
 import { useVoice, VoiceSessionProvider } from "../src/voice/VoiceSession";
 import { createWebSpeechProvider } from "../src/voice/webSpeechProvider";
@@ -285,6 +286,63 @@ describe("Chloe on /route", () => {
 
     await new Promise((resolve) => setTimeout(resolve, 20));
     expect(voice.spoken).toEqual([GREETING]);
+  });
+
+  it("re-pressing while the first release is still transcribing submits each utterance once (#127 fix round 1)", async () => {
+    // Like the OpenRouter provider: stop() ends only once the transcribe round-trip settles, and a
+    // new startListening() silently discards the previous session (no onEnd for it).
+    const fake = createFakeVoiceProvider();
+    let active: ListenHandlers | null = null;
+    let transcribing: ListenHandlers | null = null;
+    const voice = {
+      ...fake,
+      startListening: (handlers: ListenHandlers) => {
+        active = handlers;
+      },
+      stopListening: () => {
+        transcribing = active;
+        active = null;
+      },
+      abortListening: () => {
+        active = null;
+      },
+    };
+    function Probe() {
+      const session = useVoice();
+      const [released, setReleased] = useState<string[]>([]);
+      return (
+        <div>
+          <button onClick={() => session.enable()}>enable</button>
+          <button onClick={() => session.pressMic()}>press</button>
+          <button onClick={() => void session.releaseMic().then((text) => setReleased((all) => [...all, text]))}>
+            release
+          </button>
+          <div data-testid="released">{JSON.stringify(released)}</div>
+        </div>
+      );
+    }
+    const user = userEvent.setup();
+    render(
+      <VoiceSessionProvider voice={voice}>
+        <Probe />
+      </VoiceSessionProvider>,
+    );
+    await user.click(screen.getByRole("button", { name: "enable" }));
+    await user.click(screen.getByRole("button", { name: "press" }));
+    await user.click(screen.getByRole("button", { name: "release" }));
+    // First utterance still transcribing; the founder presses again.
+    await user.click(screen.getByRole("button", { name: "press" }));
+    await user.click(screen.getByRole("button", { name: "release" }));
+    act(() => {
+      const second = transcribing!;
+      second.onFinal("second utterance");
+      second.onEnd();
+    });
+
+    await waitFor(() => expect(JSON.parse(screen.getByTestId("released").textContent!)).toHaveLength(2));
+    const released = JSON.parse(screen.getByTestId("released").textContent!) as string[];
+    expect(released.filter((text) => text === "second utterance")).toHaveLength(1);
+    expect(released).toEqual(["", "second utterance"]);
   });
 
   it("disabling voice resolves a releaseMic still waiting for the recogniser's end", async () => {

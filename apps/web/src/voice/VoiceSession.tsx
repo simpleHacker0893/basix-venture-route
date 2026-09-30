@@ -154,6 +154,12 @@ export function VoiceSessionProvider({ voice, children }: Props) {
 
   const pressMic = useCallback(() => {
     if (!voice || !supported) return;
+    // A release still waiting on the previous recording (e.g. a transcribe round-trip) is
+    // discarded by the provider when a new one starts, with no onEnd: resolve it with "" now so it
+    // neither hangs nor later receives this press's transcript (#127 fix round 1).
+    const stale = endResolvers.current;
+    endResolvers.current = [];
+    stale.forEach((resolve) => resolve(""));
     finalText.current = "";
     listeningRef.current = true;
     dispatch({ type: "listening-started" });
