@@ -443,13 +443,16 @@ notes:
 
 Public, no auth: no token needed, and a token, if sent, is ignored (never `401`/`403`). The
 engine proxies OpenRouter speech so the browser never holds `OPENROUTER_API_KEY`. Both endpoints
-share one in-memory sliding-window limit per client IP (`request.client.host`, so uvicorn's
-proxy-headers setting decides it): `VOICE_RATE_LIMIT_PER_MINUTE` requests (default 20) in any 60
-seconds. Every request that passes the configuration check counts, including ones later refused
-with `413`, `415` or `422`; a `429` does not. Audio, text and upstream bodies are never stored
-or logged; a failure logs only the upstream status code or the exception class name. The
-upstream timeout is 30 seconds (5 to connect), with no retries. The request model is local to the voice router,
-not part of `packages/contracts`.
+share one in-memory sliding-window limit per client IP (`request.client.host`, which is the
+visitor's address only when uvicorn trusts the proxy's `X-Forwarded-For`: `FORWARDED_ALLOW_IPS`,
+set to `"*"` in the engine Dockerfile because the engine is reachable only through the host's
+proxy; narrow it to the proxy's CIDR if the port is ever exposed directly):
+`VOICE_RATE_LIMIT_PER_MINUTE` requests (default 20) in any 60 seconds. Every request that passes
+the configuration check counts, including ones later refused with `413`, `415` or `422`; a `429`
+does not. Audio, text and upstream bodies are never stored or logged; a failure logs only the
+upstream status code or the exception class name. The upstream timeout is 30 seconds (5 to
+connect), with no retries. The request model is local to the voice router, not part of
+`packages/contracts`.
 
 | Status | Body | When |
 |---|---|---|
