@@ -84,7 +84,7 @@ test("founder routes the Health pilot and publishes it as a request", async ({ p
 
   await page.getByRole("button", { name: "Publish as request" }).click();
 
-  await expect(page.getByRole("heading", { level: 1, name: "Your ventures" })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1, name: "Home" })).toBeVisible();
   const rows = page.getByRole("table", { name: "Briefs and routes" }).getByRole("row");
   const healthRow = rows.filter({ hasText: "Health pilot" }).first();
   await expect(healthRow).toContainText("Open");

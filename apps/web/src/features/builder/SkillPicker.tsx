@@ -5,6 +5,7 @@
  * "Self-described" — this component never decides, and never claims, "verified" (AGENTS.md
  * non-negotiable 4; D-52 projects these labels as display-only facts no rule reads).
  */
+import { Search, X } from "lucide-react";
 import { useState } from "react";
 
 import { Button } from "@/components/ui/button";
@@ -73,6 +74,8 @@ export function SkillPicker({
       </div>
       <span className={helpClass}>Self-described. Shown on your public Showcase profile; never counted as verified.</span>
       <div className="flex gap-2">
+        <div className="relative flex-1">
+        <Search aria-hidden="true" className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-3" />
         <input
           id={id}
           list={listId}
@@ -88,14 +91,16 @@ export function SkillPicker({
               addSkill();
             }
           }}
-          className="h-10 flex-1 rounded-card border border-border-strong bg-surface-strong px-3 text-sm focus:border-accent-green focus:outline-none focus:ring-2 focus:ring-ring/50"
+          placeholder="Search skills, e.g. Flutter"
+          className="h-11 w-full rounded-xl border border-border-strong bg-surface-strong pl-10 pr-3 text-[15px] placeholder:text-ink-subtle focus:border-accent-green focus:outline-none focus:ring-2 focus:ring-ring/50"
         />
+        </div>
         <datalist id={listId}>
           {SKILLS.map((skill) => (
             <option key={skill} value={SKILL_LABELS[skill]} />
           ))}
         </datalist>
-        <Button type="button" variant="outline" size="sm" disabled={atCap} onClick={addSkill}>
+        <Button type="button" variant="secondary" className="h-11 rounded-xl" disabled={atCap} onClick={addSkill}>
           Add skill
         </Button>
       </div>
@@ -104,16 +109,16 @@ export function SkillPicker({
           {value.map((skill) => (
             <li
               key={skill}
-              className="inline-flex h-8 items-center gap-2 rounded-pill border border-border-strong bg-surface-strong px-3 text-sm"
+              className="inline-flex h-9 items-center gap-1.5 rounded-pill border border-accent-green/60 bg-sage pl-3.5 pr-1.5 text-[14px] font-medium text-accent-green"
             >
               <span>{skill}</span>
               <button
                 type="button"
                 aria-label={`Remove ${skill}`}
                 onClick={() => onChange(value.filter((s) => s !== skill))}
-                className="text-ink-3 hover:text-danger"
+                className="relative grid h-6 w-6 place-items-center rounded-full before:absolute before:-inset-2 before:content-[''] hover:bg-accent-green/10 hover:text-danger"
               >
-                ×
+                <X aria-hidden="true" className="h-3.5 w-3.5" />
               </button>
             </li>
           ))}

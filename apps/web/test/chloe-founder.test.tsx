@@ -111,7 +111,7 @@ describe("the founder-wide Voice: Chloe toggle in the top nav", () => {
     const voice = createFakeVoiceProvider();
     const user = userEvent.setup();
     renderApp("/dashboard", engineFetch(), { voice, auth: founderAuth, marketplace: founderMarketplace() });
-    await screen.findByRole("heading", { level: 1, name: "Your ventures" });
+    await screen.findByRole("heading", { level: 1, name: "Home" });
     await settle();
 
     const toggle = navSwitch()!;
@@ -147,7 +147,7 @@ describe("the founder-wide Voice: Chloe toggle in the top nav", () => {
     expect(offline).toBeNull();
     expect(off).toBeNull();
     renderApp("/dashboard", engineFetch(), { voice: offline, auth: founderAuth, marketplace: founderMarketplace() });
-    await screen.findByRole("heading", { level: 1, name: "Your ventures" });
+    await screen.findByRole("heading", { level: 1, name: "Home" });
     expect(navSwitch()).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Read aloud" })).not.toBeInTheDocument();
   });
@@ -156,7 +156,7 @@ describe("the founder-wide Voice: Chloe toggle in the top nav", () => {
     const voice = createFakeVoiceProvider();
     const user = userEvent.setup();
     renderApp("/dashboard", engineFetch(), { voice, auth: founderAuth, marketplace: founderMarketplace() });
-    await screen.findByRole("heading", { level: 1, name: "Your ventures" });
+    await screen.findByRole("heading", { level: 1, name: "Home" });
     await user.click(navSwitch()!);
 
     await user.click(screen.getAllByRole("link", { name: /Naomi Chebet/ })[0]!);
@@ -164,8 +164,8 @@ describe("the founder-wide Voice: Chloe toggle in the top nav", () => {
     expect(navSwitch()).toHaveAttribute("aria-checked", "true");
 
     await user.click(screen.getByRole("link", { name: "Back to your ventures" }));
-    await screen.findByRole("heading", { level: 1, name: "Your ventures" });
-    await user.click(screen.getByRole("link", { name: "New brief" }));
+    await screen.findByRole("heading", { level: 1, name: "Home" });
+    await user.click(screen.getAllByRole("link", { name: "New route" })[0]!);
     await screen.findByRole("heading", { level: 1, name: "Describe your MVP" });
     const switches = screen.getAllByRole("switch", { name: "Voice: Chloe" });
     expect(switches).toHaveLength(2);
@@ -212,7 +212,7 @@ describe("dashboard read-aloud", () => {
     await screen.findByRole("heading", { level: 1, name: "Interview with Naomi Chebet" });
     await user.click(navSwitch()!);
     await user.click(screen.getByRole("link", { name: "Back to your ventures" }));
-    await screen.findByRole("heading", { level: 1, name: "Your ventures" });
+    await screen.findByRole("heading", { level: 1, name: "Home" });
     await settle();
     expect(voice.spoken).toEqual([GREETING, DASHBOARD_LINE]);
 
@@ -228,7 +228,7 @@ describe("dashboard read-aloud", () => {
     const voice = createFakeVoiceProvider();
     const user = userEvent.setup();
     renderApp("/dashboard", engineFetch(), { voice, auth: founderAuth, marketplace: founderMarketplace() });
-    await screen.findByRole("heading", { level: 1, name: "Your ventures" });
+    await screen.findByRole("heading", { level: 1, name: "Home" });
     await settle();
     expect(screen.queryByRole("button", { name: "Read aloud" })).not.toBeInTheDocument();
     await user.click(navSwitch()!);
@@ -247,7 +247,7 @@ describe("dashboard read-aloud", () => {
       })),
     });
     renderApp("/dashboard", engineFetch(), { voice, auth: founderAuth, marketplace });
-    await screen.findByRole("heading", { level: 1, name: "Your ventures" });
+    await screen.findByRole("heading", { level: 1, name: "Home" });
     await user.click(navSwitch()!);
     await user.click(await screen.findByRole("button", { name: "Read aloud" }));
     await settle();
@@ -264,7 +264,7 @@ describe("dashboard read-aloud", () => {
     Object.defineProperty(window.navigator, "userActivation", { value: { hasBeenActive: false, isActive: false }, configurable: true });
     const voice = createFakeVoiceProvider();
     renderApp("/dashboard", engineFetch(), { voice, auth: founderAuth, marketplace: founderMarketplace() });
-    await screen.findByRole("heading", { level: 1, name: "Your ventures" });
+    await screen.findByRole("heading", { level: 1, name: "Home" });
     await settle();
     expect(voice.spoken).toEqual([]);
     await user.click(await screen.findByRole("button", { name: "Read aloud" }));
@@ -278,7 +278,7 @@ describe("dashboard read-aloud", () => {
     const voice = { ...fake, cancelSpeech };
     const user = userEvent.setup();
     renderApp("/dashboard", engineFetch(), { voice, auth: founderAuth, marketplace: founderMarketplace() });
-    await screen.findByRole("heading", { level: 1, name: "Your ventures" });
+    await screen.findByRole("heading", { level: 1, name: "Home" });
     await user.click(navSwitch()!);
     await user.click(await screen.findByRole("button", { name: "Read aloud" }));
     expect(screen.getByText("Chloe is speaking")).toBeInTheDocument();
@@ -301,7 +301,7 @@ describe("booking read-aloud", () => {
     const voice = createFakeVoiceProvider();
     const user = userEvent.setup();
     renderApp("/dashboard", engineFetch(), { voice, auth: founderAuth, marketplace: founderMarketplace() });
-    await screen.findByRole("heading", { level: 1, name: "Your ventures" });
+    await screen.findByRole("heading", { level: 1, name: "Home" });
     await user.click(navSwitch()!);
     await user.click(screen.getAllByRole("link", { name: /Naomi Chebet/ })[0]!);
     await screen.findByRole("heading", { level: 1, name: "Interview with Naomi Chebet" });
@@ -335,7 +335,7 @@ describe("no voice commands on the founder screens", () => {
     const user = userEvent.setup();
     const marketplace = founderMarketplace();
     renderApp("/dashboard", engineFetch(), { voice, auth: founderAuth, marketplace });
-    await screen.findByRole("heading", { level: 1, name: "Your ventures" });
+    await screen.findByRole("heading", { level: 1, name: "Home" });
     await user.click(navSwitch()!);
     expect(screen.queryByTestId("mic-button")).not.toBeInTheDocument();
     act(() => voice.transcribe("confirm the booking"));

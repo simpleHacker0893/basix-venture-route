@@ -74,7 +74,8 @@ describe("/profile", () => {
 
     expect(await screen.findByText("Pending BASIX confirmation")).toBeInTheDocument();
     expect(screen.getByText(/absent from routes and candidate views/)).toBeInTheDocument();
-    expect(screen.queryByText(/bids/)).not.toBeInTheDocument();
+    // The page content says nothing about bids; the app shell's nav links to them.
+    expect(within(screen.getByRole("main")).queryByText(/bids/)).not.toBeInTheDocument();
     const skills = screen.getByRole("list", { name: "Skills" });
     const python = within(skills).getByRole("listitem", { name: "Python" });
     expect(within(python).getByTestId("evidence-badge")).toHaveTextContent("Both");

@@ -8,8 +8,8 @@ const LABEL: Record<AccountStatus, string> = {
 
 const CLASS: Record<AccountStatus, string> = {
   pending: "bg-amber-fill text-amber-ink",
-  confirmed: "bg-accent-green text-white",
-  rejected: "bg-danger text-white",
+  confirmed: "bg-credential-tint text-accent-green",
+  rejected: "bg-danger-tint text-danger",
 };
 
 /** Confirmation state of an account, credential or project row as the engine reports it. */
@@ -39,8 +39,8 @@ const SHOWCASE_LABEL: Record<ShowcaseStatus, string> = {
 const SHOWCASE_CLASS: Record<ShowcaseStatus, string> = {
   none: "bg-surface-strong text-ink-3 border border-border-strong",
   pending: "bg-amber-fill text-amber-ink",
-  confirmed: "bg-accent-green text-white",
-  rejected: "bg-danger text-white",
+  confirmed: "bg-credential-tint text-accent-green",
+  rejected: "bg-danger-tint text-danger",
 };
 
 export function ShowcaseStatusPill({ status }: Readonly<{ status: ShowcaseStatus }>) {
@@ -73,7 +73,7 @@ export function Card({
   return (
     <section
       aria-label={title}
-      className={`flex flex-col gap-4 rounded-card border border-border bg-surface p-6 ${className}`}
+      className={`flex flex-col gap-4 rounded-card border border-border bg-surface-strong p-6 shadow-card ${className}`}
     >
       <div className="flex items-start justify-between gap-3">
         <div className="flex flex-col gap-1">

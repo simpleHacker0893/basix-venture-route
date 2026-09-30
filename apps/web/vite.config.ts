@@ -24,7 +24,7 @@ export default defineConfig(({ mode }) => {
       // stale-while-revalidate so the demo chips work offline after one visit.
       VitePWA({
         registerType: "autoUpdate",
-        includeAssets: ["favicon.svg", "icons/*.png"],
+        includeAssets: ["favicon.svg", "favicon-32.png", "apple-touch-icon.png", "icons/*.png"],
         manifest: {
           name: "Venture Route",
           short_name: "Venture Route",
@@ -33,7 +33,7 @@ export default defineConfig(({ mode }) => {
           start_url: "/",
           scope: "/",
           display: "standalone",
-          background_color: "#f4f1ea",
+          background_color: "#f5f2eb",
           theme_color: "#1e5a45",
           icons: [
             { src: "/icons/icon-192.png", sizes: "192x192", type: "image/png" },

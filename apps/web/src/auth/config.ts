@@ -10,7 +10,7 @@ export const ROLES: readonly Role[] = ["founder", "builder", "admin"];
 /** Where each role lands after sign-in, role choice, or a wrong-role redirect. */
 export const ROLE_HOME: Record<Role, string> = {
   founder: "/route",
-  builder: "/profile",
+  builder: "/home",
   admin: "/admin",
 };
 

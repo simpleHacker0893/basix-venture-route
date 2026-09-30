@@ -41,19 +41,23 @@ function ClerkStateBridge({ children }: { children: ReactNode }) {
   const { isLoaded, isSignedIn, getToken, signOut } = useAuth();
   const { user } = useUser();
   const role = parseRole(user?.publicMetadata.role);
+  const name = user?.fullName ?? null;
+  const firstName = user?.firstName ?? null;
+  const email = user?.primaryEmailAddress?.emailAddress ?? null;
   const value = useMemo<AuthState>(
     () => ({
       configured: true,
       isLoaded,
       isSignedIn: isSignedIn === true,
       role,
+      user: user ? { name, firstName, email } : null,
       getToken: () => getToken(),
       reload: async () => {
         await user?.reload();
       },
       signOut: () => signOut(),
     }),
-    [isLoaded, isSignedIn, role, getToken, signOut, user],
+    [isLoaded, isSignedIn, role, name, firstName, email, getToken, signOut, user],
   );
   return (
     <ClerkMountedContext.Provider value={true}>

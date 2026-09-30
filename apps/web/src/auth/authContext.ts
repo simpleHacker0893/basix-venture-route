@@ -4,6 +4,8 @@ import type { Role } from "./config";
 
 export type { Role } from "./config";
 
+export type AuthUser = { name: string | null; firstName: string | null; email: string | null };
+
 /** The one auth shape screens read; Clerk and the no-key mode both publish it. */
 export type AuthState = {
   /** False when VITE_CLERK_PUBLISHABLE_KEY is empty or the placeholder. */
@@ -12,6 +14,8 @@ export type AuthState = {
   isSignedIn: boolean;
   /** Clerk `publicMetadata.role` (D-03); null before the role choice. */
   role: Role | null;
+  /** The signed-in person as Clerk knows them, for greetings and the account chip. */
+  user?: AuthUser | null;
   getToken(): Promise<string | null>;
   /** Re-reads the Clerk user so a freshly written `publicMetadata.role` becomes visible. */
   reload(): Promise<void>;

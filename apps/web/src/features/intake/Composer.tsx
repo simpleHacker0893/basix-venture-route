@@ -70,7 +70,7 @@ export function Composer({ busy, onSend, onUseForm }: ComposerProps) {
         <button
           type="button"
           onClick={onUseForm}
-          className="text-[13px] text-ink-2 underline hover:text-accent-green"
+          className="inline-flex min-h-10 items-center text-[13px] text-ink-2 underline underline-offset-4 hover:text-accent-green sm:min-h-0"
         >
           Use the form instead
         </button>

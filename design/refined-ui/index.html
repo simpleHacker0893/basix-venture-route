@@ -1,0 +1,751 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Venture Route — Refined UI</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,600;1,9..144,400&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+/* Tokens mirror the Figma file "Venture Route — Refined UI" (Venture Route / Color). */
+:root{
+  --paper:#F5F2EB; --raised:#FBF9F5; --card:#FFFFFF; --sage:#E6EFEA;
+  --ink:#14191A; --ink-2:#3E4A47; --ink-3:#6B726F; --ink-4:#98A09C;
+  --border:#E4DFD4; --border-strong:#CFC8B8;
+  --forest:#1E5A45; --forest-hover:#164434; --forest-deep:#0F2A21; --mint:#7FD1AC;
+  --cred-tint:#E3EEE8; --proj:#35418A; --proj-tint:#E8EAF5;
+  --amber:#8A4B12; --amber-tint:#F6E8CF; --danger:#8A2D2D; --danger-tint:#F6E4E1;
+  --d-card:#153A2E; --d-border:#2A4C40; --d-text:#F3F1EA; --d-muted:#A7B8B0;
+  --display:"Fraunces",Georgia,serif; --sans:"IBM Plex Sans",system-ui,sans-serif; --mono:"IBM Plex Mono",ui-monospace,monospace;
+  --shadow-card:0 1px 2px rgba(20,26,23,.04),0 8px 24px -8px rgba(20,26,23,.08);
+  --shadow-drawer:-16px 0 48px rgba(15,42,33,.16);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#E9E5DC;color:var(--ink);font-family:var(--sans);font-size:15px;line-height:1.6;-webkit-font-smoothing:antialiased}
+a{color:inherit;text-decoration:none}
+
+/* ---------- Preview shell (not part of the product) ---------- */
+.shell{display:grid;grid-template-columns:260px 1fr;min-height:100vh}
+.toc{position:sticky;top:0;height:100vh;overflow:auto;background:var(--forest-deep);color:var(--d-text);padding:28px 20px}
+.toc h1{font-family:var(--display);font-weight:400;font-size:22px;letter-spacing:-.01em;margin:14px 0 4px}
+.toc p{font-size:12px;color:var(--d-muted);margin-bottom:24px}
+.toc .grp{font-family:var(--mono);font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--mint);margin:20px 0 8px}
+.toc a{display:flex;gap:10px;padding:7px 10px;border-radius:8px;font-size:13.5px;color:var(--d-muted)}
+.toc a span{font-family:var(--mono);font-size:11px;color:var(--d-border);min-width:18px;padding-top:1px}
+.toc a:hover,.toc a.on{background:var(--d-card);color:var(--d-text)}
+.toc a.on span{color:var(--mint)}
+.stage{padding:40px 48px 120px;display:flex;flex-direction:column;gap:72px;min-width:0}
+.shot-label{display:flex;align-items:baseline;gap:14px;margin-bottom:14px}
+.shot-label b{font-family:var(--mono);font-size:12px;color:var(--forest);font-weight:500}
+.shot-label h2{font-family:var(--display);font-weight:400;font-size:26px;letter-spacing:-.01em}
+.shot-label em{font-style:normal;font-size:13px;color:var(--ink-3)}
+.frame{max-width:1280px;border-radius:14px;overflow:hidden;box-shadow:0 1px 0 rgba(0,0,0,.04),0 24px 60px -24px rgba(15,42,33,.28);background:var(--paper);border:1px solid #d9d3c6}
+.chrome{height:36px;background:#EFEBE3;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:7px;padding:0 14px}
+.chrome i{width:10px;height:10px;border-radius:50%;background:#D7D1C4}
+.chrome .url{margin-left:14px;flex:0 1 420px;height:22px;border-radius:6px;background:var(--raised);border:1px solid var(--border);font:12px var(--mono);color:var(--ink-3);display:flex;align-items:center;padding:0 10px}
+@media (max-width:900px){.shell{grid-template-columns:1fr}.toc{position:static;height:auto}.stage{padding:24px 16px 80px}}
+
+/* ---------- Product primitives ---------- */
+.eyebrow{font-family:var(--mono);font-size:11px;font-weight:500;letter-spacing:.1em;text-transform:uppercase;color:var(--forest)}
+.eyebrow.muted{color:var(--ink-3)}
+.d-xl{font-family:var(--display);font-weight:400;font-size:66px;line-height:1.04;letter-spacing:-.025em}
+.d-l{font-family:var(--display);font-weight:400;font-size:46px;line-height:1.08;letter-spacing:-.02em}
+.d-m{font-family:var(--display);font-weight:400;font-size:32px;line-height:1.15;letter-spacing:-.015em}
+.d-s{font-family:var(--display);font-weight:400;font-size:23px;line-height:1.25;letter-spacing:-.01em}
+.h-m{font-weight:600;font-size:17px;line-height:1.4;letter-spacing:-.005em}
+.h-s{font-weight:600;font-size:14.5px;line-height:1.4}
+.b-l{font-size:18px;line-height:1.6;color:var(--ink-2)}
+.b-s{font-size:13px;line-height:1.55;color:var(--ink-3)}
+.mono{font-family:var(--mono);font-size:12px}
+.muted{color:var(--ink-3)} .ink2{color:var(--ink-2)}
+em.accent{font-style:italic;color:var(--forest)}
+
+.btn{display:inline-flex;align-items:center;gap:8px;padding:11px 18px;border-radius:8px;font-weight:500;font-size:14px;border:1px solid transparent;white-space:nowrap;cursor:pointer}
+.btn.sm{padding:7px 12px;font-size:13px}
+.btn-primary{background:var(--forest);color:var(--d-text)}
+.btn-primary:hover{background:var(--forest-hover)}
+.btn-secondary{background:var(--card);border-color:var(--border-strong);color:var(--ink)}
+.btn-ghost{color:var(--forest);padding-left:6px;padding-right:6px}
+.btn-mint{background:var(--mint);color:var(--forest-deep)}
+.btn-danger{background:var(--card);border-color:#E3C4BF;color:var(--danger)}
+
+.badge{display:inline-flex;align-items:center;gap:6px;padding:3px 10px;border-radius:999px;font-size:12px;font-weight:500;white-space:nowrap}
+.badge::before{content:"";width:6px;height:6px;border-radius:50%;background:currentColor}
+.badge.nodot::before{display:none}
+.b-cred{background:var(--cred-tint);color:var(--forest)}
+.b-proj{background:var(--proj-tint);color:var(--proj)}
+.b-both{background:var(--sage);color:var(--forest)}
+.b-demo{background:var(--amber-tint);color:var(--amber)}
+.b-self{background:var(--raised);color:var(--ink-3);border:1px dashed var(--border-strong)}
+.b-gap{background:var(--danger-tint);color:var(--danger)}
+.b-ok{background:var(--cred-tint);color:var(--forest)}
+.b-partial{background:var(--amber-tint);color:var(--amber)}
+.b-neutral{background:var(--raised);color:var(--ink-2);border:1px solid var(--border)}
+
+.card{background:var(--card);border:1px solid var(--border);border-radius:14px}
+.card.pad{padding:24px}
+.card.elev{box-shadow:var(--shadow-card)}
+.well{background:var(--raised);border:1px solid var(--border);border-radius:10px}
+.divider{height:1px;background:var(--border)}
+.row{display:flex;align-items:center;gap:12px}
+.col{display:flex;flex-direction:column}
+.grow{flex:1;min-width:0}
+.avatar{width:38px;height:38px;border-radius:50%;background:var(--sage);color:var(--forest);display:grid;place-items:center;font-weight:600;font-size:12.5px;flex:none}
+.avatar.lg{width:64px;height:64px;font-size:20px}
+.avatar.proj{background:var(--proj-tint);color:var(--proj)}
+.avatar.amber{background:var(--amber-tint);color:var(--amber)}
+.chip{display:inline-flex;align-items:center;gap:6px;padding:6px 12px;border-radius:999px;background:var(--card);border:1px solid var(--border);font-size:13px;color:var(--ink-2)}
+.chip.on{background:var(--forest);border-color:var(--forest);color:var(--d-text)}
+.field{display:flex;flex-direction:column;gap:6px}
+.field label{font-size:12.5px;font-weight:500;color:var(--ink-2)}
+.input{background:var(--card);border:1px solid var(--border-strong);border-radius:8px;padding:10px 12px;font-size:14px;color:var(--ink);min-height:42px;display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.input.focus{border-color:var(--forest);box-shadow:0 0 0 3px rgba(30,90,69,.12)}
+.bar{height:6px;border-radius:999px;background:var(--border);overflow:hidden}
+.bar i{display:block;height:100%;background:var(--forest);border-radius:999px}
+table.t{width:100%;border-collapse:collapse;font-size:13.5px}
+table.t th{text-align:left;font-family:var(--mono);font-weight:500;font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3);padding:12px 16px;border-bottom:1px solid var(--border);background:var(--raised)}
+table.t td{white-space:nowrap;padding:14px 16px;border-bottom:1px solid var(--border);vertical-align:middle}
+table.t tr:last-child td{border-bottom:0}
+
+/* App nav */
+.nav{display:flex;align-items:center;gap:32px;padding:16px 56px;border-bottom:1px solid var(--border);background:var(--paper)}
+.nav .links{display:flex;gap:26px;flex:1;justify-content:center;font-size:14px;font-weight:500;color:var(--ink-2)}
+.nav .links a.on{color:var(--forest)}
+.nav .links a.on::after{content:"";display:block;height:2px;background:var(--forest);border-radius:2px;margin-top:4px}
+.logo{display:flex;align-items:center;gap:10px;font-family:var(--display);font-weight:600;font-size:19px;letter-spacing:-.015em}
+.logo svg{flex:none}
+.page{padding:48px 56px 72px}
+.crumb{font-family:var(--mono);font-size:11.5px;color:var(--ink-3);display:flex;gap:8px;align-items:center;margin-bottom:18px}
+.crumb a{color:var(--forest)}
+.foot{display:flex;align-items:center;gap:24px;padding:28px 56px;background:var(--forest-deep);color:var(--d-muted);font-size:12.5px}
+
+/* Route rail: the signature motif — a line joining evidence nodes */
+.rail{position:relative;padding-left:var(--rail-pad,26px)}
+.rail::before{content:"";position:absolute;left:calc(var(--rail-pad,26px) - 19px);top:10px;bottom:10px;width:2px;background:linear-gradient(var(--mint),var(--forest))}
+.rail .node{position:relative}
+.rail .node::before{content:"";position:absolute;left:-24px;top:18px;width:12px;height:12px;border-radius:50%;background:var(--card);border:2px solid var(--forest)}
+.rail .node.gapn::before{border-color:var(--danger);background:var(--danger-tint)}
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute">
+  <symbol id="mark" viewBox="0 0 28 28"><rect width="28" height="28" rx="8" fill="#1E5A45"/><path d="M7 20C7 12 21 16 21 8" stroke="#7FD1AC" stroke-width="2" fill="none" stroke-linecap="round"/><circle cx="7" cy="20" r="3" fill="#F3F1EA"/><circle cx="21" cy="8" r="3" fill="#7FD1AC"/></symbol>
+</svg>
+
+<div class="shell">
+<nav class="toc" aria-label="Screens">
+  <div class="logo" style="color:var(--d-text)"><svg width="28" height="28"><use href="#mark"/></svg>Venture Route</div>
+  <h1>Refined UI</h1>
+  <p>Every screen, one design system. Tokens match the Figma file.</p>
+  <div class="grp">Founder journey</div>
+  <a href="#s01" class="on"><span>01</span>Home</a>
+  <a href="#s02"><span>02</span>Describe your MVP</a>
+  <a href="#s03"><span>03</span>Confirm your brief</a>
+  <a href="#s04"><span>04</span>Route result</a>
+  <a href="#s05"><span>05</span>Why this route?</a>
+  <a href="#s06"><span>06</span>Venture handoff</a>
+  <div class="grp">Accounts</div>
+  <a href="#s07"><span>07</span>Sign in &amp; role</a>
+  <a href="#s08"><span>08</span>Founder dashboard</a>
+  <a href="#s09"><span>09</span>Candidate profile</a>
+  <a href="#s10"><span>10</span>Book an interview</a>
+  <div class="grp">Builders</div>
+  <a href="#s11"><span>11</span>Builder profile</a>
+  <a href="#s12"><span>12</span>Open requests</a>
+  <div class="grp">Ecosystem</div>
+  <a href="#s13"><span>13</span>Showcase</a>
+  <a href="#s14"><span>14</span>Partners</a>
+  <a href="#s15"><span>15</span>Admin queue</a>
+</nav>
+
+<main class="stage">
+
+<!-- ======================= 01 HOME ======================= -->
+<section id="s01">
+  <div class="shot-label"><b>01</b><h2>Home</h2><em>/ · the front door for founders, builders and judges</em></div>
+  <div class="frame">
+    <div class="chrome"><i></i><i></i><i></i><div class="url">ventureroute.app</div></div>
+    <header class="nav">
+      <div class="logo"><svg width="28" height="28"><use href="#mark"/></svg>Venture Route</div>
+      <div class="links"><a>How it works</a><a>Showcase</a><a>Partners</a><a>For builders</a></div>
+      <a class="btn btn-ghost">Sign in</a><a class="btn btn-primary">Route my venture →</a>
+    </header>
+
+    <div style="display:grid;grid-template-columns:1.05fr 1fr;gap:56px;align-items:center;padding:80px 56px 88px">
+      <div class="col" style="gap:26px">
+        <span class="badge b-both" style="align-self:flex-start;padding:5px 12px">Team routing for the BASIX ecosystem</span>
+        <h1 class="d-xl">The smallest <em class="accent">credible</em> route through BASIX.</h1>
+        <p class="b-l" style="max-width:540px">Describe your MVP in plain language. Venture Route turns it into a brief, runs seven named MeTTa rules over verified credentials and projects, and returns the leanest team that can build it, with every gap listed before the team.</p>
+        <div class="row"><a class="btn btn-primary">Route my venture →</a><a class="btn btn-secondary">See a demo route</a></div>
+        <div class="row" style="gap:40px;border-top:1px solid var(--border);padding-top:22px;margin-top:4px">
+          <div class="col"><span class="d-m">7</span><span class="b-s">named rules</span></div>
+          <div class="col"><span class="d-m">181</span><span class="b-s">graph facts</span></div>
+          <div class="col"><span class="d-m">0</span><span class="b-s">unexplained matches</span></div>
+        </div>
+      </div>
+      <div style="background:var(--sage);border-radius:24px;padding:28px;position:relative">
+        <div class="card elev" style="overflow:hidden">
+          <div style="padding:20px 24px" class="col">
+            <div class="row"><span class="eyebrow muted grow">Route · brief-health-01</span><span class="badge b-partial">Partial route</span><span class="badge b-demo">Demo data</span></div>
+            <div class="h-m" style="margin-top:8px">Maternal health triage pilot</div>
+            <div class="b-s">Python · AI/MeTTa · UI/UX · Mobile · up to 3 builders · USD 300 / day</div>
+          </div>
+          <div class="divider"></div>
+          <div class="rail" style="--rail-pad:50px;padding:8px 24px 8px 50px">
+            <div class="node row" style="padding:12px 0"><div class="avatar">AW</div><div class="grow"><div class="h-s">Amina Wanjiru</div><div class="b-s">AI/MeTTa · Python</div></div><span class="badge b-both">Credential + project</span><span class="mono ink2">USD 110</span></div>
+            <div class="node row" style="padding:12px 0"><div class="avatar">KM</div><div class="grow"><div class="h-s">Kofi Mensah</div><div class="b-s">Python · Backend</div></div><span class="badge b-cred">Credential</span><span class="mono ink2">USD 90</span></div>
+            <div class="node row" style="padding:12px 0"><div class="avatar proj">LO</div><div class="grow"><div class="h-s">Lina Otieno</div><div class="b-s">UI/UX · Frontend</div></div><span class="badge b-proj">Project</span><span class="mono ink2">USD 60</span></div>
+            <div class="node gapn" style="padding:10px 0 16px">
+              <div style="background:var(--danger-tint);border-radius:10px;padding:12px 14px" class="col">
+                <div class="row" style="gap:8px"><span class="badge b-gap" style="background:#fff">Gap · Mobile</span></div>
+                <div class="h-s" style="font-size:13.5px;margin-top:6px">No verified mobile builder is free 22 Sep – 6 Oct.</div>
+                <div class="mono" style="color:var(--danger);margin-top:2px">route-gap → widen window to 13 Oct, or drop Mobile</div>
+              </div>
+            </div>
+          </div>
+          <div class="row" style="padding:14px 24px;background:var(--raised);border-top:1px solid var(--border)">
+            <div class="col grow" style="gap:6px"><span class="h-s" style="font-size:13px">USD 260 of 300 / day</span><div class="bar" style="width:220px"><i style="width:87%"></i></div></div>
+            <a class="btn btn-ghost sm">Why this route? →</a>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div style="background:var(--raised);border-top:1px solid var(--border);border-bottom:1px solid var(--border);padding:88px 56px" class="col">
+      <div class="row" style="align-items:flex-end;gap:48px;margin-bottom:40px">
+        <div class="col grow" style="gap:12px"><span class="eyebrow">How it works</span><h2 class="d-l" style="max-width:620px">From a paragraph to a team, in three steps.</h2></div>
+        <p class="muted" style="max-width:340px">The rules make every decision. The language model only translates your words and explains the result.</p>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:22px">
+        <div class="card pad col" style="gap:14px"><div class="row"><div class="avatar" style="background:var(--forest);color:var(--d-text);width:32px;height:32px">01</div><div class="divider grow" style="background:var(--border-strong)"></div></div><h3 class="d-s">Describe your MVP</h3><p class="ink2">Type or speak it. Chloe only asks for what the rules need: skills, team size, dates, how you'll work together, and budget.</p><div class="well mono muted" style="padding:10px 12px">“A triage app for clinics in Kisumu…”</div></div>
+        <div class="card pad col" style="gap:14px"><div class="row"><div class="avatar" style="background:var(--forest);color:var(--d-text);width:32px;height:32px">02</div><div class="divider grow" style="background:var(--border-strong)"></div></div><h3 class="d-s">Confirm the brief</h3><p class="ink2">Every field the engine will use is shown back to you as a chip. Nothing is guessed or filled in silently.</p><div class="well mono muted" style="padding:10px 12px">python · ai-metta · ui-ux · mobile</div></div>
+        <div class="card pad col" style="gap:14px"><div class="row"><div class="avatar" style="background:var(--forest);color:var(--d-text);width:32px;height:32px">03</div><div class="divider grow" style="background:var(--border-strong)"></div></div><h3 class="d-s">Get a route with evidence</h3><p class="ink2">Gaps come first, then the team. Open any match to see the rule and the facts behind it.</p><div class="well mono muted" style="padding:10px 12px">eligible-builder ⇐ 10 facts</div></div>
+      </div>
+    </div>
+
+    <div style="background:var(--forest-deep);padding:100px 56px;display:grid;grid-template-columns:1fr 1fr;gap:64px;align-items:center">
+      <div class="col" style="gap:20px">
+        <span class="eyebrow" style="color:var(--mint)">For judges and founders alike</span>
+        <h2 class="d-l" style="color:var(--d-text)">Every recommendation names its rule and its facts.</h2>
+        <p class="b-l" style="color:var(--d-muted)">A route is a chain of reasoning paths: rule, source facts, conclusion. When no verified builder has a skill, you see the gap and what to do next. A weak match never fills the slot.</p>
+        <div class="col" style="gap:10px;color:var(--d-text)">
+          <div class="row"><i style="width:8px;height:8px;border-radius:50%;background:var(--mint)"></i>Credentials and projects confirmed by a BASIX admin</div>
+          <div class="row"><i style="width:8px;height:8px;border-radius:50%;background:var(--mint)"></i>Self-described skills are shown, never counted</div>
+          <div class="row"><i style="width:8px;height:8px;border-radius:50%;background:var(--mint)"></i>Four-hop partner fit: builder → cohort → university → partner</div>
+        </div>
+      </div>
+      <div style="background:var(--d-card);border:1px solid var(--d-border);border-radius:16px;overflow:hidden">
+        <div class="row" style="padding:13px 20px;border-bottom:1px solid var(--d-border);gap:7px"><i style="width:9px;height:9px;border-radius:50%;background:var(--d-border)"></i><i style="width:9px;height:9px;border-radius:50%;background:var(--d-border)"></i><i style="width:9px;height:9px;border-radius:50%;background:var(--d-border)"></i><span class="mono grow" style="text-align:right;color:var(--d-muted)">reasoning-path · kofi-mensah × python</span></div>
+        <div class="col mono" style="gap:12px;padding:22px 24px;color:var(--d-text)">
+          <div class="row" style="gap:16px"><span class="eyebrow" style="color:var(--mint);width:44px">Rule</span>verified-for-skill</div>
+          <div class="row" style="gap:16px"><span class="eyebrow" style="color:var(--d-muted);width:44px">Fact</span>credential(cred-114, kofi-mensah, python, confirmed)</div>
+          <div class="row" style="gap:16px"><span class="eyebrow" style="color:var(--d-muted);width:44px">Fact</span>issuer(cred-114, coast-polytechnic)</div>
+          <div class="row" style="gap:16px"><span class="eyebrow" style="color:var(--mint);width:44px">Rule</span>available-for-brief</div>
+          <div class="row" style="gap:16px"><span class="eyebrow" style="color:var(--d-muted);width:44px">Fact</span>window(kofi-mensah, 2026-09-22, 2026-10-06)</div>
+          <div class="row" style="gap:16px"><span class="eyebrow" style="color:var(--mint);width:44px">Rule</span>mode-compatible</div>
+          <div class="row" style="gap:16px"><span class="eyebrow" style="color:var(--d-muted);width:44px">Fact</span>supports(kofi-mensah, remote)</div>
+          <div class="row" style="background:var(--forest);border-radius:8px;padding:11px 14px;gap:10px;margin-top:4px"><span style="color:var(--mint)">⇒</span>eligible-builder(kofi-mensah, python)</div>
+        </div>
+      </div>
+    </div>
+
+    <div style="padding:88px 56px" class="col">
+      <span class="eyebrow">For builders</span>
+      <h2 class="d-l" style="margin:12px 0 36px">Get routed for what you can prove.</h2>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:22px">
+        <div class="card pad col" style="gap:14px;padding:32px"><h3 class="d-s">Verified profile</h3><p class="ink2">Add credentials and completed projects. Once a BASIX admin confirms them, they enter the graph with the same weight as seed data.</p><div class="row" style="gap:8px"><span class="badge b-cred">Credential</span><span class="badge b-proj">Project</span><span class="badge b-self">Self-described</span></div><a class="btn btn-ghost" style="align-self:flex-start">Create a builder profile →</a></div>
+        <div class="card pad col" style="gap:14px;padding:32px"><h3 class="d-s">Showcase your work</h3><p class="ink2">List licensable assets from past builds. When a founder asks for reusable IP, the reuse-fit rule puts your work in front of them.</p><div class="row" style="gap:8px"><span class="badge b-both">Licensable</span><span class="badge b-demo">Demo data</span></div><a class="btn btn-ghost" style="align-self:flex-start">Open the showcase →</a></div>
+      </div>
+    </div>
+    <footer class="foot"><div class="logo" style="color:var(--d-text)"><svg width="28" height="28"><use href="#mark"/></svg>Venture Route</div><span class="grow">Built for the BASIX and MeTTa OmniUniversity ecosystem. Every record in this release is demo data.</span><span>Privacy · Partners · GitHub</span></footer>
+  </div>
+</section>
+
+<!-- ======================= 02 INTAKE ======================= -->
+<section id="s02">
+  <div class="shot-label"><b>02</b><h2>Describe your MVP</h2><em>/route · chat or voice intake with a live brief</em></div>
+  <div class="frame">
+    <div class="chrome"><i></i><i></i><i></i><div class="url">ventureroute.app/route</div></div>
+    <header class="nav"><div class="logo"><svg width="28" height="28"><use href="#mark"/></svg>Venture Route</div><div class="links"><a class="on">Route</a><a>Showcase</a><a>Partners</a></div><a class="btn btn-ghost">Sign in</a></header>
+    <div style="display:grid;grid-template-columns:1fr 380px;min-height:660px">
+      <div class="col" style="padding:40px 56px;gap:22px">
+        <div class="col" style="gap:6px"><h1 class="d-m">Describe your MVP</h1><p class="muted">Plain language is fine. Chloe will ask for anything missing.</p></div>
+        <div class="row" style="gap:8px;flex-wrap:wrap"><span class="b-s">Try a demo:</span><span class="chip on">Health pilot</span><span class="chip">Constrained brief</span><span class="chip">Agri marketplace</span><span class="chip">Delivery-mode challenge</span></div>
+        <div class="col grow" style="gap:18px;padding:8px 0">
+          <div class="row" style="align-items:flex-start;gap:12px"><div class="avatar" style="background:var(--forest);color:var(--mint)">C</div><div class="card" style="padding:14px 16px;border-top-left-radius:4px;max-width:520px">Hi, I'm Chloe. Tell me what you want to build, who it's for, and roughly when you need a team.</div></div>
+          <div class="row" style="justify-content:flex-end"><div style="background:var(--forest);color:var(--d-text);padding:14px 16px;border-radius:14px;border-top-right-radius:4px;max-width:520px">We need a maternal health triage app for clinics in Kisumu. Python backend with some MeTTa reasoning, a clean UI, and ideally an Android app. Remote is fine, three people max, about $300 a day.</div></div>
+          <div class="row" style="align-items:flex-start;gap:12px"><div class="avatar" style="background:var(--forest);color:var(--mint)">C</div><div class="card" style="padding:14px 16px;border-top-left-radius:4px;max-width:520px" class="col">Got it. I've filled in skills, team size, mode and budget on the right. <b>When do you want the team to start, and for how long?</b><div class="row" style="gap:8px;margin-top:12px"><span class="chip">Next two weeks</span><span class="chip">From 1 Oct</span><span class="chip">Pick dates…</span></div></div></div>
+        </div>
+        <div class="card elev row" style="padding:10px 10px 10px 18px;gap:10px"><span class="grow muted">Starting 22 Sep for two weeks…</span><a class="btn btn-secondary sm" title="Speak">● Voice</a><a class="btn btn-primary sm">Send</a></div>
+      </div>
+      <aside style="background:var(--raised);border-left:1px solid var(--border);padding:32px 28px" class="col">
+        <div class="row"><span class="eyebrow grow">Your brief</span><span class="mono muted">5 of 7</span></div>
+        <div class="bar" style="margin:10px 0 22px"><i style="width:71%"></i></div>
+        <div class="col" style="gap:16px">
+          <div class="col" style="gap:4px"><span class="b-s">Title</span><span class="h-s">Maternal health triage pilot</span></div>
+          <div class="col" style="gap:6px"><span class="b-s">Skills</span><div class="row" style="gap:6px;flex-wrap:wrap"><span class="badge b-neutral nodot">Python</span><span class="badge b-neutral nodot">AI/MeTTa</span><span class="badge b-neutral nodot">UI/UX</span><span class="badge b-neutral nodot">Mobile</span></div></div>
+          <div class="row"><div class="col grow" style="gap:4px"><span class="b-s">Vertical</span><span class="h-s">Health</span></div><div class="col grow" style="gap:4px"><span class="b-s">Team size</span><span class="h-s">Up to 3</span></div></div>
+          <div class="row"><div class="col grow" style="gap:4px"><span class="b-s">Mode</span><span class="h-s">Remote</span></div><div class="col grow" style="gap:4px"><span class="b-s">Budget</span><span class="h-s">USD 300 / day</span></div></div>
+          <div class="col" style="gap:4px"><span class="b-s">Availability window</span><span class="h-s" style="color:var(--amber)">Waiting for dates</span></div>
+          <div class="col" style="gap:4px"><span class="b-s">Reusable IP</span><span class="h-s" style="color:var(--ink-4)">Not asked yet</span></div>
+        </div>
+        <div class="grow"></div>
+        <div class="well b-s" style="padding:12px 14px;margin-top:20px">Your words become structured fields. The route itself comes from named MeTTa rules, not a language model.</div>
+      </aside>
+    </div>
+  </div>
+</section>
+
+<!-- ======================= 03 REVIEW ======================= -->
+<section id="s03">
+  <div class="shot-label"><b>03</b><h2>Confirm your brief</h2><em>/route · review · every field the rules will read</em></div>
+  <div class="frame">
+    <div class="chrome"><i></i><i></i><i></i><div class="url">ventureroute.app/route</div></div>
+    <header class="nav"><div class="logo"><svg width="28" height="28"><use href="#mark"/></svg>Venture Route</div><div class="links"><a class="on">Route</a><a>Showcase</a><a>Partners</a></div><a class="btn btn-ghost">Sign in</a></header>
+    <div class="page" style="display:grid;grid-template-columns:1fr 340px;gap:40px">
+      <div class="col" style="gap:24px">
+        <div class="crumb"><a>Describe</a>→<b style="color:var(--ink)">Confirm</b>→<span>Route</span></div>
+        <div class="col" style="gap:6px;margin-top:-8px"><h1 class="d-m">Confirm your brief</h1><p class="muted">Edit anything that's wrong. Your latest correction wins.</p></div>
+        <div class="card pad col" style="gap:20px">
+          <div class="field"><label>Title</label><div class="input">Maternal health triage pilot</div></div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+            <div class="field"><label>Vertical</label><div class="input">Health ▾</div></div>
+            <div class="field"><label>Maximum team size</label><div class="input">3</div></div>
+          </div>
+          <div class="field"><label>Required skills</label><div class="input focus"><span class="chip on" style="padding:3px 10px">Python ×</span><span class="chip on" style="padding:3px 10px">AI/MeTTa ×</span><span class="chip on" style="padding:3px 10px">UI/UX ×</span><span class="chip on" style="padding:3px 10px">Mobile ×</span><span class="muted" style="font-size:13px">Add skill…</span></div></div>
+          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px">
+            <div class="field"><label>Start</label><div class="input">22 Sep 2026</div></div>
+            <div class="field"><label>End</label><div class="input">6 Oct 2026</div></div>
+            <div class="field"><label>Daily budget</label><div class="input">USD 300</div></div>
+          </div>
+          <div class="field"><label>Delivery mode</label><div class="row" style="gap:8px"><span class="chip on">Remote</span><span class="chip">Hybrid</span><span class="chip">On-site</span></div></div>
+          <div class="row well" style="padding:14px 16px"><div class="col grow"><span class="h-s">Prefer reusable IP</span><span class="b-s">Consider licensable assets that already demonstrate a required skill (reuse-fit).</span></div><span style="width:40px;height:22px;border-radius:999px;background:var(--forest);position:relative"><i style="position:absolute;right:3px;top:3px;width:16px;height:16px;border-radius:50%;background:#fff"></i></span></div>
+        </div>
+        <div class="row"><a class="btn btn-secondary">← Back to chat</a><div class="grow"></div><a class="btn btn-primary">Find my route →</a></div>
+      </div>
+      <aside class="col" style="gap:16px;padding-top:52px">
+        <div class="card pad col" style="gap:12px;background:var(--sage);border-color:#D2E2D9">
+          <span class="eyebrow">What happens next</span>
+          <div class="rail col" style="gap:14px">
+            <div class="node col" style="padding-top:12px"><span class="h-s">verified-for-skill</span><span class="b-s">Who can prove each skill</span></div>
+            <div class="node col"><span class="h-s">available-for-brief</span><span class="b-s">Whose window overlaps yours</span></div>
+            <div class="node col"><span class="h-s">mode-compatible</span><span class="b-s">Who can work remotely</span></div>
+            <div class="node col"><span class="h-s">eligible-builder</span><span class="b-s">All three, plus a confirmed account</span></div>
+          </div>
+        </div>
+        <p class="b-s" style="padding:0 4px">Routing uses named MeTTa rules. Nothing here is decided by a language model.</p>
+      </aside>
+    </div>
+  </div>
+</section>
+
+<!-- ======================= 04 ROUTE RESULT ======================= -->
+<section id="s04">
+  <div class="shot-label"><b>04</b><h2>Route result</h2><em>/route · gaps above the team, cost and context below</em></div>
+  <div class="frame">
+    <div class="chrome"><i></i><i></i><i></i><div class="url">ventureroute.app/route</div></div>
+    <header class="nav"><div class="logo"><svg width="28" height="28"><use href="#mark"/></svg>Venture Route</div><div class="links"><a class="on">Route</a><a>Showcase</a><a>Partners</a></div><a class="btn btn-ghost">Sign in</a></header>
+    <div class="page col" style="gap:28px">
+      <div class="row" style="align-items:flex-end;gap:24px">
+        <div class="col grow" style="gap:8px">
+          <div class="row" style="gap:8px"><span class="badge b-partial">Partial route</span><span class="badge b-demo">Demo data</span><span class="mono muted">brief-health-01 · evaluated 22 Sep 2026</span></div>
+          <h1 class="d-l">Your route through BASIX</h1>
+          <p class="b-l" style="max-width:720px;font-size:16px">Three builders cover Python, AI/MeTTa and UI/UX within budget. No verified builder is available for Mobile in your window; the options are below.</p>
+        </div>
+        <a class="btn btn-secondary">Change brief</a><a class="btn btn-secondary">Why this route?</a><a class="btn btn-primary">Export handoff →</a>
+      </div>
+
+      <div class="card" style="border-color:#EBCFCA;overflow:hidden">
+        <div class="row" style="padding:16px 22px;background:var(--danger-tint)"><span class="h-s grow" style="color:var(--danger)">1 gap · resolve or accept before booking</span><span class="mono" style="color:var(--danger)">rule: route-gap</span></div>
+        <div style="padding:20px 22px;display:grid;grid-template-columns:1fr 1fr;gap:24px">
+          <div class="col" style="gap:6px"><div class="row" style="gap:8px"><span class="badge b-gap">Skill · Mobile</span><span class="badge b-neutral nodot">availability</span></div><span class="h-m">No verified mobile builder is free 22 Sep – 6 Oct 2026.</span><span class="b-s">Two builders are verified for Mobile; both are booked until 13 Oct.</span></div>
+          <div class="col" style="gap:8px"><span class="eyebrow muted">Next actions</span>
+            <div class="row well" style="padding:10px 12px"><span class="grow">Extend the window to 13 Oct 2026</span><a class="btn btn-ghost sm">Apply</a></div>
+            <div class="row well" style="padding:10px 12px"><span class="grow">Remove Mobile from required skills</span><a class="btn btn-ghost sm">Apply</a></div>
+          </div>
+        </div>
+      </div>
+
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:var(--border);border:1px solid var(--border);border-radius:14px;overflow:hidden">
+        <div style="background:var(--card);padding:18px 22px" class="col"><span class="eyebrow muted">Total day rate</span><span class="d-m">USD 260</span></div>
+        <div style="background:var(--card);padding:18px 22px" class="col"><span class="eyebrow muted">Your budget</span><span class="d-m">USD 300</span></div>
+        <div style="background:var(--card);padding:18px 22px" class="col" ><span class="eyebrow muted">Headroom</span><div class="row"><span class="d-m" style="color:var(--forest)">USD 40</span><div class="bar grow"><i style="width:87%"></i></div><span class="mono muted">87%</span></div></div>
+      </div>
+
+      <div class="col" style="gap:14px">
+        <div class="row"><h2 class="d-s grow">Team · 3 of max 3</h2><span class="b-s">Deterministic assembler: smallest covering team within budget</span></div>
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:18px">
+          <div class="card elev col" style="padding:22px;gap:14px"><div class="row"><div class="avatar">AW</div><div class="col grow"><span class="h-m">Amina Wanjiru</span><span class="b-s">ML engineer · Nairobi</span></div></div><div class="row" style="gap:6px;flex-wrap:wrap"><span class="badge b-both">AI/MeTTa</span><span class="badge b-cred">Python</span></div><div class="divider"></div><div class="row b-s"><span class="grow">USD 110 / day</span><span>15 Sep – 30 Oct</span></div><div class="row"><a class="btn btn-ghost sm" style="padding-left:0">Evidence path →</a><div class="grow"></div><span class="mono muted">6 facts</span></div></div>
+          <div class="card elev col" style="padding:22px;gap:14px"><div class="row"><div class="avatar">KM</div><div class="col grow"><span class="h-m">Kofi Mensah</span><span class="b-s">Systems builder · Mombasa</span></div></div><div class="row" style="gap:6px;flex-wrap:wrap"><span class="badge b-cred">Python</span><span class="badge b-self">Rust · self-described</span></div><div class="divider"></div><div class="row b-s"><span class="grow">USD 90 / day</span><span>22 Sep – 6 Oct</span></div><div class="row"><a class="btn btn-ghost sm" style="padding-left:0">Evidence path →</a><div class="grow"></div><span class="mono muted">10 facts</span></div></div>
+          <div class="card elev col" style="padding:22px;gap:14px"><div class="row"><div class="avatar proj">LO</div><div class="col grow"><span class="h-m">Lina Otieno</span><span class="b-s">Product designer · Kisumu</span></div></div><div class="row" style="gap:6px;flex-wrap:wrap"><span class="badge b-proj">UI/UX</span></div><div class="divider"></div><div class="row b-s"><span class="grow">USD 60 / day</span><span>1 Sep – 31 Oct</span></div><div class="row"><a class="btn btn-ghost sm" style="padding-left:0">Evidence path →</a><div class="grow"></div><span class="mono muted">5 facts</span></div></div>
+        </div>
+      </div>
+
+      <div class="col" style="gap:14px">
+        <h2 class="d-s">Context</h2>
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:18px">
+          <div class="card pad col" style="gap:8px"><div class="row"><span class="eyebrow muted grow">Reusable IP</span><span class="mono muted">reuse-fit</span></div><span class="h-s">Clinic intake form kit</span><span class="b-s">Licensable UI kit from a Kisumu health pilot; demonstrates UI/UX.</span></div>
+          <div class="card pad col" style="gap:8px"><div class="row"><span class="eyebrow muted grow">Cohort</span><span class="badge b-ok">Verified</span></div><span class="h-s">Ridgeway cohort 2026 · Coast Polytechnic</span><span class="b-s">Two of three builders come from this cohort.</span></div>
+          <div class="card pad col" style="gap:8px"><div class="row"><span class="eyebrow muted grow">Partner</span><span class="mono muted">partner-fit</span></div><span class="h-s">Savanna Systems Guild</span><span class="b-s">Supports health ventures and partners with Coast Polytechnic.</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ======================= 05 WHY DRAWER ======================= -->
+<section id="s05">
+  <div class="shot-label"><b>05</b><h2>Why this route?</h2><em>drawer over the route · reasoning paths, rule by rule</em></div>
+  <div class="frame" style="position:relative">
+    <div class="chrome"><i></i><i></i><i></i><div class="url">ventureroute.app/route#why</div></div>
+    <div style="position:relative;height:760px;overflow:hidden">
+      <div style="position:absolute;inset:0;padding:48px 56px;filter:saturate(.6);opacity:.55" class="col">
+        <h1 class="d-l">Your route through BASIX</h1>
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:18px;margin-top:40px"><div class="card" style="height:220px"></div><div class="card" style="height:220px"></div><div class="card" style="height:220px"></div></div>
+      </div>
+      <div style="position:absolute;inset:0;background:rgba(15,42,33,.28)"></div>
+      <aside style="position:absolute;top:0;right:0;bottom:0;width:540px;background:var(--paper);box-shadow:var(--shadow-drawer);display:flex;flex-direction:column">
+        <div class="row" style="padding:22px 28px;border-bottom:1px solid var(--border)"><div class="col grow"><span class="eyebrow">Evidence chain</span><h2 class="d-s">Why this route?</h2></div><a class="btn btn-secondary sm">Close ✕</a></div>
+        <div class="row" style="gap:6px;padding:14px 28px;border-bottom:1px solid var(--border)"><span class="chip on" style="padding:4px 12px">Builders</span><span class="chip" style="padding:4px 12px">Reusable IP</span><span class="chip" style="padding:4px 12px">Cohort</span><span class="chip" style="padding:4px 12px">Partner</span><span class="chip" style="padding:4px 12px">Gaps</span></div>
+        <div class="col" style="padding:22px 28px;gap:16px;overflow:hidden">
+          <div class="row"><div class="avatar">KM</div><div class="col grow"><span class="h-m">Kofi Mensah × Python</span><span class="b-s">Eligible · 10 source facts across 4 rules</span></div></div>
+          <div class="rail col" style="gap:12px">
+            <div class="node card" style="padding:14px 16px"><div class="row"><span class="mono grow" style="color:var(--forest);font-weight:500">verified-for-skill</span><span class="badge b-cred">Credential</span></div><div class="mono muted" style="margin-top:8px;line-height:1.8">credential(cred-114, kofi-mensah, python)<br>status(cred-114, confirmed)<br>issuer(cred-114, coast-polytechnic)</div></div>
+            <div class="node card" style="padding:14px 16px"><div class="row"><span class="mono grow" style="color:var(--forest);font-weight:500">available-for-brief</span><span class="badge b-ok">Pass</span></div><div class="mono muted" style="margin-top:8px;line-height:1.8">window(kofi-mensah, 2026-09-22, 2026-10-06)<br>overlap ≥ 5 days</div></div>
+            <div class="node card" style="padding:14px 16px"><div class="row"><span class="mono grow" style="color:var(--forest);font-weight:500">mode-compatible</span><span class="badge b-ok">Pass</span></div><div class="mono muted" style="margin-top:8px;line-height:1.8">supports(kofi-mensah, remote)</div></div>
+            <div class="node" style="background:var(--forest);border-radius:12px;padding:14px 16px;color:var(--d-text)"><span class="eyebrow" style="color:var(--mint)">Conclusion</span><div class="mono" style="margin-top:4px">eligible-builder(kofi-mensah, python)</div></div>
+          </div>
+          <div class="well b-s" style="padding:12px 14px"><b class="ink2">Not counted:</b> Rust is self-described on Kofi's profile. It shows on his card but never makes him eligible.</div>
+        </div>
+      </aside>
+    </div>
+  </div>
+</section>
+
+<!-- ======================= 06 HANDOFF ======================= -->
+<section id="s06">
+  <div class="shot-label"><b>06</b><h2>Venture handoff</h2><em>/handoff · a plain-text summary to share</em></div>
+  <div class="frame">
+    <div class="chrome"><i></i><i></i><i></i><div class="url">ventureroute.app/handoff</div></div>
+    <header class="nav"><div class="logo"><svg width="28" height="28"><use href="#mark"/></svg>Venture Route</div><div class="links"><a class="on">Route</a><a>Showcase</a><a>Partners</a></div><a class="btn btn-ghost">Sign in</a></header>
+    <div class="page" style="display:grid;grid-template-columns:1fr 320px;gap:40px">
+      <div class="col" style="gap:20px">
+        <div class="crumb"><a>← Back to route</a></div>
+        <div class="col" style="gap:6px;margin-top:-8px"><h1 class="d-m">Venture handoff</h1><p class="muted">A plain-text summary you can share with a co-founder, mentor or BASIX operator.</p></div>
+        <div class="card elev" style="overflow:hidden">
+          <div class="row" style="padding:12px 18px;background:var(--raised);border-bottom:1px solid var(--border)"><span class="mono muted grow">handoff-brief-health-01.txt</span><a class="btn btn-secondary sm">Copy</a><a class="btn btn-primary sm">Download .txt</a></div>
+          <pre class="mono" style="padding:24px 26px;white-space:pre-wrap;font-size:12.5px;line-height:1.85;color:var(--ink-2)">VENTURE ROUTE · HANDOFF
+Brief     Maternal health triage pilot (Health)
+Window    22 Sep – 6 Oct 2026 · Remote · up to 3 builders
+Status    PARTIAL: 1 gap
+
+TEAM                                   DAY RATE
+Amina Wanjiru   AI/MeTTa, Python       USD 110   credential + project
+Kofi Mensah     Python                 USD  90   credential
+Lina Otieno     UI/UX                  USD  60   project
+Total                                  USD 260 / 300
+
+GAP  skill · Mobile (route-gap)
+     No verified mobile builder is free in the window.
+     Next: extend to 13 Oct 2026, or drop Mobile.
+
+CONTEXT
+Reusable IP  Clinic intake form kit (reuse-fit)
+Partner      Savanna Systems Guild (partner-fit)
+
+Rules applied: verified-for-skill, available-for-brief,
+mode-compatible, eligible-builder, reuse-fit, partner-fit, route-gap
+All records are demo data.</pre>
+        </div>
+      </div>
+      <aside class="col" style="gap:16px;padding-top:60px">
+        <div class="card pad col" style="gap:12px"><span class="eyebrow">Ready to move?</span><p class="ink2">Sign up as a founder to publish this brief as a request, collect bids and book interviews.</p><a class="btn btn-primary">Publish as a request →</a></div>
+        <div class="card pad col" style="gap:8px"><span class="eyebrow muted">Includes</span><span class="b-s">✓ Team and day rates<br>✓ Every gap with next actions<br>✓ Rule names for each decision</span></div>
+      </aside>
+    </div>
+  </div>
+</section>
+
+<!-- ======================= 07 SIGN IN / ROLE ======================= -->
+<section id="s07">
+  <div class="shot-label"><b>07</b><h2>Sign in &amp; choose your role</h2><em>/sign-in · /choose-role</em></div>
+  <div class="frame">
+    <div class="chrome"><i></i><i></i><i></i><div class="url">ventureroute.app/choose-role</div></div>
+    <div style="display:grid;grid-template-columns:1fr 1.25fr;min-height:640px">
+      <div style="background:var(--forest-deep);padding:48px 56px;color:var(--d-text)" class="col">
+        <div class="logo" style="color:var(--d-text)"><svg width="28" height="28"><use href="#mark"/></svg>Venture Route</div>
+        <div class="grow"></div>
+        <h2 class="d-l" style="color:var(--d-text)">Evidence, not introductions.</h2>
+        <p style="color:var(--d-muted);margin-top:16px;max-width:380px">Founders see why each builder qualifies. Builders get routed for what they can prove. Admins decide what enters the graph.</p>
+        <div class="grow"></div>
+        <span class="mono" style="color:var(--d-muted)">7 rules · 181 facts · Africa/Nairobi</span>
+      </div>
+      <div style="padding:56px 64px" class="col">
+        <span class="eyebrow">New to Venture Route?</span>
+        <h1 class="d-m" style="margin:8px 0 6px">Choose your role</h1>
+        <p class="muted" style="margin-bottom:28px">This decides your workspace. A BASIX admin confirms builder accounts before they can be routed.</p>
+        <div class="col" style="gap:14px">
+          <div class="card row" style="padding:20px 22px;gap:16px;border:2px solid var(--forest);background:var(--sage)"><div class="avatar" style="background:var(--forest);color:var(--mint)">F</div><div class="col grow"><span class="h-m">Founder</span><span class="b-s">Publish briefs as requests, compare bids, book interviews.</span></div><span style="width:20px;height:20px;border-radius:50%;border:6px solid var(--forest);background:#fff"></span></div>
+          <div class="card row" style="padding:20px 22px;gap:16px"><div class="avatar proj">B</div><div class="col grow"><span class="h-m">Builder</span><span class="b-s">Build a verified profile, bid on open requests, showcase your IP.</span></div><span style="width:20px;height:20px;border-radius:50%;border:1.5px solid var(--border-strong)"></span></div>
+          <div class="card row" style="padding:20px 22px;gap:16px"><div class="avatar amber">A</div><div class="col grow"><span class="h-m">BASIX ecosystem admin</span><span class="b-s">Confirm accounts, credentials and projects. Invite only.</span></div><span class="badge b-neutral nodot">Invite</span></div>
+        </div>
+        <a class="btn btn-primary" style="align-self:flex-start;margin-top:28px">Continue as founder →</a>
+        <p class="b-s" style="margin-top:20px">By continuing you accept the Terms of Use and Privacy Policy.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ======================= 08 DASHBOARD ======================= -->
+<section id="s08">
+  <div class="shot-label"><b>08</b><h2>Founder dashboard</h2><em>/dashboard · ventures, bids and interviews</em></div>
+  <div class="frame">
+    <div class="chrome"><i></i><i></i><i></i><div class="url">ventureroute.app/dashboard</div></div>
+    <header class="nav"><div class="logo"><svg width="28" height="28"><use href="#mark"/></svg>Venture Route</div><div class="links"><a>Route</a><a class="on">Dashboard</a><a>Showcase</a></div><span class="badge b-demo">Demo data</span><div class="avatar" style="width:34px;height:34px">NA</div></header>
+    <div class="page col" style="gap:28px">
+      <div class="row" style="align-items:flex-end"><div class="col grow" style="gap:6px"><span class="eyebrow">Founder workspace</span><h1 class="d-l">Your ventures</h1></div><a class="btn btn-primary">Route a new venture →</a></div>
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:16px">
+        <div class="card pad col"><span class="eyebrow muted">Published</span><span class="d-m">2</span></div>
+        <div class="card pad col"><span class="eyebrow muted">Bids received</span><span class="d-m">5</span></div>
+        <div class="card pad col"><span class="eyebrow muted">Interviews</span><span class="d-m">3</span></div>
+        <div class="card pad col"><span class="eyebrow muted">Open gaps</span><span class="d-m" style="color:var(--danger)">1</span></div>
+      </div>
+      <div class="card" style="overflow:hidden">
+        <table class="t">
+          <thead><tr><th>Brief</th><th>Status</th><th>Team</th><th>Day rate</th><th>Published</th><th></th></tr></thead>
+          <tbody>
+            <tr><td><div class="h-s">Maternal health triage pilot</div><div class="b-s">Health · Remote</div></td><td><span class="badge b-partial">Partial · 1 gap</span></td><td><div class="row" style="gap:-6px"><div class="avatar" style="width:28px;height:28px;font-size:10px">AW</div><div class="avatar" style="width:28px;height:28px;font-size:10px;margin-left:-8px;border:2px solid #fff">KM</div><div class="avatar proj" style="width:28px;height:28px;font-size:10px;margin-left:-8px;border:2px solid #fff">LO</div></div></td><td class="mono">USD 260</td><td class="b-s">22 Sep 2026</td><td style="text-align:right"><a class="btn btn-secondary sm">3 bids</a></td></tr>
+            <tr><td><div class="h-s">Agri produce marketplace</div><div class="b-s">Agriculture · Hybrid · Nakuru</div></td><td><span class="badge b-ok">Feasible</span></td><td><div class="row"><div class="avatar" style="width:28px;height:28px;font-size:10px">JN</div><div class="avatar proj" style="width:28px;height:28px;font-size:10px;margin-left:-8px;border:2px solid #fff">WK</div></div></td><td class="mono">USD 180</td><td class="b-s">18 Sep 2026</td><td style="text-align:right"><a class="btn btn-secondary sm">2 bids</a></td></tr>
+            <tr><td><div class="h-s">Delivery tracking MVP</div><div class="b-s">Logistics · On-site · Mombasa</div></td><td><span class="badge b-neutral">Draft</span></td><td class="b-s">—</td><td class="mono">—</td><td class="b-s">Not published</td><td style="text-align:right"><a class="btn btn-ghost sm">Publish →</a></td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:18px">
+        <div class="card pad col" style="gap:14px"><h2 class="d-s">Latest bids</h2>
+          <div class="row"><div class="avatar">AW</div><div class="col grow"><span class="h-s">Amina Wanjiru</span><span class="b-s">Health pilot · USD 110/day · available now</span></div><a class="btn btn-secondary sm">Book</a></div><div class="divider"></div>
+          <div class="row"><div class="avatar amber">MO</div><div class="col grow"><span class="h-s">Moses Ochieng</span><span class="b-s">Health pilot · Mobile · from 13 Oct</span></div><span class="badge b-gap">Fills gap</span></div>
+        </div>
+        <div class="card pad col" style="gap:14px"><h2 class="d-s">Upcoming interviews</h2>
+          <div class="row"><div class="well col" style="padding:8px 12px;text-align:center"><span class="mono muted">SEP</span><span class="h-m">24</span></div><div class="col grow"><span class="h-s">Kofi Mensah · 10:00–10:30</span><span class="b-s">Google Meet · confirmed</span></div><span class="badge b-ok">Confirmed</span></div><div class="divider"></div>
+          <div class="row"><div class="well col" style="padding:8px 12px;text-align:center"><span class="mono muted">SEP</span><span class="h-m">25</span></div><div class="col grow"><span class="h-s">Lina Otieno · 14:00–14:30</span><span class="b-s">Awaiting builder</span></div><span class="badge b-partial">Pending</span></div>
+          <p class="b-s">Times are shown in Africa/Nairobi (UTC+3).</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ======================= 09 CANDIDATE ======================= -->
+<section id="s09">
+  <div class="shot-label"><b>09</b><h2>Candidate profile</h2><em>/builders/:id · the founder's view of a builder</em></div>
+  <div class="frame">
+    <div class="chrome"><i></i><i></i><i></i><div class="url">ventureroute.app/builders/kofi-mensah</div></div>
+    <header class="nav"><div class="logo"><svg width="28" height="28"><use href="#mark"/></svg>Venture Route</div><div class="links"><a>Route</a><a class="on">Dashboard</a><a>Showcase</a></div><div class="avatar" style="width:34px;height:34px">NA</div></header>
+    <div class="page col" style="gap:28px">
+      <div class="crumb"><a>← Back to route</a></div>
+      <div class="card elev row" style="padding:28px;gap:22px;margin-top:-8px">
+        <div class="avatar lg">KM</div>
+        <div class="col grow" style="gap:4px"><div class="row" style="gap:8px"><h1 class="d-m">Kofi Mensah</h1><span class="badge b-demo">Seed builder</span></div><span class="ink2">Systems builder · Ridgeway cohort 2026, Coast Polytechnic</span>
+          <div class="row b-s" style="gap:22px;margin-top:6px"><span><b class="ink2">Rate</b> USD 90 / day</span><span><b class="ink2">Availability</b> 22 Sep – 6 Oct 2026</span><span><b class="ink2">Modes</b> Remote, hybrid</span><span><b class="ink2">Location</b> Mombasa</span></div></div>
+        <a class="btn btn-secondary">Message</a><a class="btn btn-primary">Book an interview →</a>
+      </div>
+      <div style="display:grid;grid-template-columns:1.4fr 1fr;gap:22px">
+        <div class="col" style="gap:22px">
+          <div class="card pad col" style="gap:14px"><h2 class="d-s">Verified skills</h2>
+            <div class="row"><span class="h-s grow">Python</span><span class="badge b-cred">Credential</span><span class="mono muted">cred-114</span></div><div class="divider"></div>
+            <div class="row"><span class="h-s grow">Backend</span><span class="badge b-both">Credential + project</span><span class="mono muted">cred-120 · prj-31</span></div>
+            <div class="well col" style="padding:12px 14px;gap:6px;margin-top:4px"><span class="eyebrow muted">Self-described · display only</span><div class="row" style="gap:6px"><span class="badge b-self">Rust</span><span class="badge b-self">DevOps</span></div><span class="b-s">Not used for routing.</span></div>
+          </div>
+          <div class="card pad col" style="gap:14px"><h2 class="d-s">Projects</h2>
+            <div class="row" style="align-items:flex-start;gap:14px"><div class="avatar proj" style="border-radius:10px">P</div><div class="col grow"><span class="h-s">Port logistics ledger</span><span class="b-s">Completed Jun 2026 · Backend, Python · confirmed by BASIX admin</span></div><span class="badge b-proj">Confirmed</span></div>
+          </div>
+        </div>
+        <div class="col" style="gap:22px">
+          <div class="card pad col" style="gap:12px;background:var(--sage);border-color:#D2E2D9"><h2 class="d-s">Evidence summary</h2><p class="ink2">Eligible for <b>Python</b> and <b>Backend</b> on this brief: 10 source facts across 4 rules.</p><a class="btn btn-ghost sm" style="align-self:flex-start;padding-left:0">Open reasoning paths →</a></div>
+          <div class="card pad col" style="gap:10px"><h2 class="d-s">Shared contact</h2><div class="row b-s"><span class="grow">Email</span><span class="ink2">kofi@demo.basix</span></div><div class="row b-s"><span class="grow">LinkedIn</span><span class="ink2">in/kofi-mensah</span></div><div class="row b-s"><span class="grow">Phone</span><span>Not shared</span></div><p class="b-s">Builders choose what founders can see.</p></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ======================= 10 BOOKING ======================= -->
+<section id="s10">
+  <div class="shot-label"><b>10</b><h2>Book an interview</h2><em>/bookings/new · slot picker in Nairobi time</em></div>
+  <div class="frame">
+    <div class="chrome"><i></i><i></i><i></i><div class="url">ventureroute.app/bookings/new</div></div>
+    <header class="nav"><div class="logo"><svg width="28" height="28"><use href="#mark"/></svg>Venture Route</div><div class="links"><a>Route</a><a class="on">Dashboard</a><a>Showcase</a></div><div class="avatar" style="width:34px;height:34px">NA</div></header>
+    <div class="page" style="display:grid;grid-template-columns:1fr 340px;gap:40px">
+      <div class="col" style="gap:22px">
+        <div class="crumb"><a>← Back to your ventures</a></div>
+        <h1 class="d-m" style="margin-top:-8px">Book an interview</h1>
+        <div class="card pad col" style="gap:18px">
+          <div class="row"><span class="h-m grow">September 2026</span><a class="btn btn-secondary sm">‹</a><a class="btn btn-secondary sm">›</a></div>
+          <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:10px">
+            <div class="well col" style="padding:10px;text-align:center"><span class="mono muted">MON</span><span class="h-m">22</span></div>
+            <div class="well col" style="padding:10px;text-align:center"><span class="mono muted">TUE</span><span class="h-m">23</span></div>
+            <div class="col" style="padding:10px;text-align:center;background:var(--forest);color:var(--d-text);border-radius:10px"><span class="mono" style="color:var(--mint)">WED</span><span class="h-m">24</span></div>
+            <div class="well col" style="padding:10px;text-align:center"><span class="mono muted">THU</span><span class="h-m">25</span></div>
+            <div class="well col" style="padding:10px;text-align:center;opacity:.45"><span class="mono muted">FRI</span><span class="h-m">26</span></div>
+          </div>
+          <div class="divider"></div>
+          <span class="eyebrow muted">Available · Wed 24 Sep</span>
+          <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px">
+            <span class="chip" style="justify-content:center">09:00</span><span class="chip on" style="justify-content:center">10:00</span><span class="chip" style="justify-content:center">11:30</span><span class="chip" style="justify-content:center">14:00</span><span class="chip" style="justify-content:center">14:30</span><span class="chip" style="justify-content:center">15:00</span><span class="chip" style="justify-content:center;opacity:.4;text-decoration:line-through">16:00</span><span class="chip" style="justify-content:center">16:30</span>
+          </div>
+          <div class="field"><label>Note to the builder (optional)</label><div class="input" style="min-height:72px;align-items:flex-start;color:var(--ink-3)">We'd like to talk through the Python/MeTTa backend and your availability after 6 Oct.</div></div>
+        </div>
+        <p class="b-s">Times are shown in Africa/Nairobi (UTC+3).</p>
+      </div>
+      <aside class="col" style="gap:16px;padding-top:60px">
+        <div class="card elev pad col" style="gap:14px">
+          <div class="row"><div class="avatar">KM</div><div class="col"><span class="h-s">Kofi Mensah</span><span class="b-s">Python · Backend</span></div></div>
+          <div class="divider"></div>
+          <div class="row b-s"><span class="grow">Venture</span><span class="ink2">Health triage pilot</span></div>
+          <div class="row b-s"><span class="grow">When</span><span class="ink2">Wed 24 Sep · 10:00–10:30</span></div>
+          <div class="row b-s"><span class="grow">Format</span><span class="ink2">Video · 30 min</span></div>
+          <a class="btn btn-primary" style="justify-content:center">Propose this time →</a>
+          <span class="b-s" style="text-align:center">Kofi confirms or suggests another slot.</span>
+        </div>
+      </aside>
+    </div>
+  </div>
+</section>
+
+<!-- ======================= 11 BUILDER PROFILE ======================= -->
+<section id="s11">
+  <div class="shot-label"><b>11</b><h2>Builder profile</h2><em>/profile · what the graph will know about you</em></div>
+  <div class="frame">
+    <div class="chrome"><i></i><i></i><i></i><div class="url">ventureroute.app/profile</div></div>
+    <header class="nav"><div class="logo"><svg width="28" height="28"><use href="#mark"/></svg>Venture Route</div><div class="links"><a class="on">Profile</a><a>Requests</a><a>Showcase</a></div><div class="avatar proj" style="width:34px;height:34px">LO</div></header>
+    <div class="page col" style="gap:26px">
+      <div class="row" style="align-items:flex-end"><div class="col grow" style="gap:6px"><span class="eyebrow">Builder account</span><h1 class="d-l">Your profile</h1></div><span class="badge b-partial">Pending BASIX confirmation</span></div>
+      <div class="card row" style="padding:16px 20px;gap:16px;background:var(--amber-tint);border-color:#EBD6AE"><span class="h-s grow" style="color:var(--amber)">1 credential and 1 project are waiting for a BASIX admin. Until then they show as pending and don't count for routing.</span></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:22px">
+        <div class="card pad col" style="gap:16px"><h2 class="d-s">Basics</h2>
+          <div class="field"><label>Display name</label><div class="input">Lina Otieno</div></div>
+          <div class="field"><label>Headline</label><div class="input">Product designer for health and civic tools</div></div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px"><div class="field"><label>Day rate (USD)</label><div class="input">60</div></div><div class="field"><label>Location</label><div class="input">Kisumu</div></div></div>
+          <div class="field"><label>Delivery modes</label><div class="row" style="gap:8px"><span class="chip on">Remote</span><span class="chip on">Hybrid</span><span class="chip">On-site</span></div></div>
+          <div class="field"><label>Share with founders</label><div class="row" style="gap:8px"><span class="chip on">Email</span><span class="chip">Phone</span><span class="chip on">LinkedIn</span></div></div>
+        </div>
+        <div class="col" style="gap:22px">
+          <div class="card pad col" style="gap:12px"><div class="row"><h2 class="d-s grow">Credentials</h2><a class="btn btn-secondary sm">+ Add</a></div>
+            <div class="row"><div class="col grow"><span class="h-s">UX Research Certificate</span><span class="b-s">Coast Polytechnic · UI/UX</span></div><span class="badge b-cred">Confirmed</span></div><div class="divider"></div>
+            <div class="row"><div class="col grow"><span class="h-s">Frontend Engineering</span><span class="b-s">MeTTa OmniUniversity · Frontend</span></div><span class="badge b-partial">Pending</span></div>
+          </div>
+          <div class="card pad col" style="gap:12px"><div class="row"><h2 class="d-s grow">Projects</h2><a class="btn btn-secondary sm">+ Add project</a></div>
+            <div class="row"><div class="col grow"><span class="h-s">Clinic intake form kit</span><span class="b-s">UI/UX · Licensable · on the Showcase</span></div><span class="badge b-proj">Confirmed</span></div><div class="divider"></div>
+            <div class="row"><div class="col grow"><span class="h-s">Water point reporting app</span><span class="b-s">Frontend · In review</span></div><span class="badge b-partial">Pending</span></div>
+          </div>
+          <div class="card pad col" style="gap:10px"><h2 class="d-s">Skills from your CV</h2><p class="b-s">Suggestions stay self-described until a credential or project proves them.</p><div class="row" style="gap:6px;flex-wrap:wrap"><span class="badge b-self">Figma</span><span class="badge b-self">Accessibility</span><span class="badge b-self">React</span></div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ======================= 12 REQUESTS ======================= -->
+<section id="s12">
+  <div class="shot-label"><b>12</b><h2>Open requests</h2><em>/requests · builder console, eligible first</em></div>
+  <div class="frame">
+    <div class="chrome"><i></i><i></i><i></i><div class="url">ventureroute.app/requests</div></div>
+    <header class="nav"><div class="logo"><svg width="28" height="28"><use href="#mark"/></svg>Venture Route</div><div class="links"><a>Profile</a><a class="on">Requests</a><a>Showcase</a></div><div class="avatar proj" style="width:34px;height:34px">LO</div></header>
+    <div class="page col" style="gap:24px">
+      <div class="row" style="align-items:flex-end"><div class="col grow" style="gap:6px"><span class="eyebrow">Builder console</span><h1 class="d-l">Open requests</h1></div></div>
+      <div class="row card" style="padding:12px 16px;gap:14px"><span class="b-s">Verified skills:</span><span class="badge b-cred">UI/UX</span><span class="badge b-proj">Frontend</span><div class="grow"></div><span class="b-s">Sort by:</span><span class="chip on" style="padding:4px 12px">Eligible first</span><span class="chip" style="padding:4px 12px">Newest</span><span class="chip" style="padding:4px 12px">Budget</span></div>
+      <div class="col" style="gap:14px">
+        <div class="card elev row" style="padding:22px 24px;gap:22px;border-left:3px solid var(--forest)"><div class="col grow" style="gap:6px"><div class="row" style="gap:8px"><span class="badge b-ok">You're eligible</span><span class="mono muted">posted 2 days ago</span></div><span class="h-m">Maternal health triage pilot</span><div class="row" style="gap:6px"><span class="badge b-neutral nodot">Python</span><span class="badge b-neutral nodot">AI/MeTTa</span><span class="badge b-cred">UI/UX ✓</span><span class="badge b-neutral nodot">Mobile</span></div></div><div class="col" style="text-align:right"><span class="eyebrow muted">Budget ceiling</span><span class="d-s">USD 300/day</span><span class="b-s">22 Sep – 6 Oct · Remote</span></div><a class="btn btn-primary">Place a bid →</a></div>
+        <div class="card row" style="padding:22px 24px;gap:22px;border-left:3px solid var(--forest)"><div class="col grow" style="gap:6px"><div class="row" style="gap:8px"><span class="badge b-ok">You're eligible</span><span class="mono muted">posted 5 days ago</span></div><span class="h-m">Agri produce marketplace</span><div class="row" style="gap:6px"><span class="badge b-proj">Frontend ✓</span><span class="badge b-neutral nodot">Backend</span><span class="badge b-neutral nodot">Data</span></div></div><div class="col" style="text-align:right"><span class="eyebrow muted">Budget ceiling</span><span class="d-s">USD 200/day</span><span class="b-s">1 – 31 Oct · Hybrid, Nakuru</span></div><a class="btn btn-secondary">Bid placed ✓</a></div>
+        <div class="card row" style="padding:22px 24px;gap:22px;opacity:.72"><div class="col grow" style="gap:6px"><div class="row" style="gap:8px"><span class="badge b-neutral">Not eligible · no verified Rust</span><span class="mono muted">posted 1 week ago</span></div><span class="h-m">Delivery tracking MVP</span><div class="row" style="gap:6px"><span class="badge b-neutral nodot">Rust</span><span class="badge b-neutral nodot">Mobile</span></div></div><div class="col" style="text-align:right"><span class="eyebrow muted">Budget ceiling</span><span class="d-s">USD 250/day</span><span class="b-s">On-site · Mombasa</span></div><a class="btn btn-ghost">View</a></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ======================= 13 SHOWCASE ======================= -->
+<section id="s13">
+  <div class="shot-label"><b>13</b><h2>Showcase</h2><em>/showcase · confirmed projects and licensable IP</em></div>
+  <div class="frame">
+    <div class="chrome"><i></i><i></i><i></i><div class="url">ventureroute.app/showcase</div></div>
+    <header class="nav"><div class="logo"><svg width="28" height="28"><use href="#mark"/></svg>Venture Route</div><div class="links"><a>Route</a><a class="on">Showcase</a><a>Partners</a></div><a class="btn btn-ghost">Sign in</a></header>
+    <div class="page col" style="gap:24px">
+      <div class="row" style="align-items:flex-end"><div class="col grow" style="gap:6px"><span class="eyebrow">Showcase</span><h1 class="d-l">Work the graph can vouch for.</h1><p class="muted">Most recently confirmed first.</p></div></div>
+      <div class="row" style="gap:8px;flex-wrap:wrap"><span class="chip on">All</span><span class="chip">Health</span><span class="chip">Agriculture</span><span class="chip">Fintech</span><span class="chip">Logistics</span><div class="grow"></div><span class="chip">☐ Licensable only</span></div>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:18px">
+        <article class="card elev" style="overflow:hidden"><div style="height:150px;background:linear-gradient(135deg,var(--sage),#CFE3D8);position:relative"><svg viewBox="0 0 300 150" style="position:absolute;inset:0;width:100%;height:100%"><path d="M20 120 C 90 40, 180 140, 280 30" stroke="#1E5A45" stroke-width="2" fill="none" stroke-dasharray="4 5"/><circle cx="20" cy="120" r="6" fill="#1E5A45"/><circle cx="280" cy="30" r="6" fill="#7FD1AC"/></svg><span class="badge b-both" style="position:absolute;top:12px;left:12px;background:#fff">Licensable</span></div><div class="col" style="padding:18px 20px;gap:8px"><span class="h-m">Clinic intake form kit</span><span class="b-s">Accessible intake flows for low-bandwidth clinics.</span><div class="row" style="gap:6px"><span class="badge b-proj">UI/UX</span><span class="badge b-neutral nodot">Health</span></div><div class="divider" style="margin:6px 0"></div><div class="row"><div class="avatar proj" style="width:26px;height:26px;font-size:10px">LO</div><span class="b-s grow">Lina Otieno</span><span class="mono muted">Sep 2026</span></div></div></article>
+        <article class="card elev" style="overflow:hidden"><div style="height:150px;background:linear-gradient(135deg,var(--proj-tint),#D6DAF0);position:relative"><svg viewBox="0 0 300 150" style="position:absolute;inset:0;width:100%;height:100%"><rect x="40" y="40" width="60" height="70" rx="8" fill="#fff" opacity=".7"/><rect x="120" y="25" width="60" height="85" rx="8" fill="#fff" opacity=".85"/><rect x="200" y="55" width="60" height="55" rx="8" fill="#fff" opacity=".7"/></svg></div><div class="col" style="padding:18px 20px;gap:8px"><span class="h-m">Port logistics ledger</span><span class="b-s">Container tracking with auditable state changes.</span><div class="row" style="gap:6px"><span class="badge b-proj">Backend</span><span class="badge b-neutral nodot">Logistics</span></div><div class="divider" style="margin:6px 0"></div><div class="row"><div class="avatar" style="width:26px;height:26px;font-size:10px">KM</div><span class="b-s grow">Kofi Mensah</span><span class="mono muted">Jun 2026</span></div></div></article>
+        <article class="card elev" style="overflow:hidden"><div style="height:150px;background:linear-gradient(135deg,var(--amber-tint),#F0DDB8);position:relative"><svg viewBox="0 0 300 150" style="position:absolute;inset:0;width:100%;height:100%"><circle cx="150" cy="75" r="42" fill="#fff" opacity=".6"/><circle cx="150" cy="75" r="22" fill="#fff" opacity=".9"/></svg><span class="badge b-both" style="position:absolute;top:12px;left:12px;background:#fff">Licensable</span></div><div class="col" style="padding:18px 20px;gap:8px"><span class="h-m">Maize price forecaster</span><span class="b-s">Weekly county-level price signals for cooperatives.</span><div class="row" style="gap:6px"><span class="badge b-proj">Data</span><span class="badge b-neutral nodot">Agriculture</span></div><div class="divider" style="margin:6px 0"></div><div class="row"><div class="avatar amber" style="width:26px;height:26px;font-size:10px">JN</div><span class="b-s grow">Joy Njeri</span><span class="mono muted">May 2026</span></div></div></article>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ======================= 14 PARTNERS ======================= -->
+<section id="s14">
+  <div class="shot-label"><b>14</b><h2>Partners</h2><em>/partners · who backs which vertical, through which university</em></div>
+  <div class="frame">
+    <div class="chrome"><i></i><i></i><i></i><div class="url">ventureroute.app/partners</div></div>
+    <header class="nav"><div class="logo"><svg width="28" height="28"><use href="#mark"/></svg>Venture Route</div><div class="links"><a>Route</a><a>Showcase</a><a class="on">Partners</a></div><a class="btn btn-ghost">Sign in</a></header>
+    <div class="page col" style="gap:26px">
+      <div class="col" style="gap:6px"><span class="eyebrow">Ecosystem</span><h1 class="d-l">Partners in the BASIX graph</h1><p class="muted" style="max-width:640px">partner-fit is a four-hop chain. A partner reaches your route only through a builder's cohort and university.</p></div>
+      <div class="card pad row" style="gap:0;justify-content:space-between;background:var(--sage);border-color:#D2E2D9;padding:26px 32px">
+        <div class="col" style="align-items:center;gap:6px"><div class="avatar">KM</div><span class="h-s">Builder</span><span class="b-s">Kofi Mensah</span></div><div class="grow" style="height:2px;background:linear-gradient(90deg,var(--forest),var(--mint));margin:0 12px 36px"></div>
+        <div class="col" style="align-items:center;gap:6px"><div class="avatar" style="background:#fff">RC</div><span class="h-s">Cohort</span><span class="b-s">Ridgeway 2026</span></div><div class="grow" style="height:2px;background:linear-gradient(90deg,var(--forest),var(--mint));margin:0 12px 36px"></div>
+        <div class="col" style="align-items:center;gap:6px"><div class="avatar" style="background:#fff">CP</div><span class="h-s">University</span><span class="b-s">Coast Polytechnic</span></div><div class="grow" style="height:2px;background:linear-gradient(90deg,var(--forest),var(--mint));margin:0 12px 36px"></div>
+        <div class="col" style="align-items:center;gap:6px"><div class="avatar" style="background:var(--forest);color:var(--mint)">SS</div><span class="h-s">Partner</span><span class="b-s">Savanna Systems Guild</span></div>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:18px">
+        <div class="card pad col" style="gap:10px"><span class="h-m">Savanna Systems Guild</span><span class="b-s">Engineering mentorship and pilot hosting.</span><div class="row" style="gap:6px;flex-wrap:wrap"><span class="badge b-neutral nodot">Health</span><span class="badge b-neutral nodot">Logistics</span></div><div class="divider"></div><span class="b-s">Universities: Coast Polytechnic, Ridgeway Institute</span></div>
+        <div class="card pad col" style="gap:10px"><span class="h-m">Rift Valley Agri Fund</span><span class="b-s">Seed grants for cooperative tooling.</span><div class="row" style="gap:6px"><span class="badge b-neutral nodot">Agriculture</span></div><div class="divider"></div><span class="b-s">Universities: Egerton Tech</span></div>
+        <div class="card pad col" style="gap:10px"><span class="h-m">Lakeside Health Network</span><span class="b-s">Clinic access for field testing.</span><div class="row" style="gap:6px"><span class="badge b-neutral nodot">Health</span></div><div class="divider"></div><span class="b-s">Universities: Maseno Digital School</span></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ======================= 15 ADMIN ======================= -->
+<section id="s15">
+  <div class="shot-label"><b>15</b><h2>Admin confirmation queue</h2><em>/admin · only confirmed records enter the graph</em></div>
+  <div class="frame">
+    <div class="chrome"><i></i><i></i><i></i><div class="url">ventureroute.app/admin</div></div>
+    <header class="nav"><div class="logo"><svg width="28" height="28"><use href="#mark"/></svg>Venture Route</div><div class="links"><a class="on">Queue</a><a>Registry</a><a>Health</a></div><span class="badge b-demo">Admin</span><div class="avatar amber" style="width:34px;height:34px">BA</div></header>
+    <div class="page" style="display:grid;grid-template-columns:1fr 360px;gap:32px">
+      <div class="col" style="gap:22px">
+        <div class="col" style="gap:6px"><span class="eyebrow">Registry</span><h1 class="d-l">Confirmation queue</h1></div>
+        <div class="row" style="gap:8px"><span class="chip on">All pending · 3</span><span class="chip">Accounts · 0</span><span class="chip">Credentials · 2</span><span class="chip">Projects · 1</span><span class="chip">Decided</span></div>
+        <div class="card" style="overflow:hidden">
+          <table class="t">
+            <thead><tr><th>Item</th><th>Builder</th><th>Skill</th><th>Submitted</th><th></th></tr></thead>
+            <tbody>
+              <tr style="background:var(--sage)"><td><div class="h-s">Frontend Engineering</div><div class="b-s">Credential · MeTTa OmniUniversity</div></td><td>Lina Otieno</td><td><span class="badge b-neutral nodot">Frontend</span></td><td class="b-s">21 Sep</td><td style="text-align:right;white-space:nowrap"><a class="btn btn-danger sm">Reject</a> <a class="btn btn-primary sm">Confirm</a></td></tr>
+              <tr><td><div class="h-s">Water point reporting app</div><div class="b-s">Project · completed Aug 2026</div></td><td>Lina Otieno</td><td><span class="badge b-neutral nodot">Frontend</span></td><td class="b-s">20 Sep</td><td style="text-align:right;white-space:nowrap"><a class="btn btn-danger sm">Reject</a> <a class="btn btn-primary sm">Confirm</a></td></tr>
+              <tr><td><div class="h-s">Android Associate</div><div class="b-s">Credential · Coast Polytechnic</div></td><td>Moses Ochieng</td><td><span class="badge b-neutral nodot">Mobile</span></td><td class="b-s">19 Sep</td><td style="text-align:right;white-space:nowrap"><a class="btn btn-danger sm">Reject</a> <a class="btn btn-primary sm">Confirm</a></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <aside class="col" style="gap:18px;padding-top:30px">
+        <div style="background:var(--forest-deep);border-radius:14px;padding:22px;color:var(--d-text)" class="col">
+          <span class="eyebrow" style="color:var(--mint)">MeTTa fact projection · preview</span>
+          <span class="b-s" style="color:var(--d-muted);margin:6px 0 14px">Facts this row would add on confirmation</span>
+          <div class="mono col" style="gap:8px;line-height:1.6"><span>credential(cred-131, lina-otieno, frontend)</span><span>status(cred-131, confirmed)</span><span>issuer(cred-131, metta-omniuniversity)</span></div>
+          <div class="row" style="margin-top:16px;padding-top:14px;border-top:1px solid var(--d-border)"><span class="b-s grow" style="color:var(--d-muted)">Unlocks rule</span><span class="mono" style="color:var(--mint)">verified-for-skill</span></div>
+        </div>
+        <div class="card pad col" style="gap:8px"><span class="eyebrow muted">What confirming means</span><p class="b-s"><b class="ink2">Accounts:</b> the builder can be routed.<br><b class="ink2">Credentials:</b> feed verified-for-skill.<br><b class="ink2">Projects:</b> feed verified-for-skill and reuse-fit.</p><div class="row" style="margin-top:6px"><span class="mono muted grow">GET /health</span><span class="mono ink2">projected_rows 14</span></div></div>
+      </aside>
+    </div>
+  </div>
+</section>
+
+</main>
+</div>
+<script>
+// Highlight the current screen in the sidebar while scrolling.
+const links=[...document.querySelectorAll('.toc a')];
+const io=new IntersectionObserver(es=>{es.forEach(e=>{if(e.isIntersecting){links.forEach(l=>l.classList.toggle('on',l.getAttribute('href')==='#'+e.target.id));}})},{rootMargin:'-40% 0px -55% 0px'});
+document.querySelectorAll('main section').forEach(s=>io.observe(s));
+</script>
+</body>
+</html>
