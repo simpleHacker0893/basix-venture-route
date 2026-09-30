@@ -227,9 +227,12 @@ export function AppShell() {
         Skip to main content
       </a>
 
-      <aside
-        className={`sticky top-0 hidden h-screen flex-col gap-6 overflow-y-auto border-r px-4 py-6 lg:flex ${dark ? "border-border-dark bg-dark" : "border-border bg-surface"}`}
-      >
+      {/* The sidebar's colour runs the full page height, behind the sticky sidebar itself. */}
+      <div
+        aria-hidden="true"
+        className={`fixed inset-y-0 left-0 hidden w-[272px] border-r lg:block ${dark ? "border-border-dark bg-dark" : "border-border bg-surface"}`}
+      />
+      <aside className="sticky top-0 z-10 hidden h-screen flex-col gap-6 overflow-y-auto px-4 py-6 lg:flex">
         <Link
           to="/"
           className={`flex items-center gap-2.5 whitespace-nowrap px-2 font-display font-semibold tracking-tight ${dark ? "text-[19px] text-white" : "text-[21px] text-ink"}`}
