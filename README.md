@@ -146,6 +146,7 @@ Copy `.env.example` to `.env`. Every variable any service reads is listed there 
 | `ENGINE_DEV_QUERY` | engine | `1` exposes `POST /internal/query`. Never in a deployed engine. |
 | `CORS_ORIGINS` | engine | Browser origins allowed to call the engine (D-30); Vite dev and preview by default. |
 | `LLM_PROVIDER`, `ANTHROPIC_API_KEY` | engine | `anthropic` with a key uses the official SDK; otherwise the null adapter and the structured form (D-06). |
+| `OPENROUTER_API_KEY`, `OPENROUTER_MODEL`, `OPENROUTER_SUGGEST_MODEL` | engine | With `LLM_PROVIDER=openrouter`, the same prompts go through OpenRouter; models are OpenRouter slugs that support structured outputs, defaulting to the Claude models of D-06 (D-53). |
 | `DATABASE_URL`, `DATABASE_URL_DIRECT`, `TEST_DATABASE_URL` | engine | Neon Postgres in the asyncpg `?ssl=require` form (D-17); the direct URL is for Alembic; the test URL is for pytest. |
 | `POSTGRES_USER`, `POSTGRES_PASSWORD`, `POSTGRES_DB`, `POSTGRES_PORT` | compose | The local `db` service; the engine container derives its `DATABASE_URL` from them. |
 | `CLERK_JWKS_URL`, `CLERK_SECRET_KEY`, `CLERK_WEBHOOK_SIGNING_SECRET`, `ADMIN_EMAILS` | engine | Session verification, the Backend API call that writes the role, webhook verification, and the first admins (D-03). |
