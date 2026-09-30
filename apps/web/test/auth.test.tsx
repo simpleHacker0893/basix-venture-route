@@ -79,10 +79,10 @@ describe("RequireRole", () => {
     expect(screen.getByText(/role is set once/i)).toBeInTheDocument();
   });
 
-  it("sends a builder away from /admin to their profile", () => {
+  it("sends a builder away from /admin to their home", () => {
     render(<App initialPath="/admin" source={source} auth={signedIn("builder")} />);
 
-    expect(screen.getByRole("heading", { level: 1, name: "Your profile" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { level: 1, name: "Home" })).toBeInTheDocument();
   });
 
   it("lets an admin see the confirmation queue", () => {
@@ -119,7 +119,7 @@ describe("RoleSelect", () => {
     expect(posted).toEqual([]); // selecting a card saves nothing until Continue
     await user.click(screen.getByRole("button", { name: "Continue as builder" }));
 
-    await waitFor(() => expect(screen.getByRole("heading", { level: 1, name: "Your profile" })).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByRole("heading", { level: 1, name: "Home" })).toBeInTheDocument());
     expect(posted).toEqual([{ role: "builder" }]);
     expect(reload).toHaveBeenCalledTimes(1);
   });

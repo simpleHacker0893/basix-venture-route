@@ -121,11 +121,11 @@ describe("/builders/:builderId", () => {
     expect(within(state).getByRole("link", { name: /Back to route/ })).toHaveAttribute("href", "/route");
   });
 
-  it("sends a builder session to their own profile (RequireRole)", async () => {
+  it("sends a builder session to their own home (RequireRole)", async () => {
     const marketplace = fakeMarketplace();
 
     render(<App initialPath="/builders/jane-mwangi" source={source} auth={builderAuth} marketplace={marketplace} />);
 
-    expect(await screen.findByRole("heading", { level: 1, name: "Your profile" })).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { level: 1, name: "Home" })).toBeInTheDocument();
   });
 });

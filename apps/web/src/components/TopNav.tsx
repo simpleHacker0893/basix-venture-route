@@ -7,7 +7,7 @@ import { ROLE_HOME } from "../auth/config";
 import { FounderVoiceToggle } from "../chloe/ui/FounderVoiceToggle";
 import { LogoMark } from "./Logo";
 
-const HOME_LABEL = { founder: "Route my venture", builder: "Your profile", admin: "Confirmation queue" } as const;
+const HOME_LABEL = { founder: "Route my venture", builder: "Home", admin: "Review queue" } as const;
 
 /**
  * The header, restyled for the refined UI (design/refined-ui) from the Stitch header

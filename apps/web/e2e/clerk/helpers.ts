@@ -11,7 +11,7 @@ import { readState, type Role } from "./env";
 
 export const HOME_HEADING: Record<Role, string> = {
   founder: "Describe your MVP",
-  builder: "Your profile",
+  builder: "Home",
   admin: "Confirmation queue",
 };
 

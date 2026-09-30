@@ -12,6 +12,7 @@ import { SignInScreen } from "./features/auth/SignInScreen";
 import { BookingProposePage } from "./features/booking/BookingProposePage";
 import { BookingStatusPage } from "./features/booking/BookingStatusPage";
 import { AddProjectPage } from "./features/builder/AddProjectPage";
+import { BuilderHome } from "./features/builder/BuilderHome";
 import { ProfilePage } from "./features/builder/ProfilePage";
 import { CandidatePage } from "./features/candidate/CandidatePage";
 import { DashboardPage } from "./features/dashboard/DashboardPage";
@@ -92,6 +93,8 @@ export function AppRoutes() {
       {/* Signed-in pages: the role gate, then the app shell (sidebar, top bar, tab bar). */}
       <Route element={<RequireRole roles={["builder"]} />}>
         <Route element={<AppShell />}>
+          {/* The builder's home: status, requests with the engine's verdicts, bids, interviews. */}
+          <Route path="home" element={<BuilderHome />} />
           <Route path="profile" element={<ProfilePage />} />
           <Route path="profile/projects/new" element={<AddProjectPage />} />
           {/* Sprint 004 screen 10: the requests board with the engine's eligibility verdicts. */}
