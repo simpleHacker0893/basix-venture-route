@@ -3,7 +3,7 @@
 Every RTL line runs with the fake voice provider injected through `renderApp(path, fetch, { voice })`. Every Playwright line runs against `vite preview` built with `VITE_VOICE_PROVIDER=fake`, the engine on `LLM_PROVIDER=null` (D-33). The Web Speech provider itself is covered by the manual Should line only (R-11).
 
 ## Must
-- [ ] Contract and engine unchanged: `git diff --stat origin/master -- packages/contracts services/engine/app/models services/engine/app/conversation services/engine/seed` prints nothing.
+- [ ] Conversation contract unchanged (narrowed by D-51, because the Showcase on the same branch changes the engine): `git diff --stat origin/master -- packages/contracts/src/chat.ts services/engine/app/models services/engine/app/conversation services/engine/seed/rules.metta services/engine/seed/facts.metta services/engine/seed/briefs.json` prints nothing.
 - [ ] RTL (`pnpm -F web test -- test/chloe.test.tsx`): enabling "Voice: Chloe" speaks the greeting exactly once per session (disable and re-enable does not repeat it), and one `chloe-turn` renders.
 - [ ] RTL: after a vague message, the assistant turn shows the engine's full clarification list ("To route this brief I still need:" and every required field) while the fake provider recorded exactly one new spoken line, the `title` question.
 - [ ] RTL: Health pilot loaded → "Back to chat" → voice on → the spoken read-back contains `USD 400 / day` and "Shall I find your route?"; holding the mic and transcribing "yes" posts `{ "userMessage": "", "currentBrief": <the seed brief> }` (asserted on the captured request body), adds no `founder-turn`, and the `Feasible` badge renders; transcribing "not yet" instead posts nothing to `/api/conversation`.

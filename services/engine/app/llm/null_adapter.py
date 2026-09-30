@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from app.llm.base import ExtractedBrief
+from app.llm.base import ExtractedBrief, LlmUnavailable
 from app.models.chat import PartialBrief
 from app.models.route import VentureRoute
 
@@ -18,3 +18,7 @@ class NullAdapter:
 
     def explain_route(self, route: VentureRoute) -> str:
         return route.summary
+
+    def suggest_skills(self, text: str) -> list[str]:
+        """No model, no suggestions: the endpoint answers `available: false` (D-50)."""
+        raise LlmUnavailable("no language model configured")

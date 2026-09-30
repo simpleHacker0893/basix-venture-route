@@ -15,6 +15,13 @@ export function ChatThread({ turns }: ChatThreadProps) {
               {turn.text}
             </p>
           </li>
+        ) : turn.role === "chloe" ? (
+          <li key={index} className="flex flex-col items-start" data-testid="chloe-turn">
+            <span className="mb-1 text-[13px] text-ink-2">Chloe</span>
+            <p className="w-full max-w-[680px] whitespace-pre-line break-words rounded-card border border-border bg-surface p-6 leading-relaxed">
+              {turn.text}
+            </p>
+          </li>
         ) : (
           <li key={index} className="flex flex-col items-start" data-testid="assistant-turn">
             <span className="mb-1 text-[13px] text-ink-2">Assistant</span>

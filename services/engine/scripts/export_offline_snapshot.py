@@ -6,7 +6,8 @@ Usage (from services/engine):
 
 Output: apps/web/src/offline/snapshot.json (the folder is created when missing).
 
-The snapshot is `{briefs, routes}` keyed by seed brief id, in seed order, camelCase on the wire,
+The snapshot is `{briefs, routes, ecosystem}`; briefs and routes are keyed by seed brief id, in
+seed order, camelCase on the wire,
 exactly what `POST /api/route` answers for each brief with `LLM_PROVIDER=null`. The web app reads
 it only when `VITE_OFFLINE_DEMO=1`. It is generated, never hand-edited: a hand-written JSON would
 be a matcher by another name (AGENTS.md rule 1).
@@ -26,6 +27,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from app.config import Settings  # noqa: E402
 from app.engine.metta_engine import MettaRouteEngine  # noqa: E402
 from app.models.brief import load_seed_briefs  # noqa: E402
+from app.routing.ecosystem import ecosystem_view  # noqa: E402
 from app.routing.route_service import RouteService  # noqa: E402
 
 REPO_ROOT = Path(__file__).resolve().parents[3]
@@ -45,6 +47,8 @@ def build_snapshot() -> Json:
             brief.id: service.route(brief).model_dump(mode="json", by_alias=True)
             for brief in briefs
         },
+        # The footer's Partners page (#79) reads the same seed entities offline.
+        "ecosystem": ecosystem_view(engine).model_dump(mode="json", by_alias=True),
     }
 
 

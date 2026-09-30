@@ -4,7 +4,7 @@
  * "Pending BASIX confirmation" banner shows whenever the account is not confirmed: the builder
  * is absent from routes and candidate views until an admin confirms (DOMAIN.md §Marketplace).
  */
-import type { BuilderProfile, Credential, Project } from "@venture-route/contracts";
+import type { BuilderProfile, Credential, ShowcaseProject } from "@venture-route/contracts";
 import { useEffect, useState } from "react";
 
 import { ApiNotFoundError } from "../../api/client";
@@ -15,7 +15,7 @@ import { ProfileForm } from "./ProfileForm";
 import { ProjectsCard } from "./ProjectsCard";
 import { errorMessage } from "./formStyles";
 
-type Loaded = { profile: BuilderProfile | null; credentials: Credential[]; projects: Project[] };
+type Loaded = { profile: BuilderProfile | null; credentials: Credential[]; projects: ShowcaseProject[] };
 
 /** "no profile yet" is a normal state, not an error; any other failure surfaces. */
 function orNotFound<T>(fallback: T): (cause: unknown) => T {
@@ -35,7 +35,7 @@ export function ProfilePage() {
     Promise.all([
       api.getProfile().catch(orNotFound<BuilderProfile | null>(null)),
       api.listCredentials().catch(orNotFound<Credential[]>([])),
-      api.listProjects().catch(orNotFound<Project[]>([])),
+      api.listProjects().catch(orNotFound<ShowcaseProject[]>([])),
     ])
       .then(([profile, credentials, projects]) => {
         if (!cancelled) setLoaded({ profile, credentials, projects });
@@ -116,7 +116,17 @@ export function ProfilePage() {
                 setLoaded((current) => (current ? { ...current, credentials: [...current.credentials, created] } : current));
               }}
             />
-            <ProjectsCard projects={loaded.projects} hasProfile={profile !== null} />
+            <ProjectsCard
+              projects={loaded.projects}
+              hasProfile={profile !== null}
+              onSaveShowcase={async (projectId, body) => {
+                const updated = await api.saveShowcase(projectId, body);
+                setLoaded((current) =>
+                  current ? { ...current, projects: current.projects.map((p) => (p.id === projectId ? updated : p)) } : current,
+                );
+                return updated;
+              }}
+            />
           </div>
         </>
       ) : null}

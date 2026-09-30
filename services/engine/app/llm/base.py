@@ -56,3 +56,9 @@ class LlmAdapter(Protocol):
     def explain_route(self, route: VentureRoute) -> str:
         """A summary of the structured route and nothing else. Raises LlmUnavailable."""
         ...
+
+    def suggest_skills(self, text: str) -> list[str]:
+        """Raw skill labels stated in pasted résumé text (D-50); the caller maps them to the
+        vocabulary, dedupes and caps. `text` is never stored or logged, and no exception raised
+        here may carry it. Raises LlmUnavailable."""
+        ...

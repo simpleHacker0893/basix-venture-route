@@ -1,4 +1,5 @@
-import { Outlet, Route, Routes } from "react-router";
+import { useEffect } from "react";
+import { Outlet, Route, Routes, useLocation } from "react-router";
 
 import { RequireRole } from "./auth/RequireRole";
 import { OfflineBanner } from "./components/OfflineBanner";
@@ -7,12 +8,35 @@ import { TopNav } from "./components/TopNav";
 import { AdminHome } from "./features/admin/AdminHome";
 import { RoleSelect } from "./features/auth/RoleSelect";
 import { SignInScreen } from "./features/auth/SignInScreen";
+import { BookingProposePage } from "./features/booking/BookingProposePage";
+import { BookingStatusPage } from "./features/booking/BookingStatusPage";
 import { AddProjectPage } from "./features/builder/AddProjectPage";
 import { ProfilePage } from "./features/builder/ProfilePage";
 import { CandidatePage } from "./features/candidate/CandidatePage";
+import { DashboardPage } from "./features/dashboard/DashboardPage";
+import { PartnersPage } from "./features/ecosystem/PartnersPage";
 import { HandoffScreen } from "./features/handoff/HandoffScreen";
 import { LandingPage } from "./features/landing/LandingPage";
+import { PrivacyPage } from "./features/privacy/PrivacyPage";
+import { RequestsBoard } from "./features/requests/RequestsBoard";
 import { RoutePage } from "./features/route/RoutePage";
+import { ShowcaseDetailPage } from "./features/showcase/ShowcaseDetailPage";
+import { ShowcaseGalleryPage } from "./features/showcase/ShowcaseGalleryPage";
+
+/**
+ * React Router does not scroll to a hash (#79): the header and footer section links target
+ * landing sections, so after every navigation the hashed section scrolls into view, otherwise
+ * the page starts at the top.
+ */
+function ScrollToHash() {
+  const { pathname, hash } = useLocation();
+  useEffect(() => {
+    const target = hash ? document.getElementById(hash.slice(1)) : null;
+    if (target) target.scrollIntoView({ block: "start" });
+    else window.scrollTo(0, 0);
+  }, [pathname, hash]);
+  return null;
+}
 
 function Layout() {
   return (
@@ -23,6 +47,7 @@ function Layout() {
       >
         Skip to main content
       </a>
+      <ScrollToHash />
       <OfflineBanner />
       <TopNav />
       <main id="main" tabIndex={-1} className="flex-1 outline-none">
@@ -40,6 +65,11 @@ export function AppRoutes() {
         <Route index element={<LandingPage />} />
         <Route path="route" element={<RoutePage />} />
         <Route path="handoff" element={<HandoffScreen />} />
+        <Route path="partners" element={<PartnersPage />} />
+        {/* Sprint 005a (#96, spec #86 story 30): public, no RequireRole, signed in or out. */}
+        <Route path="showcase" element={<ShowcaseGalleryPage />} />
+        <Route path="showcase/:projectId" element={<ShowcaseDetailPage />} />
+        <Route path="privacy" element={<PrivacyPage />} />
         {/* Clerk's path routing owns the sub-paths (factor steps, SSO callback). */}
         <Route path="sign-in/*" element={<SignInScreen />} />
         <Route path="sign-up/*" element={<SignInScreen />} />
@@ -47,9 +77,21 @@ export function AppRoutes() {
         <Route element={<RequireRole roles={["builder"]} />}>
           <Route path="profile" element={<ProfilePage />} />
           <Route path="profile/projects/new" element={<AddProjectPage />} />
+          {/* Sprint 004 screen 10: the requests board with the engine's eligibility verdicts. */}
+          <Route path="requests" element={<RequestsBoard />} />
         </Route>
         <Route element={<RequireRole roles={["founder", "admin"]} />}>
           <Route path="builders/:builderId" element={<CandidatePage />} />
+        </Route>
+        <Route element={<RequireRole roles={["founder"]} />}>
+          {/* Sprint 004 screen 11: the founder dashboard fed by GET /api/me/dashboard. */}
+          <Route path="dashboard" element={<DashboardPage />} />
+          {/* Sprint 004 screen 13, propose variant: ?builder=<slug>&request=<id>. */}
+          <Route path="bookings/new" element={<BookingProposePage />} />
+        </Route>
+        <Route element={<RequireRole roles={["founder", "builder"]} />}>
+          {/* Sprint 004 screen 13, status and counter variants, for either party. */}
+          <Route path="bookings/:bookingId" element={<BookingStatusPage />} />
         </Route>
         <Route element={<RequireRole roles={["admin"]} />}>
           <Route path="admin" element={<AdminHome />} />

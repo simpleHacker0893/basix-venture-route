@@ -6,8 +6,11 @@ import type { ChatResponse, VentureBrief } from "@venture-route/contracts";
 import { render } from "@testing-library/react";
 
 import { createApiSource } from "../src/api/client";
+import type { MarketplaceApi } from "../src/api/marketplace";
 import { App } from "../src/App";
+import type { AuthState } from "../src/auth/authContext";
 import snapshot from "../src/offline/snapshot.json";
+import type { VoiceProvider } from "../src/voice/provider";
 
 export type FetchLike = typeof fetch;
 
@@ -71,6 +74,9 @@ type Overrides = Partial<Record<"scenarios" | "route" | "conversation", (init?: 
 export function engineFetch(overrides: Overrides = {}): FetchLike {
   return async (input, init) => {
     const url = typeof input === "string" ? input : input instanceof URL ? input.href : input.url;
+    if (url.endsWith("/api/ecosystem")) {
+      return jsonResponse(snapshot.ecosystem);
+    }
     if (url.endsWith("/api/scenarios")) {
       return overrides.scenarios?.(init) ?? jsonResponse(SEED_BRIEFS);
     }
@@ -96,7 +102,13 @@ export function engineFetch(overrides: Overrides = {}): FetchLike {
   };
 }
 
-export function renderApp(path: string, fetchLike: FetchLike = engineFetch()) {
+export function renderApp(
+  path: string,
+  fetchLike: FetchLike = engineFetch(),
+  options: { voice?: VoiceProvider | null; auth?: AuthState; marketplace?: MarketplaceApi } = {},
+) {
   const source = createApiSource("http://engine.test", fetchLike);
-  return render(<App initialPath={path} source={source} />);
+  return render(
+    <App initialPath={path} source={source} voice={options.voice} auth={options.auth} marketplace={options.marketplace} />,
+  );
 }

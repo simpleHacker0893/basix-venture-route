@@ -183,6 +183,31 @@ class MettaRouteEngine:
                 )
         return frozenset(found)
 
+    def ecosystem(self) -> tuple[dict[str, list[str]], dict[str, list[str]], list[tuple[str, str]]]:
+        """Partners → supported verticals, universities → cohorts, and (licensable asset, vertical)
+        pairs, all from graph predicates with no rule involved (#79). Sorted for stable output."""
+        partners: dict[str, list[str]] = {}
+        for witness in self._query("!(match &self (supports-vertical $p $v) ($p $v))"):
+            partner, vertical = (
+                expect_symbol(x, "partner") for x in expect_list(witness, "partner")
+            )
+            partners.setdefault(partner, []).append(vertical)
+        universities: dict[str, list[str]] = {}
+        for witness in self._query("!(match &self (cohort-of $c $u) ($u $c))"):
+            university, cohort = (
+                expect_symbol(x, "university") for x in expect_list(witness, "university")
+            )
+            universities.setdefault(university, []).append(cohort)
+        assets: list[tuple[str, str]] = []
+        for witness in self._query("!(match &self (, (licensable $a) (vertical $a $v)) ($a $v))"):
+            asset, vertical = (expect_symbol(x, "asset") for x in expect_list(witness, "asset"))
+            assets.append((asset, vertical))
+        return (
+            {k: sorted(v) for k, v in sorted(partners.items())},
+            {k: sorted(v) for k, v in sorted(universities.items())},
+            sorted(assets),
+        )
+
     def cohorts(self) -> frozenset[str]:
         """Every cohort id in the space, from `cohort-of` facts. A profile may only name one of
         these (Sprint 003 spec #35 §Marketplace API)."""

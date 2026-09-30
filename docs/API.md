@@ -10,10 +10,11 @@ camelCase on the wire, dates are ISO date-only strings, money is integer USD per
 | Area | Endpoints | Auth |
 |---|---|---|
 | Health | `GET /health` | none |
-| Routing | `POST /api/route`, `POST /api/conversation`, `GET /api/scenarios` | none |
-| Builder | `POST /api/me/role`; `GET`/`PUT /api/me/profile`; `GET`/`POST /api/me/credentials`; `GET`/`POST /api/me/projects` | Clerk session, role `builder` (`/role`: any session) |
+| Routing | `POST /api/route`, `POST /api/conversation`, `GET /api/scenarios`, `GET /api/ecosystem` | none |
+| Builder | `POST /api/me/role`; `GET`/`PUT /api/me/profile`; `GET`/`POST /api/me/credentials`; `GET`/`POST /api/me/projects`; `PUT /api/me/projects/{id}/showcase` | Clerk session, role `builder` (`/role`: any session) |
 | Founder | `GET /api/builders/{builderId}` | Clerk session, role `founder` or `admin` |
-| Admin | `GET /api/admin/pending`; `POST /api/admin/confirm/{kind}/{id}`; `POST /api/admin/reject/{kind}/{id}` | Clerk session, role `admin` |
+| Showcase | `GET /api/showcase`, `GET /api/showcase/{projectId}` | none (a token is ignored) |
+| Admin | `GET /api/admin/pending`; `GET /api/admin/decided`; `POST /api/admin/confirm/{kind}/{id}`; `POST /api/admin/reject/{kind}/{id}` | Clerk session, role `admin` |
 | Webhook | `POST /api/webhooks/clerk` | Svix signature |
 | Dev only | `POST /internal/query` | `ENGINE_DEV_QUERY=1` |
 
@@ -110,6 +111,8 @@ so the structured form is the only input path. If the model times out or errors,
 back to `NullAdapter` behaviour and `message` carries the form-fallback hint; the client never
 sees a `500`. A summary that names an entity outside the route is discarded for the template.
 
+Voice is a client-side skin over this endpoint (D-38, D-51): the founder's browser transcribes and speaks with the Web Speech API, and a spoken "yes" posts the same `{ "userMessage": "", "currentBrief": <brief> }` as the Find my route button. The engine has no voice endpoint and receives no audio.
+
 ## POST /api/route
 
 The structured-form path: a full `VentureBrief` in, a `VentureRoute` out, no language model
@@ -150,6 +153,22 @@ The five seed briefs from `services/engine/seed/briefs.json`, in seed order, as
 `brief-constrained-01`, `brief-budget-01`, `brief-onsite-01`). Every brief carries
 `demoData: true`.
 
+## GET /api/ecosystem
+
+The seed ecosystem the footer's Partners page shows (#79): partners with the verticals they
+support, universities with their cohorts, and the licensable assets `reuse-fit` can offer. Read
+from graph predicates with plain `match` queries, no rule involved; every entity is fictional.
+The offline snapshot carries the same object.
+
+```json
+{
+  "partners": [{ "partnerId": "amani-health", "verticals": ["health"] }, "..."],
+  "universities": [{ "universityId": "omni-university", "cohorts": ["cohort-2026a"] }, "..."],
+  "assets": [{ "assetId": "asset-afya-triage", "title": "Afya Triage", "vertical": "health" }, "..."],
+  "demoData": true
+}
+```
+
 ## Builder: `/api/me/*`
 
 ### POST /api/me/role
@@ -177,15 +196,28 @@ creates or replaces the profile (`ProfileInput`) and never touches the account s
   "selfDescribedSkills": ["python", "backend"],
   "phone": "+254700000000", "linkedin": "linkedin.com/in/jane-mwangi",
   "sharing": { "email": true, "phone": false, "linkedin": true },
-  "availability": [{ "start": "2026-09-22", "end": "2026-10-20" }]
+  "availability": [{ "start": "2026-09-22", "end": "2026-10-20" }],
+  "skillSet": ["Kotlin", "Figma"], "suggestedSkills": ["GraphQL"],
+  "githubUrl": "https://github.com/jane-mwangi",
+  "linkedinUrl": "https://www.linkedin.com/in/jane-mwangi"
 }
 ```
 
 Rules: display name 1–80 characters with a letter or digit, at least one delivery mode, up to
 nine self-described skills from the nine skill ids, up to twelve availability ranges with
-`end ≥ start`. Response `BuilderProfile` adds `builderId` (a slug from the display name,
+`end ≥ start`. Sprint 005a (#94) adds four optional fields, all display-only (never an engine
+input that a rule reads, D-52): `skillSet` (picked by hand) and `suggestedSkills` (résumé chips
+the builder accepted) are free-text labels, each trimmed, 1–40 characters, at most 20 entries
+across both lists and unique across both lists regardless of case; `selfDescribedSkills` is
+unchanged. `githubUrl` and `linkedinUrl` must be `https://` links on `github.com` /
+`www.github.com` and `linkedin.com` / `www.linkedin.com` (≤500 characters, no port); a blank
+value is stored as `null`, surrounding whitespace is trimmed. A violation answers `422` whose
+`message` starts with the field name, e.g. `githubUrl: must be a GitHub link (github.com or
+www.github.com)`. `linkedinUrl` is a public profile link, apart from the older `linkedin` contact
+field and its sharing toggle. Response `BuilderProfile` adds `builderId` (a slug from the display name,
 suffixed `-2`, `-3` on collision, immutable afterwards, D-24), `contact` (email from the
-account), `skills`, `accountStatus` (`pending | confirmed | rejected`), `confirmed` and `demoData`.
+account), `skills`, `accountStatus` (`pending | confirmed | rejected`), `confirmed`, `skillSet`,
+`suggestedSkills`, `githubUrl`, `linkedinUrl` and `demoData`.
 
 One skill shape everywhere: `{ "id": "python", "name": "Python", "status": "verified", "evidence": "both" }`.
 `status` is `verified` only when a confirmed credential or confirmed project proves the skill
@@ -202,8 +234,83 @@ Role `builder`; `404 {"detail": "no profile yet"}` until the profile exists. Pro
 { "title": "Clinic triage intake flow", "vertical": "health", "licensable": true, "completedOn": "2026-08-30", "skillIds": ["python", "ui-ux"] }
 ```
 
-`Credential` and `Project` responses echo the input plus `id`, `status` and `demoData`. A project
-takes one to five skill ids and a seed vertical.
+`Credential` responses echo the input plus `id`, `status` and `demoData`. A project takes one to
+five skill ids and a seed vertical. Since Sprint 005a (#94) both `GET /api/me/projects` and the
+`201` of `POST /api/me/projects` answer the builder's own view, `ShowcaseProject`: the input plus
+`id`, `status`, `demoData` and the project's Showcase entry (`description`, `liveUrl`, `demoUrl`,
+`pitchVideoUrl`, `pitchDeckUrl`, `showcased`, `showcaseStatus`), so the profile page can show each
+project's status pill. A new project starts with `description: ""`, null links, `showcased: false`
+and `showcaseStatus: "none"`. `ShowcaseProject` is a superset of the older `Project` shape; a
+client that parses `Project` strictly must switch to `ShowcaseProject`.
+
+A credential may also carry `issuedOn` (a date) and `credentialUrl` (an `https://` link, same
+link rules as the Showcase, blank → `null`), and `skillId` is optional since Sprint 005a (#94):
+a certification outside the nine-skill vocabulary is stored with `skillId: null`, goes through
+the same admin review, and never proves a skill (it is never a `proves` fact, D-52).
+
+```json
+{ "title": "AWS Cloud Practitioner", "issuer": "Amazon Web Services", "issuedOn": "2026-05-14", "credentialUrl": "https://www.credly.com/badges/abc123" }
+```
+
+### PUT /api/me/projects/{id}/showcase
+
+Role `builder`, owner only: another builder's project, an unknown id or a malformed id answers
+`404 {"detail": "project not found"}` (never `403`, so ids of other builders' projects are not
+confirmed). No token → `401`; a founder or admin token → `403`. Body `ShowcaseEdit`:
+
+```json
+{
+  "description": "A field survey app for smallholder farmers.",
+  "liveUrl": "https://survey.example.com", "demoUrl": "https://demo.example.com/survey",
+  "pitchVideoUrl": "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
+  "pitchDeckUrl": "https://slides.example.com/deck",
+  "showcased": true
+}
+```
+
+Rules: `description` at most 1000 characters. Every link is optional, `https://` only, at most
+500 characters, no localhost, IP-literal or IDN-lookalike host; a blank link is stored as `null`
+and surrounding whitespace is trimmed. `pitchVideoUrl` must be a YouTube video link
+(`watch?v=`, `youtu.be/`, `shorts/` or `embed/`) and is stored and returned in one canonical
+form, `https://www.youtube.com/watch?v=<id>` (extra parameters such as `&t=`, `&list=` or `si=`
+are dropped), so two links to the same video compare equal. A violation answers `422` whose `message`
+starts with the field name, e.g. `pitchVideoUrl: must be a YouTube video link (…)`.
+
+Status rule: when every field (links compared after normalising) equals what is stored, nothing
+changes and the current state is returned, with one exception: `showcased: true` on a `rejected`
+entry is a resubmission and goes back to `pending` even if nothing else changed. Otherwise the fields are saved and `showcase_confirmed_at` is cleared; `showcased: true`
+sets `showcaseStatus: "pending"` (an admin must confirm the entry, again after any edit) and
+`showcased: false` sets `"none"`. The entry is public only when `showcased`, `showcaseStatus` is
+`confirmed`, the project is confirmed and the owner's account is confirmed.
+
+Response `200` `ShowcaseProject`: the `Project` fields plus `description`, the four links,
+`showcased` and `showcaseStatus` (`none | pending | confirmed | rejected`).
+
+### POST /api/me/skills/suggest (Sprint 005a, D-50)
+
+Role `builder` (no token `401`, another role `403`). Pasted résumé text in, skill chips out:
+
+```json
+{ "resumeText": "Five years building Python backends and UI/UX design for clinics…" }
+```
+
+`resumeText` is 50–20,000 characters (otherwise `422` naming `resumeText`, never quoting it).
+The text goes to Claude Haiku 4.5 (`claude-haiku-4-5`) through `app/llm` with a strict output
+schema, a 10-second timeout and no retries. It is never stored, never logged and never echoed.
+
+```json
+{ "available": true,
+  "suggestions": [{ "label": "UI/UX design", "skillId": "ui-ux" },
+                  { "label": "Figma", "skillId": null }] }
+```
+
+A label matching one of the nine skills (by display name or id, ignoring case and punctuation)
+carries that `skillId` and the vocabulary display name; any other label is free text, trimmed,
+at most 40 characters (longer ones are dropped). Duplicates are dropped case-insensitively; at
+most 20 suggestions. With no model configured (null adapter, no `ANTHROPIC_API_KEY`), a timeout
+or any provider error the answer is `200 { "available": false, "suggestions": [] }`, never a
+5xx. Suggestions are display-only: the builder accepts them one at a time into
+`suggestedSkills` on the profile; nothing here reaches routing.
 
 ## Founder: GET /api/builders/{builderId}
 
@@ -229,6 +336,305 @@ rules). `projects` lists confirmed projects only. Unconfirmed, rejected and unkn
 seed builder ids that have no account, answer `404 {"detail": "no confirmed builder <id>"}`; a
 `builder` session answers `403`.
 
+## Public Showcase: GET /api/showcase, GET /api/showcase/{projectId} (Sprint 005a)
+
+No token needed; a token, if sent, is ignored (never `401`/`403`). An entry is public only when
+`showcased`, `showcaseStatus` is `confirmed`, the project is confirmed and the owner's account is
+confirmed: one predicate in the repository (`visible_showcase_projects()`) that both endpoints
+use. No response carries email, phone, location, day rate, availability or the `contact` block;
+the builder is identified by `builderId` only.
+
+### GET /api/showcase
+
+Query parameters, all optional:
+
+| Parameter | Meaning |
+|---|---|
+| `skill` | A vocabulary skill id (e.g. `python`) or a free-text `skillSet`/`suggestedSkills` label (case-insensitive), at most 40 characters. Matches an entry whose project demonstrates the skill, whose builder is verified for it (a confirmed credential or any confirmed project proves it), or whose builder lists the label. |
+| `vertical` | `health`, `agri` or `education`. |
+| `licensable` | `true` keeps licensable projects only; `false` keeps non-licensable ones. |
+| `q` | Case-insensitive title search, at most 120 characters; `%` and `_` match themselves. |
+| `limit` | 1–24, default 12. |
+| `offset` | 0 or more, default 0. |
+
+An invalid value answers `422` (`type: validation-error`). Order: `showcase_confirmed_at`
+newest first, then id. Response `200` `ShowcasePage`, `total` counting every match before paging:
+
+```json
+{
+  "items": [{
+    "id": "…", "title": "Field survey app", "builderId": "naomi-chebet",
+    "displayName": "Naomi Chebet", "cohortId": null, "vertical": "agri", "licensable": true,
+    "description": "A field survey app for smallholder farmers.", "skillIds": ["mobile"],
+    "matchedSkill": { "id": "mobile", "label": "Mobile", "kind": "demonstrated" },
+    "liveUrl": "https://survey.example.com", "demoUrl": null,
+    "pitchVideoUrl": "https://www.youtube.com/watch?v=dQw4w9WgXcQ", "pitchDeckUrl": null,
+    "pitchVideoId": "dQw4w9WgXcQ", "demoData": false
+  }],
+  "total": 1
+}
+```
+
+`matchedSkill` is `null` without `?skill=`. With it, each card reports the kind that matched,
+preferring `demonstrated` over `verified` over `self-described`; a self-described match has
+`id: null` and the label as the builder typed it. `pitchVideoId` is the YouTube id parsed from
+`pitchVideoUrl` (the web embeds `https://www.youtube-nocookie.com/embed/<id>` only after a click).
+
+### GET /api/showcase/{projectId}
+
+Response `200` `ShowcaseDetail`: the card's project fields plus `completedOn`, and a `builder`
+panel:
+
+```json
+{
+  "builderId": "naomi-chebet", "displayName": "Naomi Chebet", "cohortId": null,
+  "verifiedSkills": [{ "id": "mobile", "name": "Mobile", "status": "verified", "evidence": "both" }],
+  "skillSet": ["Flutter", "Figma"],
+  "certifications": [{ "id": "…", "title": "Cloud Cert", "issuer": "AWS", "skillId": null,
+                       "issuedOn": null, "credentialUrl": "https://verify.example.com/cloud",
+                       "status": "confirmed", "demoData": false }],
+  "githubUrl": "https://github.com/naomi-chebet", "linkedinUrl": null
+}
+```
+
+`verifiedSkills` is the verified-skill derivation (D-39) with evidence; `skillSet` is `skillSet`
+followed by `suggestedSkills`, shown as "Self-described"; `certifications` lists confirmed
+credentials only (with or without a vocabulary skill). A hidden, unknown or malformed id answers
+`404 {"detail": "showcase entry not found"}`, the same body in every case.
+
+### Demo seed (#107)
+
+The gallery opens with seeded content: **Venture Route** itself plus two fictional entries,
+*Crop price SMS digest* and *School fees tracker*. The content lives in
+`services/engine/seed/showcase_demo.json`, which the Operator edits (titles, descriptions,
+`liveUrl`/`demoUrl`/`pitchDeckUrl`, and `pitchVideoUrl`, a YouTube link or `null`); links obey
+the same rules as the builder endpoints. Entry order is gallery order.
+
+Venture Route's owner is Njuguna Njenga (`demo-njuguna-njenga`), the Operator and the one real
+person in the file (`"operator": true`). The seed invents no facts about him (AGENTS.md rule 10):
+his profile carries his name and the Venture Route entry only, with example.org placeholder
+links and no video, and no cohort, certification, skill chips, headline or profile links; the
+file is refused if any of those are added. The fictional builders each get a cohort, 2–3
+`skillSet` chips and one confirmed skill-less certification.
+
+`scripts/seed_showcase_demo.py` writes the rows (all `demoData: true`): per entry a confirmed
+seed builder with a `demo-` builder id, a `seed_demo_<slug>` placeholder Clerk id no Clerk session
+can carry, a `.invalid` email, no availability and never `mobile`; a confirmed, showcased
+project; and the `confirmations` rows (account, project, showcase, and credential where there is
+one) signed by the seed admin `seed_basix_admin`, who cannot sign in. Location
+`Schema placeholder`, day rate 1 and remote mode are schema placeholders, not claims: the store
+requires them, the Showcase never shows them and no route reads them. Row ids are fixed uuid5
+values, so re-running updates in place and changes nothing. It reprojects once and exits non-zero
+on any error. The five demo scenarios route identically before and after (spec #86 Testing 7).
+
+`docker compose up` runs it after `alembic upgrade head` (the one-shot `seed` service); by hand:
+`cd services/engine && uv run python scripts/seed_showcase_demo.py [--file <json>]`. Operational
+notes:
+
+- Removing an entry from the JSON does not delete its rows; delete them by hand or reset the db.
+- Seed confirmations appear in the admin Decided list. A Reverse there is undone by the next
+  `docker compose up`, which re-confirms every seed row.
+- If a non-seed account already holds a seed Clerk id, email or `demo-` builder id, the seed
+  aborts with nothing written and exits non-zero; the engine service, which waits for the seed to
+  succeed, then does not start until the clash is removed.
+
+## Requests: `/api/requests` (Sprint 004)
+
+A request is a founder's published brief: the exact `VentureBrief` the engine routed plus a
+`route` snapshot `{ "status", "totalDailyRate", "builderIds" }` of what the founder saw. The
+web posts what it holds (the routing store's brief and the last route, spec #52 §Web); the
+engine validates the brief again and the snapshot is display-only: every eligibility question
+is answered by the engine again, never read from it. Requests, bids and bookings never become atoms (D-15). Admins have no access this sprint.
+
+### POST /api/requests
+
+Role `founder`. Body `RequestCreate`:
+
+```json
+{ "brief": { "id": "brief-constrained-01", "title": "…", "vertical": "health", "requiredSkills": ["mobile", "rust"], "maximumTeamSize": 2, "availabilityStart": "2026-09-22", "availabilityEnd": "2026-10-06", "deliveryMode": "remote", "location": null, "dailyBudget": 300, "preferReusableIp": false, "demoData": true },
+  "route": { "status": "partial", "totalDailyRate": 130, "builderIds": ["zawadi-njoroge"] } }
+```
+
+The brief is validated as a `VentureBrief` (`422` names the field, e.g. `brief.requiredSkills:
+…`, `brief: availabilityEnd must not precede availabilityStart`, `brief: location is required
+when deliveryMode is on-site`). Response `201` `Request`:
+
+```json
+{ "id": "…", "founderId": "user_…", "brief": { … }, "route": { … },
+  "title": "…", "vertical": "health", "deliveryMode": "remote", "availabilityStart": "2026-09-22",
+  "availabilityEnd": "2026-10-06", "dailyBudget": 300, "routeStatus": "partial",
+  "status": "open", "closedAt": null, "createdAt": "2026-09-23T07:30:00Z", "eligibility": null, "demoData": true }
+```
+
+### GET /api/requests, GET /api/requests/{id}
+
+Role `founder` or `builder`. A founder lists their own requests in every status, newest first;
+a builder lists every `open` request, newest first (the builder's list carries `eligibility`
+inline, see below). `GET /api/requests/{id}` answers `200` to the owning founder or any builder
+and `404 {"detail": "no request <id>"}` to another founder, so ids leak nothing. A `builder`
+session on `POST` answers `403 {"detail": "role founder required"}`.
+
+### GET /api/requests/{id}/eligibility
+
+Role `builder`. The engine's verdict for the signed-in builder on the request's brief
+(`Eligibility`), computed by the route service's `eligibility(brief, builderId)` from
+`eligible-builder` witnesses only (AGENTS.md rule 1); the builder id is the profile slug, so an
+unconfirmed or rejected builder has no atoms and is never eligible. `404 {"detail": "no profile
+yet"}` until the builder has a profile; a `founder` session answers `403`.
+
+```json
+{ "eligible": true, "skills": ["mobile"],
+  "path": { "rule": "eligible-builder", "facts": ["(earned naomi-chebet cred-…)", "…", "(confirmed admin-basix naomi-chebet)"],
+            "conclusion": "naomi-chebet is eligible for mobile with both evidence" },
+  "reason": null }
+```
+
+When not eligible, `skills` is empty, `path` is `null` and `reason` is two-tier: the statement
+of the first `route-gap` the founder's route carries (sorted by skill id), so both sides read one
+sentence, else the template `eligible-builder does not hold for <builderId> on any of <required
+skills>.` The builder's `GET /api/requests` carries this verdict inline as `eligibility` on every
+item, so the board makes one call; the founder's list carries `eligibility: null`.
+
+### POST /api/requests/{id}/close
+
+Role `founder`, owner only (`404` otherwise). Sets `status: "closed"` and `closedAt` and answers
+`200` `Request`; a second close answers `409 {"detail": "request already closed"}`. A closed
+request no longer appears in the builders' list and refuses bids (`409`), but stays in the
+founder's list with its status.
+
+## Bids (Sprint 004)
+
+A bid is allowed only where `eligible-builder` holds for the request's brief and the bidding
+builder (DOMAIN.md §Marketplace rules). The gate is the engine's verdict above, never a Python
+check; the stored bid carries the skills and the reasoning path the engine returned.
+
+### POST /api/requests/{id}/bids
+
+Role `builder`; `404 {"detail": "no profile yet"}` without a profile. Body `BidCreate`:
+
+```json
+{ "dayRate": 120, "message": "The field survey app demonstrates mobile." }
+```
+
+`dayRate` is a positive integer USD per day (D-16), `message` up to 1000 characters and
+optional. The request is locked, checked open, and the route service computes eligibility for
+the builder's slug:
+
+| Status | Body | When |
+|---|---|---|
+| `201` | `Bid` (below) | `eligible-builder` holds; `eligibleSkills` and `path` are the engine's |
+| `403` | `{"detail": "<reason>"}` | not eligible; `reason` is the same text `GET …/eligibility` answers (a `route-gap` statement or the template) |
+| `409` | `{"detail": "request closed"}` | the founder closed the request |
+| `409` | `{"detail": "already bid"}` | the builder already has a bid on this request (UNIQUE, so a race still ends in one bid) |
+| `404` | `{"detail": "no request <id>"}` | unknown request |
+
+```json
+{ "id": "…", "requestId": "…", "requestTitle": "…", "requestStatus": "open",
+  "builderId": "naomi-chebet", "displayName": "Naomi Chebet", "dayRate": 120,
+  "message": "…", "eligibleSkills": ["mobile"],
+  "path": { "rule": "eligible-builder", "facts": ["…"], "conclusion": "naomi-chebet is eligible for mobile with both evidence" },
+  "status": "submitted", "createdAt": "2026-09-23T07:30:00Z", "demoData": true }
+```
+
+### GET /api/requests/{id}/bids
+
+Role `founder`, owner only (`404 {"detail": "no request <id>"}` otherwise; a `builder` session
+answers `403`). The request's bids from builders whose account is confirmed right now, newest
+first, each a `Bid` with the builder's slug and display name, `eligibleSkills` and `path`. A bid
+from a builder whose account was rejected since is hidden, never deleted, and returns when the
+account is confirmed again (DOMAIN.md §Marketplace rules).
+
+### GET /api/me/bids
+
+Role `builder`; `404 {"detail": "no profile yet"}` without a profile. The builder's own bids,
+newest first, each carrying `requestTitle` and `requestStatus` (`open` or `closed`).
+
+## Bookings (Sprint 004)
+
+An interview booking between a founder and a confirmed builder. Founder-owned machine
+(spec #52): the builder accepts or counters, the founder confirms or counters. Every time on the
+wire is ISO 8601: `proposedStart` in UTC (`…Z`) and `proposedStartLocal` the same instant in
+Africa/Nairobi (`…+03:00`), rendered by the engine so the browser does no zone arithmetic
+(D-16). History is a JSONB list written in the same UPDATE as the state.
+
+### POST /api/bookings
+
+Role `founder`. Body `BookingCreate`:
+
+```json
+{ "builderId": "naomi-chebet", "requestId": null, "proposedStart": "2026-09-24T07:30:00Z", "durationMin": 30, "note": "Intro call" }
+```
+
+`builderId` must be a confirmed builder (`404 {"detail": "no confirmed builder <slug>"}`
+otherwise, including seed builder ids); `requestId`, when given, must be the founder's own
+request (`404` otherwise). Slot rules (chosen by the Operator, no buffer): the start's date in
+Africa/Nairobi lies inside one of the builder's confirmed availability ranges, the start is on
+the 30-minute grid from 08:00 to 18:00 Africa/Nairobi (18:00 is the last start), and the
+duration is 30 or 45 minutes. A violation answers `422` with the reason, field-mapped like every
+validation error, e.g. `proposedStart: start is outside the builder's confirmed availability
+(2026-11-02 is in no range)` or `proposedStart: start must be on the 30-minute grid between
+08:00 and 18:00 Africa/Nairobi`. `proposedStart` must carry an offset. Response `201`
+`Booking` in state `proposed` with one history entry (`propose` by the `founder`):
+
+```json
+{ "id": "…", "requestId": null, "requestTitle": null, "founderId": "user_…",
+  "builderId": "naomi-chebet", "displayName": "Naomi Chebet", "state": "proposed",
+  "proposedStart": "2026-09-24T07:30:00Z", "proposedStartLocal": "2026-09-24T10:30:00+03:00",
+  "durationMin": 30, "note": "Intro call",
+  "history": [{ "action": "propose", "actor": "founder", "state": "proposed",
+                "proposedStart": "2026-09-24T07:30:00Z", "proposedStartLocal": "2026-09-24T10:30:00+03:00",
+                "durationMin": 30, "note": "Intro call", "at": "2026-09-23T10:00:00Z" }],
+  "createdAt": "2026-09-23T10:00:00Z", "demoData": true }
+```
+
+### POST /api/bookings/{id}/accept, /counter, /confirm
+
+The founder-owned machine (spec #52), a pure function in `app/marketplace/booking.py`:
+
+| From | Action | Actor | To |
+|---|---|---|---|
+| proposed | accept | builder | accepted |
+| proposed | counter | builder | countered |
+| countered | confirm | founder | confirmed |
+| countered | counter | founder | proposed (new round) |
+| accepted | confirm | founder | confirmed |
+
+`accept` is builder-only, `confirm` founder-only, `counter` open to either party with a
+`BookingProposal` body (`proposedStart`, `durationMin`, `note`) validated by the same slot rules
+as creation (`422` with the reason). Each call locks the row, applies the machine, and writes
+state, history, proposed start and duration in one UPDATE. Every other cell answers `409
+{"detail": "<reason>"}`: `accept` by a founder, `confirm` by a builder, any action on a
+`confirmed` booking (`the booking is confirmed; no further action is possible`), a second
+counter by the same side in one round (`the builder already countered this round`). Anyone who
+is not the founder or the builder on the row gets `404 {"detail": "no booking <id>"}`. The
+founder's "Accept" on a counter is the `confirm` action; the screen maps it. The acceptance
+round-trip (founder proposes, builder counters, founder confirms) ends `confirmed` with three
+history entries: `propose`, `counter`, `confirm`, and `proposedStart` is the builder's counter.
+
+### GET /api/me/bookings
+
+Role `founder` or `builder`. Own bookings (the founder's, or the ones on the builder's profile),
+soonest proposed start first, each a `Booking` with both time fields on every row and entry.
+
+## Founder dashboard: GET /api/me/dashboard (Sprint 004)
+
+Role `founder`. One call whose numbers come from SQL, never from the engine (D-17); the tiles
+map one-to-one onto `counts`:
+
+```json
+{ "counts": { "briefs": 3, "routes": { "feasible": 2, "partial": 1, "infeasible": 0 },
+              "openRequests": 2, "bidsReceived": 1, "bookings": 2 },
+  "requests": [ { "…": "Request, newest first, every status, eligibility null" } ],
+  "bidsReceived": [ { "…": "Bid, newest first, confirmed builders only, at most ten" } ],
+  "upcomingBookings": [ { "…": "Booking with proposedStart at or after now, soonest first" } ] }
+```
+
+`briefs` counts the founder's requests; `routes` groups them by `routeStatus`; `openRequests`
+counts the open ones; `bidsReceived` counts bids on the founder's requests from builders whose
+account is confirmed right now (the list shows the newest ten of them); `bookings` counts the
+founder's bookings in every state. A `builder` or `admin` session answers `403`; a founder with
+nothing gets zeros and empty lists.
+
 ## Admin: `/api/admin/*`
 
 Role `admin`. Admins are never user-chosen: the webhook assigns the role to emails in
@@ -236,15 +642,37 @@ Role `admin`. Admins are never user-chosen: the webhook assigns the role to emai
 
 ### GET /api/admin/pending
 
-`PendingQueue`: `{ "accounts": [...], "credentials": [...], "projects": [...] }`. Accounts are
-pending founders and builders (`id`, `clerkId`, `email`, `role`, `builderId`, `displayName`,
-`cohortId`, `submittedAt`); credentials and projects carry their builder's slug and display name
-plus the row fields. Every row has `demoData: true`.
+`PendingQueue`: `{ "accounts": [...], "credentials": [...], "projects": [...], "showcase": [...] }`.
+Accounts are pending founders and builders (`id`, `clerkId`, `email`, `role`, `builderId`,
+`displayName`, `cohortId`, `submittedAt`); credentials and projects carry their builder's slug and
+display name plus the row fields. Credentials include `issuedOn` and `credentialUrl` (both
+nullable) and a skill-less certification has `skillId: null`. Every row has `demoData: true`.
+
+`showcase` (Sprint 005a, #103) lists every project with `showcased: true` and
+`showcaseStatus: "pending"`, whatever the project's or account's own status. Each row is the card
+preview: `id` (the project id), `builderId`, `displayName`, `cohortId`, `title`, `description`,
+`vertical`, `licensable`, `skillIds`, the four links `liveUrl`, `demoUrl`, `pitchVideoUrl`,
+`pitchDeckUrl`, `pitchVideoId` (the parsed 11-character YouTube id, or `null`), `showcaseStatus`,
+plus `projectStatus` and `accountConfirmed` for the "Project not yet confirmed" / "Account not
+confirmed" warnings: an entry can be confirmed before both are, but stays private until they are
+(the single visibility rule, see `GET /api/showcase`).
+
+### GET /api/admin/decided
+
+`DecidedQueue`: the same four lists with the rows an admin has already confirmed or rejected
+(spec #35 story 24, #49). Each row carries its pending counterpart's fields plus `status`
+(`confirmed` | `rejected`) and `decidedAt`, the timestamp of the latest `confirmations` row for
+that target (ISO date-time with offset), oldest decision first. Pending rows and admin accounts
+never appear. A mistaken decision is reversed by calling the opposite endpoint below; the `/admin`
+Decided tab's Reverse button does exactly that. A `showcase` row's `status` is its
+`showcaseStatus`; an entry the builder edits goes back to pending, and one the builder withdraws
+(`showcased: false`) leaves both lists.
 
 ### POST /api/admin/confirm/{kind}/{id}, POST /api/admin/reject/{kind}/{id}
 
-`kind` is `account`, `credential` or `project` (`422` otherwise); `id` is the row UUID (`404`
-`{"detail": "no pending <kind> <id>"}` when unknown). Any transition is allowed so a mistake can
+`kind` is `account`, `credential`, `project` or `showcase` (`422` otherwise); `id` is the row
+UUID (`404` `{"detail": "no pending <kind> <id>"}` when unknown; for `showcase` the id is a
+project id, so any other id is `404`). Any transition is allowed so a mistake can
 be reversed; every decision appends a `confirmations` row. The status is committed, then the
 engine rebuilds its space in the same request (D-15) and answers:
 
@@ -255,6 +683,14 @@ engine rebuilds its space in the same request (D-15) and answers:
 Only builders whose account is confirmed produce atoms; rejecting an account removes the builder
 from the graph on that rebuild, rejecting a project drops its `demonstrates` facts so evidence
 falls back to `credential`. Reprojection on demo-size data takes well under a second.
+
+`showcase` decides the Showcase entry, not the project: confirm sets `showcaseStatus: "confirmed"`
+and stamps `showcase_confirmed_at` (the gallery's sort key); reject sets `"rejected"` and clears
+it. Both log a `confirmations` row of kind `showcase` and reproject, because a publicly visible
+entry is the display-only fact `(showcases <builder> <project>)` that no rule reads (D-52). An
+entry the builder has withdrawn (`showcased: false`) answers `409`
+`{"detail": "Builder has withdrawn this entry"}` and nothing is logged. No token `401`, a
+non-admin `403`.
 
 ## Webhook: POST /api/webhooks/clerk
 

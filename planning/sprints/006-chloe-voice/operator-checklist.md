@@ -6,9 +6,9 @@ The Builder never asks for a key in chat (D-26). No new key is needed for this s
 
 | # | Task | How | Done when |
 |---|---|---|---|
-| 1 | Set the sprint window (Q-13) | Edit `requirements.md` and `planning/TIMELINE.md` | Dates in both files |
+| 1 | Set the sprint window (Q-13) | Closed by D-51: Chloe runs in the 005a window | — |
 | 2 | Decide Q-14 (extra yes/no phrases) | Reply in the Architect session; the answer lands in `requirements.md` item 5 | Q-14 closed |
-| 3 | Merge the Sprint 005 PR | GitHub merge button after the Architect review | PR shows Merged |
+| 3 | Merge the Sprint 004 PR | Done (#78) | PR shows Merged |
 | 4 | Confirm `design/stitch/batch-5/founder-intake-voice/` is committed | `git ls-files design/stitch/batch-5` | `index.html` and the screenshot listed |
 
 ## Manual voice check (Should line, after the Builder's PR is open)

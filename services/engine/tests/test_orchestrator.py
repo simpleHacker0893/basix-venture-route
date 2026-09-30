@@ -85,6 +85,9 @@ class FakeAdapter:
         self.explained.append(route)
         return self._explanation if self._explanation is not None else route.summary
 
+    def suggest_skills(self, text: str) -> list[str]:
+        raise LlmUnavailable("not used by the orchestrator")
+
 
 def orchestrator(adapter: LlmAdapter) -> Orchestrator:
     return Orchestrator(adapter, stub_route, KNOWN_ENTITIES)

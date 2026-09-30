@@ -85,7 +85,7 @@ describe("landing page (Stitch export)", () => {
       const column = within(footer).getByRole("navigation", { name: heading });
       expect(within(column).getAllByRole("link").map((l) => l.textContent)).toEqual(links);
     }
-    for (const name of ["GitHub", "PRD", "Privacy"]) {
+    for (const name of ["PRD", "Privacy"]) {
       expect(within(footer).getByRole("link", { name })).toBeInTheDocument();
     }
     expect(footer).toHaveTextContent("© 2026 Venture Route. Deterministic evaluation registry.");

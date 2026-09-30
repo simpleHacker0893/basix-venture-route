@@ -2,7 +2,7 @@
  * Offline demonstration source (D-34): the generated snapshot of the five seed briefs and the
  * routes MeTTa decided for them. Read only when VITE_OFFLINE_DEMO=1; never edited by the app.
  */
-import { VentureBrief, VentureRoute, type ChatResponse, type ChatTurnInput } from "@venture-route/contracts";
+import { Ecosystem, VentureBrief, VentureRoute, type ChatResponse, type ChatTurnInput } from "@venture-route/contracts";
 import { z } from "zod";
 
 import snapshotJson from "../offline/snapshot.json";
@@ -12,6 +12,7 @@ import type { RouteSource } from "./source";
 const Snapshot = z.object({
   briefs: z.record(z.string(), VentureBrief),
   routes: z.record(z.string(), VentureRoute),
+  ecosystem: Ecosystem,
 });
 
 export const OFFLINE_BANNER = "Offline demonstration mode";
@@ -40,6 +41,7 @@ export function createOfflineSource(raw: unknown = snapshotJson): RouteSource {
   return {
     kind: "offline",
     getScenarios: async () => briefs,
+    getEcosystem: async () => snapshot.ecosystem,
     postRoute: async (brief) => routeFor(brief),
     postConversation: async (turn: ChatTurnInput): Promise<ChatResponse> => {
       const parsed = VentureBrief.safeParse({ ...(turn.currentBrief ?? {}), demoData: true });

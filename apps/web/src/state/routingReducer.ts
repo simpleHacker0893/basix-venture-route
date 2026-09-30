@@ -3,9 +3,9 @@
  * Holds the scenarios, the current partial brief, the chat turns, the latest ChatResponse and
  * which step of the flow is on screen. A pure reducer; RoutingProvider.tsx drives it.
  */
-import type { ChatResponse, PartialBriefInput, VentureBrief } from "@venture-route/contracts";
+import type { ChatResponse, PartialBriefInput, VentureBrief, VentureRoute } from "@venture-route/contracts";
 
-export type Turn = { role: "founder" | "assistant"; text: string };
+export type Turn = { role: "founder" | "assistant" | "chloe"; text: string };
 
 /** The founder flow lives on /route: intake → review → result (blueprint router). */
 export type View = "intake" | "review" | "result";
@@ -26,9 +26,21 @@ export type RoutingAction =
   | { type: "brief-changed"; brief: PartialBriefInput | null }
   | { type: "view-changed"; view: View }
   | { type: "founder-said"; text: string }
+  /**
+   * Chloe's spoken lines, appended to the thread for an inspectable transcript (Sprint 006, D-51).
+   * Display-only: chloe turns are never posted (sendTurn unchanged) or exported (handoffText
+   * reads brief and route only).
+   */
+  | { type: "chloe-said"; text: string }
   | { type: "request-started" }
   | { type: "response-received"; response: ChatResponse }
-  | { type: "engine-unreachable"; message: string };
+  | { type: "engine-unreachable"; message: string }
+  /**
+   * An already-confirmed brief and its route enter the store exactly as if the founder had
+   * just routed (Sprint 004, #68): the dashboard's "View route" and the sign-in restore of a
+   * stashed publish.
+   */
+  | { type: "hydrated"; brief: VentureBrief; route: VentureRoute };
 
 export const initialRoutingState: RoutingState = {
   scenarios: [],
@@ -50,6 +62,8 @@ export function routingReducer(state: RoutingState, action: RoutingAction): Rout
       return { ...state, view: action.view, lastResponse: dropStaleError(state.lastResponse) };
     case "founder-said":
       return { ...state, turns: [...state.turns, { role: "founder", text: action.text }] };
+    case "chloe-said":
+      return { ...state, turns: [...state.turns, { role: "chloe", text: action.text }] };
     case "request-started":
       return { ...state, busy: true };
     case "response-received": {
@@ -78,6 +92,11 @@ export function routingReducer(state: RoutingState, action: RoutingAction): Rout
     }
     case "engine-unreachable":
       return { ...state, busy: false, unreachable: action.message };
+    case "hydrated":
+      return routingReducer(state, {
+        type: "response-received",
+        response: { type: "route", brief: action.brief, route: action.route, message: "" },
+      });
   }
 }
 

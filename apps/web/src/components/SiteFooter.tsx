@@ -17,10 +17,13 @@ const COLUMNS: { heading: string; links: { label: string; to: string; external?:
   {
     heading: "Ecosystem",
     links: [
-      { label: "BASIX", to: "#basix" },
-      { label: "MeTTa OmniUniversity", to: "#omni" },
-      { label: "SingularityNET MeTTa", to: "#snet" },
-      { label: "Partners", to: "#partners" },
+      // Verified 2026-09-23 (#79): basixmarket.io redirects to basix.market, "BASIX Omniversity
+      // Incubator", whose /lms is the MeTTa cohort learning platform; metta-lang.dev is the MeTTa
+      // site the Hyperon README names. Partners is rendered from the seed graph.
+      { label: "BASIX", to: "https://basix.market/", external: true },
+      { label: "MeTTa OmniUniversity", to: "https://basix.market/lms", external: true },
+      { label: "SingularityNET MeTTa", to: "https://metta-lang.dev/", external: true },
+      { label: "Partners", to: "/partners" },
     ],
   },
   {
@@ -53,9 +56,14 @@ export function SiteFooter() {
               <h2 className="mb-3 text-sm font-semibold text-white">{column.heading}</h2>
               <ul className="space-y-2 text-ink-subtle">
                 {column.links.map((link) =>
-                  link.to.startsWith("#") ? (
+                  link.external ? (
                     <li key={link.label}>
-                      <a href={link.to} className="transition-colors hover:text-white">
+                      <a
+                        href={link.to}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="transition-colors hover:text-white"
+                      >
                         {link.label}
                       </a>
                     </li>
@@ -73,15 +81,12 @@ export function SiteFooter() {
         </div>
         <div className="flex flex-col items-start justify-between gap-4 border-t border-[#26282d] pt-8 text-sm sm:flex-row sm:items-center">
           <div className="flex items-center gap-6">
-            <a href={REPO} className="underline decoration-ink-subtle/40 underline-offset-4 hover:text-white">
-              GitHub
-            </a>
             <a href={`${REPO}/blob/master/docs/PRD.md`} className="underline decoration-ink-subtle/40 underline-offset-4 hover:text-white">
               PRD
             </a>
-            <a href="#privacy" className="underline decoration-ink-subtle/40 underline-offset-4 hover:text-white">
+            <Link to="/privacy" className="underline decoration-ink-subtle/40 underline-offset-4 hover:text-white">
               Privacy
-            </a>
+            </Link>
           </div>
           <div className="font-mono text-xs text-ink-subtle">© 2026 Venture Route. Deterministic evaluation registry.</div>
         </div>

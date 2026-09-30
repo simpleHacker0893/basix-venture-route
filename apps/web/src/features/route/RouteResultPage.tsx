@@ -2,10 +2,12 @@ import type { VentureBrief, VentureRoute } from "@venture-route/contracts";
 import { useState } from "react";
 import { Link } from "react-router";
 
+import { SpeakingIndicator } from "../../chloe/ui/SpeakingIndicator";
 import { ApiBanner } from "../../components/ApiBanner";
 import { Button } from "@/components/ui/button";
 import type { BriefPatch } from "../../lib/nextActions";
 import { useRouting } from "../../state/routingContext";
+import { PublishRequestButton } from "../requests/PublishRequestButton";
 import { StatusBadge } from "./Badges";
 import { BuilderCard } from "./BuilderCard";
 import { ContextCards } from "./ContextCards";
@@ -20,10 +22,12 @@ type RouteResultProps = Readonly<{
   onPatch(patch: BriefPatch): void;
   onChangeBrief(): void;
   onWhy?(builderId?: string): void;
+  /** Sprint 004: the publish control for the signed-in founder, rendered in the action row. */
+  publish?: React.ReactNode;
 }>;
 
 /** Screen 5: badge, summary, cost strip, gaps first, team, context, rules applied. */
-export function RouteResult({ brief, route, onPatch, onChangeBrief, onWhy }: RouteResultProps) {
+export function RouteResult({ brief, route, onPatch, onChangeBrief, onWhy, publish }: RouteResultProps) {
   const teamHeading =
     route.builders.length > 0 ? `Team (${route.builders.length} of max ${brief.maximumTeamSize})` : "Team";
   return (
@@ -34,6 +38,7 @@ export function RouteResult({ brief, route, onPatch, onChangeBrief, onWhy }: Rou
           <StatusBadge status={route.status} />
         </div>
         <p className="max-w-3xl text-ink-2">{route.summary}</p>
+        <SpeakingIndicator />
         <div className="flex flex-wrap gap-2">
           <Button type="button" variant="secondary" onClick={onChangeBrief}>
             Change brief
@@ -46,6 +51,7 @@ export function RouteResult({ brief, route, onPatch, onChangeBrief, onWhy }: Rou
               Why this route?
             </Button>
           )}
+          {publish}
         </div>
       </section>
 
@@ -101,6 +107,7 @@ export function RouteResultPage() {
           setBrief({ ...response.brief, ...patch });
           showView("review");
         }}
+        publish={<PublishRequestButton brief={response.brief} route={response.route} />}
       />
       <WhyDrawer route={response.route} open={whyOpen} onOpenChange={setWhyOpen} />
     </section>

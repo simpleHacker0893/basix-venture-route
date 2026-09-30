@@ -30,11 +30,18 @@ builds call `VITE_API_URL` directly and rely on the engine's `CORS_ORIGINS` allo
 | `/` | Landing page | public |
 | `/route` | Intake (chat or `?mode=form`) → brief review → route result with gaps above team cards and the "Why this route?" drawer | public |
 | `/handoff` | Plain-text venture handoff (copy, download) | public |
+| `/partners` | The seed partners, universities with cohorts and licensable assets behind every route (`GET /api/ecosystem`) | public |
+| `/privacy` | Demo-data, account and contact-sharing statement | public |
 | `/sign-in`, `/sign-up` | Stitch sign-in frame around Clerk's prebuilt components | public |
 | `/choose-role` | Founder / builder cards; posts `POST /api/me/role` once | signed in |
 | `/profile`, `/profile/projects/new` | Builder profile, availability, credentials, projects | role `builder` |
 | `/builders/:builderId` | Candidate profile with shared contact only | role `founder` or `admin` |
-| `/admin` | Confirmation queue with `projected_rows` after each decision | role `admin` |
+| `/admin` | Confirmation queue with `projected_rows` after each decision; the Decided tab lists confirmed and rejected rows with a Reverse action that posts the opposite decision (#49) | role `admin` |
+| `/requests` | Requests board with the engine's eligibility indicator and the Bid dialog (403 reason inline) | role `builder` |
+| `/dashboard` | Founder dashboard: SQL-backed counts, requests, bids received, upcoming bookings | role `founder` |
+| `/bookings/new`, `/bookings/:bookingId` | Propose an interview slot (Africa/Nairobi grid); booking status with accept, counter and confirm | role `founder` or `builder` |
+
+The header section links and the footer Product links scroll the landing sections (`ScrollToHash`); the footer Ecosystem column opens BASIX, the MeTTa OmniUniversity LMS and metta-lang.dev in a new tab.
 
 `RequireRole` reads Clerk `publicMetadata.role`: signed out → `/sign-in`, no role → `/choose-role`,
 wrong role → that role's home (`/route`, `/profile`, `/admin`).
@@ -42,11 +49,11 @@ wrong role → that role's home (`/route`, `/profile`, `/admin`).
 ## Structure
 
 ```text
-src/api/         client.ts (one fetch wrapper; Zod-parses every response; bearer token only on /api/me, /api/admin, /api/builders),
+src/api/         client.ts (one fetch wrapper; Zod-parses every response; bearer token only on /api/me, /api/admin, /api/builders, /api/requests, /api/bookings),
                  marketplace.ts (profile, proof, candidate, admin calls), offline.ts, default.ts (api vs offline)
 src/auth/        Clerk provider or no-key provider behind one AuthState, RequireRole, ROLE_HOME
 src/state/       reducer-and-context routing store (scenarios, brief, turns, last route, view)
-src/features/    landing, intake, review, route, why, handoff, auth, builder, candidate, admin
+src/features/    landing, intake, review, route, why, handoff, ecosystem, privacy, auth, builder, candidate, admin, requests, booking, dashboard
 src/components/  TopNav, SiteFooter, DemoDataPill, banners; ui/ is shadcn output (edit through the CLI only)
 src/lib/         formatting, brief helpers, next actions, validation-error mapping
 src/styles/      tokens.css from the Stitch DESIGN.md block

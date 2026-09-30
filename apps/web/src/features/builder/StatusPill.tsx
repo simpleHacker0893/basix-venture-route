@@ -1,4 +1,4 @@
-import type { AccountStatus } from "@venture-route/contracts";
+import type { AccountStatus, ShowcaseStatus } from "@venture-route/contracts";
 
 const LABEL: Record<AccountStatus, string> = {
   pending: "Pending",
@@ -20,6 +20,36 @@ export function StatusPill({ status }: Readonly<{ status: AccountStatus }>) {
       className={`inline-flex h-6 items-center rounded-pill px-2.5 text-[12px] font-medium ${CLASS[status]}`}
     >
       {LABEL[status]}
+    </span>
+  );
+}
+
+/**
+ * A showcase entry's own review status (spec #86 story 5): "Not shown" (`none`), "Pending
+ * review", "Live" (`confirmed`) and "Rejected" — a separate four-state pill from `StatusPill`
+ * above, which reports the project's own confirmation, not its Showcase visibility.
+ */
+const SHOWCASE_LABEL: Record<ShowcaseStatus, string> = {
+  none: "Not shown",
+  pending: "Pending review",
+  confirmed: "Live",
+  rejected: "Rejected",
+};
+
+const SHOWCASE_CLASS: Record<ShowcaseStatus, string> = {
+  none: "bg-surface-strong text-ink-3 border border-border-strong",
+  pending: "bg-amber-fill text-amber-ink",
+  confirmed: "bg-accent-green text-white",
+  rejected: "bg-danger text-white",
+};
+
+export function ShowcaseStatusPill({ status }: Readonly<{ status: ShowcaseStatus }>) {
+  return (
+    <span
+      data-testid="showcase-status-pill"
+      className={`inline-flex h-6 items-center rounded-pill px-2.5 text-[12px] font-medium ${SHOWCASE_CLASS[status]}`}
+    >
+      {SHOWCASE_LABEL[status]}
     </span>
   );
 }

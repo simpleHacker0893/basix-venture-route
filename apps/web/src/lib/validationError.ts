@@ -37,10 +37,28 @@ export const PROFILE_FIELDS: readonly string[] = [
   "linkedin",
   "sharing",
   "availability",
+  // Sprint 005a (spec #86): skill set, résumé chips and the public profile links (#94/#99).
+  "skillSet",
+  "suggestedSkills",
+  "githubUrl",
+  "linkedinUrl",
 ];
 
 /** The keys the add-project form (#45) can attach an error to. */
 export const PROJECT_FIELDS: readonly string[] = ["title", "vertical", "licensable", "completedOn", "skillIds"];
+
+/** The keys the add-credential form (spec #86 stories 14-16, #99) can attach an error to. */
+export const CREDENTIAL_FIELDS: readonly string[] = ["title", "issuer", "skillId", "issuedOn", "credentialUrl"];
+
+/** The keys the `ShowcaseEditor` (spec #86 stories 1-13, #99) can attach an error to. */
+export const SHOWCASE_FIELDS: readonly string[] = [
+  "description",
+  "liveUrl",
+  "demoUrl",
+  "pitchVideoUrl",
+  "pitchDeckUrl",
+  "showcased",
+];
 
 export type FieldMessage = { field: string; text: string };
 

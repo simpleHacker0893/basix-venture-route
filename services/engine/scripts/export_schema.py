@@ -22,18 +22,38 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from app.marketplace.schemas import (  # noqa: E402
     AdminDecision,
+    BidCreate,
+    BidOut,
+    BookingCreate,
+    BookingOut,
+    BookingProposal,
     BuilderProfile,
     Candidate,
     CredentialInput,
     CredentialOut,
+    Dashboard,
+    DecidedQueue,
+    DecidedShowcase,
+    Eligibility,
     PendingQueue,
+    PendingShowcase,
     ProfileInput,
     ProjectInput,
     ProjectOut,
+    RequestCreate,
+    RequestOut,
     RoleResponse,
+    ShowcaseCard,
+    ShowcaseDetail,
+    ShowcaseEdit,
+    ShowcasePage,
+    ShowcaseProject,
+    SkillSuggestions,
+    SkillSuggestRequest,
 )
 from app.models.brief import VentureBrief  # noqa: E402
 from app.models.chat import ChatResponse, ChatTurn  # noqa: E402
+from app.models.ecosystem import Ecosystem  # noqa: E402
 from app.models.engine import Gap, ReasoningPath  # noqa: E402
 from app.models.route import VentureRoute  # noqa: E402
 
@@ -92,6 +112,7 @@ def export() -> Json:
         "ChatResponse": canonical(TypeAdapter(ChatResponse).json_schema(mode="validation")),
         "ReasoningPath": model(ReasoningPath),
         "Gap": model(Gap),
+        "Ecosystem": model(Ecosystem),
         # Sprint 003 marketplace (spec #35): the web client Zod-parses these too.
         "ProfileInput": model(ProfileInput),
         "BuilderProfile": model(BuilderProfile),
@@ -101,8 +122,31 @@ def export() -> Json:
         "ProjectInput": model(ProjectInput),
         "Project": model(ProjectOut),
         "PendingQueue": model(PendingQueue),
+        "DecidedQueue": model(DecidedQueue),
+        # Sprint 005a admin card preview (spec #86 story 48), registered on their own too so a
+        # shape gap in the row itself (not just the queue container) fails here.
+        "PendingShowcase": model(PendingShowcase),
+        "DecidedShowcase": model(DecidedShowcase),
         "AdminDecision": model(AdminDecision),
         "Candidate": model(Candidate),
+        # Sprint 004 requests, bids, bookings, eligibility, dashboard (spec #52, #54).
+        "RequestCreate": model(RequestCreate),
+        "Request": model(RequestOut),
+        "BidCreate": model(BidCreate),
+        "Bid": model(BidOut),
+        "BookingCreate": model(BookingCreate),
+        "BookingProposal": model(BookingProposal),
+        "Booking": model(BookingOut),
+        "Eligibility": model(Eligibility),
+        "Dashboard": model(Dashboard),
+        # Sprint 005a (spec #86): showcase and skill suggestion contracts.
+        "ShowcaseCard": model(ShowcaseCard),
+        "ShowcaseDetail": model(ShowcaseDetail),
+        "ShowcaseEdit": model(ShowcaseEdit),
+        "ShowcasePage": model(ShowcasePage),
+        "ShowcaseProject": model(ShowcaseProject),
+        "SkillSuggestRequest": model(SkillSuggestRequest),
+        "SkillSuggestions": model(SkillSuggestions),
     }
 
 

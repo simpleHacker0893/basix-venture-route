@@ -6,25 +6,35 @@ Routes and the projection never write SQL themselves; they call these functions 
 from __future__ import annotations
 
 import re
-from collections.abc import Iterable
-from datetime import date
+from collections.abc import Iterable, Sequence
+from datetime import date, datetime
+from typing import Any, Literal
 from uuid import UUID
 
-from sqlmodel import col, select
+from sqlalchemy import ColumnElement, and_, exists, literal, or_
+from sqlalchemy.exc import IntegrityError
+from sqlalchemy.orm import aliased
+from sqlmodel import col, func, select
 from sqlmodel.ext.asyncio.session import AsyncSession
+from sqlmodel.sql.expression import Select
 
 from app.marketplace.models import (
+    ROUTE_STATUSES,
     Availability,
+    Bid,
+    Booking,
     Confirmation,
     Credential,
     Profile,
     Project,
     ProjectSkill,
+    Request,
     Skill,
     User,
 )
 from app.marketplace.verification import (
     ConfirmedBuilder,
+    ConfirmedCertification,
     ConfirmedCredential,
     ConfirmedProject,
     ConfirmedRows,
@@ -149,18 +159,52 @@ async def replace_availability(
 # -- confirmed rows: the one input verification and projection share ------------------------------
 
 
+def showcase_visible() -> ColumnElement[bool]:
+    """The one public Showcase visibility predicate (spec #86): showcased, showcase confirmed,
+    project confirmed and owner account confirmed. The statement must join Project to Profile
+    and User; `visible_showcase_projects()` is the statement that does."""
+    return and_(
+        col(Project.showcased).is_(True),
+        col(Project.showcase_status) == "confirmed",
+        col(Project.status) == "confirmed",
+        col(User.status) == "confirmed",
+    )
+
+
+def visible_showcase_projects() -> Select[tuple[Project, Profile]]:
+    """Every publicly visible showcase entry with its owner's profile: the Profile and User joins
+    plus `showcase_visible()`. The gallery, the detail page and the projection all start here, so
+    visibility is decided in exactly one place."""
+    return (
+        select(Project, Profile)
+        .join(Profile, col(Profile.id) == col(Project.profile_id))
+        .join(User, col(User.id) == col(Profile.user_id))
+        .where(showcase_visible())
+    )
+
+
 async def confirmed_rows_for(session: AsyncSession, profile_id: UUID) -> ConfirmedRows:
+    return (await confirmed_rows_for_many(session, [profile_id]))[profile_id]
+
+
+async def confirmed_rows_for_many(
+    session: AsyncSession, profile_ids: Sequence[UUID]
+) -> dict[UUID, ConfirmedRows]:
+    """`ConfirmedRows` for each profile in four queries, however many profiles (no N+1)."""
+    ids = list(dict.fromkeys(profile_ids))
+    if not ids:
+        return {}
     credentials = (
         await session.exec(
             select(Credential)
-            .where(Credential.profile_id == profile_id, Credential.status == "confirmed")
+            .where(col(Credential.profile_id).in_(ids), Credential.status == "confirmed")
             .order_by(col(Credential.created_at))
         )
     ).all()
     projects = (
         await session.exec(
             select(Project)
-            .where(Project.profile_id == profile_id, Project.status == "confirmed")
+            .where(col(Project.profile_id).in_(ids), Project.status == "confirmed")
             .order_by(col(Project.created_at))
         )
     ).all()
@@ -177,21 +221,159 @@ async def confirmed_rows_for(session: AsyncSession, profile_id: UUID) -> Confirm
     skills_by_project: dict[UUID, list[str]] = {}
     for link in links:
         skills_by_project.setdefault(link.project_id, []).append(link.skill_id)
-    return ConfirmedRows(
-        credentials=tuple(
-            ConfirmedCredential(credential_id=str(row.id), skill_id=row.skill_id)
-            for row in credentials
-        ),
-        projects=tuple(
-            ConfirmedProject(
-                project_id=str(row.id),
-                skill_ids=tuple(sorted(skills_by_project.get(row.id, []))),
-                licensable=row.licensable,
-                vertical=row.vertical,
-            )
-            for row in projects
-        ),
+    visible = {
+        row.id
+        for row, _profile in (
+            await session.exec(visible_showcase_projects().where(col(Project.profile_id).in_(ids)))
+        ).all()
+    }
+    return {
+        profile_id: ConfirmedRows(
+            credentials=tuple(
+                ConfirmedCredential(credential_id=str(row.id), skill_id=row.skill_id)
+                for row in credentials
+                if row.profile_id == profile_id and row.skill_id is not None
+            ),
+            # A skill-less certification (#88) proves nothing: it only ever becomes `certified`.
+            certifications=tuple(
+                ConfirmedCertification(credential_id=str(row.id), issuer=row.issuer)
+                for row in credentials
+                if row.profile_id == profile_id and row.skill_id is None
+            ),
+            projects=tuple(
+                ConfirmedProject(
+                    project_id=str(row.id),
+                    skill_ids=tuple(sorted(skills_by_project.get(row.id, []))),
+                    licensable=row.licensable,
+                    vertical=row.vertical,
+                    showcase_visible=row.id in visible,
+                )
+                for row in projects
+                if row.profile_id == profile_id
+            ),
+        )
+        for profile_id in ids
+    }
+
+
+# -- public Showcase reads (Sprint 005a, spec #86, #101) ------------------------------------------
+# Unauthenticated. Every statement starts from `visible_showcase_projects()`.
+
+_LIKE_ESCAPE = "\\"
+
+
+def _like_escaped(term: str) -> str:
+    """`term` with LIKE's wildcards made literal, so `%` and `_` in a search match themselves."""
+    for char in (_LIKE_ESCAPE, "%", "_"):
+        term = term.replace(char, _LIKE_ESCAPE + char)
+    return term
+
+
+def _demonstrates(skill: str) -> ColumnElement[bool]:
+    return exists(
+        select(ProjectSkill.project_id).where(
+            col(ProjectSkill.project_id) == col(Project.id), ProjectSkill.skill_id == skill
+        )
     )
+
+
+def _verifies(skill: str) -> ColumnElement[bool]:
+    """The SQL form of `verification.verified_skills` for the owner of the outer Project: a
+    confirmed credential or any confirmed project of theirs proves `skill`."""
+    proof = aliased(Project)
+    by_credential = exists(
+        select(Credential.id).where(
+            col(Credential.profile_id) == col(Project.profile_id),
+            Credential.status == "confirmed",
+            Credential.skill_id == skill,
+        )
+    )
+    by_project = exists(
+        select(ProjectSkill.project_id)
+        .join(proof, col(proof.id) == col(ProjectSkill.project_id))
+        .where(
+            col(proof.profile_id) == col(Project.profile_id),
+            col(proof.status) == "confirmed",
+            ProjectSkill.skill_id == skill,
+        )
+    )
+    return or_(by_credential, by_project)
+
+
+def _self_describes(skill: str) -> ColumnElement[bool]:
+    """A `skill_set` or `suggested_skills` label equal to `skill`, case-insensitively."""
+    labels = (
+        func.unnest(func.array_cat(col(Profile.skill_set), col(Profile.suggested_skills)))
+        .table_valued("label")
+        .render_derived(name="chips")
+    )
+    return exists(
+        select(literal(1))
+        .select_from(labels)
+        .where(func.lower(labels.c.label) == func.lower(literal(skill)))
+    )
+
+
+async def showcase_page(
+    session: AsyncSession,
+    *,
+    skill: str | None,
+    vertical: str | None,
+    licensable: bool | None,
+    q: str | None,
+    limit: int,
+    offset: int,
+) -> tuple[list[tuple[Project, Profile]], int]:
+    """One gallery page, newest confirmation first then id, and the filtered total."""
+    statement = visible_showcase_projects()
+    if skill is not None:
+        statement = statement.where(
+            or_(_demonstrates(skill), _verifies(skill), _self_describes(skill))
+        )
+    if vertical is not None:
+        statement = statement.where(Project.vertical == vertical)
+    if licensable is not None:
+        statement = statement.where(Project.licensable == licensable)
+    if q:
+        statement = statement.where(
+            col(Project.title).ilike(f"%{_like_escaped(q)}%", escape=_LIKE_ESCAPE)
+        )
+    total = (await session.exec(select(func.count()).select_from(statement.subquery()))).one()
+    ordered = (
+        statement.order_by(col(Project.showcase_confirmed_at).desc().nulls_last(), col(Project.id))
+        .limit(limit)
+        .offset(offset)
+    )
+    rows = [(project, profile) for project, profile in (await session.exec(ordered)).all()]
+    return rows, int(total)
+
+
+async def visible_showcase_project(
+    session: AsyncSession, project_id: UUID
+) -> tuple[Project, Profile] | None:
+    row = (await session.exec(visible_showcase_projects().where(Project.id == project_id))).first()
+    return None if row is None else (row[0], row[1])
+
+
+async def skill_ids_by_project(
+    session: AsyncSession, project_ids: Sequence[UUID]
+) -> dict[UUID, list[str]]:
+    """Each project's demonstrated skill ids in seed skill order, in two queries."""
+    out: dict[UUID, list[str]] = {project_id: [] for project_id in project_ids}
+    if not out:
+        return out
+    links = (
+        await session.exec(select(ProjectSkill).where(col(ProjectSkill.project_id).in_(list(out))))
+    ).all()
+    order = {skill: index for index, skill in enumerate(await skill_names(session))}
+    for link in links:
+        out[link.project_id].append(link.skill_id)
+    return {pid: sorted(skills, key=lambda s: order.get(s, 99)) for pid, skills in out.items()}
+
+
+async def confirmed_credentials_for(session: AsyncSession, profile_id: UUID) -> list[Credential]:
+    """The builder's confirmed credentials, with or without a vocabulary skill (#101 panel)."""
+    return [row for row in await credentials_for(session, profile_id) if row.status == "confirmed"]
 
 
 # -- proof rows a builder owns ------------------------------------------------
@@ -232,13 +414,46 @@ async def projects_for(session: AsyncSession, profile_id: UUID) -> list[tuple[Pr
 
 
 async def add_credential(
-    session: AsyncSession, profile_id: UUID, *, title: str, issuer: str, skill_id: str
+    session: AsyncSession,
+    profile_id: UUID,
+    *,
+    title: str,
+    issuer: str,
+    skill_id: str | None,
+    issued_on: date | None = None,
+    credential_url: str | None = None,
 ) -> Credential:
-    row = Credential(profile_id=profile_id, title=title, issuer=issuer, skill_id=skill_id)
+    """A pending credential; `skill_id=None` is a certification that proves no graph skill."""
+    row = Credential(
+        profile_id=profile_id,
+        title=title,
+        issuer=issuer,
+        skill_id=skill_id,
+        issued_on=issued_on,
+        credential_url=credential_url,
+    )
     session.add(row)
     await session.commit()
     await session.refresh(row)
     return row
+
+
+async def own_project(
+    session: AsyncSession, profile_id: UUID, project_id: UUID
+) -> tuple[Project, list[str]] | None:
+    """One of the builder's own projects with its skill ids; None for anyone else's (a 404)."""
+    project = (
+        await session.exec(
+            select(Project).where(Project.id == project_id, Project.profile_id == profile_id)
+        )
+    ).first()
+    if project is None:
+        return None
+    links = (
+        await session.exec(select(ProjectSkill).where(ProjectSkill.project_id == project.id))
+    ).all()
+    order = {skill: index for index, skill in enumerate(await skill_names(session))}
+    return project, sorted((link.skill_id for link in links), key=lambda s: order.get(s, 99))
 
 
 async def add_project(
@@ -301,6 +516,8 @@ async def confirmed_builders(session: AsyncSession) -> list[ConfirmedBuilder]:
                 cohort_id=profile.cohort_id,
                 self_described=tuple(profile.self_described_skills),
                 rows=await confirmed_rows_for(session, profile.id),
+                skill_set=tuple(profile.skill_set),
+                suggested_skills=tuple(profile.suggested_skills),
             )
         )
     return out
@@ -345,6 +562,77 @@ async def pending_projects(session: AsyncSession) -> list[tuple[Project, Profile
     return out
 
 
+DECIDED_STATUSES = ("confirmed", "rejected")
+
+
+async def latest_decisions(
+    session: AsyncSession, kind: str, target_ids: Iterable[UUID]
+) -> dict[UUID, datetime]:
+    """Target id → `created_at` of its most recent confirmations row of that kind."""
+    ids = list(target_ids)
+    if not ids:
+        return {}
+    statement = (
+        select(Confirmation.target_id, func.max(Confirmation.created_at))
+        .where(Confirmation.kind == kind, col(Confirmation.target_id).in_(ids))
+        .group_by(col(Confirmation.target_id))
+    )
+    return {target_id: decided_at for target_id, decided_at in (await session.exec(statement))}
+
+
+async def decided_accounts(
+    session: AsyncSession,
+) -> list[tuple[User, Profile | None, datetime]]:
+    """Confirmed or rejected founders and builders, most recent decision last (#49). Admins are
+    bootstrapped confirmed and never decided on, so they are absent. A row without a log entry
+    reports its own `created_at`."""
+    statement = (
+        select(User)
+        .where(col(User.status).in_(DECIDED_STATUSES), col(User.role).in_(["founder", "builder"]))
+        .order_by(col(User.created_at), col(User.id))
+    )
+    users = (await session.exec(statement)).all()
+    decided = await latest_decisions(session, "account", (user.id for user in users))
+    rows = [
+        (user, await profile_for_user(session, user.id), decided.get(user.id, user.created_at))
+        for user in users
+    ]
+    return sorted(rows, key=lambda row: (row[2], row[0].id))
+
+
+async def decided_credentials(session: AsyncSession) -> list[tuple[Credential, Profile, datetime]]:
+    statement = (
+        select(Credential, Profile)
+        .join(Profile, col(Profile.id) == col(Credential.profile_id))
+        .where(col(Credential.status).in_(DECIDED_STATUSES))
+        .order_by(col(Credential.created_at), col(Credential.id))
+    )
+    pairs = (await session.exec(statement)).all()
+    decided = await latest_decisions(session, "credential", (row.id for row, _ in pairs))
+    rows = [(row, profile, decided.get(row.id, row.created_at)) for row, profile in pairs]
+    return sorted(rows, key=lambda row: (row[2], row[0].id))
+
+
+async def decided_projects(
+    session: AsyncSession,
+) -> list[tuple[Project, Profile, list[str], datetime]]:
+    statement = (
+        select(Project, Profile)
+        .join(Profile, col(Profile.id) == col(Project.profile_id))
+        .where(col(Project.status).in_(DECIDED_STATUSES))
+        .order_by(col(Project.created_at), col(Project.id))
+    )
+    pairs = (await session.exec(statement)).all()
+    decided = await latest_decisions(session, "project", (row.id for row, _ in pairs))
+    rows: list[tuple[Project, Profile, list[str], datetime]] = []
+    for row, profile in pairs:
+        skills = [s for p, s in await projects_for(session, profile.id) if p.id == row.id]
+        rows.append(
+            (row, profile, skills[0] if skills else [], decided.get(row.id, row.created_at))
+        )
+    return sorted(rows, key=lambda row: (row[3], row[0].id))
+
+
 async def decide(
     session: AsyncSession,
     kind: str,
@@ -369,3 +657,377 @@ async def decide(
     )
     await session.commit()
     return True
+
+
+# -- admin: showcase entries (Sprint 005a, spec #86, #103) ----------------------------------------
+# A Showcase entry is a project row's showcase columns; its review status is `showcase_status`,
+# independent of the project's own `status`. Visibility stays `showcase_visible()`'s alone.
+
+ShowcaseRow = tuple[Project, Profile, User, list[str]]
+
+
+async def _showcase_rows(session: AsyncSession, statuses: Sequence[str]) -> list[ShowcaseRow]:
+    """Showcased projects whose entry is in one of `statuses`, with owner profile, owner account
+    and demonstrated skills, oldest project first."""
+    statement = (
+        select(Project, Profile, User)
+        .join(Profile, col(Profile.id) == col(Project.profile_id))
+        .join(User, col(User.id) == col(Profile.user_id))
+        .where(col(Project.showcased).is_(True), col(Project.showcase_status).in_(list(statuses)))
+        .order_by(col(Project.created_at), col(Project.id))
+    )
+    triples = (await session.exec(statement)).all()
+    skills = await skill_ids_by_project(session, [project.id for project, _, _ in triples])
+    return [(project, profile, user, skills[project.id]) for project, profile, user in triples]
+
+
+async def pending_showcase(session: AsyncSession) -> list[ShowcaseRow]:
+    """Entries awaiting review, whatever the project's or the account's own status: the admin
+    preview carries both so the UI can warn that a confirmed entry would still be private."""
+    return await _showcase_rows(session, ["pending"])
+
+
+async def decided_showcase(
+    session: AsyncSession,
+) -> list[tuple[Project, Profile, User, list[str], datetime]]:
+    """Confirmed or rejected entries with their latest `showcase` decision, most recent last.
+    A builder edit sends an entry back to pending and a withdrawal to none, so neither is here."""
+    rows = await _showcase_rows(session, DECIDED_STATUSES)
+    decided = await latest_decisions(session, "showcase", (row[0].id for row in rows))
+    out = [(*row, decided.get(row[0].id, row[0].created_at)) for row in rows]
+    return sorted(out, key=lambda row: (row[4], row[0].id))
+
+
+async def decide_showcase(
+    session: AsyncSession,
+    project_id: UUID,
+    decision: str,
+    admin_user_id: UUID,
+    now: datetime,
+) -> Literal["decided", "missing", "withdrawn"]:
+    """Confirm (stamp `showcase_confirmed_at`) or reject (clear it) one entry, log the decision,
+    commit. Any transition between confirmed and rejected is allowed so a mistake can be
+    reversed (#49); an entry the builder has withdrawn (`showcased=false`) is left untouched."""
+    statement = select(Project).where(Project.id == project_id).with_for_update()
+    project = (await session.exec(statement)).first()
+    if project is None:
+        return "missing"
+    if not project.showcased:
+        await session.rollback()
+        return "withdrawn"
+    project.showcase_status = decision
+    project.showcase_confirmed_at = now if decision == "confirmed" else None
+    session.add(project)
+    session.add(
+        Confirmation(
+            kind="showcase", target_id=project_id, decision=decision, admin_user_id=admin_user_id
+        )
+    )
+    await session.commit()
+    return "decided"
+
+
+# -- requests (Sprint 004, spec #52 §Store, #59) --------------------------------------------------
+# A request is a founder's published brief. Rows never become atoms (D-15).
+
+
+async def create_request(
+    session: AsyncSession,
+    founder: User,
+    *,
+    brief: dict[str, Any],
+    route: dict[str, Any],
+    title: str,
+    vertical: str,
+    delivery_mode: str,
+    availability_start: date,
+    availability_end: date,
+    daily_budget: int,
+    route_status: str,
+) -> Request:
+    row = Request(
+        founder_id=founder.id,
+        brief=brief,
+        route=route,
+        title=title,
+        vertical=vertical,
+        delivery_mode=delivery_mode,
+        availability_start=availability_start,
+        availability_end=availability_end,
+        daily_budget=daily_budget,
+        route_status=route_status,
+    )
+    session.add(row)
+    await session.commit()
+    await session.refresh(row)
+    return row
+
+
+def _requests_newest_first() -> Select[tuple[Request, User]]:
+    return (
+        select(Request, User)
+        .join(User, col(User.id) == col(Request.founder_id))
+        .order_by(col(Request.created_at).desc(), col(Request.id))
+    )
+
+
+async def requests_for_founder(
+    session: AsyncSession, founder_id: UUID
+) -> list[tuple[Request, User]]:
+    """The founder's own requests in every status, newest first."""
+    statement = _requests_newest_first().where(Request.founder_id == founder_id)
+    return [(row, user) for row, user in (await session.exec(statement)).all()]
+
+
+async def open_requests(session: AsyncSession) -> list[tuple[Request, User]]:
+    """Every open request, newest first: what a builder's board lists."""
+    statement = _requests_newest_first().where(Request.status == "open")
+    return [(row, user) for row, user in (await session.exec(statement)).all()]
+
+
+async def request_by_id(session: AsyncSession, request_id: UUID) -> tuple[Request, User] | None:
+    statement = _requests_newest_first().where(Request.id == request_id)
+    found = (await session.exec(statement)).first()
+    return None if found is None else (found[0], found[1])
+
+
+async def close_request(session: AsyncSession, row: Request, now: datetime) -> Request:
+    """Status `closed` with `closed_at`, committed. The caller checks it was open."""
+    row.status = "closed"
+    row.closed_at = now
+    session.add(row)
+    await session.commit()
+    await session.refresh(row)
+    return row
+
+
+async def request_for_update(session: AsyncSession, request_id: UUID) -> Request | None:
+    """The request row locked FOR UPDATE, so a bid's open check and insert see one status."""
+    statement = select(Request).where(Request.id == request_id).with_for_update()
+    return (await session.exec(statement)).first()
+
+
+# -- bids (spec #52 §Store, #62) ------------------------------------------------------------------
+
+
+async def add_bid(
+    session: AsyncSession,
+    request: Request,
+    profile: Profile,
+    *,
+    day_rate: int,
+    message: str,
+    eligible_skills: Sequence[str],
+    path: dict[str, Any],
+) -> Bid | None:
+    """Insert and commit one bid; None when the (request, profile) UNIQUE already holds, so a
+    race between two identical bids still ends in one row (the caller answers 409)."""
+    row = Bid(
+        request_id=request.id,
+        profile_id=profile.id,
+        day_rate=day_rate,
+        message=message,
+        eligible_skills=list(eligible_skills),
+        path=path,
+    )
+    session.add(row)
+    try:
+        await session.commit()
+    except IntegrityError:
+        await session.rollback()
+        return None
+    await session.refresh(row)
+    return row
+
+
+async def bids_for_request(session: AsyncSession, request: Request) -> list[tuple[Bid, Profile]]:
+    """The request's bids from builders whose account is confirmed right now, newest first. A
+    bid from a builder who was un-confirmed since is hidden, never deleted."""
+    statement = (
+        select(Bid, Profile)
+        .join(Profile, col(Profile.id) == col(Bid.profile_id))
+        .join(User, col(User.id) == col(Profile.user_id))
+        .where(Bid.request_id == request.id, User.status == "confirmed")
+        .order_by(col(Bid.created_at).desc(), col(Bid.id))
+    )
+    return [(row, profile) for row, profile in (await session.exec(statement)).all()]
+
+
+# -- bookings (spec #52 §Store, #64) --------------------------------------------------------------
+
+BookingRow = tuple[Booking, Profile, User, Request | None]
+
+
+def _bookings_upcoming_first() -> Select[tuple[Booking, Profile, User, Request]]:
+    """Soonest proposed start first. The request join is an OUTER join: the fourth column is
+    None for a booking made from a candidate profile (SQLAlchemy types it as non-null)."""
+    return (
+        select(Booking, Profile, User, Request)
+        .join(Profile, col(Profile.id) == col(Booking.profile_id))
+        .join(User, col(User.id) == col(Booking.founder_id))
+        .outerjoin(Request, col(Request.id) == col(Booking.request_id))
+        .order_by(col(Booking.proposed_start), col(Booking.created_at), col(Booking.id))
+    )
+
+
+async def add_booking(
+    session: AsyncSession,
+    founder: User,
+    profile: Profile,
+    request: Request | None,
+    *,
+    proposed_start: datetime,
+    duration_min: int,
+    note: str,
+    state: str,
+    history: list[dict[str, Any]],
+) -> Booking:
+    """Insert the founder's proposal with its first history entry, committed."""
+    row = Booking(
+        request_id=None if request is None else request.id,
+        founder_id=founder.id,
+        profile_id=profile.id,
+        proposed_start=proposed_start,
+        duration_min=duration_min,
+        state=state,
+        history=history,
+        note=note,
+    )
+    session.add(row)
+    await session.commit()
+    await session.refresh(row)
+    return row
+
+
+async def booking_for_update(session: AsyncSession, booking_id: UUID) -> Booking | None:
+    """The booking row locked FOR UPDATE, so a transition reads and writes one state."""
+    statement = select(Booking).where(Booking.id == booking_id).with_for_update()
+    return (await session.exec(statement)).first()
+
+
+async def apply_transition(
+    session: AsyncSession,
+    row: Booking,
+    *,
+    state: str,
+    history: list[dict[str, Any]],
+    proposed_start: datetime,
+    duration_min: int,
+    note: str,
+) -> Booking:
+    """State, history, proposed start, duration and note in one UPDATE, committed together, so
+    the row's state and its history can never disagree (spec #52 §Transaction shape)."""
+    row.state = state
+    row.history = history
+    row.proposed_start = proposed_start
+    row.duration_min = duration_min
+    row.note = note
+    session.add(row)
+    await session.commit()
+    await session.refresh(row)
+    return row
+
+
+async def booking_by_id(session: AsyncSession, booking_id: UUID) -> BookingRow | None:
+    statement = _bookings_upcoming_first().where(Booking.id == booking_id)
+    found = (await session.exec(statement)).first()
+    return None if found is None else (found[0], found[1], found[2], found[3])
+
+
+async def bookings_for_founder(session: AsyncSession, founder_id: UUID) -> list[BookingRow]:
+    statement = _bookings_upcoming_first().where(Booking.founder_id == founder_id)
+    return [(b, p, u, r) for b, p, u, r in (await session.exec(statement)).all()]
+
+
+async def bookings_for_profile(session: AsyncSession, profile_id: UUID) -> list[BookingRow]:
+    statement = _bookings_upcoming_first().where(Booking.profile_id == profile_id)
+    return [(b, p, u, r) for b, p, u, r in (await session.exec(statement)).all()]
+
+
+# -- dashboard (spec #52 §Dashboard response, #66): counts from SQL, never from the engine ------
+
+
+async def dashboard_counts(session: AsyncSession, founder_id: UUID) -> dict[str, Any]:
+    """`briefs` counts the founder's requests, `routes` groups them by route_status,
+    `openRequests`, `bidsReceived` (bids on the founder's requests from confirmed builders) and
+    `bookings` (the founder's bookings in every state)."""
+    briefs = (
+        await session.exec(
+            select(func.count()).select_from(Request).where(Request.founder_id == founder_id)
+        )
+    ).one()
+    by_status = dict(
+        (
+            await session.exec(
+                select(Request.route_status, func.count())
+                .where(Request.founder_id == founder_id)
+                .group_by(Request.route_status)
+            )
+        ).all()
+    )
+    open_requests = (
+        await session.exec(
+            select(func.count())
+            .select_from(Request)
+            .where(Request.founder_id == founder_id, Request.status == "open")
+        )
+    ).one()
+    bids_received = (
+        await session.exec(
+            select(func.count())
+            .select_from(Bid)
+            .join(Request, col(Request.id) == col(Bid.request_id))
+            .join(Profile, col(Profile.id) == col(Bid.profile_id))
+            .join(User, col(User.id) == col(Profile.user_id))
+            .where(Request.founder_id == founder_id, User.status == "confirmed")
+        )
+    ).one()
+    bookings = (
+        await session.exec(
+            select(func.count()).select_from(Booking).where(Booking.founder_id == founder_id)
+        )
+    ).one()
+    return {
+        "briefs": briefs,
+        "routes": {status: by_status.get(status, 0) for status in ROUTE_STATUSES},
+        "open_requests": open_requests,
+        "bids_received": bids_received,
+        "bookings": bookings,
+    }
+
+
+async def bids_received(
+    session: AsyncSession, founder_id: UUID, limit: int = 10
+) -> list[tuple[Bid, Request, Profile]]:
+    """Bids on the founder's requests from currently confirmed builders, newest first, capped."""
+    statement = (
+        select(Bid, Request, Profile)
+        .join(Request, col(Request.id) == col(Bid.request_id))
+        .join(Profile, col(Profile.id) == col(Bid.profile_id))
+        .join(User, col(User.id) == col(Profile.user_id))
+        .where(Request.founder_id == founder_id, User.status == "confirmed")
+        .order_by(col(Bid.created_at).desc(), col(Bid.id))
+        .limit(limit)
+    )
+    return [(b, r, p) for b, r, p in (await session.exec(statement)).all()]
+
+
+async def upcoming_bookings(
+    session: AsyncSession, founder_id: UUID, now: datetime
+) -> list[BookingRow]:
+    """The founder's bookings whose proposed start is at or after `now`, soonest first."""
+    statement = _bookings_upcoming_first().where(
+        Booking.founder_id == founder_id, Booking.proposed_start >= now
+    )
+    return [(b, p, u, r) for b, p, u, r in (await session.exec(statement)).all()]
+
+
+async def bids_for_profile(session: AsyncSession, profile: Profile) -> list[tuple[Bid, Request]]:
+    """The builder's own bids with their requests, newest first."""
+    statement = (
+        select(Bid, Request)
+        .join(Request, col(Request.id) == col(Bid.request_id))
+        .where(Bid.profile_id == profile.id)
+        .order_by(col(Bid.created_at).desc(), col(Bid.id))
+    )
+    return [(row, request) for row, request in (await session.exec(statement)).all()]

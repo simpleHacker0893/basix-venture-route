@@ -4,15 +4,19 @@
  * the engine rebuilds the MeTTa space in the same request (D-15) and answers with `projectedRows`,
  * which the status line shows as `projected_rows`. An expanded row previews the facts the row would
  * add, rendered client-side from the row's fields with the seed predicates; it is a preview, not the
- * projection itself and not a ledger.
+ * projection itself and not a ledger. The Decided tab (spec #35 story 24, #49) lists what has already
+ * been confirmed or rejected; Reverse posts the opposite decision and refreshes both lists.
  */
 import type {
   AdminDecision,
-  DecisionKind,
+  AdminDecisionKind,
+  DecidedQueue,
+  DecisionStatus,
   PendingAccount,
   PendingCredential,
   PendingProject,
   PendingQueue,
+  PendingShowcase,
 } from "@venture-route/contracts";
 import { useEffect, useState } from "react";
 
@@ -24,24 +28,93 @@ import { SKILL_LABELS, VERTICAL_LABELS } from "../../lib/brief";
 import { isoDate } from "../../lib/format";
 import { accountPreview, credentialPreview, projectPreview, type ProjectionPreview } from "../../lib/projection";
 import { errorMessage } from "../builder/formStyles";
+import { ShowcaseStatusPill, StatusPill } from "../builder/StatusPill";
 
 type Decision = "confirm" | "reject";
 
 type LastDecision = { decision: AdminDecision; label: string };
 
-const KIND_LABEL: Record<DecisionKind, string> = {
+const KIND_LABEL: Record<AdminDecisionKind, string> = {
   account: "account",
   credential: "credential",
   project: "project",
+  showcase: "showcase",
 };
+
+/** Sprint 005a (spec #86 story 15): a certification outside the nine-skill vocabulary is
+ * display-only and never produces a `proves` fact (D-52). */
+const NO_VOCABULARY_SKILL_BADGE = "No vocabulary skill: display only";
+
+function SkillCell({ skillId }: Readonly<{ skillId: PendingCredential["skillId"] }>) {
+  if (skillId) return <>{SKILL_LABELS[skillId]}</>;
+  return (
+    <span className="inline-flex h-6 items-center rounded-pill border border-border-strong bg-surface-strong px-2 font-mono text-[11px] text-ink-3">
+      {NO_VOCABULARY_SKILL_BADGE}
+    </span>
+  );
+}
 
 function submitted(iso: string): string {
   return isoDate(iso.slice(0, 10));
 }
 
+type DecidedRowData = {
+  kind: AdminDecisionKind;
+  id: string;
+  label: string;
+  sub: string;
+  builder: string;
+  status: DecisionStatus;
+  decidedAt: string;
+};
+
+/** Every decided row in one list, most recent decision first. */
+function decidedRows(queue: DecidedQueue): DecidedRowData[] {
+  const rows: DecidedRowData[] = [
+    ...queue.accounts.map((account) => ({
+      kind: "account" as const,
+      id: account.id,
+      label: account.displayName ?? account.email,
+      sub: account.email,
+      builder: account.builderId ?? "—",
+      status: account.status,
+      decidedAt: account.decidedAt,
+    })),
+    ...queue.credentials.map((credential) => ({
+      kind: "credential" as const,
+      id: credential.id,
+      label: credential.title,
+      sub: `${credential.issuer} · ${credential.skillId ? SKILL_LABELS[credential.skillId] : NO_VOCABULARY_SKILL_BADGE}`,
+      builder: credential.displayName,
+      status: credential.status,
+      decidedAt: credential.decidedAt,
+    })),
+    ...queue.projects.map((project) => ({
+      kind: "project" as const,
+      id: project.id,
+      label: project.title,
+      sub: VERTICAL_LABELS[project.vertical],
+      builder: project.displayName,
+      status: project.status,
+      decidedAt: project.decidedAt,
+    })),
+    ...queue.showcase.map((entry) => ({
+      kind: "showcase" as const,
+      id: entry.id,
+      label: entry.title,
+      sub: VERTICAL_LABELS[entry.vertical],
+      builder: entry.displayName,
+      status: entry.status,
+      decidedAt: entry.decidedAt,
+    })),
+  ];
+  return rows.sort((a, b) => Date.parse(b.decidedAt) - Date.parse(a.decidedAt));
+}
+
 export function AdminHome() {
   const api = useMarketplaceApi();
   const [queue, setQueue] = useState<PendingQueue | null>(null);
+  const [decided, setDecided] = useState<DecidedQueue | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [last, setLast] = useState<LastDecision | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
@@ -58,12 +131,20 @@ export function AdminHome() {
       .catch((cause: unknown) => {
         if (!cancelled) setLoadError(errorMessage(cause, "The queue could not be loaded."));
       });
+    api
+      .getDecided()
+      .then((next) => {
+        if (!cancelled) setDecided(next);
+      })
+      .catch((cause: unknown) => {
+        if (!cancelled) setLoadError(errorMessage(cause, "The decided list could not be loaded."));
+      });
     return () => {
       cancelled = true;
     };
   }, [api]);
 
-  async function decide(decision: Decision, kind: DecisionKind, id: string, label: string) {
+  async function decide(decision: Decision, kind: AdminDecisionKind, id: string, label: string) {
     setBusy(id);
     setActionError(null);
     try {
@@ -74,12 +155,39 @@ export function AdminHome() {
           accounts: kind === "account" ? current.accounts.filter((row) => row.id !== id) : current.accounts,
           credentials: kind === "credential" ? current.credentials.filter((row) => row.id !== id) : current.credentials,
           projects: kind === "project" ? current.projects.filter((row) => row.id !== id) : current.projects,
+          showcase: kind === "showcase" ? current.showcase.filter((row) => row.id !== id) : current.showcase,
         };
       });
       setExpanded((current) => (current === id ? null : current));
       setLast({ decision: result, label });
+      setDecided(await api.getDecided());
     } catch (cause) {
       setActionError(errorMessage(cause, `The ${KIND_LABEL[kind]} decision could not be saved.`));
+      // A 409 means the builder withdrew the entry after the queue loaded (spec #86 story 56);
+      // refresh so the stale row is no longer offered.
+      api
+        .getPending()
+        .then(setQueue)
+        .catch(() => undefined);
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  /** Reverse posts the opposite decision (reject a confirmed row, confirm a rejected one) and
+   * reloads both lists: the engine reprojects in the same request and answers `projectedRows`. */
+  async function reverse(row: DecidedRowData) {
+    setBusy(row.id);
+    setActionError(null);
+    try {
+      const result =
+        row.status === "confirmed" ? await api.reject(row.kind, row.id) : await api.confirm(row.kind, row.id);
+      setLast({ decision: result, label: row.label });
+      const [nextPending, nextDecided] = await Promise.all([api.getPending(), api.getDecided()]);
+      setQueue(nextPending);
+      setDecided(nextDecided);
+    } catch (cause) {
+      setActionError(errorMessage(cause, `The ${KIND_LABEL[row.kind]} decision could not be reversed.`));
     } finally {
       setBusy(null);
     }
@@ -89,10 +197,12 @@ export function AdminHome() {
     accounts: queue?.accounts.length ?? 0,
     credentials: queue?.credentials.length ?? 0,
     projects: queue?.projects.length ?? 0,
+    showcase: queue?.showcase.length ?? 0,
   };
-  const total = counts.accounts + counts.credentials + counts.projects;
+  const total = counts.accounts + counts.credentials + counts.projects + counts.showcase;
+  const decidedList = decided ? decidedRows(decided) : [];
 
-  const rowProps = (kind: DecisionKind, id: string, label: string, preview: ProjectionPreview) => ({
+  const rowProps = (kind: AdminDecisionKind, id: string, label: string, preview: ProjectionPreview) => ({
     kind,
     id,
     label,
@@ -170,6 +280,13 @@ export function AdminHome() {
                 <span>Projects</span>
                 <Count value={counts.projects} />
               </TabsTrigger>
+              <TabsTrigger value="showcase" className="gap-2 px-3">
+                <span>Showcase ({counts.showcase})</span>
+              </TabsTrigger>
+              <TabsTrigger value="decided" className="gap-2 px-3">
+                <span>Decided</span>
+                <Count value={decidedList.length} />
+              </TabsTrigger>
             </TabsList>
 
             <TabsContent value="accounts">
@@ -202,7 +319,11 @@ export function AdminHome() {
                     key={credential.id}
                     {...rowProps("credential", credential.id, credential.title, credentialPreview(credential))}
                     detail={<CredentialDetail credential={credential} />}
-                    cells={[credential.displayName, SKILL_LABELS[credential.skillId], submitted(credential.submittedAt)]}
+                    cells={[
+                      credential.displayName,
+                      <SkillCell key="skill" skillId={credential.skillId} />,
+                      submitted(credential.submittedAt),
+                    ]}
                     sub={credential.issuer}
                   />
                 ))}
@@ -221,6 +342,24 @@ export function AdminHome() {
                     cells={[project.displayName, VERTICAL_LABELS[project.vertical], submitted(project.submittedAt)]}
                     sub={project.licensable ? "Licensable as reusable IP" : "Not licensable"}
                   />
+                ))}
+              />
+            </TabsContent>
+            <TabsContent value="showcase">
+              <ShowcaseQueueList
+                entries={queue.showcase}
+                busyId={busy}
+                onDecide={(decision, entry) => decide(decision, "showcase", entry.id, entry.title)}
+              />
+            </TabsContent>
+            <TabsContent value="decided">
+              <QueueTable
+                caption="Decided accounts, credentials, projects and showcase entries"
+                columns={["Item", "Kind", "Builder", "Status", "Decided", "Actions"]}
+                empty="Nothing has been decided yet."
+                noun="decided"
+                rows={decidedList.map((row) => (
+                  <DecidedRow key={row.id} row={row} busy={busy === row.id} onReverse={() => reverse(row)} />
                 ))}
               />
             </TabsContent>
@@ -244,7 +383,8 @@ export function AdminHome() {
               </ul>
               <p className="border-t border-border pt-3 text-[12px] text-ink-3">
                 Every decision reprojects the graph; the same count is on <code className="font-mono">GET /health</code> as{" "}
-                <code className="font-mono">projected_rows</code>.
+                <code className="font-mono">projected_rows</code>. A mistaken decision is reversed from the Decided tab; every
+                step stays in the confirmations log.
               </p>
             </section>
           </aside>
@@ -275,7 +415,8 @@ function QueueTable({
   columns,
   rows,
   empty,
-}: Readonly<{ caption: string; columns: readonly string[]; rows: React.ReactNode[]; empty: string }>) {
+  noun = "pending",
+}: Readonly<{ caption: string; columns: readonly string[]; rows: React.ReactNode[]; empty: string; noun?: string }>) {
   return (
     <div className="flex flex-col gap-3">
       <div className="overflow-x-auto rounded-card border border-border bg-surface">
@@ -304,7 +445,7 @@ function QueueTable({
         </table>
       </div>
       <span className="font-mono text-[12px] text-ink-3">
-        {rows.length} of {rows.length} pending
+        {rows.length} of {rows.length} {noun}
       </span>
     </div>
   );
@@ -324,7 +465,7 @@ function QueueRow({
   onDecide,
 }: Readonly<{
   id: string;
-  kind: DecisionKind;
+  kind: AdminDecisionKind;
   label: string;
   sub: string;
   cells: React.ReactNode[];
@@ -421,6 +562,180 @@ function QueueRow({
   );
 }
 
+function DecidedRow({
+  row,
+  busy,
+  onReverse,
+}: Readonly<{ row: DecidedRowData; busy: boolean; onReverse(): void }>) {
+  return (
+    <tr aria-label={row.label} className="align-top">
+      <td className="px-4 py-3">
+        <div className="flex flex-col gap-1">
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="font-medium text-ink">{row.label}</span>
+            <DemoDataPill />
+          </div>
+          <span className="text-[12px] text-ink-3">{row.sub}</span>
+        </div>
+      </td>
+      <td className="px-4 py-3 text-ink-2">{KIND_LABEL[row.kind]}</td>
+      <td className="px-4 py-3 text-ink-2">{row.builder}</td>
+      <td className="px-4 py-3">
+        <StatusPill status={row.status} />
+      </td>
+      <td className="px-4 py-3 text-ink-2">{submitted(row.decidedAt)}</td>
+      <td className="px-4 py-3">
+        <button
+          type="button"
+          disabled={busy}
+          onClick={onReverse}
+          title={row.status === "confirmed" ? "Reject this row" : "Confirm this row"}
+          className="inline-flex h-8 items-center rounded-lg border border-border-strong bg-surface-strong px-3 text-[13px] font-medium text-ink hover:border-accent-green disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          Reverse
+        </button>
+      </td>
+    </tr>
+  );
+}
+
+/**
+ * Sprint 005a (spec #86 stories 48-49, #106): a Showcase entry's card preview in the admin queue.
+ * Links are plain text, not clickable anchors that auto-open, with the host highlighted; the
+ * video id is the one the engine already parsed out of `pitchVideoUrl` (#89), never re-parsed
+ * here. Confirm/Reject act on this entry's own `showcaseStatus`, independent of the project's
+ * confirmation (#103).
+ */
+const SHOWCASE_LINKS: ReadonlyArray<{ field: keyof PendingShowcase; label: string }> = [
+  { field: "liveUrl", label: "Live" },
+  { field: "demoUrl", label: "Demo" },
+  { field: "pitchVideoUrl", label: "Pitch video" },
+  { field: "pitchDeckUrl", label: "Pitch deck" },
+];
+
+/** A URL as plain text with its host highlighted; never an `<a>`, so it cannot auto-open. */
+function LinkText({ url }: Readonly<{ url: string }>) {
+  let before = "";
+  let host = url;
+  let after = "";
+  try {
+    host = new URL(url).host;
+    const at = url.indexOf(host);
+    before = url.slice(0, at);
+    after = url.slice(at + host.length);
+  } catch {
+    // Not a parseable URL: show it verbatim with nothing highlighted.
+  }
+  return (
+    <span className="break-all font-mono text-[12px] text-ink-2">
+      {before}
+      <span className="font-semibold text-ink">{host}</span>
+      {after}
+    </span>
+  );
+}
+
+function ShowcaseQueueList({
+  entries,
+  busyId,
+  onDecide,
+}: Readonly<{
+  entries: PendingShowcase[];
+  busyId: string | null;
+  onDecide(decision: Decision, entry: PendingShowcase): void;
+}>) {
+  return (
+    <div className="flex flex-col gap-3">
+      {entries.length > 0 ? (
+        entries.map((entry) => <ShowcaseEntryCard key={entry.id} entry={entry} busy={busyId === entry.id} onDecide={onDecide} />)
+      ) : (
+        <p className="rounded-card border border-border bg-surface px-4 py-6 text-center text-ink-muted">
+          No pending Showcase entries.
+        </p>
+      )}
+    </div>
+  );
+}
+
+function ShowcaseEntryCard({
+  entry,
+  busy,
+  onDecide,
+}: Readonly<{ entry: PendingShowcase; busy: boolean; onDecide(decision: Decision, entry: PendingShowcase): void }>) {
+  const links = SHOWCASE_LINKS.map(({ field, label }) => ({ label, url: entry[field] as string | null })).filter(
+    (link): link is { label: string; url: string } => link.url !== null,
+  );
+  return (
+    <article aria-label={entry.title} className="flex flex-col gap-3 rounded-card border border-border bg-surface p-4">
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div className="flex flex-col gap-1">
+          <div className="flex flex-wrap items-center gap-2">
+            <h3 className="font-display text-lg font-semibold text-ink">{entry.title}</h3>
+            <DemoDataPill />
+          </div>
+          <span className="text-[12px] text-ink-3">
+            {entry.displayName} · {VERTICAL_LABELS[entry.vertical]}
+          </span>
+        </div>
+        <ShowcaseStatusPill status={entry.showcaseStatus} />
+      </div>
+
+      <p className="line-clamp-2 text-[13px] leading-relaxed text-ink-2">{entry.description}</p>
+
+      {entry.projectStatus !== "confirmed" || !entry.accountConfirmed ? (
+        <div className="flex flex-wrap gap-2">
+          {entry.projectStatus !== "confirmed" ? (
+            <span className="rounded-pill border border-amber-ink/40 bg-amber-fill px-2.5 py-1 text-[12px] font-medium text-amber-ink">
+              Project not yet confirmed
+            </span>
+          ) : null}
+          {!entry.accountConfirmed ? (
+            <span className="rounded-pill border border-amber-ink/40 bg-amber-fill px-2.5 py-1 text-[12px] font-medium text-amber-ink">
+              Account not confirmed
+            </span>
+          ) : null}
+        </div>
+      ) : null}
+
+      {links.length > 0 ? (
+        <dl className="grid grid-cols-1 gap-1.5 border-t border-border pt-3 sm:grid-cols-2">
+          {links.map((link) => (
+            <div key={link.label} className="flex flex-col gap-0.5">
+              <dt className="font-mono text-[11px] uppercase tracking-wider text-ink-3">{link.label}</dt>
+              <dd>
+                <LinkText url={link.url} />
+              </dd>
+            </div>
+          ))}
+        </dl>
+      ) : null}
+
+      <p className="font-mono text-[12px] text-ink-3">
+        {entry.pitchVideoId ? <>Video id: {entry.pitchVideoId}</> : "No pitch video"}
+      </p>
+
+      <div className="flex items-center gap-2 border-t border-border pt-3">
+        <button
+          type="button"
+          disabled={busy}
+          onClick={() => onDecide("confirm", entry)}
+          className="inline-flex h-8 items-center rounded-lg bg-accent-green px-3 text-[13px] font-medium text-white hover:bg-accent-green-hover disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          Confirm
+        </button>
+        <button
+          type="button"
+          disabled={busy}
+          onClick={() => onDecide("reject", entry)}
+          className="inline-flex h-8 items-center rounded-lg border border-border-strong bg-surface-strong px-3 text-[13px] font-medium text-danger hover:border-danger disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          Reject
+        </button>
+      </div>
+    </article>
+  );
+}
+
 function DetailGrid({ items }: Readonly<{ items: readonly { label: string; value: React.ReactNode }[] }>) {
   return (
     <dl className="grid grid-cols-1 gap-3 sm:grid-cols-2">
@@ -454,7 +769,10 @@ function CredentialDetail({ credential }: Readonly<{ credential: PendingCredenti
         { label: "Credential", value: credential.title },
         { label: "Issuer", value: credential.issuer },
         { label: "Builder", value: `${credential.displayName} (${credential.builderId})` },
-        { label: "Skill", value: SKILL_LABELS[credential.skillId] },
+        {
+          label: "Skill",
+          value: <SkillCell skillId={credential.skillId} />,
+        },
       ]}
     />
   );
