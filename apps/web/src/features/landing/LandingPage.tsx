@@ -9,6 +9,7 @@ import { ArrowRight, Check } from "lucide-react";
 import { Link } from "react-router";
 
 import { DemoDataPill } from "../../components/DemoDataPill";
+import { RollingNumber } from "../../components/RollingNumber";
 import { EvidenceBadge, StatusBadge } from "../route/Badges";
 
 type SectionProps = Readonly<{ id: string; className?: string; children: React.ReactNode }>;
@@ -197,14 +198,18 @@ function Hero() {
             ))}
           </ul>
           <dl className="mt-8 grid max-w-[480px] grid-cols-3 gap-x-4 border-t border-border pt-7">
-            {[
-              ["7", "named MeTTa rules", "text-ink"],
-              ["181", "seed graph facts", "text-ink"],
-              ["0", "unexplained matches", "text-accent-green"],
-            ].map(([value, label, tone]) => (
+            {(
+              [
+                [7, "named MeTTa rules", "text-ink"],
+                [181, "seed graph facts", "text-ink"],
+                [0, "unexplained matches", "text-accent-green"],
+              ] as const
+            ).map(([value, label, tone], index) => (
               <div key={label} className="flex flex-col-reverse justify-end gap-1">
                 <dt className="text-[12px] leading-snug text-ink-3 sm:text-[12.5px]">{label}</dt>
-                <dd className={`font-display text-[30px] leading-none sm:text-[36px] tracking-[-0.02em] ${tone}`}>{value}</dd>
+                <dd className={`font-display text-[30px] leading-none sm:text-[36px] tracking-[-0.02em] ${tone}`}>
+                  <RollingNumber value={value} delay={200 + index * 140} />
+                </dd>
               </div>
             ))}
           </dl>
