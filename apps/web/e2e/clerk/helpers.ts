@@ -12,7 +12,7 @@ import { readState, type Role } from "./env";
 export const HOME_HEADING: Record<Role, string> = {
   founder: "Describe your MVP",
   builder: "Home",
-  admin: "Confirmation queue",
+  admin: "Review queue",
 };
 
 const ROLE_CARD: Record<Exclude<Role, "admin">, RegExp> = {

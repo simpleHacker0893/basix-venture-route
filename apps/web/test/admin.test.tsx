@@ -95,7 +95,7 @@ describe("/admin", () => {
 
     render(<App initialPath="/admin" source={source} auth={adminAuth} marketplace={marketplace} />);
 
-    expect(await screen.findByRole("heading", { level: 1, name: "Confirmation queue" })).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { level: 1, name: "Review queue" })).toBeInTheDocument();
     const accounts = await screen.findByRole("tab", { name: /Accounts/ });
     expect(accounts).toHaveTextContent("1");
     const credentials = screen.getByRole("tab", { name: /Credentials/ });

@@ -88,7 +88,7 @@ describe("RequireRole", () => {
   it("lets an admin see the confirmation queue", () => {
     render(<App initialPath="/admin" source={source} auth={signedIn("admin")} />);
 
-    expect(screen.getByRole("heading", { level: 1, name: "Confirmation queue" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { level: 1, name: "Review queue" })).toBeInTheDocument();
   });
 
   it("sends a founder away from /profile to the routing page", () => {
@@ -141,7 +141,7 @@ describe("RoleSelect", () => {
   it("redirects a user who already has a role to that role's home", () => {
     render(<App initialPath="/choose-role" source={source} auth={signedIn("admin")} />);
 
-    expect(screen.getByRole("heading", { level: 1, name: "Confirmation queue" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { level: 1, name: "Review queue" })).toBeInTheDocument();
   });
 });
 
