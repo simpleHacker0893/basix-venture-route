@@ -14,7 +14,7 @@ export function ScenarioChips() {
           type="button"
           disabled={state.busy}
           onClick={() => loadScenario(brief)}
-          className="h-7 rounded-pill border border-border bg-surface-strong px-3 text-[13px] text-ink-2 hover:bg-surface hover:text-ink disabled:opacity-60"
+          className="min-h-10 rounded-pill sm:h-7 sm:min-h-0 border border-border bg-surface-strong px-3 text-[13px] text-ink-2 hover:bg-surface hover:text-ink disabled:opacity-60"
         >
           Load scenario: {CHIP_LABELS[brief.id] ?? brief.title}
         </button>

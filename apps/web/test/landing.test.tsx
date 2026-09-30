@@ -1,13 +1,14 @@
 /**
  * Seam: rendered landing page (screen 1) through React Testing Library (Sprint 002 #31, D-36).
- * Sections, copy and links replicate the Stitch export design/stitch/batch-2/landing-page.
+ * Sections and links keep the Stitch export's structure (design/stitch/batch-2/landing-page); copy
+ * follows the refined UI (design/refined-ui, screen 01).
  */
 import { screen, within } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 
 import { renderApp } from "./fakeEngine";
 
-describe("landing page (Stitch export)", () => {
+describe("landing page (refined UI over the Stitch structure)", () => {
   it("renders the Stitch sections in order with the calls to action wired to /route", () => {
     renderApp("/");
 
@@ -21,35 +22,38 @@ describe("landing page (Stitch export)", () => {
     expect(within(hero).getByRole("link", { name: "Route my venture" })).toHaveAttribute("href", "/route");
     expect(within(hero).getByRole("link", { name: "See a demo route" })).toHaveAttribute("href", "/route");
     expect(within(hero).getByText("Demo data")).toBeInTheDocument();
-    expect(within(hero).getByText("3/3 Grounded")).toBeInTheDocument();
+    expect(within(hero).getByText("USD 30 under budget")).toBeInTheDocument();
+    for (const rate of ["USD 120 / day", "USD 150 / day", "USD 100 / day"]) expect(within(hero).getByText(rate)).toBeInTheDocument();
+    for (const name of ["Amina Otieno", "Daniel Kiptoo", "Grace Wambui"]) expect(within(hero).getByText(name)).toBeInTheDocument();
 
     const how = screen.getByTestId("landing-section-how-it-works");
-    expect(within(how).getByText("WORKFLOW")).toBeInTheDocument();
+    expect(within(how).getByText("How it works")).toBeInTheDocument();
     expect(within(how).getAllByRole("heading", { level: 3 }).map((h) => h.textContent)).toEqual([
-      "1. Describe your MVP in plain language",
-      "2. Confirm the brief we extracted",
-      "3. Get a route decided by MeTTa rules, with evidence",
+      "Describe your MVP in plain language",
+      "Confirm the brief we extracted",
+      "Get a route decided by MeTTa rules, with evidence",
     ]);
-    for (const stage of ["Stage 01", "Stage 02", "Stage 03"]) expect(within(how).getByText(stage)).toBeInTheDocument();
+    for (const stage of ["01", "02", "03"]) expect(within(how).getByText(stage)).toBeInTheDocument();
     for (const foot of [
       "Plain language parsed into facts",
-      "Deterministic constraint confirmation",
-      "Zero hallucinations · Full audit ledger",
+      "python · ai-metta · ui-ux",
+      "eligible-builder ⇐ source facts",
     ]) {
       expect(within(how).getByText(foot)).toBeInTheDocument();
     }
 
     const evidence = screen.getByTestId("landing-section-evidence");
-    expect(within(evidence).getByText("DETERMINISTIC VERIFICATION")).toBeInTheDocument();
+    expect(within(evidence).getByText("For judges and founders alike")).toBeInTheDocument();
     expect(within(evidence).getByRole("heading", { level: 2 })).toHaveTextContent(
       "Every recommendation names its rule and its facts.",
     );
-    expect(within(evidence).getByText("RULE EVALUATION: verified-for-skill")).toBeInTheDocument();
+    expect(within(evidence).getByText("reasoning-path · amina-otieno × python")).toBeInTheDocument();
+    expect(within(evidence).getByText("verified-for-skill")).toBeInTheDocument();
     expect(within(evidence).getAllByTestId("fact")).toHaveLength(3);
     expect(within(evidence).getByText("!(eligible-builder brief-health-01 amina-otieno python)")).toBeInTheDocument();
 
     const builders = screen.getByTestId("landing-section-for-builders");
-    expect(within(builders).getByText("ECOSYSTEM TALENT")).toBeInTheDocument();
+    expect(within(builders).getByText("For builders")).toBeInTheDocument();
     expect(within(builders).getAllByRole("heading", { level: 3 }).map((h) => h.textContent)).toEqual([
       "Verified profile",
       "Bid where you are eligible",
@@ -58,11 +62,11 @@ describe("landing page (Stitch export)", () => {
     expect(within(builders).getByRole("link", { name: "Create a builder profile" })).toBeInTheDocument();
   });
 
-  it("renders the Stitch header with the BASIX Edition badge and the primary actions", () => {
+  it("renders the header with the route mark wordmark and the primary actions", () => {
     renderApp("/");
 
     const nav = screen.getByRole("navigation", { name: "Primary" });
-    expect(within(nav).getByText("BASIX Edition")).toBeInTheDocument();
+    expect(within(nav).getByRole("link", { name: "Venture Route" })).toHaveAttribute("href", "/");
     for (const name of ["How it works", "Evidence", "For builders", "Sign in"]) {
       expect(within(nav).getByRole("link", { name })).toBeInTheDocument();
     }

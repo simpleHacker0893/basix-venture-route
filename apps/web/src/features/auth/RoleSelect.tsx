@@ -59,8 +59,8 @@ export function RoleSelect() {
   return (
     <div className="mx-auto flex w-full max-w-[1200px] flex-col items-center px-6 py-12">
       <div className="flex w-full max-w-[560px] flex-col items-center">
-        <div className="mb-3 flex w-full items-center justify-between">
-          <div className="flex items-center gap-1 font-mono text-[11px] uppercase tracking-wider">
+        <div className="mb-3 flex w-full flex-wrap items-center justify-between gap-x-4 gap-y-1">
+          <div className="flex flex-wrap items-center gap-1 font-mono text-[11px] uppercase tracking-wider">
             <span className="text-ink-3">New to Venture Route?</span>
             <span aria-hidden="true" className="text-border-strong">/</span>
             <span className="font-medium text-ink">Select intent</span>

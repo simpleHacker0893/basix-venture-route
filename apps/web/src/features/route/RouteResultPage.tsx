@@ -34,10 +34,12 @@ export function RouteResult({ brief, route, onPatch, onChangeBrief, onWhy, publi
     <div className="flex flex-col gap-8">
       <section className="flex flex-col gap-4">
         <div className="flex flex-wrap items-center gap-3">
-          <h1 className="font-display text-[36px] font-medium leading-tight">Your route through BASIX</h1>
+          <h1 className="font-display text-4xl font-normal leading-[1.08] tracking-[-0.02em] text-ink lg:text-[46px]">
+            Your route through BASIX
+          </h1>
           <StatusBadge status={route.status} />
         </div>
-        <p className="max-w-3xl text-ink-2">{route.summary}</p>
+        <p className="max-w-3xl text-base leading-relaxed text-ink-2">{route.summary}</p>
         <SpeakingIndicator />
         <div className="flex flex-wrap gap-2">
           <Button type="button" variant="secondary" onClick={onChangeBrief}>
@@ -62,17 +64,17 @@ export function RouteResult({ brief, route, onPatch, onChangeBrief, onWhy, publi
 
       <section data-testid="team-section" aria-labelledby="team-heading" className="flex flex-col gap-4">
         <div>
-          <h2 id="team-heading" className="text-xl font-semibold">
+          <h2 id="team-heading" className="font-display text-[23px] font-normal text-ink">
             {teamHeading}
           </h2>
-          <p className="text-sm text-ink-2">
+          <p className="text-sm text-ink-3">
             Smallest verified team covering the required skills within team size and budget.
           </p>
         </div>
         {route.builders.length === 0 ? (
           <EmptyTeam />
         ) : (
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+          <div className="grid grid-cols-1 gap-5 md:grid-cols-3">
             {route.builders.map((builder) => (
               <BuilderCard key={builder.builderId} builder={builder} onViewEvidence={onWhy} />
             ))}
@@ -82,9 +84,14 @@ export function RouteResult({ brief, route, onPatch, onChangeBrief, onWhy, publi
 
       <ContextCards route={route} />
 
-      <p className="text-[13px] text-ink-3">
-        Rules applied:{" "}
-        <span className="font-mono">{route.rulesApplied.join(" · ")}</span>
+      <p className="flex flex-wrap items-baseline gap-x-2 gap-y-1 rounded-card border border-border bg-surface px-4 py-3 text-[13px] text-ink-3">
+        <span>Rules applied:</span>
+        {route.rulesApplied.map((rule, index) => (
+          <span key={rule} className="font-mono text-accent-green">
+            {index > 0 ? <span aria-hidden="true" className="mr-2 text-ink-subtle">·</span> : null}
+            {rule}
+          </span>
+        ))}
       </p>
     </div>
   );

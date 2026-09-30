@@ -11,12 +11,12 @@ function ContextCard({
   children,
 }: Readonly<{ testId: string; kind: string; title: string; children: React.ReactNode }>) {
   return (
-    <article data-testid={testId} className="flex flex-col gap-3 rounded-card border border-border bg-surface p-6">
+    <article data-testid={testId} className="flex flex-col gap-3 rounded-card border border-border bg-surface-strong p-6">
       <div className="flex items-start justify-between gap-3">
-        <span className="text-[13px] uppercase tracking-wider text-ink-3">{kind}</span>
+        <span className="font-mono text-[11px] uppercase tracking-[0.1em] text-ink-3">{kind}</span>
         <DemoDataPill />
       </div>
-      <h3 className="text-lg font-semibold">{title}</h3>
+      <h3 className="text-[15px] font-semibold text-ink">{title}</h3>
       <div className="text-sm text-ink-2">{children}</div>
     </article>
   );
@@ -29,27 +29,27 @@ export function ContextCards({ route }: ContextCardsProps) {
   return (
     <section aria-labelledby="context-heading" className="flex flex-col gap-4">
       <div>
-        <h2 id="context-heading" className="text-xl font-semibold">
+        <h2 id="context-heading" className="font-display text-[23px] font-normal text-ink">
           Context
         </h2>
-        <p className="text-sm text-ink-2">Assets, cohorts and partners the rules connected to this brief.</p>
+        <p className="text-sm text-ink-3">Assets, cohorts and partners the rules connected to this brief.</p>
       </div>
       <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
         {reusableIp && (
           <ContextCard testId="ip-card" kind="Reusable IP" title={reusableIp.title}>
-            <p className="font-mono text-[13px]">{reusableIp.assetId}</p>
+            <p className="font-mono text-[12px] text-accent-green">{reusableIp.assetId}</p>
             <p>{reusableIp.path.conclusion}</p>
           </ContextCard>
         )}
         {cohort && (
           <ContextCard testId="cohort-card" kind="Cohort and university" title={`${cohort.cohortId} · ${cohort.universityId}`}>
-            <p className="font-mono text-[13px]">{cohort.path.rule}</p>
+            <p className="font-mono text-[12px] text-accent-green">{cohort.path.rule}</p>
             <p>Cohort of the first selected builder.</p>
           </ContextCard>
         )}
         {partner && (
           <ContextCard testId="partner-card" kind="Partner" title={partner.partnerId}>
-            <p className="font-mono text-[13px]">{partner.path.rule}</p>
+            <p className="font-mono text-[12px] text-accent-green">{partner.path.rule}</p>
             <p>Supports the brief’s vertical through the builder’s university, four hops away.</p>
           </ContextCard>
         )}

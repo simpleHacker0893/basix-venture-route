@@ -5,21 +5,26 @@
  */
 :root {
   /* Colour */
-  --vr-ground: #f4f1ea;
-  --vr-surface: #fbf9f4;
+  --vr-ground: #f5f2eb;
+  --vr-surface: #fbf9f5;
   --vr-surface-strong: #ffffff;
-  --vr-dark: #16181b;
-  --vr-ink: #16181b;
-  --vr-ink-2: #3f4650;
-  --vr-ink-3: #5c6169;
+  --vr-dark: #0f2a21;
+  --vr-ink: #14191a;
+  --vr-ink-2: #3e4a47;
+  --vr-ink-3: #5f6865;
   --vr-accent: #1e5a45;
   --vr-accent-on-dark: #7fd1ac;
   --vr-project: #35418a;
   --vr-amber-ink: #8a4b12;
-  --vr-amber-fill: #e8c58f;
+  --vr-amber-fill: #f6e8cf;
   --vr-danger: #8a2d2d;
-  --vr-border: #e3ded3;
-  --vr-border-strong: #c9c2b3;
+  --vr-border: #e4dfd4;
+  --vr-border-strong: #cfc8b8;
+  /* Tints (refined UI): one soft fill per meaning, so badges and panels blend with the paper ground. */
+  --vr-sage: #e6efea;
+  --vr-credential-tint: #e3eee8;
+  --vr-project-tint: #e8eaf5;
+  --vr-danger-tint: #f6e4e1;
 
   /* Typography */
   --vr-font-display: "Fraunces", Georgia, serif;
@@ -30,9 +35,10 @@
   --vr-content-max: 1200px;
   --vr-nav-height: 64px;
   --vr-drawer-width: 560px;
-  --vr-radius-card: 8px;
+  --vr-radius-card: 12px;
   --vr-radius-pill: 999px;
-  --vr-shadow-drawer: 0 1px 2px rgba(22, 24, 27, 0.06);
+  --vr-shadow-drawer: -16px 0 48px rgba(15, 42, 33, 0.16);
+  --vr-shadow-card: 0 1px 2px rgba(20, 26, 23, 0.04), 0 8px 24px -8px rgba(20, 26, 23, 0.08);
 
   /* shadcn/ui variables mapped onto the pack */
   --background: var(--vr-ground);
@@ -75,19 +81,24 @@
   --color-amber-fill: var(--vr-amber-fill);
   --color-danger: var(--vr-danger);
   --color-border-strong: var(--vr-border-strong);
+  --color-sage: var(--vr-sage);
+  --color-credential-tint: var(--vr-credential-tint);
+  --color-project-tint: var(--vr-project-tint);
+  --color-danger-tint: var(--vr-danger-tint);
   /* Extra tokens the Stitch exports use (tailwind.config in each export, D-36). */
-  --color-ink-muted: #636059;
-  --color-ink-subtle: #8c887e;
+  --color-ink-muted: #6b726f;
+  --color-ink-subtle: #98a09c;
   --color-accent-green-hover: #164434;
-  --color-surface-dark-card: #212328;
-  --color-border-dark: #30333b;
-  --color-ledger-dim: #d9dade;
+  --color-surface-dark-card: #153a2e;
+  --color-border-dark: #2a4c40;
+  --color-ledger-dim: #d3ddd8;
   --font-display: var(--vr-font-display);
   --font-sans: var(--vr-font-sans);
   --font-mono: var(--vr-font-mono);
   --radius-card: var(--vr-radius-card);
   --radius-pill: var(--vr-radius-pill);
   --shadow-drawer: var(--vr-shadow-drawer);
+  --shadow-card: var(--vr-shadow-card);
 }
 
 html {

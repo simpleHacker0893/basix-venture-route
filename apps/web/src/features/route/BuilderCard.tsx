@@ -14,10 +14,22 @@ type BuilderCardProps = Readonly<{
 /** One selected builder: name, day rate, covered skills, evidence badge, Demo data pill. */
 export function BuilderCard({ builder, onViewEvidence }: BuilderCardProps) {
   return (
-    <article data-testid="builder-card" className="flex flex-col gap-4 rounded-card border border-border bg-surface p-6">
-      <div className="flex items-start justify-between gap-3">
-        <div className="flex flex-col gap-1">
-          <h3 className="text-xl font-semibold">{builder.name}</h3>
+    <article
+      data-testid="builder-card"
+      className="flex flex-col gap-4 rounded-card border border-border bg-surface-strong p-6 shadow-card"
+    >
+      <div className="flex items-start gap-3">
+        <span
+          aria-hidden="true"
+          className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-sage text-[13px] font-semibold text-accent-green"
+        >
+          {builder.name
+            .split(" ")
+            .map((part) => part[0])
+            .join("")}
+        </span>
+        <div className="flex min-w-0 flex-1 flex-col gap-0.5">
+          <h3 className="text-[17px] font-semibold text-ink">{builder.name}</h3>
           <span data-testid="builder-id" translate="no" className="font-mono text-[13px] text-ink-3">
             {builder.builderId}
           </span>
@@ -26,12 +38,12 @@ export function BuilderCard({ builder, onViewEvidence }: BuilderCardProps) {
       </div>
       <div className="flex flex-wrap items-center gap-3">
         <EvidenceBadge evidence={builder.evidenceType} />
-        <span className="font-mono text-sm">{usd(builder.dayRate)}</span>
+        <span className="font-mono text-sm text-ink-2">{usd(builder.dayRate)}</span>
       </div>
-      <div className="flex flex-wrap items-center gap-2 text-sm">
+      <div className="flex flex-wrap items-center gap-2 border-t border-border pt-4 text-sm">
         <span className="text-ink-3">Covers</span>
         {builder.covers.map((skill) => (
-          <span key={skill} className="rounded-pill border border-border-strong bg-surface-strong px-2.5 py-0.5">
+          <span key={skill} className="rounded-pill border border-border bg-surface px-2.5 py-0.5 text-ink-2">
             {SKILL_LABELS[skill]}
           </span>
         ))}
@@ -41,7 +53,7 @@ export function BuilderCard({ builder, onViewEvidence }: BuilderCardProps) {
           <button
             type="button"
             onClick={() => onViewEvidence(builder.builderId)}
-            className="text-[13px] text-accent-green underline hover:text-accent-green-hover"
+            className="inline-flex min-h-10 items-center text-[13px] font-medium text-accent-green underline-offset-4 hover:underline sm:min-h-0"
           >
             View evidence path
           </button>
@@ -49,7 +61,7 @@ export function BuilderCard({ builder, onViewEvidence }: BuilderCardProps) {
         {/* Sprint 003 #46: the founder's candidate view; seed builders explain themselves there. */}
         <Link
           to={`/builders/${encodeURIComponent(builder.builderId)}`}
-          className="text-[13px] text-accent-green underline hover:text-accent-green-hover"
+          className="inline-flex min-h-10 items-center text-[13px] font-medium text-accent-green underline-offset-4 hover:underline sm:min-h-0"
         >
           View profile
         </Link>
