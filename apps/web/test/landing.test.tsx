@@ -4,6 +4,7 @@
  * follows the refined UI (design/refined-ui, screen 01).
  */
 import { screen, within } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { describe, expect, it } from "vitest";
 
 import { renderApp } from "./fakeEngine";
@@ -16,14 +17,12 @@ describe("landing page (refined UI over the Stitch structure)", () => {
     expect(sections).toEqual(["hero", "how-it-works", "evidence", "for-builders"]);
 
     const hero = screen.getByTestId("landing-section-hero");
-    expect(within(hero).getByRole("heading", { level: 1 })).toHaveTextContent(
-      "The smallest credible route through BASIX.",
-    );
+    expect(within(hero).getByRole("heading", { level: 1 })).toHaveTextContent("A founding team you can verify.");
     expect(within(hero).getByRole("link", { name: "Route my venture" })).toHaveAttribute("href", "/route");
     expect(within(hero).getByRole("link", { name: "See a demo route" })).toHaveAttribute("href", "/route");
     expect(within(hero).getByText("Demo data")).toBeInTheDocument();
-    expect(within(hero).getByText("USD 30 under budget")).toBeInTheDocument();
-    for (const rate of ["USD 120 / day", "USD 150 / day", "USD 100 / day"]) expect(within(hero).getByText(rate)).toBeInTheDocument();
+    expect(within(hero).getByText("Team USD 370 of 400 / day")).toBeInTheDocument();
+    expect(within(hero).getByText("A language model helps you write the brief. It never picks the people.")).toBeInTheDocument();
     for (const name of ["Amina Otieno", "Daniel Kiptoo", "Grace Wambui"]) expect(within(hero).getByText(name)).toBeInTheDocument();
 
     const how = screen.getByTestId("landing-section-how-it-works");
@@ -60,6 +59,31 @@ describe("landing page (refined UI over the Stitch structure)", () => {
     ]);
     for (const badge of ["Credential-backed", "Deterministic match"]) expect(within(builders).getByText(badge)).toBeInTheDocument();
     expect(within(builders).getByRole("link", { name: "Create a builder profile" })).toBeInTheDocument();
+  });
+
+  it("swaps the hero's Why panel to the builder whose Why is chosen, showing seed facts", async () => {
+    const user = userEvent.setup();
+    renderApp("/");
+    const hero = screen.getByTestId("landing-section-hero");
+
+    const amina = within(hero).getByRole("button", { name: "Why Amina Otieno" });
+    const daniel = within(hero).getByRole("button", { name: "Why Daniel Kiptoo" });
+    expect(amina).toHaveAttribute("aria-expanded", "true");
+    expect(daniel).toHaveAttribute("aria-expanded", "false");
+    expect(within(hero).getByText("(earned amina-otieno cred-py-201)")).toBeInTheDocument();
+
+    await user.click(daniel);
+    expect(daniel).toHaveAttribute("aria-expanded", "true");
+    expect(amina).toHaveAttribute("aria-expanded", "false");
+    expect(within(hero).getByText("Why Daniel Kiptoo", { selector: "span" })).toBeInTheDocument();
+    for (const fact of [
+      "(earned daniel-kiptoo cred-metta-101)",
+      "(available daniel-kiptoo 2026-09-22 2026-10-03)",
+      "(supports-mode daniel-kiptoo hybrid)",
+    ]) {
+      expect(within(hero).getByText(fact)).toBeInTheDocument();
+    }
+    expect(within(hero).queryByText("(earned amina-otieno cred-py-201)")).not.toBeInTheDocument();
   });
 
   it("renders the header with the route mark wordmark and the primary actions", () => {

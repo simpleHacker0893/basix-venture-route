@@ -39,7 +39,7 @@ test.describe("PWA (D-32)", () => {
     await context.setOffline(true);
     await page.reload();
     await expect(page.getByRole("link", { name: "Venture Route" })).toBeVisible();
-    await expect(page.getByRole("heading", { level: 1 })).toContainText("The smallest credible route through BASIX.");
+    await expect(page.getByRole("heading", { level: 1 })).toContainText("A founding team you can verify.");
     await context.setOffline(false);
   });
 });

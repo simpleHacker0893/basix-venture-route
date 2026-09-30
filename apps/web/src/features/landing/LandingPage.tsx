@@ -5,7 +5,8 @@
  * per-builder day rates because the landing page does not compute a route.
  */
 import type { EvidenceType } from "@venture-route/contracts";
-import { ArrowRight, Check } from "lucide-react";
+import { ArrowRight, Check, ChevronDown, ChevronRight, ShieldCheck } from "lucide-react";
+import { useState } from "react";
 import { Link } from "react-router";
 
 import { DemoDataPill } from "../../components/DemoDataPill";
@@ -39,140 +40,189 @@ function initials(name: string): string {
     .join("");
 }
 
-/** Seed facts for the Health pilot route (seed/facts.metta, brief-health-01): feasible, USD 370 of 400. */
-const PREVIEW_TEAM: ReadonlyArray<{ name: string; skill: string; dayRate: number; evidence: EvidenceType }> = [
-  { name: "Amina Otieno", skill: "Python", dayRate: 120, evidence: "both" },
-  { name: "Daniel Kiptoo", skill: "AI / MeTTa", dayRate: 150, evidence: "both" },
-  { name: "Grace Wambui", skill: "UI/UX", dayRate: 100, evidence: "credential" },
-];
-const PREVIEW_BUDGET = 400;
-const PREVIEW_TOTAL = PREVIEW_TEAM.reduce((sum, builder) => sum + builder.dayRate, 0);
-const PREVIEW_COVERS = ["Verified team", "Reusable IP", "Cohort", "Partner"];
-/** The four rules that make up eligible-builder for every selected builder. */
-const PREVIEW_RULES = ["verified-for-skill", "mode-compatible", "available-for-brief", "eligible-builder"];
+type PreviewBuilder = Readonly<{
+  id: string;
+  name: string;
+  skill: string;
+  evidence: EvidenceType;
+  /** The lead source fact behind each rule, verbatim from the engine's reasoning path. */
+  facts: Readonly<{ verified: string; available: string; mode: string }>;
+}>;
 
 /**
- * The hero's route preview: header with status, what the route covers, the team on a route rail
- * with day rates and evidence, spend against the ceiling, then the rules that passed on ink.
+ * Seed facts for the Health pilot route (seed/facts.metta, brief-health-01): feasible, USD 370 of
+ * 400. Each fact is copied from the builder's eligible-builder path as the engine returns it.
+ */
+const AMINA: PreviewBuilder = {
+  id: "amina-otieno",
+  name: "Amina Otieno",
+  skill: "Python",
+  evidence: "both",
+  facts: {
+    verified: "(earned amina-otieno cred-py-201)",
+    available: "(available amina-otieno 2026-09-20 2026-10-10)",
+    mode: "(supports-mode amina-otieno hybrid)",
+  },
+};
+const PREVIEW_TEAM: ReadonlyArray<PreviewBuilder> = [
+  AMINA,
+  {
+    id: "daniel-kiptoo",
+    name: "Daniel Kiptoo",
+    skill: "AI / MeTTa",
+    evidence: "both",
+    facts: {
+      verified: "(earned daniel-kiptoo cred-metta-101)",
+      available: "(available daniel-kiptoo 2026-09-22 2026-10-03)",
+      mode: "(supports-mode daniel-kiptoo hybrid)",
+    },
+  },
+  {
+    id: "grace-wambui",
+    name: "Grace Wambui",
+    skill: "UI/UX",
+    evidence: "credential",
+    facts: {
+      verified: "(earned grace-wambui cred-ux-110)",
+      available: "(available grace-wambui 2026-09-15 2026-09-30)",
+      mode: "(supports-mode grace-wambui hybrid)",
+    },
+  },
+];
+const PREVIEW_TOTAL = 370;
+const PREVIEW_BUDGET = 400;
+
+/**
+ * The hero's route preview: the team, and for the selected builder the three rules and the fact
+ * behind each that make them an eligible-builder. Choosing "Why" on a row swaps the panel.
  */
 function RoutePreview() {
+  const [selectedId, setSelectedId] = useState(AMINA.id);
+  const selected = PREVIEW_TEAM.find((builder) => builder.id === selectedId) ?? AMINA;
+  const steps: ReadonlyArray<[string, string]> = [
+    ["verified-for-skill", selected.facts.verified],
+    ["available-for-brief", selected.facts.available],
+    ["mode-compatible", selected.facts.mode],
+  ];
   return (
-    <figure className="flex flex-col gap-3">
+    <div className="rounded-3xl border border-[#d9e5de] bg-sage p-3 sm:p-6">
       <div className="overflow-hidden rounded-xl border border-border bg-surface-strong shadow-card">
-        <div className="flex flex-col gap-1 px-5 pb-4 pt-4">
-          <div className="flex flex-wrap items-center gap-2">
-            <span className="mr-auto font-mono text-[10.5px] uppercase tracking-[0.12em] text-ink-3">
-              Route · brief-health-01
-            </span>
+        <div className="flex flex-wrap items-end justify-between gap-x-3 gap-y-2 px-4 pb-3.5 pt-4 sm:flex-nowrap sm:px-5 lg:flex-wrap xl:flex-nowrap">
+          <div className="flex flex-col gap-1">
+            <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-ink-3">Route · brief-health-01</span>
+            <span className="whitespace-nowrap font-display text-[20px] leading-tight text-ink">Your route through BASIX</span>
+          </div>
+          <div className="flex shrink-0 items-center gap-2">
             <StatusBadge status="feasible" />
             <DemoDataPill tone="strong" />
           </div>
-          <span className="mt-1.5 font-display text-[22px] leading-tight text-ink">Your route through BASIX</span>
-          <span className="text-[12.5px] text-ink-3">Python · AI / MeTTa · UI/UX · three builders</span>
-          <ul aria-label="Route covers" className="mt-3 flex flex-wrap gap-2">
-            {PREVIEW_COVERS.map((item) => (
-              <li
-                key={item}
-                className="inline-flex items-center gap-1.5 rounded-pill border border-accent-green/70 bg-surface-strong px-2.5 py-[3px] text-[12px] font-medium text-accent-green"
-              >
-                <Check aria-hidden="true" className="h-3 w-3" strokeWidth={2.5} />
-                {item}
-              </li>
-            ))}
-          </ul>
         </div>
 
-        <div className="relative border-t border-border bg-surface">
-          <span aria-hidden="true" className="absolute bottom-7 left-[27px] top-7 w-px bg-accent-green/40" />
-          <ul aria-label="Team">
-            {PREVIEW_TEAM.map((builder) => (
-              <li
-                key={builder.name}
-                className="relative flex flex-wrap items-center gap-x-3 gap-y-1 border-b border-border py-3 pl-[46px] pr-5 last:border-b-0 sm:flex-nowrap"
-              >
+        <ul aria-label="Team" className="border-t border-border">
+          {PREVIEW_TEAM.map((builder) => {
+            const active = builder.id === selected.id;
+            return (
+              <li key={builder.id} className="flex items-center gap-3 border-b border-border px-4 py-2.5 last:border-b-0 sm:px-5">
                 <span
                   aria-hidden="true"
-                  className="absolute left-[23px] top-1/2 h-[9px] w-[9px] -translate-y-1/2 rounded-full border-[1.5px] border-accent-green bg-surface-strong"
-                />
-                <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-sage text-[11.5px] font-semibold text-accent-green">
+                  className={`grid h-8 w-8 shrink-0 place-items-center rounded-full text-[11.5px] font-semibold transition-colors ${active ? "bg-accent-green text-white" : "bg-sage text-accent-green"}`}
+                >
                   {initials(builder.name)}
                 </span>
-                <span className="flex min-w-0 flex-1 flex-col leading-tight">
+                <span className="flex min-w-0 flex-1 flex-wrap items-baseline gap-x-2">
                   <span className="text-[13.5px] font-semibold text-ink">{builder.name}</span>
-                  <span className="mt-0.5 text-[12px] text-ink-3">{builder.skill}</span>
+                  <span className="text-[12px] text-ink-3">{builder.skill}</span>
                 </span>
-                <span className="order-last w-full whitespace-nowrap pl-11 font-mono text-[12px] text-ink-2 sm:order-none sm:w-auto sm:pl-0">
-                  USD {builder.dayRate} / day
+                <span className="hidden sm:inline-flex">
+                  <EvidenceBadge evidence={builder.evidence} />
                 </span>
-                <EvidenceBadge evidence={builder.evidence} />
+                <button
+                  type="button"
+                  aria-expanded={active}
+                  aria-controls="hero-why-panel"
+                  aria-label={`Why ${builder.name}`}
+                  onClick={() => setSelectedId(builder.id)}
+                  className={`-my-1 inline-flex min-h-9 items-center gap-0.5 rounded-md px-1.5 text-[12.5px] transition-colors hover:bg-ink/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-green/40 ${active ? "font-semibold text-accent-green" : "font-medium text-ink-3"}`}
+                >
+                  Why
+                  {active ? (
+                    <ChevronDown aria-hidden="true" className="h-3.5 w-3.5" />
+                  ) : (
+                    <ChevronRight aria-hidden="true" className="h-3.5 w-3.5" />
+                  )}
+                </button>
+              </li>
+            );
+          })}
+        </ul>
+
+        <div id="hero-why-panel" aria-live="polite" className="bg-ink px-4 pb-4 pt-4 sm:px-5">
+          <div className="mb-3 flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
+            <span className="font-mono text-[10px] font-medium uppercase tracking-[0.14em] text-[#f3f1ea]">
+              Why {selected.name}
+            </span>
+            <span className="text-[11.5px] text-[#a7b8b0]">Rules and facts only · no model text</span>
+          </div>
+          <ol className="overflow-hidden rounded-lg border border-white/10 font-mono text-[11.5px]">
+            {steps.map(([rule, fact]) => (
+              <li
+                key={rule}
+                className="grid grid-cols-[16px_minmax(0,1fr)] items-baseline gap-x-2.5 gap-y-0.5 border-b border-white/10 px-3 py-2.5 sm:grid-cols-[16px_140px_minmax(0,1fr)]"
+              >
+                <Check aria-hidden="true" className="h-3.5 w-3.5 self-center text-accent-on-dark" strokeWidth={2.5} />
+                <span className="text-accent-on-dark">{rule}</span>
+                <span title={fact} className="col-start-2 truncate text-[#a7b8b0] sm:col-start-3">
+                  {fact}
+                </span>
               </li>
             ))}
-          </ul>
-        </div>
-
-        <div className="flex flex-col gap-2.5 border-t border-border px-5 pb-4 pt-3.5">
-          <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
-            <span className="whitespace-nowrap font-mono text-ink">
-              <span className="text-[19px]">USD {PREVIEW_TOTAL}</span>{" "}
-              <span className="text-[11.5px] text-ink-3">of {PREVIEW_BUDGET} / day</span>
+            <li className="grid grid-cols-[16px_minmax(0,1fr)] items-baseline gap-x-2.5 gap-y-0.5 bg-accent-green/25 px-3 py-2.5 sm:grid-cols-[16px_140px_minmax(0,1fr)]">
+              <Check aria-hidden="true" className="h-3.5 w-3.5 self-center text-accent-on-dark" strokeWidth={2.5} />
+              <span className="font-semibold text-accent-on-dark">eligible-builder</span>
+              <span className="col-start-2 font-sans text-[11.5px] text-[#f3f1ea] sm:col-start-3">
+                follows from the three rules above
+              </span>
+            </li>
+          </ol>
+          <div className="mt-3.5 flex flex-wrap items-center justify-between gap-2">
+            <span className="font-mono text-[11.5px] text-[#a7b8b0]">
+              Team USD {PREVIEW_TOTAL} of {PREVIEW_BUDGET} / day
             </span>
-            <span className="whitespace-nowrap text-[12px] font-semibold text-ink">
-              USD {PREVIEW_BUDGET - PREVIEW_TOTAL} under budget
-            </span>
-          </div>
-          <span aria-hidden="true" className="h-1 w-full overflow-hidden rounded-pill bg-border">
-            <span
-              className="block h-full rounded-pill bg-accent-green"
-              style={{ width: `${(PREVIEW_TOTAL / PREVIEW_BUDGET) * 100}%` }}
-            />
-          </span>
-        </div>
-
-        <div className="flex flex-wrap items-center gap-x-2 gap-y-2 bg-ink px-5 py-3.5">
-          <span className="mr-1 font-mono text-[10px] uppercase tracking-[0.14em] text-[#a7b8b0]">Rules passed</span>
-          {PREVIEW_RULES.map((rule) => (
-            <span
-              key={rule}
-              className="inline-flex items-center gap-1.5 rounded-pill border border-white/15 px-2.5 py-[3px] font-mono text-[11px] text-accent-on-dark"
+            <Link
+              to="/route"
+              className="-my-2 inline-flex items-center gap-1 py-2 text-[12px] font-semibold text-accent-on-dark hover:underline"
             >
-              <Check aria-hidden="true" className="h-3 w-3" strokeWidth={2.5} />
-              {rule}
-            </span>
-          ))}
-          <Link
-            to="/route"
-            className="-my-2 ml-auto inline-flex items-center gap-1 py-2 text-[12px] font-semibold text-accent-on-dark hover:underline"
-          >
-            Why this route?
-            <ArrowRight aria-hidden="true" className="h-3.5 w-3.5" />
-          </Link>
+              Open full reasoning
+              <ArrowRight aria-hidden="true" className="h-3.5 w-3.5" />
+            </Link>
+          </div>
         </div>
       </div>
-      <figcaption className="px-1 text-[12px] leading-relaxed text-ink-3">
-        Every card built from seed records carries the Demo data mark. Real routes show your real builders.
-      </figcaption>
-    </figure>
+    </div>
   );
 }
 
-const HERO_PROMISES = ["Every match explained", "Honest gaps, never padded", "Deterministic MeTTa rules"];
-
 function Hero() {
   return (
-    <Section id="hero" className="mx-auto w-full max-w-[1200px] px-6 pb-24 pt-14 lg:pt-20">
-      <div className="grid grid-cols-1 items-start gap-12 lg:grid-cols-2 lg:gap-12">
+    <Section
+      id="hero"
+      className="mx-auto flex w-full max-w-[1200px] flex-col justify-center px-6 pb-20 pt-14 lg:min-h-[calc(100svh-4rem)] lg:py-16"
+    >
+      <div className="grid w-full grid-cols-1 items-center gap-12 lg:grid-cols-2 lg:gap-14">
         <div className="flex flex-col">
-          <span className="inline-flex items-center gap-2 self-start rounded-pill border border-border bg-surface-strong px-3.5 py-1.5 font-mono text-[10.5px] font-medium uppercase tracking-[0.1em] text-accent-green">
+          <span className="flex flex-wrap items-center gap-x-2 gap-y-1 font-mono text-[10.5px] font-medium uppercase tracking-[0.12em] text-accent-green">
             <span aria-hidden="true" className="h-1.5 w-1.5 rounded-full bg-accent-green" />
-            Team routing for the BASIX ecosystem
+            Team routing for BASIX
+            <span aria-hidden="true" className="text-ink-subtle">/</span>
+            <span className="text-ink-3">Decided by MeTTa rules</span>
           </span>
-          <h1 className="mt-7 font-display text-[52px] font-normal leading-[1.02] tracking-[-0.03em] text-ink sm:text-[62px] lg:text-[70px]">
-            The smallest <em className="italic text-accent-green">credible</em> route through BASIX.
+          <h1 className="mt-6 font-display text-[52px] font-normal leading-[1.02] tracking-[-0.03em] text-ink sm:text-[62px] lg:text-[70px]">
+            A founding team you can <em className="italic text-accent-green">verify.</em>
           </h1>
           <p className="mt-7 max-w-[520px] text-[17px] leading-[1.65] text-ink-2">
-            Describe your MVP in a paragraph. Venture Route assembles the smallest verified team, reusable
-            IP, a cohort and a partner, and shows the evidence behind every match. When it cannot be done,
-            it says so.
+            Describe your MVP in a paragraph. Named MeTTa rules over verified facts choose the smallest team,
+            reusable IP, cohort and partner that can build it, and every match shows its evidence. If it
+            can&rsquo;t be done, you see the gap, not a guess.
           </p>
           <div className="mt-8 flex flex-wrap items-center gap-3">
             <Link
@@ -189,32 +239,32 @@ function Hero() {
               See a demo route
             </Link>
           </div>
-          <ul className="mt-6 flex flex-wrap gap-x-6 gap-y-2 text-[12.5px] text-ink-3">
-            {HERO_PROMISES.map((promise) => (
-              <li key={promise} className="inline-flex items-center gap-1.5">
-                <Check aria-hidden="true" className="h-3.5 w-3.5 text-ink-subtle" strokeWidth={2.25} />
-                {promise}
-              </li>
-            ))}
-          </ul>
-          <dl className="mt-8 grid max-w-[480px] grid-cols-3 gap-x-4 border-t border-border pt-7">
+          <p className="mt-5 flex items-start gap-2 text-[12.5px] leading-snug text-ink-3">
+            <ShieldCheck aria-hidden="true" className="mt-px h-3.5 w-3.5 shrink-0 text-ink-subtle" strokeWidth={2} />
+            A language model helps you write the brief. It never picks the people.
+          </p>
+          <dl className="mt-8 grid max-w-[480px] grid-cols-[1.3fr_1fr_1fr] items-end gap-x-4 border-t border-border pt-7">
             {(
               [
-                [7, "named MeTTa rules", "text-ink"],
-                [181, "seed graph facts", "text-ink"],
-                [0, "unexplained matches", "text-accent-green"],
+                [0, "unexplained matches", true],
+                [7, "named MeTTa rules", false],
+                [181, "seed graph facts", false],
               ] as const
-            ).map(([value, label, tone], index) => (
-              <div key={label} className="flex flex-col-reverse justify-end gap-1">
-                <dt className="text-[12px] leading-snug text-ink-3 sm:text-[12.5px]">{label}</dt>
-                <dd className={`font-display text-[30px] leading-none sm:text-[36px] tracking-[-0.02em] ${tone}`}>
+            ).map(([value, label, lead], index) => (
+              <div key={label} className="flex flex-col-reverse gap-1.5">
+                <dt className={`text-[12px] leading-snug sm:text-[12.5px] ${lead ? "font-semibold text-ink" : "text-ink-3"}`}>
+                  {label}
+                </dt>
+                <dd
+                  className={`font-display leading-none tracking-[-0.02em] ${lead ? "text-[40px] text-accent-green sm:text-[48px]" : "text-[24px] text-ink sm:text-[28px]"}`}
+                >
                   <RollingNumber value={value} delay={200 + index * 140} />
                 </dd>
               </div>
             ))}
           </dl>
         </div>
-        <div className="w-full lg:pt-1">
+        <div className="w-full">
           <RoutePreview />
         </div>
       </div>
