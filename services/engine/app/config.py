@@ -14,6 +14,8 @@ REPO_ROOT = PACKAGE_ROOT.parent.parent
 # The value shipped in .env.example. A verbatim copy of the example must behave as "no key"
 # (Sprint 002 #22, review.md finding 5) so no doomed Anthropic call is ever made.
 PLACEHOLDER_ANTHROPIC_API_KEY = "sk-ant-replace-me"
+# The same rule for the OpenRouter key (LLM_PROVIDER=openrouter).
+PLACEHOLDER_OPENROUTER_API_KEY = "sk-or-replace-me"
 
 DEFAULT_CORS_ORIGINS = "http://localhost:5173,http://localhost:4173"
 
@@ -44,9 +46,15 @@ class Settings(BaseSettings):
     engine_port: int = 8000
     # Directory holding facts.metta, rules.metta and briefs.json.
     seed_dir: Path = PACKAGE_ROOT / "seed"
-    # LLM adapter (D-06, D-26). The key arrives through .env only; unset means NullAdapter.
-    llm_provider: Literal["anthropic", "null"] = "anthropic"
+    # LLM adapter (D-06, D-26). Each provider reads its own key from .env only; the selected
+    # provider's key unset means NullAdapter.
+    llm_provider: Literal["anthropic", "openrouter", "null"] = "anthropic"
     anthropic_api_key: str | None = None
+    # OpenRouter (OpenAI-compatible chat completions). Model ids are OpenRouter slugs; the
+    # defaults are the Claude models D-06 names, so switching provider alone keeps the models.
+    openrouter_api_key: str | None = None
+    openrouter_model: str = "anthropic/claude-opus-5"
+    openrouter_suggest_model: str = "anthropic/claude-haiku-4.5"
     # Browser origins allowed to call the engine, comma-separated (D-30). Credentials stay off
     # in Sprint 002; Sprint 005 adds the Vercel origin on the host.
     cors_origins: str = DEFAULT_CORS_ORIGINS
@@ -65,10 +73,11 @@ class Settings(BaseSettings):
     clerk_webhook_signing_secret: str | None = None
     admin_emails: str = ""
 
-    @field_validator("anthropic_api_key", mode="before")
+    @field_validator("anthropic_api_key", "openrouter_api_key", mode="before")
     @classmethod
     def _placeholder_means_unset(cls, value: object) -> object:
-        if isinstance(value, str) and value.strip() in ("", PLACEHOLDER_ANTHROPIC_API_KEY):
+        placeholders = ("", PLACEHOLDER_ANTHROPIC_API_KEY, PLACEHOLDER_OPENROUTER_API_KEY)
+        if isinstance(value, str) and value.strip() in placeholders:
             return None
         return value
 
