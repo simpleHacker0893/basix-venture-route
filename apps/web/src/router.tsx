@@ -4,6 +4,7 @@ import { Outlet, Route, Routes, useLocation } from "react-router";
 import { RequireRole } from "./auth/RequireRole";
 import { AppShell } from "./components/AppShell";
 import { OfflineBanner } from "./components/OfflineBanner";
+import { RoleIntentBridge } from "./components/RoleIntentBridge";
 import { SiteFooter } from "./components/SiteFooter";
 import { TopNav } from "./components/TopNav";
 import { AdminHome } from "./features/admin/AdminHome";
@@ -73,7 +74,10 @@ function AuthLayout() {
 
 export function AppRoutes() {
   return (
-    <Routes>
+    <>
+      {/* Saves the role picked before sign-in wherever Clerk lands the person (D-54). */}
+      <RoleIntentBridge />
+      <Routes>
       <Route element={<AuthLayout />}>
         {/* Clerk's path routing owns the sub-paths (factor steps, SSO callback). */}
         <Route path="sign-in/*" element={<SignInScreen />} />
@@ -126,5 +130,6 @@ export function AppRoutes() {
         </Route>
       </Route>
     </Routes>
+    </>
   );
 }

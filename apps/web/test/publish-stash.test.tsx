@@ -79,6 +79,8 @@ describe("Sign in to publish", () => {
     expect(stash.brief.id).toBe("brief-constrained-01");
     expect(stash.route.status).toBe("partial");
     expect(await screen.findByRole("heading", { level: 1, name: "Welcome back" })).toBeInTheDocument();
+    // Only founders publish: sign-in skips "Who are you?" and remembers founder (D-54).
+    expect(screen.getByRole("button", { name: "Founder: change role" })).toBeInTheDocument();
   });
 
   it("restores a stash on mount, clears it and shows Publish as request to the signed-in founder", async () => {

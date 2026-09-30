@@ -1,7 +1,7 @@
 /**
  * The split sign-in shell (design/refined-ui auth screens): a deep-forest panel with the mark, the
- * promise and the step progress, and the working area on paper. The steps follow the real flow:
- * sign in with Clerk, choose the one-time role (D-03), then set up. On phones the panel collapses
+ * promise and the step progress, and the working area on paper. The steps follow the flow: choose
+ * the one-time role (D-03, D-54), sign in with Clerk, then set up. On phones the panel collapses
  * into a header with the steps in a row.
  */
 import { Check } from "lucide-react";
@@ -10,7 +10,7 @@ import { Link } from "react-router";
 
 import { LogoMark } from "../../components/Logo";
 
-const AUTH_STEPS = ["Sign in", "Choose role", "Set up"] as const;
+const AUTH_STEPS = ["Choose role", "Sign in", "Set up"] as const;
 
 type AuthShellProps = Readonly<{
   /** 1-based index into AUTH_STEPS. */
