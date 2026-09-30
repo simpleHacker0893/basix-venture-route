@@ -16,8 +16,8 @@ export const HOME_HEADING: Record<Role, string> = {
 };
 
 const ROLE_CARD: Record<Exclude<Role, "admin">, RegExp> = {
-  founder: /I am a founder/,
-  builder: /I am a builder/,
+  founder: /I’m a founder/,
+  builder: /I’m a builder/,
 };
 
 /** Sign in as the run's user for `role`; the page ends on that role's home screen. */
@@ -36,7 +36,10 @@ export async function signInAs(page: Page, role: Role): Promise<void> {
   }
   const card = page.getByRole("button", { name: ROLE_CARD[role] });
   await expect(card.or(heading)).toBeVisible();
-  if (await card.isVisible()) await card.click();
+  if (await card.isVisible()) {
+    await card.click();
+    await page.getByRole("button", { name: `Continue as ${role}` }).click();
+  }
   await expect(heading).toBeVisible();
 }
 

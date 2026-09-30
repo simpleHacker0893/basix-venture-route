@@ -17,20 +17,23 @@ export const clerkAppearance = {
     borderRadius: "10px",
   },
   elements: {
-    rootBox: "w-full",
+    rootBox: { width: "100%" },
     // Clerk's own card chrome sits inside our "Welcome back" card; inline styles beat its defaults.
     cardBox: { width: "100%", maxWidth: "100%", boxShadow: "none", border: "0", borderRadius: "0" },
-    card: "w-full border-0 bg-transparent px-0 shadow-none sm:px-2",
+    card: { width: "100%", maxWidth: "100%", boxShadow: "none", border: "0", padding: "0", background: "transparent" },
     headerTitle: "font-display text-ink",
     headerSubtitle: "text-ink-3",
-    formButtonPrimary: "h-11 bg-accent-green hover:bg-accent-green-hover text-white",
-    socialButtonsBlockButton: "h-11 border-border bg-surface-strong text-ink-2",
+    formButtonPrimary: "h-12 bg-accent-green text-[15px] text-white hover:bg-accent-green-hover",
+    socialButtonsBlockButton: "h-12 border-border-strong bg-surface-strong text-[15px] text-ink",
     dividerLine: "bg-border",
     dividerText: "font-mono uppercase text-ink-3",
     formFieldLabel: "text-ink-2",
-    formFieldInput: "h-11 border-border bg-surface-strong text-ink",
+    formFieldInput: "h-12 border-border-strong bg-surface-strong text-[15px] text-ink",
     formFieldInputShowPasswordButton: "h-9 w-9",
     footer: { background: "transparent" },
+    // Our heading and the Create account / Sign in tabs replace Clerk's own title and switch link.
+    header: { display: "none" },
+    footerAction: { display: "none" },
     footerActionLink: "text-accent-green hover:text-accent-green-hover",
   },
 };

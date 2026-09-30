@@ -58,9 +58,26 @@ function Layout() {
   );
 }
 
+/** Sign-in, sign-up and role choice render full-screen in the split AuthShell (own <main>). */
+function AuthLayout() {
+  return (
+    <div className="min-h-screen bg-ground text-ink">
+      <ScrollToHash />
+      <OfflineBanner />
+      <Outlet />
+    </div>
+  );
+}
+
 export function AppRoutes() {
   return (
     <Routes>
+      <Route element={<AuthLayout />}>
+        {/* Clerk's path routing owns the sub-paths (factor steps, SSO callback). */}
+        <Route path="sign-in/*" element={<SignInScreen />} />
+        <Route path="sign-up/*" element={<SignInScreen />} />
+        <Route path="choose-role" element={<RoleSelect />} />
+      </Route>
       <Route element={<Layout />}>
         <Route index element={<LandingPage />} />
         <Route path="route" element={<RoutePage />} />
@@ -70,10 +87,6 @@ export function AppRoutes() {
         <Route path="showcase" element={<ShowcaseGalleryPage />} />
         <Route path="showcase/:projectId" element={<ShowcaseDetailPage />} />
         <Route path="privacy" element={<PrivacyPage />} />
-        {/* Clerk's path routing owns the sub-paths (factor steps, SSO callback). */}
-        <Route path="sign-in/*" element={<SignInScreen />} />
-        <Route path="sign-up/*" element={<SignInScreen />} />
-        <Route path="choose-role" element={<RoleSelect />} />
         <Route element={<RequireRole roles={["builder"]} />}>
           <Route path="profile" element={<ProfilePage />} />
           <Route path="profile/projects/new" element={<AddProjectPage />} />

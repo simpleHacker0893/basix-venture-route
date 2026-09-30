@@ -70,11 +70,13 @@ describe("RequireRole", () => {
   it("sends a signed-in user without a role to the role cards", () => {
     render(<App initialPath="/profile" source={source} auth={signedIn(null)} />);
 
-    expect(screen.getByRole("button", { name: /I am a founder/ })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /I am a builder/ })).toBeInTheDocument();
-    // Requests, bids and interviews are Sprint 004: the cards describe only what ships (rule 10, D-36).
-    expect(screen.queryByText(/bid on requests|post requests|book interviews/i)).not.toBeInTheDocument();
-    expect(screen.getByText(/describe your MVP/i)).toBeInTheDocument();
+    expect(screen.getByRole("heading", { level: 1, name: "Who are you?" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /I’m a founder/ })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /I’m a builder/ })).toBeInTheDocument();
+    // Requests, bids and interviews shipped in Sprint 004, so the cards may name them (rule 10).
+    expect(screen.getByText("Publish requests, book interviews")).toBeInTheDocument();
+    expect(screen.getByText("Bid on requests, take interviews")).toBeInTheDocument();
+    expect(screen.getByText(/role is set once/i)).toBeInTheDocument();
   });
 
   it("sends a builder away from /admin to their profile", () => {
@@ -112,7 +114,10 @@ describe("RoleSelect", () => {
     });
 
     render(<App initialPath="/choose-role" source={source} auth={state} marketplace={marketplace} />);
-    await user.click(screen.getByRole("button", { name: /I am a builder/ }));
+    await user.click(screen.getByRole("button", { name: /I’m a builder/ }));
+    expect(screen.getByRole("button", { name: /I’m a builder/ })).toHaveAttribute("aria-pressed", "true");
+    expect(posted).toEqual([]); // selecting a card saves nothing until Continue
+    await user.click(screen.getByRole("button", { name: "Continue as builder" }));
 
     await waitFor(() => expect(screen.getByRole("heading", { level: 1, name: "Your profile" })).toBeInTheDocument());
     expect(posted).toEqual([{ role: "builder" }]);
@@ -126,10 +131,11 @@ describe("RoleSelect", () => {
     });
 
     render(<App initialPath="/choose-role" source={source} auth={signedIn(null)} marketplace={marketplace} />);
-    await user.click(screen.getByRole("button", { name: /I am a founder/ }));
+    await user.click(screen.getByRole("button", { name: /I’m a founder/ }));
+    await user.click(screen.getByRole("button", { name: "Continue as founder" }));
 
     expect(await screen.findByRole("alert")).toHaveTextContent(/409/);
-    expect(screen.getByRole("button", { name: /I am a founder/ })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /I’m a founder/ })).toBeInTheDocument();
   });
 
   it("redirects a user who already has a role to that role's home", () => {
