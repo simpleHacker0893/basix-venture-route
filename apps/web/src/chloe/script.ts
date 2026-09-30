@@ -11,7 +11,7 @@ import { FIELD_LABELS, MODE_LABELS, SKILL_LABELS, VERTICAL_LABELS } from "../lib
 import { dateRange, STATUS_LABEL, usd } from "../lib/format";
 import { formatNairobiSpoken } from "../lib/nairobi";
 import { splitFieldMessages } from "../lib/validationError";
-import type { VoiceErrorCode } from "../voice/provider";
+import type { VoiceErrorCode, VoiceProvider } from "../voice/provider";
 
 export const GREETING =
   "Hi, I'm Chloe, Venture Route's assistant. Hold the mic, tell me about your MVP, and let go " +
@@ -138,6 +138,14 @@ export const MIC_ERRORS: Record<VoiceErrorCode, string> = {
 export const UNSUPPORTED_CAPTION = "Voice needs Chrome or Edge.";
 export const CONSENT_CAPTION =
   "Voice uses your browser's speech service: Chrome sends your audio to Google for transcription.";
+export const OPENROUTER_CONSENT_CAPTION =
+  "Voice sends your recording and Chloe's replies to OpenRouter for transcription and speech; nothing is stored.";
+
+/** The privacy notice for the provider in use (D-53): OpenRouter names itself; web and fake keep
+ * the browser-speech caption. */
+export function consentCaption(kind: VoiceProvider["kind"] | undefined): string {
+  return kind === "openrouter" ? OPENROUTER_CONSENT_CAPTION : CONSENT_CAPTION;
+}
 
 /**
  * Rewrites display text into what should be spoken (requirements.md §Business rules): the

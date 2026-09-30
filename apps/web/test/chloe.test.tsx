@@ -19,6 +19,7 @@ import {
   GREETING,
   MIC_ERRORS,
   OFFLINE_ASSISTANT,
+  OPENROUTER_CONSENT_CAPTION,
   QUESTIONS,
   spokenForm,
   UNREACHABLE,
@@ -494,6 +495,17 @@ describe("Chloe on /route", () => {
 
     await enableVoice(user);
     expect(screen.getByText(CONSENT_CAPTION)).toBeInTheDocument();
+  });
+
+  it("with the OpenRouter provider the consent caption names OpenRouter instead (D-53, #127)", async () => {
+    // A fake whose kind is openrouter: the caption is chosen from provider.kind alone.
+    const voice = { ...createFakeVoiceProvider(), kind: "openrouter" as const };
+    const user = userEvent.setup();
+    renderApp("/route", engineFetch(), { voice });
+
+    await enableVoice(user);
+    expect(screen.getByText(OPENROUTER_CONSENT_CAPTION)).toBeInTheDocument();
+    expect(screen.queryByText(CONSENT_CAPTION)).not.toBeInTheDocument();
   });
 
   it("'Stop Chloe' hides the speaking indicator and empties the queue (Sprint 006 acceptance Should 2)", async () => {

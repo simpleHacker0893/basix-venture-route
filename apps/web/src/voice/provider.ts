@@ -1,7 +1,8 @@
 /**
  * The device layer's one contract (Sprint 006 blueprint §Interfaces). Nothing above this line
- * knows whether speech comes from the browser or a test double; `webSpeechProvider.ts` and
- * `fakeVoiceProvider.ts` are the only two implementations.
+ * knows whether speech comes from the browser, the engine's OpenRouter proxy or a test double:
+ * `webSpeechProvider.ts`, `openRouterProvider.ts` (D-53) and `fakeVoiceProvider.ts` are the three
+ * implementations.
  */
 
 export type VoiceErrorCode = "no-speech" | "not-allowed" | "network" | "audio-capture" | "aborted" | "unknown";
@@ -19,9 +20,10 @@ export type ListenHandlers = {
 };
 
 export interface VoiceProvider {
-  kind: "web" | "fake";
-  /** False whenever the browser lacks any of `SpeechRecognition`, `speechSynthesis` or
-   * `SpeechSynthesisUtterance` — true only when the web provider has every API it needs. */
+  kind: "web" | "openrouter" | "fake";
+  /** True only when the provider has every browser API it needs: `SpeechRecognition`,
+   * `speechSynthesis` and `SpeechSynthesisUtterance` for web; `getUserMedia`, `MediaRecorder`
+   * and `Audio` for openrouter. */
   supported: boolean;
   /** Resolves once speech has ended, naturally or via `cancelSpeech`. */
   speak(text: string): Promise<void>;
