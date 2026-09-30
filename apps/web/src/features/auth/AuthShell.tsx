@@ -4,7 +4,7 @@
  * the one-time role (D-03, D-54), sign in with Clerk, then set up. On phones the panel collapses
  * into a header with the steps in a row.
  */
-import { Check } from "lucide-react";
+import { ArrowLeft, Check } from "lucide-react";
 import type { ReactNode } from "react";
 import { Link } from "react-router";
 
@@ -15,6 +15,8 @@ const AUTH_STEPS = ["Choose role", "Sign in", "Set up"] as const;
 type AuthShellProps = Readonly<{
   /** 1-based index into AUTH_STEPS. */
   step: 1 | 2 | 3;
+  /** Shows a Back control above the content; the caller decides where back goes. */
+  onBack?: () => void;
   children: ReactNode;
 }>;
 
@@ -76,7 +78,7 @@ function Steps({ step, layout }: Readonly<{ step: number; layout: "column" | "ro
   );
 }
 
-export function AuthShell({ step, children }: AuthShellProps) {
+export function AuthShell({ step, onBack, children }: AuthShellProps) {
   return (
     <div className="flex min-h-screen flex-col bg-ground lg:grid lg:grid-cols-[minmax(360px,39%)_1fr]">
       <aside className="flex flex-col gap-6 bg-dark px-5 pb-6 pt-6 text-[#f3f1ea] sm:px-8 lg:min-h-screen lg:justify-between lg:gap-0 lg:px-14 lg:py-12">
@@ -103,7 +105,19 @@ export function AuthShell({ step, children }: AuthShellProps) {
         </div>
       </aside>
       <main id="main" tabIndex={-1} className="flex flex-1 justify-center px-5 py-8 outline-none sm:px-8 lg:items-center lg:py-12">
-        <div className="w-full max-w-[640px]">{children}</div>
+        <div className="flex w-full max-w-[640px] flex-col gap-5">
+          {onBack ? (
+            <button
+              type="button"
+              onClick={onBack}
+              className="-ml-2 inline-flex h-10 w-fit items-center gap-2 rounded-lg px-2 text-[15px] font-medium text-ink-2 transition-colors hover:bg-ink/5 hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-green/40"
+            >
+              <ArrowLeft aria-hidden="true" className="h-4 w-4" />
+              Back
+            </button>
+          ) : null}
+          <div>{children}</div>
+        </div>
       </main>
     </div>
   );

@@ -10,7 +10,7 @@ import { SignIn, SignUp } from "@clerk/react";
 import type { UserRole } from "@venture-route/contracts";
 import { ArrowRight, Lock, Pencil } from "lucide-react";
 import { useState } from "react";
-import { Link, useLocation } from "react-router";
+import { Link, useLocation, useNavigate } from "react-router";
 
 import { useAuthState, useClerkMounted } from "../../auth/authContext";
 import { readRoleIntent, writeRoleIntent, clearRoleIntent, type RoleIntent } from "../../lib/roleIntent";
@@ -39,7 +39,8 @@ function ExploreLink() {
 }
 
 export function SignInScreen() {
-  const { pathname, search } = useLocation();
+  const { pathname, search, key } = useLocation();
+  const navigate = useNavigate();
   const mode = pathname.startsWith("/sign-up") ? "sign-up" : "sign-in";
   const auth = useAuthState();
   const clerkMounted = useClerkMounted();
@@ -58,9 +59,15 @@ export function SignInScreen() {
     setIntent(null);
   }
 
+  /** Step 1's Back: the page the visitor came from, or the landing page on a direct visit. */
+  function leave() {
+    if (key !== "default") void navigate(-1);
+    else void navigate("/");
+  }
+
   if (atStart && intent === null && !auth.isSignedIn) {
     return (
-      <AuthShell step={1}>
+      <AuthShell step={1} onBack={leave}>
         <div className="flex flex-col gap-6">
           <div className="flex flex-col gap-3">
             <StepEyebrow step={1} />
@@ -101,7 +108,7 @@ export function SignInScreen() {
     mode === "sign-up" ? (intent && intent !== "admin" ? `Create your ${intent} account` : "Create your account") : "Welcome back";
 
   return (
-    <AuthShell step={2}>
+    <AuthShell step={2} onBack={atStart && !auth.isSignedIn ? changeRole : undefined}>
       <div className="flex flex-col gap-6">
         <div className="flex flex-col gap-3">
           <div className="flex flex-wrap items-center justify-between gap-3">

@@ -196,6 +196,24 @@ describe("role first (D-54)", () => {
     expect(window.sessionStorage.getItem(ROLE_INTENT_KEY)).toBeNull();
   });
 
+  it("goes back from sign-in to the role step with the pick kept, and from the role step to the landing page", async () => {
+    const user = userEvent.setup();
+    render(<App initialPath="/sign-in" source={source} auth={authState()} />);
+
+    await user.click(screen.getByRole("button", { name: /I’m a builder/ }));
+    await user.click(screen.getByRole("button", { name: "Continue as builder" }));
+    expect(screen.getByRole("heading", { level: 1, name: "Welcome back" })).toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: "Back" }));
+    expect(screen.getByRole("heading", { level: 1, name: "Who are you?" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /I’m a builder/ })).toHaveAttribute("aria-pressed", "true");
+    expect(window.sessionStorage.getItem(ROLE_INTENT_KEY)).toBeNull();
+
+    // Opened directly (no history in this tab), Back on the role step goes to the landing page.
+    await user.click(screen.getByRole("button", { name: "Back" }));
+    expect(await screen.findByRole("heading", { level: 1, name: "A founding team you can verify." })).toBeInTheDocument();
+  });
+
   it("lets a BASIX admin skip the role cards", async () => {
     const user = userEvent.setup();
     render(<App initialPath="/sign-in" source={source} auth={authState()} />);
