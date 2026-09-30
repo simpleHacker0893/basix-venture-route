@@ -46,6 +46,60 @@ INCOMPLETE_FINISH_REASONS = frozenset({"length", "content_filter"})
 
 ModelT = TypeVar("ModelT", bound=BaseModel)
 
+# Keywords that strict `json_schema` providers reject. Dropping them only loosens the wire schema;
+# `model_validate_json` still enforces every one of them locally.
+STRICT_UNSUPPORTED_KEYWORDS = frozenset(
+    {
+        "default",
+        "title",
+        "format",
+        "pattern",
+        "minLength",
+        "maxLength",
+        "minimum",
+        "maximum",
+        "exclusiveMinimum",
+        "exclusiveMaximum",
+        "multipleOf",
+        "minItems",
+        "maxItems",
+        "uniqueItems",
+        "minProperties",
+        "maxProperties",
+    }
+)
+# Keywords whose value maps names to subschemas; the names are data, never keywords to drop.
+_SUBSCHEMA_MAPS = ("properties", "$defs")
+# Keywords whose value is one subschema or a list of subschemas.
+_SUBSCHEMA_LISTS = ("anyOf", "oneOf", "allOf", "prefixItems")
+_SUBSCHEMA_SINGLE = ("items", "not")
+
+
+def strict_json_schema(schema: dict[str, Any]) -> dict[str, Any]:
+    """A copy of a Pydantic JSON schema that OpenAI-style strict mode accepts.
+
+    Every object lists all its properties in `required` and forbids additional properties;
+    optional fields stay nullable through their `anyOf [..., {"type": "null"}]`, so an all-null
+    reply still validates. Unsupported keywords (`default`, `title`, `format`, length and range
+    bounds) are dropped, recursively through `properties`, `$defs`, `anyOf` and `items`.
+    """
+    out: dict[str, Any] = {}
+    for key, value in schema.items():
+        if key in STRICT_UNSUPPORTED_KEYWORDS:
+            continue
+        if key in _SUBSCHEMA_MAPS and isinstance(value, dict):
+            out[key] = {name: strict_json_schema(sub) for name, sub in value.items()}
+        elif key in _SUBSCHEMA_LISTS and isinstance(value, list):
+            out[key] = [strict_json_schema(sub) for sub in value]
+        elif key in _SUBSCHEMA_SINGLE and isinstance(value, dict):
+            out[key] = strict_json_schema(value)
+        else:
+            out[key] = value
+    if out.get("type") == "object" or "properties" in out:
+        out["required"] = list(out.get("properties", {}))
+        out["additionalProperties"] = False
+    return out
+
 
 class OpenRouterAdapter:
     name = "openrouter"
@@ -108,7 +162,7 @@ class OpenRouterAdapter:
                     "json_schema": {
                         "name": schema_name,
                         "strict": True,
-                        "schema": model.model_json_schema(),
+                        "schema": strict_json_schema(model.model_json_schema()),
                     },
                 },
             }

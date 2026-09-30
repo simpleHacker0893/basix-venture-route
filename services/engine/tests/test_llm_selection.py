@@ -1,6 +1,7 @@
 """Seam: adapter selection from settings (D-26; Sprint 002 #22, review.md finding 5)."""
 
 import logging
+import re
 from typing import Literal
 
 import pytest
@@ -112,4 +113,7 @@ def test_anthropic_key_does_not_enable_openrouter() -> None:
 def test_openrouter_placeholder_constant_matches_env_example() -> None:
     example = (Settings().seed_dir.parents[2] / ".env.example").read_text(encoding="utf-8")
 
-    assert f"OPENROUTER_API_KEY={PLACEHOLDER_OPENROUTER_API_KEY}" in example
+    line = rf"^OPENROUTER_API_KEY={re.escape(PLACEHOLDER_OPENROUTER_API_KEY)}$"
+    assert re.search(line, example, re.MULTILINE)
+    assert re.search(r"^OPENROUTER_INTAKE_MODEL=\S+$", example, re.MULTILINE)
+    assert re.search(r"^OPENROUTER_EXPLAIN_MODEL=\S+$", example, re.MULTILINE)

@@ -24,7 +24,7 @@ from app.llm.anthropic_adapter import (
     SuggestedSkills,
 )
 from app.llm.base import SYSTEM_INSTRUCTION, ExtractedBrief, LlmUnavailable
-from app.llm.openrouter_adapter import OpenRouterAdapter
+from app.llm.openrouter_adapter import OpenRouterAdapter, strict_json_schema
 from app.models.chat import PartialBrief
 from app.models.engine import ReasoningPath, RuleName
 from app.models.route import ReusableIp, RouteBuilder, RoutePartner, VentureRoute
@@ -153,7 +153,7 @@ def test_extract_brief_posts_the_intake_model_without_reasoning_and_a_strict_sch
     assert fmt["type"] == "json_schema"
     assert fmt["json_schema"]["strict"] is True
     assert fmt["json_schema"]["name"]
-    assert fmt["json_schema"]["schema"] == ExtractedBrief.model_json_schema()
+    assert fmt["json_schema"]["schema"] == strict_json_schema(ExtractedBrief.model_json_schema())
     system, user = system_and_user(body)
     assert system == EXTRACTION_INSTRUCTION
     assert SYSTEM_INSTRUCTION in system
@@ -173,7 +173,7 @@ def test_suggest_skills_posts_the_intake_model_with_the_suggested_skills_schema(
     fmt = body["response_format"]
     assert fmt["type"] == "json_schema"
     assert fmt["json_schema"]["strict"] is True
-    assert fmt["json_schema"]["schema"] == SuggestedSkills.model_json_schema()
+    assert fmt["json_schema"]["schema"] == strict_json_schema(SuggestedSkills.model_json_schema())
     system, user = system_and_user(body)
     assert system == SUGGEST_INSTRUCTION
     assert "Built Python services on Kubernetes." in user
@@ -218,6 +218,78 @@ def test_from_settings_builds_a_bearer_client_with_a_20s_timeout() -> None:
     assert str(adapter.client.base_url).rstrip("/") == BASE_URL
     assert adapter.client.headers["Authorization"] == "Bearer sk-or-test"
     assert adapter.client.timeout == httpx.Timeout(20.0)
+
+
+# ---- strict-mode compatible schemas on the wire ------------------------------------------------
+
+# Keywords strict json_schema providers reject; the local Pydantic validation still enforces them.
+UNSUPPORTED_KEYWORDS = {
+    "default",
+    "format",
+    "minLength",
+    "maxLength",
+    "minimum",
+    "maximum",
+    "exclusiveMinimum",
+    "exclusiveMaximum",
+    "minItems",
+    "maxItems",
+}
+
+
+def schema_nodes(node: Any) -> list[dict[str, Any]]:
+    """Every schema node, walking `properties` and `$defs` values (never their names)."""
+    if not isinstance(node, dict):
+        return []
+    found = [node]
+    for key in ("properties", "$defs"):
+        for child in node.get(key, {}).values():
+            found += schema_nodes(child)
+    for key in ("anyOf", "oneOf", "allOf"):
+        for child in node.get(key, []):
+            found += schema_nodes(child)
+    if "items" in node:
+        found += schema_nodes(node["items"])
+    return found
+
+
+def test_intake_schemas_on_the_wire_are_strict_mode_compatible() -> None:
+    extract_api = FakeApi(ok(json.dumps({})))
+    extract_api.adapter().extract_brief("hello", None)
+    suggest_api = FakeApi(ok(json.dumps({"skills": []})))
+    suggest_api.adapter().suggest_skills("Python developer")
+
+    for body in (extract_api.bodies[0], suggest_api.bodies[0]):
+        schema = body["response_format"]["json_schema"]["schema"]
+        nodes = schema_nodes(schema)
+        objects = [n for n in nodes if n.get("type") == "object" or "properties" in n]
+        assert objects
+        for node in objects:
+            assert sorted(node.get("required", [])) == sorted(node.get("properties", {}))
+            assert node["additionalProperties"] is False
+        for node in nodes:
+            assert not UNSUPPORTED_KEYWORDS & node.keys(), node
+            assert "title" not in node
+    extract_schema = extract_api.bodies[0]["response_format"]["json_schema"]["schema"]
+    fields = ExtractedBrief.model_json_schema()["properties"]
+    assert set(extract_schema["properties"]) == set(fields)
+    assert "title" in extract_schema["properties"]  # the field named title survives
+
+
+def test_an_all_null_extraction_reply_is_accepted() -> None:
+    all_null = {key: None for key in ExtractedBrief.model_json_schema()["properties"]}
+    api = FakeApi(ok(json.dumps(all_null)))
+
+    extracted = api.adapter().extract_brief("hello", None)
+
+    assert extracted == ExtractedBrief()
+
+
+def test_local_validation_still_enforces_the_dropped_constraints() -> None:
+    api = FakeApi(ok(json.dumps({"maximumTeamSize": 99, "dailyBudget": 0})))
+
+    with pytest.raises(LlmUnavailable):
+        api.adapter().extract_brief("hello", None)
 
 
 # ---- failure modes -> LlmUnavailable ----------------------------------------------------------
