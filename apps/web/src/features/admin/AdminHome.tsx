@@ -579,7 +579,7 @@ function QueueRow({
               aria-expanded={expanded}
               aria-controls={expanded ? panelId : undefined}
               onClick={onToggle}
-              className="mt-0.5 inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-lg border border-border-strong bg-surface-strong font-mono text-[13px] text-ink-3 hover:border-accent-green hover:text-accent-green"
+              className="mt-0.5 inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-border-strong bg-surface-strong font-mono text-[13px] text-ink-3 hover:border-accent-green hover:text-accent-green"
             >
               <span aria-hidden="true">{expanded ? "−" : "+"}</span>
             </button>

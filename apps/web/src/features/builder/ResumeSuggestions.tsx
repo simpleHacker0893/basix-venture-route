@@ -150,7 +150,7 @@ export function ResumeSuggestions({ onAccept, currentSkills, max = 20 }: ResumeS
                 type="button"
                 aria-label={`Dismiss ${suggestion.label}`}
                 onClick={() => dismiss(suggestion.label)}
-                className="grid h-6 w-6 place-items-center rounded-full text-ink-3 hover:bg-ink/5 hover:text-danger"
+                className="relative grid h-6 w-6 place-items-center rounded-full text-ink-3 before:absolute before:-inset-2 before:content-[''] hover:bg-ink/5 hover:text-danger"
               >
                 <X aria-hidden="true" className="h-3.5 w-3.5" />
               </button>

@@ -87,7 +87,7 @@ export function SignInScreen() {
         </p>
         <p className="text-[14px] text-ink-2">
           Just exploring?{" "}
-          <Link to="/route" className="inline-flex items-center gap-1 font-semibold text-accent-green hover:underline">
+          <Link to="/route" className="-my-2 inline-flex items-center gap-1 py-2.5 font-semibold text-accent-green hover:underline">
             Route without an account
             <ArrowRight aria-hidden="true" className="h-3.5 w-3.5" />
           </Link>

@@ -358,7 +358,7 @@ export function ProfileForm({ profile, onSave }: ProfileFormProps) {
                         type="button"
                         aria-label={`Remove ${skill}`}
                         onClick={() => patch({ suggestedSkills: draft.suggestedSkills.filter((s) => s !== skill) })}
-                        className="grid h-6 w-6 place-items-center rounded-full hover:bg-accent-green/10 hover:text-danger"
+                        className="relative grid h-6 w-6 place-items-center rounded-full before:absolute before:-inset-2 before:content-[''] hover:bg-accent-green/10 hover:text-danger"
                       >
                         <X aria-hidden="true" className="h-3.5 w-3.5" />
                       </button>
