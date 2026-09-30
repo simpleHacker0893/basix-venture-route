@@ -11,6 +11,7 @@
  * accessible name never changes to prose) but is disabled, with the exact required copy shown as
  * visible text and wired through `aria-describedby` so assistive tech reads why.
  */
+import { Plus, Upload, X } from "lucide-react";
 import { SkillSuggestRequest, type SkillSuggestion } from "@venture-route/contracts";
 import { useState } from "react";
 
@@ -101,7 +102,8 @@ export function ResumeSuggestions({ onAccept, currentSkills, max = 20 }: ResumeS
           setText(e.target.value);
           setError(null);
         }}
-        className="rounded-card border border-border-strong bg-surface-strong px-3 py-2 text-sm focus:border-accent-green focus:outline-none focus:ring-2 focus:ring-ring/50"
+        placeholder="Paste your CV or LinkedIn summary"
+        className="rounded-xl border border-border-strong bg-surface-strong px-3.5 py-3 text-[15px] placeholder:text-ink-subtle focus:border-accent-green focus:outline-none focus:ring-2 focus:ring-ring/50"
       />
       <span id={CAPTION_ID} className={helpClass}>
         Your text is sent to Anthropic's Claude to suggest skills and is not stored.
@@ -113,14 +115,14 @@ export function ResumeSuggestions({ onAccept, currentSkills, max = 20 }: ResumeS
       ) : null}
       <Button
         type="button"
-        variant="outline"
-        size="sm"
-        className="w-fit"
+        variant="secondary"
+        className="h-11 w-fit gap-2 rounded-xl"
         disabled={busy || unavailable}
         aria-busy={busy}
         aria-describedby={unavailable ? UNAVAILABLE_ID : undefined}
         onClick={() => void suggest()}
       >
+        <Upload aria-hidden="true" className="h-4 w-4" />
         {busy ? "Suggesting…" : "Suggest skills"}
       </Button>
       {unavailable ? (
@@ -133,14 +135,24 @@ export function ResumeSuggestions({ onAccept, currentSkills, max = 20 }: ResumeS
           {suggestions.map((suggestion) => (
             <li
               key={suggestion.label}
-              className="inline-flex h-8 flex-wrap items-center gap-2 rounded-pill border border-border-strong bg-surface-strong px-3 text-sm"
+              className="inline-flex min-h-9 flex-wrap items-center gap-1 rounded-pill border border-dashed border-border-strong bg-surface-strong pl-1.5 pr-1.5 text-[14px] text-ink-2"
             >
-              <span>{suggestion.label}</span>
-              <button type="button" onClick={() => accept(suggestion.label)} className="text-accent-green underline">
-                {`Accept ${suggestion.label}`}
+              <button
+                type="button"
+                aria-label={`Accept ${suggestion.label}`}
+                onClick={() => accept(suggestion.label)}
+                className="inline-flex items-center gap-1.5 rounded-pill px-2 py-1 hover:text-accent-green"
+              >
+                <Plus aria-hidden="true" className="h-3.5 w-3.5" />
+                {suggestion.label}
               </button>
-              <button type="button" onClick={() => dismiss(suggestion.label)} className="text-ink-3 underline">
-                {`Dismiss ${suggestion.label}`}
+              <button
+                type="button"
+                aria-label={`Dismiss ${suggestion.label}`}
+                onClick={() => dismiss(suggestion.label)}
+                className="grid h-6 w-6 place-items-center rounded-full text-ink-3 hover:bg-ink/5 hover:text-danger"
+              >
+                <X aria-hidden="true" className="h-3.5 w-3.5" />
               </button>
               {reasons[suggestion.label] ? (
                 <span role="alert" className="text-[12px] text-danger">

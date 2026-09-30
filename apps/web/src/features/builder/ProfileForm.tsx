@@ -4,6 +4,7 @@
  * status, the three contact-sharing toggles and Save. The engine decides every skill's status and
  * evidence (AGENTS.md non-negotiable 4); this form only renders `profile.skills`.
  */
+import { Info, X } from "lucide-react";
 import {
   ProfileInput,
   type AvailabilityRange,
@@ -350,16 +351,16 @@ export function ProfileForm({ profile, onSave }: ProfileFormProps) {
                   {draft.suggestedSkills.map((skill) => (
                     <li
                       key={skill}
-                      className="inline-flex h-8 items-center gap-2 rounded-pill border border-border-strong bg-surface-strong px-3 text-sm"
+                      className="inline-flex h-9 items-center gap-1.5 rounded-pill border border-accent-green/60 bg-sage pl-3.5 pr-1.5 text-[14px] font-medium text-accent-green"
                     >
                       <span>{skill}</span>
                       <button
                         type="button"
                         aria-label={`Remove ${skill}`}
                         onClick={() => patch({ suggestedSkills: draft.suggestedSkills.filter((s) => s !== skill) })}
-                        className="text-ink-3 hover:text-danger"
+                        className="grid h-6 w-6 place-items-center rounded-full hover:bg-accent-green/10 hover:text-danger"
                       >
-                        ×
+                        <X aria-hidden="true" className="h-3.5 w-3.5" />
                       </button>
                     </li>
                   ))}
@@ -368,6 +369,11 @@ export function ProfileForm({ profile, onSave }: ProfileFormProps) {
               </div>
             ) : null}
             <FieldError field="suggestedSkills" errors={errors} />
+            <p className="flex items-start gap-2.5 rounded-xl bg-amber-fill px-4 py-3 text-[14px] leading-relaxed text-amber-ink">
+              <Info aria-hidden="true" className="mt-0.5 h-4 w-4 shrink-0" />
+              These are self-described for now. A skill counts for routing once a credential or project backs it and a
+              BASIX admin confirms it.
+            </p>
           </div>
         </Card>
 
