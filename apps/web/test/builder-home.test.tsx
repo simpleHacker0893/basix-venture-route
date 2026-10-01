@@ -4,7 +4,8 @@
  * the engine's own reason (AGENTS.md rule 1, D-45).
  */
 import type { Bid, Booking, BuilderProfile, Credential, Request, ShowcaseProject, VentureBrief } from "@venture-route/contracts";
-import { render, screen, within } from "@testing-library/react";
+import { cleanup, render, screen, within } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { describe, expect, it } from "vitest";
 
 import { ApiNotFoundError } from "../src/api/client";
@@ -203,5 +204,25 @@ describe("/home (builder)", () => {
     const next = await screen.findByRole("region", { name: "Next step" });
     expect(next).toHaveTextContent("0 / 4");
     expect(within(next).getByRole("link", { name: "Complete your profile" })).toHaveAttribute("href", "/profile");
+  });
+
+  it("collapses the sidebar to an icon rail, keeps each link's name, and remembers the choice", async () => {
+    window.localStorage.removeItem("venture-route:sidebar-collapsed");
+    renderHome({});
+    const user = userEvent.setup();
+
+    await user.click(await screen.findByRole("button", { name: "Collapse sidebar" }));
+    const sections = screen.getByRole("navigation", { name: "Sections" });
+    expect(within(sections).getByRole("link", { name: "Open requests" })).toHaveAttribute("title", "Open requests");
+    expect(screen.getByRole("button", { name: "Expand sidebar" })).toHaveAttribute("aria-expanded", "false");
+    expect(window.localStorage.getItem("venture-route:sidebar-collapsed")).toBe("1");
+
+    cleanup();
+    renderHome({});
+    await user.click(await screen.findByRole("button", { name: "Expand sidebar" }));
+    expect(
+      within(screen.getByRole("navigation", { name: "Sections" })).getByRole("link", { name: "Open requests" }),
+    ).not.toHaveAttribute("title");
+    expect(window.localStorage.getItem("venture-route:sidebar-collapsed")).toBe("0");
   });
 });

@@ -1,14 +1,14 @@
-"""Seam: OpenRouterAdapter over a fake transport (LLM_PROVIDER=openrouter).
+"""Seam (D-53): OpenRouterAdapter over `httpx.MockTransport`.
 
-The network is the system boundary, so it is the one thing mocked: an httpx MockTransport
-captures every request the adapter sends to OpenRouter's chat-completions endpoint and answers a
-canned body. Nothing here reaches OpenRouter. The adapter keeps the same LLM boundary as the
-Anthropic one: the system instruction is verbatim, and no reasoning-path fact atom is ever sent.
+The network is the system boundary, so it is the one thing mocked: a MockTransport captures every
+request the adapter sends to `POST /chat/completions` and answers a canned chat-completion body.
+Nothing here reaches OpenRouter.
 """
 
 from __future__ import annotations
 
 import json
+import logging
 from collections.abc import Callable
 from typing import Any
 
@@ -16,16 +16,24 @@ import httpx
 import pytest
 
 from app.config import Settings
-from app.llm.base import SYSTEM_INSTRUCTION, LlmUnavailable
-from app.llm.openrouter_adapter import (
-    BASE_URL,
-    DEFAULT_MODEL,
-    DEFAULT_SUGGEST_MODEL,
-    OpenRouterAdapter,
+from app.llm.anthropic_adapter import (
+    EXPLANATION_INSTRUCTION,
+    EXTRACTION_INSTRUCTION,
+    SUGGEST_INSTRUCTION,
+    AnthropicAdapter,
+    SuggestedSkills,
 )
+from app.llm.base import SYSTEM_INSTRUCTION, ExtractedBrief, LlmUnavailable
+from app.llm.openrouter_adapter import OpenRouterAdapter, strict_json_schema
 from app.models.chat import PartialBrief
 from app.models.engine import ReasoningPath, RuleName
 from app.models.route import ReusableIp, RouteBuilder, RoutePartner, VentureRoute
+
+BASE_URL = "https://openrouter.test/api/v1"
+INTAKE_MODEL = "nvidia/intake-test"
+EXPLAIN_MODEL = "openai/explain-test"
+# A unique string that stands in for personal résumé content; it must never leak.
+RESUME_MARKER = "ZQX-RESUME-MARKER-7731"
 
 ROUTE = VentureRoute(
     status="feasible",
@@ -39,11 +47,7 @@ ROUTE = VentureRoute(
             evidence_paths=[
                 ReasoningPath(
                     rule=RuleName.ELIGIBLE_BUILDER,
-                    facts=[
-                        "(earned amina-otieno cred-py-201)",
-                        "(built amina-otieno proj-afya-bot)",
-                        "(confirmed admin-basix amina-otieno)",
-                    ],
+                    facts=["(earned amina-otieno cred-py-201)"],
                     conclusion="amina-otieno is eligible for python with both evidence",
                 )
             ],
@@ -72,22 +76,19 @@ ROUTE = VentureRoute(
     summary="Feasible route: 1 builder (Amina Otieno) cover python for USD 120 a day.",
 )
 
-RESUME = "Jane Doe, jane@example.com. Senior Python and Rust engineer at Acme since 2019."
 
-
-def completion(content: str, finish_reason: str = "stop") -> dict[str, Any]:
+def completion(content: str | None, finish_reason: str = "stop") -> dict[str, Any]:
     return {
         "id": "gen-test",
         "object": "chat.completion",
-        "model": DEFAULT_MODEL,
+        "model": "test",
         "choices": [
             {
                 "index": 0,
-                "finish_reason": finish_reason,
                 "message": {"role": "assistant", "content": content},
+                "finish_reason": finish_reason,
             }
         ],
-        "usage": {"prompt_tokens": 10, "completion_tokens": 10, "total_tokens": 20},
     }
 
 
@@ -96,239 +97,312 @@ class FakeApi:
 
     def __init__(self, respond: Callable[[httpx.Request], httpx.Response]) -> None:
         self.requests: list[httpx.Request] = []
+        self.bodies: list[dict[str, Any]] = []
         self._respond = respond
 
     def handler(self, request: httpx.Request) -> httpx.Response:
         self.requests.append(request)
+        self.bodies.append(json.loads(request.content))
         return self._respond(request)
 
-    def body(self, index: int = 0) -> dict[str, Any]:
-        sent: dict[str, Any] = json.loads(self.requests[index].content)
-        return sent
-
-    def adapter(self, **kwargs: str) -> OpenRouterAdapter:
-        client = httpx.Client(
-            base_url=BASE_URL,
-            headers={"Authorization": "Bearer sk-or-test"},
-            transport=httpx.MockTransport(self.handler),
-        )
-        return OpenRouterAdapter(client, **kwargs)
+    def adapter(self) -> OpenRouterAdapter:
+        client = httpx.Client(transport=httpx.MockTransport(self.handler), base_url=BASE_URL)
+        return OpenRouterAdapter(client, intake_model=INTAKE_MODEL, explain_model=EXPLAIN_MODEL)
 
 
-def ok(content: str, finish_reason: str = "stop") -> Callable[[httpx.Request], httpx.Response]:
+Respond = Callable[[httpx.Request], httpx.Response]
+
+
+def ok(content: str | None, finish_reason: str = "stop") -> Respond:
     return lambda _request: httpx.Response(200, json=completion(content, finish_reason))
 
 
-# ---- explanation boundary ---------------------------------------------------------------------
+def has_key(value: Any, key: str) -> bool:
+    """True when `key` appears as a mapping key anywhere in `value`."""
+    if isinstance(value, dict):
+        return key in value or any(has_key(v, key) for v in value.values())
+    if isinstance(value, list):
+        return any(has_key(v, key) for v in value)
+    return False
 
 
-def test_explanation_posts_chat_completions_with_the_route_and_no_fact_atoms() -> None:
-    api = FakeApi(ok("Amina Otieno covers python with both a credential and a project."))
+def system_and_user(body: dict[str, Any]) -> tuple[str, str]:
+    messages = body["messages"]
+    assert [m["role"] for m in messages] == ["system", "user"]
+    return messages[0]["content"], messages[1]["content"]
 
-    summary = api.adapter().explain_route(ROUTE)
 
-    assert summary == "Amina Otieno covers python with both a credential and a project."
+# ---- request shape per method -----------------------------------------------------------------
+
+
+def test_extract_brief_posts_the_intake_model_without_reasoning_and_a_strict_schema() -> None:
+    api = FakeApi(ok(json.dumps({"title": "Health pilot", "dailyBudget": 400})))
+    current = PartialBrief.model_validate({"availabilityStart": "2026-09-22"})
+
+    extracted = api.adapter().extract_brief("A health pilot, USD 400 a day", current)
+
+    assert extracted.title == "Health pilot"
+    assert extracted.daily_budget == 400
     request = api.requests[0]
     assert request.method == "POST"
     assert str(request.url) == f"{BASE_URL}/chat/completions"
-    body = api.body()
-    assert body["model"] == DEFAULT_MODEL
-    wire = json.dumps(body)
-    assert "(earned" not in wire and "(built" not in wire and "(confirmed" not in wire
-    assert "(licensable" not in wire and "(supports-vertical" not in wire
-    assert "amina-otieno" in wire and "eligible-builder" in wire
-    system, user = body["messages"]
-    assert system["role"] == "system" and SYSTEM_INSTRUCTION in system["content"]
-    assert user["role"] == "user"
-    assert "response_format" not in body
-
-
-def test_explanation_sends_exactly_the_route_without_facts() -> None:
-    api = FakeApi(ok("fine"))
-
-    api.adapter().explain_route(ROUTE)
-
-    sent = json.loads(api.body()["messages"][1]["content"])
-    expected = ROUTE.model_dump(by_alias=True)
-    for builder in expected["builders"]:
-        for path in builder["evidencePaths"]:
-            del path["facts"]
-    for section in ("reusableIp", "cohort", "partner"):
-        if expected[section] is not None:
-            del expected[section]["path"]["facts"]
-    assert sent == expected
-
-
-def test_the_model_can_be_overridden() -> None:
-    api = FakeApi(ok("fine"))
-
-    api.adapter(model="openai/gpt-5").explain_route(ROUTE)
-
-    assert api.body()["model"] == "openai/gpt-5"
-
-
-# ---- intake extraction ------------------------------------------------------------------------
-
-
-def test_extract_brief_requests_a_json_schema_and_returns_only_stated_fields() -> None:
-    api = FakeApi(
-        ok(json.dumps({"title": "Health pilot", "requiredSkills": ["python"], "dailyBudget": 400}))
-    )
-
-    extracted = api.adapter().extract_brief(
-        "A health pilot needing python, USD 400 a day", PartialBrief()
-    )
-
-    assert extracted.title == "Health pilot"
-    assert extracted.required_skills == ["python"]
-    assert extracted.daily_budget == 400
-    assert extracted.vertical is None
-    body = api.body()
+    body = api.bodies[0]
+    assert body["model"] == INTAKE_MODEL
+    assert body["reasoning"] == {"enabled": False}
     fmt = body["response_format"]
     assert fmt["type"] == "json_schema"
-    assert "requiredSkills" in fmt["json_schema"]["schema"]["properties"]
-    # Route only to providers that honour the schema.
+    assert fmt["json_schema"]["strict"] is True
+    assert fmt["json_schema"]["name"]
+    assert fmt["json_schema"]["schema"] == strict_json_schema(ExtractedBrief.model_json_schema())
     assert body["provider"] == {"require_parameters": True}
-    assert "USD 400 a day" in json.dumps(body["messages"])
+    system, user = system_and_user(body)
+    assert system == EXTRACTION_INSTRUCTION
+    assert SYSTEM_INSTRUCTION in system
+    assert "USD 400 a day" in user
+    assert "2026-09-22" in user
 
 
-def test_extract_brief_accepts_json_wrapped_in_a_code_fence() -> None:
-    api = FakeApi(ok('```json\n{"vertical": "agri"}\n```'))
+def test_suggest_skills_posts_the_intake_model_with_the_suggested_skills_schema() -> None:
+    api = FakeApi(ok(json.dumps({"skills": ["Python", "Kubernetes"]})))
 
-    assert api.adapter().extract_brief("an agri app", None).vertical == "agri"
+    skills = api.adapter().suggest_skills("Built Python services on Kubernetes.")
+
+    assert skills == ["Python", "Kubernetes"]
+    body = api.bodies[0]
+    assert body["model"] == INTAKE_MODEL
+    assert body["reasoning"] == {"enabled": False}
+    fmt = body["response_format"]
+    assert fmt["type"] == "json_schema"
+    assert fmt["json_schema"]["strict"] is True
+    assert fmt["json_schema"]["schema"] == strict_json_schema(SuggestedSkills.model_json_schema())
+    assert body["provider"] == {"require_parameters": True}
+    system, user = system_and_user(body)
+    assert system == SUGGEST_INSTRUCTION
+    assert "Built Python services on Kubernetes." in user
 
 
-def test_extract_brief_serialises_a_dated_current_brief_as_json_context() -> None:
-    api = FakeApi(ok(json.dumps({"dailyBudget": 500})))
-    current = PartialBrief.model_validate(
-        {"availabilityStart": "2026-09-22", "availabilityEnd": "2026-10-06"}
+def test_explain_route_posts_the_explain_model_with_reasoning_and_no_facts() -> None:
+    api = FakeApi(ok("  Amina Otieno covers python.  "))
+
+    summary = api.adapter().explain_route(ROUTE)
+
+    assert summary == "Amina Otieno covers python."
+    body = api.bodies[0]
+    assert body["model"] == EXPLAIN_MODEL
+    assert body["reasoning"] == {"enabled": True}
+    assert body["max_tokens"] == 4096
+    assert "response_format" not in body
+    system, user = system_and_user(body)
+    assert system == EXPLANATION_INSTRUCTION
+    assert SYSTEM_INSTRUCTION in system
+    sent = json.loads(user)
+    assert sent == ROUTE.model_dump(by_alias=True, exclude=AnthropicAdapter.FACTS_EXCLUDED)
+    assert not has_key(body, "facts")
+    assert not has_key(sent, "facts")
+    wire = json.dumps(body)
+    assert "(earned" not in wire and "(licensable" not in wire and "(supports-vertical" not in wire
+    assert "amina-otieno" in wire and "eligible-builder" in wire
+
+
+def test_from_settings_builds_a_bearer_client_with_a_20s_timeout() -> None:
+    settings = Settings(
+        llm_provider="openrouter",
+        openrouter_api_key="sk-or-test",
+        openrouter_base_url=BASE_URL,
+        openrouter_intake_model=INTAKE_MODEL,
+        openrouter_explain_model=EXPLAIN_MODEL,
     )
 
-    api.adapter().extract_brief("USD 500 a day", current)
+    adapter = OpenRouterAdapter.from_settings(settings)
 
-    assert "2026-09-22" in api.body()["messages"][1]["content"]
+    assert adapter.name == "openrouter"
+    assert adapter.intake_model == INTAKE_MODEL
+    assert adapter.explain_model == EXPLAIN_MODEL
+    assert str(adapter.client.base_url).rstrip("/") == BASE_URL
+    assert adapter.client.headers["Authorization"] == "Bearer sk-or-test"
+    assert adapter.client.timeout == httpx.Timeout(20.0)
 
 
-def test_an_invalid_brief_reply_is_unavailable() -> None:
-    api = FakeApi(ok(json.dumps({"vertical": "space-travel"})))
+# ---- strict-mode compatible schemas on the wire ------------------------------------------------
+
+# Keywords strict json_schema providers reject; the local Pydantic validation still enforces them.
+UNSUPPORTED_KEYWORDS = {
+    "default",
+    "format",
+    "minLength",
+    "maxLength",
+    "minimum",
+    "maximum",
+    "exclusiveMinimum",
+    "exclusiveMaximum",
+    "minItems",
+    "maxItems",
+}
+
+
+def schema_nodes(node: Any) -> list[dict[str, Any]]:
+    """Every schema node, walking `properties` and `$defs` values (never their names)."""
+    if not isinstance(node, dict):
+        return []
+    found = [node]
+    for key in ("properties", "$defs"):
+        for child in node.get(key, {}).values():
+            found += schema_nodes(child)
+    for key in ("anyOf", "oneOf", "allOf"):
+        for child in node.get(key, []):
+            found += schema_nodes(child)
+    if "items" in node:
+        found += schema_nodes(node["items"])
+    return found
+
+
+def test_intake_schemas_on_the_wire_are_strict_mode_compatible() -> None:
+    extract_api = FakeApi(ok(json.dumps({})))
+    extract_api.adapter().extract_brief("hello", None)
+    suggest_api = FakeApi(ok(json.dumps({"skills": []})))
+    suggest_api.adapter().suggest_skills("Python developer")
+
+    for body in (extract_api.bodies[0], suggest_api.bodies[0]):
+        schema = body["response_format"]["json_schema"]["schema"]
+        nodes = schema_nodes(schema)
+        objects = [n for n in nodes if n.get("type") == "object" or "properties" in n]
+        assert objects
+        for node in objects:
+            assert sorted(node.get("required", [])) == sorted(node.get("properties", {}))
+            assert node["additionalProperties"] is False
+        for node in nodes:
+            assert not UNSUPPORTED_KEYWORDS & node.keys(), node
+            assert "title" not in node
+    extract_schema = extract_api.bodies[0]["response_format"]["json_schema"]["schema"]
+    fields = ExtractedBrief.model_json_schema()["properties"]
+    assert set(extract_schema["properties"]) == set(fields)
+    assert "title" in extract_schema["properties"]  # the field named title survives
+
+
+def test_an_all_null_extraction_reply_is_accepted() -> None:
+    all_null = {key: None for key in ExtractedBrief.model_json_schema()["properties"]}
+    api = FakeApi(ok(json.dumps(all_null)))
+
+    extracted = api.adapter().extract_brief("hello", None)
+
+    assert extracted == ExtractedBrief()
+
+
+def test_local_validation_still_enforces_the_dropped_constraints() -> None:
+    api = FakeApi(ok(json.dumps({"maximumTeamSize": 99, "dailyBudget": 0})))
 
     with pytest.raises(LlmUnavailable):
-        api.adapter().extract_brief("a rocket", None)
+        api.adapter().extract_brief("hello", None)
 
 
-def test_a_non_json_brief_reply_is_unavailable() -> None:
-    api = FakeApi(ok("Sure! The founder wants a health app."))
-
-    with pytest.raises(LlmUnavailable):
-        api.adapter().extract_brief("a health app", None)
+# ---- failure modes -> LlmUnavailable ----------------------------------------------------------
 
 
-# ---- failure modes: every one becomes LlmUnavailable -------------------------------------------
+def _raise_timeout(_request: httpx.Request) -> httpx.Response:
+    raise httpx.ReadTimeout("slow")
 
 
-@pytest.mark.parametrize(
-    "respond",
-    [
-        lambda _r: httpx.Response(500, json={"error": {"code": 500, "message": "boom"}}),
-        lambda _r: httpx.Response(401, json={"error": {"code": 401, "message": "bad key"}}),
-        lambda _r: httpx.Response(429, json={"error": {"code": 429, "message": "rate limited"}}),
-        lambda _r: httpx.Response(200, json={"error": {"code": 502, "message": "upstream"}}),
-        lambda _r: httpx.Response(200, json={"choices": []}),
-        lambda _r: httpx.Response(200, text="<html>not json</html>"),
-        ok("half a sent", finish_reason="length"),
-        ok("", finish_reason="content_filter"),
-        ok("", finish_reason="error"),
-        ok("   "),
-    ],
-    ids=[
-        "http-500",
-        "http-401",
-        "http-429",
-        "error-in-200",
-        "no-choices",
-        "not-json",
-        "truncated",
-        "filtered",
-        "finish-error",
-        "empty",
-    ],
-)
-def test_provider_failures_raise_llm_unavailable(
-    respond: Callable[[httpx.Request], httpx.Response],
+FAILURES: list[tuple[str, Callable[[httpx.Request], httpx.Response]]] = [
+    ("500", lambda _r: httpx.Response(500, json={"error": {"message": "boom"}})),
+    ("429", lambda _r: httpx.Response(429, json={"error": {"message": "slow down"}})),
+    ("timeout", _raise_timeout),
+    ("malformed-body", lambda _r: httpx.Response(200, content=b"{not json")),
+    ("no-choices", lambda _r: httpx.Response(200, json={"choices": []})),
+    ("empty-content", ok(None)),
+    ("length", ok(json.dumps({"skills": ["Python"]}), finish_reason="length")),
+    ("content-filter", ok(json.dumps({"skills": ["Python"]}), finish_reason="content_filter")),
+    ("error-finish", ok(json.dumps({"skills": ["Python"]}), finish_reason="error")),
+]
+
+
+@pytest.mark.parametrize(("label", "respond"), FAILURES, ids=[f[0] for f in FAILURES])
+def test_http_and_body_failures_raise_llm_unavailable_for_every_method(
+    label: str, respond: Callable[[httpx.Request], httpx.Response]
 ) -> None:
     api = FakeApi(respond)
+
+    with pytest.raises(LlmUnavailable):
+        api.adapter().extract_brief("hello", None)
+    with pytest.raises(LlmUnavailable):
+        api.adapter().suggest_skills("Python developer")
+    with pytest.raises(LlmUnavailable):
+        api.adapter().explain_route(ROUTE)
+
+
+def test_intake_content_that_is_not_json_raises_llm_unavailable() -> None:
+    api = FakeApi(ok("not json"))
+
+    with pytest.raises(LlmUnavailable):
+        api.adapter().extract_brief("hello", None)
+    with pytest.raises(LlmUnavailable):
+        api.adapter().suggest_skills("Python developer")
+
+
+def test_intake_content_that_breaks_the_schema_raises_llm_unavailable() -> None:
+    api = FakeApi(ok(json.dumps({"title": "x", "status": "feasible", "skills": 3})))
+
+    with pytest.raises(LlmUnavailable):
+        api.adapter().extract_brief("hello", None)
+    with pytest.raises(LlmUnavailable):
+        api.adapter().suggest_skills("Python developer")
+
+
+def test_whitespace_only_explanation_raises_llm_unavailable() -> None:
+    api = FakeApi(ok("   "))
 
     with pytest.raises(LlmUnavailable):
         api.adapter().explain_route(ROUTE)
 
 
-def test_a_transport_error_is_unavailable() -> None:
-    def boom(request: httpx.Request) -> httpx.Response:
-        raise httpx.ConnectError("no route to host", request=request)
-
-    with pytest.raises(LlmUnavailable):
-        FakeApi(boom).adapter().explain_route(ROUTE)
+# ---- the résumé text never leaks (D-50) --------------------------------------------------------
 
 
-# ---- résumé skill suggestions (D-50) -----------------------------------------------------------
+def _echo_marker_500(_request: httpx.Request) -> httpx.Response:
+    return httpx.Response(500, json={"error": {"message": f"bad input: {RESUME_MARKER}"}})
 
 
-def test_suggest_skills_uses_the_suggest_model_and_a_strict_schema() -> None:
-    api = FakeApi(ok(json.dumps({"skills": ["Python", "Rust"]})))
-
-    skills = api.adapter().suggest_skills(RESUME)
-
-    assert skills == ["Python", "Rust"]
-    body = api.body()
-    assert body["model"] == DEFAULT_SUGGEST_MODEL
-    assert (
-        body["response_format"]["json_schema"]["schema"]["properties"]["skills"]["type"] == "array"
-    )
+def _echo_marker_invalid(_request: httpx.Request) -> httpx.Response:
+    return httpx.Response(200, json=completion(json.dumps({"skills": RESUME_MARKER})))
 
 
-@pytest.mark.parametrize(
-    "respond",
-    [
-        lambda _r: httpx.Response(500, json={"error": {"message": RESUME}}),
-        ok("not json at all"),
-    ],
-    ids=["http-500", "invalid-reply"],
-)
-def test_suggest_skills_errors_never_carry_the_resume(
+def _echo_marker_not_json(_request: httpx.Request) -> httpx.Response:
+    return httpx.Response(200, json=completion(f"Sure! {RESUME_MARKER}"))
+
+
+def _raise_marker_timeout(_request: httpx.Request) -> httpx.Response:
+    raise httpx.ReadTimeout(f"timed out sending {RESUME_MARKER}")
+
+
+LEAKS = [
+    ("500-echo", _echo_marker_500),
+    ("schema-echo", _echo_marker_invalid),
+    ("not-json-echo", _echo_marker_not_json),
+    ("timeout-echo", _raise_marker_timeout),
+]
+
+
+@pytest.mark.parametrize(("label", "respond"), LEAKS, ids=[leak[0] for leak in LEAKS])
+def test_resume_text_is_absent_from_logs_and_the_exception(
+    label: str,
     respond: Callable[[httpx.Request], httpx.Response],
+    caplog: pytest.LogCaptureFixture,
 ) -> None:
+    caplog.set_level(logging.DEBUG)
     api = FakeApi(respond)
 
-    with pytest.raises(LlmUnavailable) as caught:
-        api.adapter().suggest_skills(RESUME)
+    with pytest.raises(LlmUnavailable) as raised:
+        api.adapter().suggest_skills(f"Résumé of {RESUME_MARKER}: Python, Rust")
 
-    error = caught.value
-    assert "Jane" not in str(error) and "jane@example.com" not in str(error)
-    assert error.__cause__ is None and error.__suppress_context__
-
-
-# ---- construction from settings ----------------------------------------------------------------
-
-
-def test_from_settings_requires_a_key() -> None:
-    with pytest.raises(LlmUnavailable):
-        OpenRouterAdapter.from_settings(
-            Settings(llm_provider="openrouter", openrouter_api_key=None)
-        )
-
-
-def test_from_settings_sends_the_bearer_key_and_the_configured_models() -> None:
-    settings = Settings(
-        llm_provider="openrouter",
-        openrouter_api_key="sk-or-v1-abc123",
-        openrouter_model="google/gemini-3-pro",
-        openrouter_suggest_model="google/gemini-3-flash",
-    )
-
-    adapter = OpenRouterAdapter.from_settings(settings)
-
-    assert adapter.client.headers["Authorization"] == "Bearer sk-or-v1-abc123"
-    assert adapter.client.headers["X-OpenRouter-Title"] == "Venture Route"
-    assert str(adapter.client.base_url).rstrip("/") == BASE_URL
-    assert adapter.model == "google/gemini-3-pro"
-    assert adapter.suggest_model == "google/gemini-3-flash"
+    exc = raised.value
+    assert RESUME_MARKER in json.dumps(api.bodies[0], ensure_ascii=False)  # it was sent
+    assert RESUME_MARKER not in caplog.text
+    for record in caplog.records:
+        assert RESUME_MARKER not in repr(record.args)
+        assert record.exc_info is None
+    assert RESUME_MARKER not in str(exc)
+    assert RESUME_MARKER not in repr(exc.args)
+    assert exc.__cause__ is None
+    assert exc.__suppress_context__ is True
+    if exc.__context__ is not None:
+        assert RESUME_MARKER not in repr(exc.__context__)
+        assert RESUME_MARKER not in str(exc.__context__)

@@ -2,7 +2,8 @@
  * The test double for both RTL (`test/fakeEngine.tsx`) and Playwright (`e2e/chloe.spec.ts`)
  * seams (Sprint 006 blueprint §Interfaces). It never touches a browser speech API: `speak`
  * records into `spoken`, and a caller injects recognition results through `transcribe` / `fail`
- * instead of a real microphone.
+ * instead of a real microphone. `finishUtterance` is the hands-free turn (D-55): it plays the part
+ * of a real provider's own endpointing, finalising what was "said" and ending the turn.
  */
 import type { ListenHandlers, VoiceError, VoiceErrorCode, VoiceProvider } from "./provider";
 
@@ -19,6 +20,13 @@ export type FakeVoiceProvider = VoiceProvider & {
   transcribe(text: string): void;
   /** While listening, emits `onError({ code })`; a no-op otherwise. */
   fail(code: VoiceErrorCode): void;
+  /**
+   * While listening, ends the turn the way a real provider's endpointing does: `onInterim` and
+   * `onFinal` with `text` (skipped for "", which is a silent turn), then `onEnd`. A no-op otherwise.
+   */
+  finishUtterance(text: string): void;
+  /** True between `startListening` and the turn's end or abort. */
+  isListening(): boolean;
   /** Resolves the utterance `speak` is holding under `holdUtterances`. */
   finishSpeaking(): void;
 };
@@ -28,6 +36,8 @@ export type ChloeVoiceWindowHook = {
   spoken(): string[];
   transcribe(text: string): void;
   fail(code: VoiceErrorCode): void;
+  finishUtterance(text: string): void;
+  isListening(): boolean;
   finishSpeaking(): void;
 };
 
@@ -91,6 +101,18 @@ export function createFakeVoiceProvider(options: FakeVoiceProviderOptions = {}):
     handlers.onError(error);
   }
 
+  function finishUtterance(text: string): void {
+    if (!listening || !handlers) return;
+    const active = handlers;
+    if (text) {
+      active.onInterim(text);
+      active.onFinal(text);
+    }
+    listening = false;
+    handlers = null;
+    active.onEnd();
+  }
+
   return {
     kind: "fake",
     supported: true,
@@ -102,6 +124,8 @@ export function createFakeVoiceProvider(options: FakeVoiceProviderOptions = {}):
     abortListening,
     transcribe,
     fail,
+    finishUtterance,
+    isListening: () => listening,
     finishSpeaking,
   };
 }
@@ -112,6 +136,8 @@ export function installWindowHook(provider: FakeVoiceProvider, win: Window = win
     spoken: () => [...provider.spoken],
     transcribe: (text) => provider.transcribe(text),
     fail: (code) => provider.fail(code),
+    finishUtterance: (text) => provider.finishUtterance(text),
+    isListening: () => provider.isListening(),
     finishSpeaking: () => provider.finishSpeaking(),
   };
   (win as Window & { __chloeVoice?: ChloeVoiceWindowHook }).__chloeVoice = hook;

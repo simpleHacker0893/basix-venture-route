@@ -6,6 +6,8 @@
 import { expect, test } from "@playwright/test";
 
 const OFFLINE_BASE = "http://localhost:4174";
+// The engine port playwright.config.ts starts (E2E_ENGINE_PORT, default 8000).
+const ENGINE_PORT = process.env.E2E_ENGINE_PORT ?? "8000";
 
 const EXPECTED: [string, string][] = [
   ["Health pilot", "Feasible"],
@@ -19,7 +21,7 @@ test("offline demonstration mode routes the five scenarios from the snapshot wit
   await page.goto(`${OFFLINE_BASE}/route`);
   await expect(page.getByRole("status", { name: "Offline demonstration mode" })).toBeVisible();
   // Block every network request except the preview's own assets: the engine must not be needed.
-  await context.route(/^http:\/\/localhost:8000\//, (route) => route.abort());
+  await context.route(new RegExp(`^http://localhost:${ENGINE_PORT}/`), (route) => route.abort());
 
   for (const [label, status] of EXPECTED) {
     await page.goto(`${OFFLINE_BASE}/route`);

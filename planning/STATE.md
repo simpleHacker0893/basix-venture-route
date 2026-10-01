@@ -42,6 +42,8 @@
 2. A new spec for demo people and repository access is being brainstormed; it lands before or beside Part B.
 3. Operator: the real-key Chrome voice run (006 Should 1); Neon `dev` migrate to `0003`; #19 stays optional.
 4. Follow-ups from the 005a close-out review (deferred test minors) are listed in `review-005a.md`.
+5. OpenRouter voice and LLM provider (spec #123, tickets #124 to #127, D-53) is on `claude/modest-turing-xg6lyy`: `LLM_PROVIDER=openrouter`, the public `/api/voice/transcribe` and `/api/voice/speak` proxy, and Chloe's `VITE_VOICE_PROVIDER=openrouter` provider with a consent caption naming OpenRouter; Web Speech and Anthropic stay the defaults.
+6. Chloe's voice mode (#128, D-55) on the same branch: one tap, hands-free half-duplex turns, tap-to-interrupt (voice barge-in on OpenRouter), Mute, End / Escape, VAD-gated OpenRouter transcription and a 2-minute idle auto-mute; push-to-talk is gone.
 
 ## Scope floor (must be on screen on 1 Oct)
 Chat/form intake · brief review chips · route result with gaps first · Why this route? drawer · five demo scenarios · Demo data labels · one launch command.

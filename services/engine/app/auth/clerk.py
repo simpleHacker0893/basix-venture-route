@@ -7,8 +7,9 @@
   the composition root; the body never says why, and nothing here can reach the 500 handler.
 - `current_user`: the bearer token → `CurrentUser(clerk_id, role, db_user)`. `role` comes from the
   `metadata` claim the Operator adds to Clerk's session template; the users row may not exist yet
-  (webhook not arrived), and only `POST /api/me/role` accepts that state.
-- `require_role(...)`: 403 `{"detail": "role <r> required"}`; applied at router level.
+  (webhook not arrived); with no role claim, only `POST /api/me/role` accepts that state.
+- `require_role(...)`: 403 `{"detail": "role <r> required"}`; applied at router level. An allowed
+  claim role without a users row creates the row from the claim (D-56).
 """
 
 from __future__ import annotations
@@ -23,6 +24,7 @@ import httpx
 import jwt
 from fastapi import Depends, HTTPException, Request
 from jwt import PyJWK
+from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlmodel import select
 from sqlmodel.ext.asyncio.session import AsyncSession
 
@@ -30,6 +32,10 @@ from app.db.session import get_session
 from app.marketplace.models import USER_ROLES, User
 
 INVALID_SESSION = "invalid session"
+# A row made before the webhook arrives; the webhook overwrites the email when it does.
+PENDING_EMAIL_DOMAIN = "pending.clerk.invalid"
+# The roles a user picks for themselves. Admin comes only from ADMIN_EMAILS via the webhook.
+SELF_CHOSEN_ROLES = ("builder", "founder")
 LEEWAY_SECONDS = 30
 JWKS_TIMEOUT_SECONDS = 5.0
 # A miss refetches the JWKS at most this often, so a stream of tokens with bogus key ids
@@ -179,13 +185,33 @@ async def current_user(
     return CurrentUser(clerk_id=claims.clerk_id, role=claims.role, db_user=db_user)
 
 
+async def _row_from_claim(session: AsyncSession, clerk_id: str, role: str) -> User:
+    """The users row for a claim role this database has never seen (D-56): the webhook did not
+    arrive, or the engine points at a fresh branch. The role is server-written Clerk
+    publicMetadata, the same trust the webhook gives it. The dashboard fires its requests in
+    parallel, so a racing insert is skipped and the winner's row is read back."""
+    row = User(clerk_id=clerk_id, email=f"{clerk_id}@{PENDING_EMAIL_DOMAIN}", role=role)
+    await session.exec(pg_insert(User).values(**row.model_dump()).on_conflict_do_nothing())
+    await session.commit()
+    return (await session.exec(select(User).where(User.clerk_id == clerk_id))).one()
+
+
 def require_role(*roles: str) -> Callable[..., Awaitable[CurrentUser]]:
-    """Dependency: a verified session whose users row exists and whose claim role is allowed."""
+    """Dependency: a verified session whose claim role is allowed; its users row is created from
+    the claim when missing (D-56)."""
     wanted = " or ".join(roles)
 
-    async def _require(user: Annotated[CurrentUser, Depends(current_user)]) -> CurrentUser:
-        if user.db_user is None or user.role is None or user.role not in roles:
+    async def _require(
+        user: Annotated[CurrentUser, Depends(current_user)],
+        session: Annotated[AsyncSession, Depends(get_session)],
+    ) -> CurrentUser:
+        if user.role is None or user.role not in roles:
             raise HTTPException(status_code=403, detail=f"role {wanted} required")
+        if user.db_user is None:
+            if user.role not in SELF_CHOSEN_ROLES:
+                raise HTTPException(status_code=403, detail=f"role {wanted} required")
+            db_user = await _row_from_claim(session, user.clerk_id, user.role)
+            return CurrentUser(clerk_id=user.clerk_id, role=user.role, db_user=db_user)
         return user
 
     return _require

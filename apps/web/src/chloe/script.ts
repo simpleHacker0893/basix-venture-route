@@ -11,11 +11,14 @@ import { FIELD_LABELS, MODE_LABELS, SKILL_LABELS, VERTICAL_LABELS } from "../lib
 import { dateRange, STATUS_LABEL, usd } from "../lib/format";
 import { formatNairobiSpoken } from "../lib/nairobi";
 import { splitFieldMessages } from "../lib/validationError";
-import type { VoiceErrorCode } from "../voice/provider";
+import type { VoiceError, VoiceErrorCode, VoiceProvider } from "../voice/provider";
 
 export const GREETING =
-  "Hi, I'm Chloe, Venture Route's assistant. Hold the mic, tell me about your MVP, and let go " +
-  "when you're done. I'll ask for anything that's missing.";
+  "Hi, I'm Chloe, Venture Route's assistant. Tell me about your MVP, out loud or by typing, " +
+  "and I'll ask for anything that's missing.";
+
+/** Voice mode muted itself after two minutes without speech (D-55). */
+export const VOICE_IDLE_MUTED = "I've paused the mic for now. Tap Unmute when you're ready to carry on.";
 
 function joinWithAnd(items: readonly string[]): string {
   if (items.length === 0) return "";
@@ -127,7 +130,7 @@ export function validationSpoken(message: string): string {
 }
 
 export const MIC_ERRORS: Record<VoiceErrorCode, string> = {
-  "no-speech": "I didn't catch that. Hold the mic and try again.",
+  "no-speech": "I didn't catch that. Try again.",
   "not-allowed": "Microphone access is blocked. Allow it in your browser's site settings.",
   network: "Speech recognition needs a network connection.",
   "audio-capture": "I can't find a microphone.",
@@ -135,9 +138,25 @@ export const MIC_ERRORS: Record<VoiceErrorCode, string> = {
   unknown: "Let's try that again.",
 };
 
+/**
+ * The line Chloe shows and speaks for a recogniser error: the provider's own message when it set
+ * one (the OpenRouter provider's "voice service is busy", I2), else the generic line for the code.
+ */
+export function micErrorLine(code: VoiceErrorCode, error: VoiceError | null): string {
+  return error !== null && error.code === code && error.message ? error.message : MIC_ERRORS[code];
+}
+
 export const UNSUPPORTED_CAPTION = "Voice needs Chrome or Edge.";
 export const CONSENT_CAPTION =
   "Voice uses your browser's speech service: Chrome sends your audio to Google for transcription.";
+export const OPENROUTER_CONSENT_CAPTION =
+  "Voice sends your recording and Chloe's replies to OpenRouter for transcription and speech; nothing is stored.";
+
+/** The privacy notice for the provider in use (D-53): OpenRouter names itself; web and fake keep
+ * the browser-speech caption. */
+export function consentCaption(kind: VoiceProvider["kind"] | undefined): string {
+  return kind === "openrouter" ? OPENROUTER_CONSENT_CAPTION : CONSENT_CAPTION;
+}
 
 /**
  * Rewrites display text into what should be spoken (requirements.md §Business rules): the

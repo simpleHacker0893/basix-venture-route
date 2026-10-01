@@ -1,28 +1,29 @@
-"""OpenRouterAdapter: the LlmAdapter for LLM_PROVIDER=openrouter, behind the same protocol.
+"""OpenRouterAdapter: the second LlmAdapter (D-53), selected by `LLM_PROVIDER=openrouter`.
 
-OpenRouter exposes an OpenAI-compatible chat-completions API over plain HTTPS, so this adapter
-uses `httpx` (already an engine dependency) rather than adding an SDK. It keeps the Anthropic
-adapter's boundary exactly: the same prompts with the verbatim DOMAIN.md system instruction,
-structured output for intake and résumé skills, and the summary call receives the structured
-route with every reasoning path's raw `facts` removed, so no graph atom leaves the process
-(PRD §5.7). Any HTTP error, error body, truncated or filtered reply, or unparsable output raises
-`LlmUnavailable`; the orchestrator then behaves like NullAdapter.
+Every call is `POST /chat/completions` on the OpenRouter API through one `httpx.Client` with a
+bearer key and a 20 s timeout. Intake calls (`extract_brief`, `suggest_skills`) use the intake
+model with reasoning off and a strict `json_schema` response format, and the reply is validated
+against the same Pydantic model. `explain_route` uses the explain model with reasoning on and
+receives the route with every reasoning path's raw `facts` removed (PRD §5.7).
 
-The key is read from settings (`OPENROUTER_API_KEY` in .env, D-26) and nowhere else. Models are
-OpenRouter slugs from settings; the defaults are the Claude models D-06 names. Structured-output
-requests set `provider.require_parameters` so OpenRouter routes them only to providers that honour
-the JSON schema, and the reply is still validated here with Pydantic.
+The prompts, `SuggestedSkills` and `FACTS_EXCLUDED` are the Anthropic adapter's, imported rather
+than copied, so both providers stay on one LLM boundary. The key and models come from settings
+(`.env`, D-26) and nowhere else.
 
-Résumé skill suggestions (D-50) use their own model and a short, single-attempt call. The résumé
-text is personal data: every error raised from `suggest_skills` is re-raised `from None` with a
-fixed message so no provider body (which may quote the prompt) is chained onto it.
+Intake calls also send `provider.require_parameters`, so OpenRouter routes only to providers that
+honour the strict schema; the explain call is capped at `EXPLAIN_MAX_TOKENS`.
+
+Every failure (transport error, timeout, non-2xx status, a `length`, `content_filter` or `error`
+finish, an empty or unparsable body, a schema error) raises `LlmUnavailable` with a fixed message
+`from None`, outside any `except` block, so neither the input (a résumé is personal data, D-50)
+nor the upstream reply or error can reach a log line or the exception chain.
 """
 
 from __future__ import annotations
 
 import json
 import logging
-from typing import Any
+from typing import Any, TypeVar
 
 import httpx
 from pydantic import BaseModel, ValidationError
@@ -41,164 +42,193 @@ from app.models.route import VentureRoute
 
 log = logging.getLogger(__name__)
 
-BASE_URL = "https://openrouter.ai/api/v1"
-DEFAULT_MODEL = "anthropic/claude-opus-5"
-DEFAULT_SUGGEST_MODEL = "anthropic/claude-haiku-4.5"
-APP_TITLE = "Venture Route"
-MAX_TOKENS = 4096
 TIMEOUT_SECONDS = 20.0
-CONNECT_RETRIES = 2
-SUGGEST_MAX_TOKENS = 1024
-SUGGEST_TIMEOUT_SECONDS = 10.0
+COMPLETIONS_PATH = "/chat/completions"
+# Finish reasons that mean the reply is cut short, withheld or failed mid-generation.
+INCOMPLETE_FINISH_REASONS = frozenset({"length", "content_filter", "error"})
+# Cap on the explain call's output (reasoning included), so a runaway model stays bounded.
+EXPLAIN_MAX_TOKENS = 4096
+
+ModelT = TypeVar("ModelT", bound=BaseModel)
+
+# Keywords that strict `json_schema` providers reject. Dropping them only loosens the wire schema;
+# `model_validate_json` still enforces every one of them locally.
+STRICT_UNSUPPORTED_KEYWORDS = frozenset(
+    {
+        "default",
+        "title",
+        "format",
+        "pattern",
+        "minLength",
+        "maxLength",
+        "minimum",
+        "maximum",
+        "exclusiveMinimum",
+        "exclusiveMaximum",
+        "multipleOf",
+        "minItems",
+        "maxItems",
+        "uniqueItems",
+        "minProperties",
+        "maxProperties",
+    }
+)
+# Keywords whose value maps names to subschemas; the names are data, never keywords to drop.
+_SUBSCHEMA_MAPS = ("properties", "$defs")
+# Keywords whose value is one subschema or a list of subschemas.
+_SUBSCHEMA_LISTS = ("anyOf", "oneOf", "allOf", "prefixItems")
+_SUBSCHEMA_SINGLE = ("items", "not")
+
+
+def strict_json_schema(schema: dict[str, Any]) -> dict[str, Any]:
+    """A copy of a Pydantic JSON schema that OpenAI-style strict mode accepts.
+
+    Every object lists all its properties in `required` and forbids additional properties;
+    optional fields stay nullable through their `anyOf [..., {"type": "null"}]`, so an all-null
+    reply still validates. Unsupported keywords (`default`, `title`, `format`, length and range
+    bounds) are dropped, recursively through `properties`, `$defs`, `anyOf` and `items`.
+    """
+    out: dict[str, Any] = {}
+    for key, value in schema.items():
+        if key in STRICT_UNSUPPORTED_KEYWORDS:
+            continue
+        if key in _SUBSCHEMA_MAPS and isinstance(value, dict):
+            out[key] = {name: strict_json_schema(sub) for name, sub in value.items()}
+        elif key in _SUBSCHEMA_LISTS and isinstance(value, list):
+            out[key] = [strict_json_schema(sub) for sub in value]
+        elif key in _SUBSCHEMA_SINGLE and isinstance(value, dict):
+            out[key] = strict_json_schema(value)
+        else:
+            out[key] = value
+    if out.get("type") == "object" or "properties" in out:
+        out["required"] = list(out.get("properties", {}))
+        out["additionalProperties"] = False
+    return out
 
 
 class OpenRouterAdapter:
     name = "openrouter"
 
-    # Reasoning-path `facts` are raw graph atoms; they never reach the model.
-    FACTS_EXCLUDED = AnthropicAdapter.FACTS_EXCLUDED
-
-    def __init__(
-        self,
-        client: httpx.Client,
-        model: str = DEFAULT_MODEL,
-        suggest_model: str = DEFAULT_SUGGEST_MODEL,
-    ) -> None:
+    def __init__(self, client: httpx.Client, intake_model: str, explain_model: str) -> None:
         self.client = client
-        self.model = model
-        self.suggest_model = suggest_model
+        self.intake_model = intake_model
+        self.explain_model = explain_model
 
     @classmethod
     def from_settings(cls, settings: Settings) -> OpenRouterAdapter:
-        if not settings.openrouter_api_key:
-            raise LlmUnavailable("OPENROUTER_API_KEY is not set")
+        key = settings.openrouter_api_key
+        intake = settings.openrouter_intake_model
+        explain = settings.openrouter_explain_model
+        if not key or not intake or not explain:
+            raise LlmUnavailable("OpenRouter key or models are not set")
         client = httpx.Client(
-            base_url=BASE_URL,
-            headers={
-                "Authorization": f"Bearer {settings.openrouter_api_key}",
-                # Optional attribution header; names the app on openrouter.ai.
-                "X-OpenRouter-Title": APP_TITLE,
-            },
+            base_url=settings.openrouter_base_url,
             timeout=TIMEOUT_SECONDS,
-            transport=httpx.HTTPTransport(retries=CONNECT_RETRIES),
+            headers={"Authorization": f"Bearer {key}"},
         )
-        return cls(client, settings.openrouter_model, settings.openrouter_suggest_model)
+        return cls(client, intake_model=intake, explain_model=explain)
 
     def extract_brief(self, message: str, current: PartialBrief | None) -> ExtractedBrief:
-        # mode="json" renders dates as ISO strings for the context block.
+        # mode="json" renders dates as ISO strings, as in the Anthropic adapter.
         known = current.model_dump(mode="json", by_alias=True, exclude_none=True) if current else {}
         prompt = (
             f"Fields already confirmed (JSON, for context only):\n{json.dumps(known)}\n\n"
             f"Founder message:\n{message}"
         )
-        content = self._complete(
-            model=self.model,
-            system=EXTRACTION_INSTRUCTION,
-            user=prompt,
-            max_tokens=MAX_TOKENS,
-            schema=("extracted_brief", ExtractedBrief),
-        )
-        try:
-            return ExtractedBrief.model_validate_json(_strip_fence(content))
-        except ValidationError as exc:
-            raise LlmUnavailable("openrouter extraction returned an invalid brief") from exc
+        return self._structured(EXTRACTION_INSTRUCTION, prompt, ExtractedBrief, "extracted_brief")
 
     def explain_route(self, route: VentureRoute) -> str:
-        payload = route.model_dump(by_alias=True, exclude=self.FACTS_EXCLUDED)
-        return self._complete(
-            model=self.model,
-            system=EXPLANATION_INSTRUCTION,
-            user=json.dumps(payload, indent=2),
-            max_tokens=MAX_TOKENS,
+        payload = route.model_dump(by_alias=True, exclude=AnthropicAdapter.FACTS_EXCLUDED)
+        content = self._complete(
+            {
+                "model": self.explain_model,
+                "messages": _messages(EXPLANATION_INSTRUCTION, json.dumps(payload, indent=2)),
+                "reasoning": {"enabled": True},
+                "max_tokens": EXPLAIN_MAX_TOKENS,
+            }
         )
+        text = content.strip()
+        if not text:
+            raise LlmUnavailable("openrouter explanation was empty") from None
+        return text
 
     def suggest_skills(self, text: str) -> list[str]:
-        # `from None` everywhere: the résumé must never reach a log line or a traceback.
-        try:
-            content = self._complete(
-                model=self.suggest_model,
-                system=SUGGEST_INSTRUCTION,
-                user=f"Résumé:\n{text}",
-                max_tokens=SUGGEST_MAX_TOKENS,
-                schema=("suggested_skills", SuggestedSkills),
-                timeout=SUGGEST_TIMEOUT_SECONDS,
-            )
-            parsed = SuggestedSkills.model_validate_json(_strip_fence(content))
-        except LlmUnavailable:
-            raise LlmUnavailable("openrouter suggestion failed") from None
-        except ValidationError:
-            raise LlmUnavailable("openrouter suggestion returned an invalid reply") from None
+        prompt = f"Résumé:\n{text}"
+        parsed = self._structured(SUGGEST_INSTRUCTION, prompt, SuggestedSkills, "suggested_skills")
         return parsed.skills
 
-    def _complete(
-        self,
-        *,
-        model: str,
-        system: str,
-        user: str,
-        max_tokens: int,
-        schema: tuple[str, type[BaseModel]] | None = None,
-        timeout: float | None = None,
-    ) -> str:
-        """One chat completion; returns the assistant text or raises LlmUnavailable."""
-        body: dict[str, Any] = {
-            "model": model,
-            "max_tokens": max_tokens,
-            "messages": [
-                {"role": "system", "content": system},
-                {"role": "user", "content": user},
-            ],
-        }
-        if schema is not None:
-            name, shape = schema
-            body["response_format"] = {
-                "type": "json_schema",
-                "json_schema": {
-                    "name": name,
-                    "strict": False,
-                    "schema": shape.model_json_schema(by_alias=True),
+    def _structured(self, system: str, user: str, model: type[ModelT], schema_name: str) -> ModelT:
+        content = self._complete(
+            {
+                "model": self.intake_model,
+                "messages": _messages(system, user),
+                "reasoning": {"enabled": False},
+                # Only providers that support every parameter, so the strict schema is honoured.
+                "provider": {"require_parameters": True},
+                "response_format": {
+                    "type": "json_schema",
+                    "json_schema": {
+                        "name": schema_name,
+                        "strict": True,
+                        "schema": strict_json_schema(model.model_json_schema()),
+                    },
                 },
             }
-            body["provider"] = {"require_parameters": True}
+        )
+        parsed: ModelT | None
         try:
-            response = self.client.post(
-                "/chat/completions",
-                json=body,
-                timeout=timeout if timeout is not None else httpx.USE_CLIENT_DEFAULT,
-            )
-        except httpx.HTTPError as exc:
-            raise LlmUnavailable(f"openrouter request failed: {type(exc).__name__}") from None
-        if response.status_code != httpx.codes.OK:
-            raise LlmUnavailable(f"openrouter answered HTTP {response.status_code}")
+            parsed = model.model_validate_json(content)
+        except ValidationError:  # invalid JSON or a schema error; never chained, never logged
+            parsed = None
+        if parsed is None:
+            log.warning("openrouter returned a reply that does not match %s", model.__name__)
+            raise LlmUnavailable("openrouter returned an invalid reply") from None
+        return parsed
+
+    def _complete(self, body: dict[str, Any]) -> str:
+        """The reply's message content, or `LlmUnavailable` with a fixed message."""
+        response: httpx.Response | None
         try:
-            data = response.json()
-        except ValueError:
-            raise LlmUnavailable("openrouter answered a non-JSON body") from None
-        if not isinstance(data, dict) or "error" in data:
-            raise LlmUnavailable("openrouter answered an error")
-        choices = data.get("choices")
-        if not isinstance(choices, list) or not choices or not isinstance(choices[0], dict):
-            raise LlmUnavailable("openrouter answered no choices")
-        choice = choices[0]
-        finish = choice.get("finish_reason")
-        if choice.get("error") or finish == "error":
-            raise LlmUnavailable("openrouter provider errored")
-        if finish == "length":
-            raise LlmUnavailable("openrouter reply was truncated")
-        if finish == "content_filter":
-            raise LlmUnavailable("openrouter declined the request")
-        message = choice.get("message")
-        content = message.get("content") if isinstance(message, dict) else None
-        if not isinstance(content, str) or not content.strip():
-            raise LlmUnavailable("openrouter reply was empty")
-        return content.strip()
+            response = self.client.post(COMPLETIONS_PATH, json=body)
+        except httpx.HTTPError:
+            response = None
+        if response is None:
+            log.warning("openrouter request failed before a reply")
+            raise LlmUnavailable("openrouter request failed") from None
+        if not response.is_success:
+            log.warning("openrouter answered HTTP %d", response.status_code)
+            raise LlmUnavailable("openrouter answered an error status") from None
+        content, finish_reason = _first_choice(response)
+        if finish_reason in INCOMPLETE_FINISH_REASONS:
+            log.warning("openrouter reply was incomplete (finish_reason=%s)", finish_reason)
+            raise LlmUnavailable("openrouter reply was incomplete") from None
+        if content is None:
+            log.warning("openrouter reply had no message content")
+            raise LlmUnavailable("openrouter reply was empty") from None
+        return content
 
 
-def _strip_fence(content: str) -> str:
-    """Some models wrap JSON in a Markdown code fence even when asked for a schema."""
-    text = content.strip()
-    if text.startswith("```"):
-        text = text.split("\n", 1)[1] if "\n" in text else ""
-        if text.rstrip().endswith("```"):
-            text = text.rstrip()[:-3]
-    return text.strip()
+def _messages(system: str, user: str) -> list[dict[str, str]]:
+    return [{"role": "system", "content": system}, {"role": "user", "content": user}]
+
+
+def _first_choice(response: httpx.Response) -> tuple[str | None, str | None]:
+    """`choices[0].message.content` and `choices[0].finish_reason`, each None when absent.
+
+    Never raises: a body of the wrong shape reads as no content.
+    """
+    try:
+        data = response.json()
+    except ValueError:
+        return None, None
+    choices = data.get("choices") if isinstance(data, dict) else None
+    if not isinstance(choices, list) or not choices or not isinstance(choices[0], dict):
+        return None, None
+    choice = choices[0]
+    finish = choice.get("finish_reason")
+    message = choice.get("message")
+    content = message.get("content") if isinstance(message, dict) else None
+    return (
+        content if isinstance(content, str) else None,
+        finish if isinstance(finish, str) else None,
+    )

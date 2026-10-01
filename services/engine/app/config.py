@@ -5,7 +5,7 @@ from functools import lru_cache
 from pathlib import Path
 from typing import Literal
 
-from pydantic import field_validator
+from pydantic import Field, ValidationInfo, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 PACKAGE_ROOT = Path(__file__).resolve().parent.parent
@@ -14,8 +14,12 @@ REPO_ROOT = PACKAGE_ROOT.parent.parent
 # The value shipped in .env.example. A verbatim copy of the example must behave as "no key"
 # (Sprint 002 #22, review.md finding 5) so no doomed Anthropic call is ever made.
 PLACEHOLDER_ANTHROPIC_API_KEY = "sk-ant-replace-me"
-# The same rule for the OpenRouter key (LLM_PROVIDER=openrouter).
+# The OpenRouter key shipped in .env.example (D-53); a verbatim copy means "no key" too.
 PLACEHOLDER_OPENROUTER_API_KEY = "sk-or-replace-me"
+PLACEHOLDER_API_KEYS = {
+    "anthropic_api_key": PLACEHOLDER_ANTHROPIC_API_KEY,
+    "openrouter_api_key": PLACEHOLDER_OPENROUTER_API_KEY,
+}
 
 DEFAULT_CORS_ORIGINS = "http://localhost:5173,http://localhost:4173"
 
@@ -46,15 +50,27 @@ class Settings(BaseSettings):
     engine_port: int = 8000
     # Directory holding facts.metta, rules.metta and briefs.json.
     seed_dir: Path = PACKAGE_ROOT / "seed"
-    # LLM adapter (D-06, D-26). Each provider reads its own key from .env only; the selected
-    # provider's key unset means NullAdapter.
+    # LLM adapter (D-06, D-26). The key arrives through .env only; unset means NullAdapter.
     llm_provider: Literal["anthropic", "openrouter", "null"] = "anthropic"
     anthropic_api_key: str | None = None
-    # OpenRouter (OpenAI-compatible chat completions). Model ids are OpenRouter slugs; the
-    # defaults are the Claude models D-06 names, so switching provider alone keeps the models.
+    # OpenRouter (D-53): each provider checks only its own key. `openrouter` also needs both
+    # model slugs; a missing key or model selects NullAdapter.
     openrouter_api_key: str | None = None
-    openrouter_model: str = "anthropic/claude-opus-5"
-    openrouter_suggest_model: str = "anthropic/claude-haiku-4.5"
+    openrouter_base_url: str = "https://openrouter.ai/api/v1"
+    openrouter_intake_model: str | None = None
+    openrouter_explain_model: str | None = None
+    # Voice (D-53): the public proxy /api/voice/* reuses the OpenRouter key and base URL above.
+    # No key, or no model (or voice) for an endpoint, means that endpoint answers 503.
+    voice_stt_model: str | None = None
+    voice_tts_model: str | None = None
+    voice_tts_voice: str | None = None
+    voice_tts_instructions: str | None = None
+    # Per client IP, shared by both voice endpoints, over a sliding 60-second window.
+    voice_rate_limit_per_minute: int = 60
+    # How many trusted proxies sit in front of the engine. 0 keys the limit on the TCP peer; N
+    # keys it on the Nth X-Forwarded-For entry from the right (the one our proxy appended), so a
+    # client-written entry is never trusted. 1 behind Railway or any single proxy.
+    voice_trusted_proxy_hops: int = Field(default=0, ge=0)
     # Browser origins allowed to call the engine, comma-separated (D-30). Credentials stay off
     # in Sprint 002; Sprint 005 adds the Vercel origin on the host.
     cors_origins: str = DEFAULT_CORS_ORIGINS
@@ -75,9 +91,24 @@ class Settings(BaseSettings):
 
     @field_validator("anthropic_api_key", "openrouter_api_key", mode="before")
     @classmethod
-    def _placeholder_means_unset(cls, value: object) -> object:
-        placeholders = ("", PLACEHOLDER_ANTHROPIC_API_KEY, PLACEHOLDER_OPENROUTER_API_KEY)
-        if isinstance(value, str) and value.strip() in placeholders:
+    def _placeholder_means_unset(cls, value: object, info: ValidationInfo) -> object:
+        placeholder = PLACEHOLDER_API_KEYS[info.field_name or ""]
+        if isinstance(value, str) and value.strip() in ("", placeholder):
+            return None
+        return value
+
+    @field_validator(
+        "openrouter_intake_model",
+        "openrouter_explain_model",
+        "voice_stt_model",
+        "voice_tts_model",
+        "voice_tts_voice",
+        "voice_tts_instructions",
+        mode="before",
+    )
+    @classmethod
+    def _blank_model_means_unset(cls, value: object) -> object:
+        if isinstance(value, str) and not value.strip():
             return None
         return value
 

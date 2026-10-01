@@ -12,7 +12,7 @@ from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.exceptions import RequestValidationError
 from sqlmodel.ext.asyncio.session import AsyncSession
 
-from app.auth.clerk import CurrentUser, current_user, require_role
+from app.auth.clerk import PENDING_EMAIL_DOMAIN, CurrentUser, current_user, require_role
 from app.auth.webhook import ClerkAdmin
 from app.db.session import get_session
 from app.engine.metta_engine import MettaRouteEngine
@@ -46,7 +46,6 @@ from app.marketplace.verification import profile_skills
 router = APIRouter(prefix="/api/me")
 builder_router = APIRouter(dependencies=[Depends(require_role("builder"))])
 
-PENDING_EMAIL_DOMAIN = "pending.clerk.invalid"
 CANONICAL_YOUTUBE_WATCH = "https://www.youtube.com/watch?v="
 
 

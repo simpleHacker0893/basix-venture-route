@@ -69,7 +69,7 @@ function createSpeechStub() {
 function Probe() {
   const voice = useVoice();
   const [transcript, setTranscript] = useState("");
-  // Distinguishes "releaseMic() resolved with an empty transcript" from "still pending" — the
+  // Distinguishes "listen() resolved with an empty transcript" from "still pending" — the
   // transcript div alone cannot, since both render as empty text (fix round 1, Important #3).
   const [released, setReleased] = useState(false);
   return (
@@ -87,18 +87,18 @@ function Probe() {
       <button onClick={voice.disable}>disable</button>
       <button onClick={() => void voice.say("hi there")}>say</button>
       <button onClick={voice.stopSpeaking}>stop</button>
-      <button onClick={voice.pressMic}>press</button>
       <button
         onClick={() => {
           setReleased(false);
-          void voice.releaseMic().then((text) => {
-            setTranscript(text);
+          void voice.listen().then((result) => {
+            setTranscript(result.transcript);
             setReleased(true);
           });
         }}
       >
-        release
+        press
       </button>
+      <button onClick={() => voice.provider?.stopListening()}>release</button>
       <button onClick={voice.markGreeted}>greet</button>
       <button onClick={voice.markAssistantOffline}>offline</button>
     </div>
@@ -261,7 +261,7 @@ describe("voice device layer", () => {
     expect(heard).toBe("said through the hook");
   });
 
-  it("VoiceSessionProvider drives press-to-talk, speaking, and errors over a fake provider", async () => {
+  it("VoiceSessionProvider drives a listening turn, speaking, and errors over a fake provider", async () => {
     const provider = createFakeVoiceProvider();
     const user = userEvent.setup();
     render(
@@ -354,7 +354,7 @@ describe("voice device layer", () => {
     expect(screen.getByTestId("enabled")).toHaveTextContent("false");
   });
 
-  it("releaseMic() resolves immediately with \"\" when nothing is listening, instead of hanging (fix round 1, Important #3)", async () => {
+  it("a listen() cut short by disable resolves with \"\" instead of hanging (fix round 1, Important #3)", async () => {
     const provider = createFakeVoiceProvider();
     const user = userEvent.setup();
     render(
@@ -363,16 +363,30 @@ describe("voice device layer", () => {
       </VoiceSessionProvider>,
     );
 
-    // Never pressed the mic.
-    await user.click(screen.getByRole("button", { name: "release" }));
-    expect(await screen.findByTestId("released")).toHaveTextContent("true");
-    expect(screen.getByTestId("transcript")).toHaveTextContent("");
-
-    // Pressed, then disabled mid-press (abortListening discards without an onEnd callback).
+    // Listening, then disabled mid-turn (abortListening discards without an onEnd callback).
+    await user.click(screen.getByRole("button", { name: "enable" }));
     await user.click(screen.getByRole("button", { name: "press" }));
     await user.click(screen.getByRole("button", { name: "disable" }));
-    await user.click(screen.getByRole("button", { name: "release" }));
     expect(await screen.findByTestId("released")).toHaveTextContent("true");
+    expect(screen.getByTestId("transcript")).toHaveTextContent("");
+  });
+
+  it("a provider that ends the turn on its own resolves listen() with no release (D-55)", async () => {
+    const provider = createFakeVoiceProvider();
+    const user = userEvent.setup();
+    render(
+      <VoiceSessionProvider voice={provider}>
+        <Probe />
+      </VoiceSessionProvider>,
+    );
+    await user.click(screen.getByRole("button", { name: "enable" }));
+    await user.click(screen.getByRole("button", { name: "press" }));
+    expect(provider.isListening()).toBe(true);
+
+    act(() => provider.finishUtterance("tell me about the route"));
+    expect(await screen.findByTestId("transcript")).toHaveTextContent("tell me about the route");
+    expect(screen.getByTestId("status")).toHaveTextContent("idle");
+    expect(provider.isListening()).toBe(false);
   });
 
   it("renderApp wires an injected voice provider through App without crashing the intake screen", async () => {

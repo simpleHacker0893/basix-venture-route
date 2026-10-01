@@ -8,6 +8,7 @@ from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 from datetime import UTC, datetime
 
+import httpx
 from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
@@ -28,6 +29,8 @@ from app.api.requests import router as requests_router
 from app.api.route import router as route_router
 from app.api.showcase import router as showcase_router
 from app.api.skills import router as skills_router
+from app.api.voice import UPSTREAM_TIMEOUT, SlidingWindowLimiter
+from app.api.voice import router as voice_router
 from app.api.webhooks import router as webhooks_router
 from app.auth.clerk import JwksCache, fetch_jwks_over_http
 from app.auth.webhook import ClerkAdmin, HttpClerkAdmin, NullClerkAdmin
@@ -55,6 +58,7 @@ def create_app(
     clerk_admin: ClerkAdmin | None = None,
     clock: Clock | None = None,
     llm_adapter: LlmAdapter | None = None,
+    voice_transport: httpx.AsyncBaseTransport | None = None,
 ) -> FastAPI:
     resolved = settings or get_settings()
 
@@ -70,6 +74,23 @@ def create_app(
         app.state.llm_adapter = llm_adapter or select_adapter(resolved)
         # Wall clock unless a test injects a fixed instant (upcoming bookings, #66).
         app.state.clock = clock or (lambda: datetime.now(UTC))
+
+        # Voice proxy (D-53, #126): one client to OpenRouter for the app's life; tests inject a
+        # MockTransport. The key header is sent only when a key is set; without one both voice
+        # endpoints answer 503 before any call. The per-IP limiter reads the same clock.
+        app.state.voice_http = httpx.AsyncClient(
+            base_url=resolved.openrouter_base_url,
+            timeout=UPSTREAM_TIMEOUT,
+            transport=voice_transport,
+            headers=(
+                {"Authorization": f"Bearer {resolved.openrouter_api_key}"}
+                if resolved.openrouter_api_key
+                else None
+            ),
+        )
+        app.state.voice_limiter = SlidingWindowLimiter(
+            resolved.voice_rate_limit_per_minute, now=lambda: app.state.clock().timestamp()
+        )
 
         # Clerk (D-03): keys fetched once; a placeholder CLERK_JWKS_URL means an empty cache and
         # every gated route answers 401 (D-26).
@@ -110,6 +131,7 @@ def create_app(
         try:
             yield
         finally:
+            await app.state.voice_http.aclose()
             if store_engine is not None:
                 await store_engine.dispose()
 
@@ -137,6 +159,7 @@ def create_app(
     app.include_router(dashboard_router)
     app.include_router(admin_router)
     app.include_router(webhooks_router)
+    app.include_router(voice_router)
 
     @app.exception_handler(EngineError)
     async def engine_error_handler(_: Request, exc: EngineError) -> JSONResponse:
