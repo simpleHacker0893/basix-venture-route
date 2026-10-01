@@ -31,7 +31,8 @@ export function ProfilePage() {
   const [loaded, setLoaded] = useState<Loaded | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
   // A message handed over by the screen that sent the builder here (e.g. a link that did not save).
-  const notice = (useLocation().state as { notice?: string } | null)?.notice ?? null;
+  const location = useLocation();
+  const notice = (location.state as { notice?: string } | null)?.notice ?? null;
 
   useEffect(() => {
     let cancelled = false;
@@ -50,6 +51,12 @@ export function ProfilePage() {
       cancelled = true;
     };
   }, [api]);
+
+  // The router scrolls to a hash before this async content exists, so finish the job once it does.
+  const ready = loaded !== null;
+  useEffect(() => {
+    if (ready && location.hash) document.getElementById(location.hash.slice(1))?.scrollIntoView({ block: "start" });
+  }, [ready, location.hash]);
 
   const profile = loaded?.profile ?? null;
   const pending = profile !== null && profile.accountStatus !== "confirmed";

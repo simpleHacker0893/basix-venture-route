@@ -28,6 +28,8 @@ export function ProjectsCard({ projects, hasProfile, onSaveShowcase }: ProjectsC
   const [expanded, setExpanded] = useState<string | null>(null);
   return (
     <Card
+      id="showcase"
+      className="scroll-mt-24"
       title="Showcase projects"
       eyebrow="Proof"
       lead="A confirmed completed project demonstrates its skills (verified-for-skill, evidence project)."
@@ -40,6 +42,9 @@ export function ProjectsCard({ projects, hasProfile, onSaveShowcase }: ProjectsC
         </Link>
       }
     >
+      <Link to="/showcase" className="w-fit text-[13px] text-ink-2 underline-offset-4 hover:text-accent-green hover:underline">
+        View public Showcase ↗
+      </Link>
       {!hasProfile ? <p className={helpClass}>Save your profile first, then add projects.</p> : null}
       {projects.length > 0 ? (
         <ul aria-label="Projects" className="flex flex-col divide-y divide-border">
