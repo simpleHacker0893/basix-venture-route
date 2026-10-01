@@ -1,0 +1,75 @@
+# Render Blueprint for the Venture Route engine (D-57, #137). The Operator applies it once with
+# New -> Blueprint; every push to master then redeploys. Secret keys are `sync: false`: Render
+# prompts for them in the dashboard and no value is ever committed (D-26). The deploy-config
+# drift test (services/engine/tests/test_deploy_config.py) checks this file against the engine
+# Settings class, so add a key here whenever a setting is added.
+#
+# Free-plan fallback: Render's free web services do not run pre-deploy commands. To use
+# `plan: free`, delete the `preDeployCommand` line and run the migration once by hand from a
+# machine with the repo checked out: set ALEMBIC_DATABASE_URL to the Neon direct (unpooled) URL
+# and run `alembic upgrade head` in services/engine. Repeat it after any new migration.
+services:
+  - type: web
+    name: venture-route-engine
+    runtime: docker
+    repo: https://github.com/simpleHacker0893/basix-venture-route
+    branch: master
+    region: ohio # next to Neon us-east-2
+    plan: starter
+    dockerfilePath: ./services/engine/Dockerfile
+    dockerContext: ./services/engine
+    # Alembic resolves ALEMBIC_DATABASE_URL, then DATABASE_URL_DIRECT, then DATABASE_URL.
+    preDeployCommand: alembic upgrade head
+    healthCheckPath: /health
+    autoDeploy: true
+    # One instance: the engine holds the MeTTa atomspace in process (D-15).
+    numInstances: 1
+    envVars:
+      - key: PORT
+        value: "8000"
+      # Routing core.
+      - key: DEMO_TODAY
+        value: "2026-09-22"
+      - key: MIN_OVERLAP_DAYS
+        value: "2"
+      - key: ENGINE_DEV_QUERY
+        value: "0"
+      # LLM adapter (D-06, D-53).
+      - key: LLM_PROVIDER
+        value: anthropic
+      - key: OPENROUTER_INTAKE_MODEL
+        value: nvidia/nemotron-3.5-lightning
+      - key: OPENROUTER_EXPLAIN_MODEL
+        value: openai/gpt-6-luna
+      # Voice proxy (D-53). One proxy (Render's) sits in front of the engine (R3, D-57).
+      - key: VOICE_STT_MODEL
+        value: openai/gpt-4o-mini-transcribe
+      - key: VOICE_TTS_MODEL
+        value: openai/gpt-4o-mini-tts-2025-12-15
+      - key: VOICE_TTS_VOICE
+        value: nova
+      - key: VOICE_TTS_INSTRUCTIONS
+        value: Warm, clear, unhurried British English.
+      - key: VOICE_RATE_LIMIT_PER_MINUTE
+        value: "60"
+      - key: VOICE_TRUSTED_PROXY_HOPS
+        value: "1"
+      # Prompted by Render, never committed.
+      - key: DATABASE_URL # Neon production, pooled, asyncpg form
+        sync: false
+      - key: DATABASE_URL_DIRECT # Neon production, direct, used by the pre-deploy migration
+        sync: false
+      - key: ANTHROPIC_API_KEY
+        sync: false
+      - key: OPENROUTER_API_KEY
+        sync: false
+      - key: CLERK_JWKS_URL
+        sync: false
+      - key: CLERK_SECRET_KEY
+        sync: false
+      - key: CLERK_WEBHOOK_SIGNING_SECRET
+        sync: false
+      - key: ADMIN_EMAILS
+        sync: false
+      - key: CORS_ORIGINS # the Vercel origin (D-30)
+        sync: false
