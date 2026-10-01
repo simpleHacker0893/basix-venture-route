@@ -3,7 +3,7 @@
  * skills demonstrated, completion date, licensable toggle, submit for confirmation. The project is
  * a pending row until a BASIX admin confirms it; only then is it projected as graph facts.
  */
-import { ProjectInput, type SkillId } from "@venture-route/contracts";
+import { ProjectInput, ShowcaseEdit, type SkillId } from "@venture-route/contracts";
 import { useState, type FormEvent } from "react";
 import { Link, useNavigate } from "react-router";
 
@@ -17,6 +17,9 @@ import { errorMessage, helpClass, inputClass, labelClass, pillClass } from "./fo
 import { Card, FieldError, Toggle } from "./StatusPill";
 
 const MAX_SKILLS = 5;
+const LINK_HELP = "Optional. Add a link so people can see your work. You can change it later in Edit showcase.";
+/** Shown on the profile when the project was created but its link could not be saved. */
+export const LINK_SAVE_FAILED = "Project saved. We couldn't save the link. Add it from Edit showcase.";
 
 const NEXT_STEPS: { step: string; body: string }[] = [
   { step: "Submitted", body: "Your project is stored as a pending row on your profile." },
@@ -32,6 +35,9 @@ export function AddProjectPage() {
   const [skillIds, setSkillIds] = useState<SkillId[]>([]);
   const [completedOn, setCompletedOn] = useState("");
   const [licensable, setLicensable] = useState(false);
+  const [liveUrl, setLiveUrl] = useState("");
+  const [demoUrl, setDemoUrl] = useState("");
+  const [showcased, setShowcased] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [busy, setBusy] = useState(false);
 
@@ -55,11 +61,34 @@ export function AddProjectPage() {
       setErrors(next);
       return;
     }
+    // The same schema and field rules as ShowcaseEditor, checked before anything is created.
+    const link = ShowcaseEdit.safeParse({
+      liveUrl: liveUrl.trim() || null,
+      demoUrl: demoUrl.trim() || null,
+      showcased,
+    });
+    if (!link.success) {
+      const next: Record<string, string> = {};
+      for (const issue of link.error.issues) {
+        const key = String(issue.path[0] ?? "form");
+        if (!next[key]) next[key] = issue.message;
+      }
+      setErrors(next);
+      return;
+    }
     setBusy(true);
     setErrors({});
     try {
-      await api.postProject(parsed.data);
-      navigate("/profile");
+      const created = await api.postProject(parsed.data);
+      let notice: string | undefined;
+      if (link.data.liveUrl !== null || link.data.demoUrl !== null) {
+        try {
+          await api.saveShowcase(created.id, link.data);
+        } catch {
+          notice = LINK_SAVE_FAILED;
+        }
+      }
+      navigate("/profile", { state: notice ? { notice } : undefined });
     } catch (cause) {
       if (cause instanceof ApiValidationError) {
         setErrors(Object.fromEntries(splitFieldMessages(cause.message, PROJECT_FIELDS, {}).map((m) => [m.field, m.text])));
@@ -216,6 +245,64 @@ export function AddProjectPage() {
             </span>
             <FieldError field="completedOn" errors={errors} />
           </div>
+
+          <fieldset className="flex flex-col gap-3">
+            <legend className={labelClass}>Links</legend>
+            <span id="project-links-help" className={helpClass}>
+              {LINK_HELP}
+            </span>
+            <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+              <div className="flex flex-col gap-1">
+                <label htmlFor="project-live-url" className={labelClass}>
+                  Project link
+                </label>
+                <input
+                  id="project-live-url"
+                  autoComplete="off"
+                  maxLength={500}
+                  placeholder="Live site or GitHub repo"
+                  value={liveUrl}
+                  aria-invalid={errors.liveUrl ? true : undefined}
+                  aria-describedby={describedBy("liveUrl") ?? "project-links-help"}
+                  onChange={(e) => {
+                    setLiveUrl(e.target.value);
+                    clearErrors();
+                  }}
+                  className={inputClass}
+                />
+                <FieldError field="liveUrl" errors={errors} />
+              </div>
+              <div className="flex flex-col gap-1">
+                <label htmlFor="project-demo-url" className={labelClass}>
+                  Demo link
+                </label>
+                <input
+                  id="project-demo-url"
+                  autoComplete="off"
+                  maxLength={500}
+                  value={demoUrl}
+                  aria-invalid={errors.demoUrl ? true : undefined}
+                  aria-describedby={describedBy("demoUrl") ?? "project-links-help"}
+                  onChange={(e) => {
+                    setDemoUrl(e.target.value);
+                    clearErrors();
+                  }}
+                  className={inputClass}
+                />
+                <FieldError field="demoUrl" errors={errors} />
+              </div>
+            </div>
+            <Toggle
+              id="project-showcased"
+              label="Show on Showcase"
+              checked={showcased}
+              onChange={(next) => {
+                setShowcased(next);
+                clearErrors();
+              }}
+              description="Needs a link. Submitted for public listing once an admin confirms it."
+            />
+          </fieldset>
 
           <div className="flex items-center justify-end gap-3">
             <Button type="button" variant="ghost" onClick={() => navigate("/profile")}>

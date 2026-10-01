@@ -6,6 +6,7 @@
  */
 import type { BuilderProfile, Credential, ShowcaseProject } from "@venture-route/contracts";
 import { useEffect, useState } from "react";
+import { useLocation } from "react-router";
 
 import { ApiNotFoundError } from "../../api/client";
 import { useMarketplaceApi } from "../../api/marketplaceContext";
@@ -29,6 +30,8 @@ export function ProfilePage() {
   const api = useMarketplaceApi();
   const [loaded, setLoaded] = useState<Loaded | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
+  // A message handed over by the screen that sent the builder here (e.g. a link that did not save).
+  const notice = (useLocation().state as { notice?: string } | null)?.notice ?? null;
 
   useEffect(() => {
     let cancelled = false;
@@ -83,6 +86,12 @@ export function ProfilePage() {
             confirms your account.
           </p>
         </section>
+      ) : null}
+
+      {notice ? (
+        <p role="status" className="rounded-card border border-amber-ink/40 bg-amber-fill/40 px-3 py-2 text-[13px] text-amber-ink">
+          {notice}
+        </p>
       ) : null}
 
       {loadError ? (

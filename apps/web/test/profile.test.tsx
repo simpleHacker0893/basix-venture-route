@@ -575,3 +575,150 @@ describe("/profile Showcase editor (spec #86 stories 1-6)", () => {
     ).toBeInTheDocument();
   });
 });
+
+describe("/profile/projects/new links", () => {
+  const created = (input: ProjectInput): ShowcaseProject => ({
+    id: "proj-1",
+    ...input,
+    status: "pending",
+    demoData: true,
+    description: "",
+    liveUrl: null,
+    demoUrl: null,
+    pitchVideoUrl: null,
+    pitchDeckUrl: null,
+    showcased: false,
+    showcaseStatus: "none",
+  });
+
+  async function fillRequired(user: ReturnType<typeof userEvent.setup>) {
+    const form = await screen.findByRole("form", { name: "Add a showcase project" });
+    await user.type(within(form).getByLabelText("Project title"), "Clinic triage intake flow");
+    await user.click(within(form).getByRole("radio", { name: "Health" }));
+    await user.click(within(form).getByRole("checkbox", { name: "Python" }));
+    await user.type(within(form).getByLabelText("Completion date"), "2026-08-31");
+    return form;
+  }
+
+  it("saves the links through the showcase endpoint with showcased off by default", async () => {
+    const user = userEvent.setup();
+    const saved: { projectId: string; body: ShowcaseEditInput }[] = [];
+    const marketplace = fakeMarketplace({
+      getProfile: async () => profile({ accountStatus: "confirmed", confirmed: true }),
+      ...noRows,
+      postProject: async (input) => created(input),
+      saveShowcase: async (projectId, body) => {
+        saved.push({ projectId, body });
+        return showcaseProject({ ...body, showcaseStatus: "none" });
+      },
+    });
+    render(<App initialPath="/profile/projects/new" source={source} auth={builderAuth} marketplace={marketplace} />);
+
+    const form = await fillRequired(user);
+    await user.type(within(form).getByLabelText("Project link"), "https://github.com/amina/triage");
+    await user.type(within(form).getByLabelText("Demo link"), "https://triage.example.org");
+    await user.click(within(form).getByRole("button", { name: "Submit for confirmation" }));
+
+    await waitFor(() => expect(saved).toHaveLength(1));
+    expect(saved[0]!.projectId).toBe("proj-1");
+    expect(saved[0]!.body).toMatchObject({
+      liveUrl: "https://github.com/amina/triage",
+      demoUrl: "https://triage.example.org",
+      showcased: false,
+    });
+    expect(await screen.findByRole("heading", { level: 1, name: "Your profile" })).toBeInTheDocument();
+  });
+
+  it("sends showcased true when Show on Showcase is on", async () => {
+    const user = userEvent.setup();
+    const saved: ShowcaseEditInput[] = [];
+    const marketplace = fakeMarketplace({
+      getProfile: async () => profile({ accountStatus: "confirmed", confirmed: true }),
+      ...noRows,
+      postProject: async (input) => created(input),
+      saveShowcase: async (_id, body) => {
+        saved.push(body);
+        return showcaseProject({ ...body, showcaseStatus: "pending" });
+      },
+    });
+    render(<App initialPath="/profile/projects/new" source={source} auth={builderAuth} marketplace={marketplace} />);
+
+    const form = await fillRequired(user);
+    await user.type(within(form).getByLabelText("Project link"), "https://triage.example.org");
+    await user.click(within(form).getByRole("checkbox", { name: "Show on Showcase" }));
+    await user.click(within(form).getByRole("button", { name: "Submit for confirmation" }));
+
+    await waitFor(() => expect(saved).toHaveLength(1));
+    expect(saved[0]).toMatchObject({ showcased: true });
+  });
+
+  it("does not call the showcase endpoint when no link is entered", async () => {
+    const user = userEvent.setup();
+    let calls = 0;
+    const marketplace = fakeMarketplace({
+      getProfile: async () => profile({ accountStatus: "confirmed", confirmed: true }),
+      ...noRows,
+      postProject: async (input) => created(input),
+      saveShowcase: async () => {
+        calls += 1;
+        return showcaseProject();
+      },
+    });
+    render(<App initialPath="/profile/projects/new" source={source} auth={builderAuth} marketplace={marketplace} />);
+
+    const form = await fillRequired(user);
+    await user.click(within(form).getByRole("button", { name: "Submit for confirmation" }));
+
+    expect(await screen.findByRole("heading", { level: 1, name: "Your profile" })).toBeInTheDocument();
+    expect(calls).toBe(0);
+  });
+
+  it("keeps the project and says so when the link save fails", async () => {
+    const user = userEvent.setup();
+    const marketplace = fakeMarketplace({
+      getProfile: async () => profile({ accountStatus: "confirmed", confirmed: true }),
+      ...noRows,
+      postProject: async (input) => created(input),
+      saveShowcase: async () => {
+        throw new Error("boom");
+      },
+    });
+    render(<App initialPath="/profile/projects/new" source={source} auth={builderAuth} marketplace={marketplace} />);
+
+    const form = await fillRequired(user);
+    await user.type(within(form).getByLabelText("Project link"), "https://triage.example.org");
+    await user.click(within(form).getByRole("button", { name: "Submit for confirmation" }));
+
+    expect(await screen.findByRole("heading", { level: 1, name: "Your profile" })).toBeInTheDocument();
+    expect(
+      screen.getByText("Project saved. We couldn't save the link. Add it from Edit showcase."),
+    ).toBeInTheDocument();
+  });
+
+  it("lists saved links on the profile and offers Add a link when none is saved", async () => {
+    const user = userEvent.setup();
+    const marketplace = fakeMarketplace({
+      getProfile: async () => profile({ accountStatus: "confirmed", confirmed: true }),
+      listCredentials: async () => [],
+      listProjects: async () => [
+        showcaseProject({ liveUrl: "https://github.com/amina/triage", demoUrl: "https://triage.example.org" }),
+        showcaseProject({ id: "proj-2", title: "No link yet" }),
+      ],
+    });
+    render(<App initialPath="/profile" source={source} auth={builderAuth} marketplace={marketplace} />);
+
+    const projects = await screen.findByRole("list", { name: "Projects" });
+    const linked = within(projects).getByRole("listitem", { name: "Venture Route" });
+    const live = within(linked).getByRole("link", { name: /Project link/ });
+    expect(live).toHaveAttribute("href", "https://github.com/amina/triage");
+    expect(live).toHaveAttribute("target", "_blank");
+    expect(live).toHaveAttribute("rel", "noopener noreferrer");
+    expect(within(linked).getByRole("link", { name: /Demo link/ })).toHaveAttribute("href", "https://triage.example.org");
+    expect(within(linked).queryByRole("button", { name: "Add a link" })).not.toBeInTheDocument();
+
+    const bare = within(projects).getByRole("listitem", { name: "No link yet" });
+    await user.click(within(bare).getByRole("button", { name: "Add a link" }));
+    expect(within(bare).getByRole("form", { name: "Showcase details for No link yet" })).toBeInTheDocument();
+  });
+});
+
