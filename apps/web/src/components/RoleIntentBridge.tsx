@@ -15,7 +15,7 @@ import { useLocation, useNavigate } from "react-router";
 import { useMarketplaceApi } from "../api/marketplaceContext";
 import { useAuthState } from "../auth/authContext";
 import { ROLE_HOME } from "../auth/config";
-import { clearRoleIntent, readRoleIntent } from "../lib/roleIntent";
+import { clearRoleIntent, readRoleIntent, readRoleParam, withoutRoleParam } from "../lib/roleIntent";
 import { ROLE_SAVE_FAILED, saveRole } from "../lib/saveRole";
 
 const LANDING = ["/choose-role", "/sign-in", "/sign-up"];
@@ -24,7 +24,7 @@ export function RoleIntentBridge() {
   const auth = useAuthState();
   const api = useMarketplaceApi();
   const navigate = useNavigate();
-  const { pathname } = useLocation();
+  const { pathname, search, hash } = useLocation();
   const started = useRef(false);
   const [note, setNote] = useState<string | null>(null);
   const [failedRole, setFailedRole] = useState<UserRole | null>(null);
@@ -46,7 +46,10 @@ export function RoleIntentBridge() {
   useEffect(() => {
     if (!auth.configured || !auth.isLoaded || !auth.isSignedIn || started.current) return;
     if (auth.role === null && pathname.startsWith("/choose-role")) return; // RoleSelect saves it there.
-    const intent = readRoleIntent();
+    // Session storage first; a ?role= on the URL (founder or builder only) covers a lost tab.
+    const fromUrl = readRoleParam(search);
+    const intent = readRoleIntent() ?? fromUrl;
+    if (fromUrl !== null) navigate({ pathname, search: withoutRoleParam(search), hash }, { replace: true });
     if (intent === null) return;
     started.current = true;
     clearRoleIntent();
@@ -61,7 +64,7 @@ export function RoleIntentBridge() {
     }
     if (intent === "admin") return; // Admins come from ADMIN_EMAILS; nothing to post.
     void Promise.resolve().then(() => save(intent));
-  }, [auth, pathname, save]);
+  }, [auth, pathname, search, hash, navigate, save]);
 
   async function retry() {
     if (failedRole === null) return;

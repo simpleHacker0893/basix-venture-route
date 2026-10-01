@@ -9,12 +9,12 @@
 import type { UserRole } from "@venture-route/contracts";
 import { ArrowRight } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
-import { Navigate, useNavigate } from "react-router";
+import { Navigate, useLocation, useNavigate } from "react-router";
 
 import { useMarketplaceApi } from "../../api/marketplaceContext";
 import { useAuthState } from "../../auth/authContext";
 import { ROLE_HOME } from "../../auth/config";
-import { clearRoleIntent, readRoleIntent } from "../../lib/roleIntent";
+import { clearRoleIntent, readRoleIntent, readRoleParam, withoutRoleParam } from "../../lib/roleIntent";
 import { ROLE_SAVE_FAILED, saveRole } from "../../lib/saveRole";
 import { AuthShell, StepEyebrow } from "./AuthShell";
 import { NotConfiguredPanel } from "./NotConfiguredPanel";
@@ -24,9 +24,11 @@ export function RoleSelect() {
   const auth = useAuthState();
   const api = useMarketplaceApi();
   const navigate = useNavigate();
+  const { pathname, search, hash } = useLocation();
+  // Session storage first; the ?role= the sign-in redirect carried covers a lost tab (founder or builder only).
   const [pending] = useState(() => {
     const intent = readRoleIntent();
-    return intent === "founder" || intent === "builder" ? intent : null;
+    return intent === "founder" || intent === "builder" ? intent : readRoleParam(search);
   });
   const [manual, setManual] = useState(false);
   const [selected, setSelected] = useState<UserRole>(pending ?? "founder");
@@ -46,6 +48,11 @@ export function RoleSelect() {
     await auth.reload();
     navigate(ROLE_HOME[role], { replace: true });
   }
+
+  // The pick is held in state now; drop ?role= from the address bar.
+  useEffect(() => {
+    if (readRoleParam(search) !== null) navigate({ pathname, search: withoutRoleParam(search), hash }, { replace: true });
+  }, [navigate, pathname, search, hash]);
 
   useEffect(() => {
     if (!ready || !pending || manual || intentStarted.current) return;

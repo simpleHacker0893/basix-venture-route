@@ -14,7 +14,7 @@ import { useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router";
 
 import { useAuthState, useClerkMounted } from "../../auth/authContext";
-import { readRoleIntent, writeRoleIntent, clearRoleIntent, type RoleIntent } from "../../lib/roleIntent";
+import { clearRoleIntent, readRoleIntent, roleRedirectUrl, writeRoleIntent, type RoleIntent } from "../../lib/roleIntent";
 import { AuthShell, StepEyebrow } from "./AuthShell";
 import { NotConfiguredPanel } from "./NotConfiguredPanel";
 import { RoleCards } from "./RoleCards";
@@ -171,7 +171,7 @@ export function SignInScreen() {
                 routing="path"
                 path="/sign-up"
                 signInUrl="/sign-in"
-                fallbackRedirectUrl="/choose-role"
+                fallbackRedirectUrl={roleRedirectUrl(intent)}
                 appearance={clerkAppearance}
               />
             ) : (
@@ -179,7 +179,7 @@ export function SignInScreen() {
                 routing="path"
                 path="/sign-in"
                 signUpUrl="/sign-up"
-                fallbackRedirectUrl="/choose-role"
+                fallbackRedirectUrl={roleRedirectUrl(intent)}
                 appearance={clerkAppearance}
               />
             )}
