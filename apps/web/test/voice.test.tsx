@@ -98,7 +98,7 @@ function Probe() {
       >
         press
       </button>
-      <button onClick={voice.finishListening}>release</button>
+      <button onClick={() => voice.provider?.stopListening()}>release</button>
       <button onClick={voice.markGreeted}>greet</button>
       <button onClick={voice.markAssistantOffline}>offline</button>
     </div>
@@ -354,20 +354,14 @@ describe("voice device layer", () => {
     expect(screen.getByTestId("enabled")).toHaveTextContent("false");
   });
 
-  it("finishListening() with nothing listening is a no-op, and a listen() cut short by disable resolves with \"\" instead of hanging (fix round 1, Important #3)", async () => {
+  it("a listen() cut short by disable resolves with \"\" instead of hanging (fix round 1, Important #3)", async () => {
     const provider = createFakeVoiceProvider();
-    const stopListening = vi.spyOn(provider, "stopListening");
     const user = userEvent.setup();
     render(
       <VoiceSessionProvider voice={provider}>
         <Probe />
       </VoiceSessionProvider>,
     );
-
-    // Never listened.
-    await user.click(screen.getByRole("button", { name: "release" }));
-    expect(stopListening).not.toHaveBeenCalled();
-    expect(screen.getByTestId("released")).toHaveTextContent("false");
 
     // Listening, then disabled mid-turn (abortListening discards without an onEnd callback).
     await user.click(screen.getByRole("button", { name: "enable" }));

@@ -101,8 +101,8 @@ function createHarness(options: HarnessOptions = {}) {
   }
   MediaRecorderStub.isTypeSupported = (type: string) => (options.webm ?? true) && type === "audio/webm";
 
-  function AudioStub(this: StubAudio, src: string) {
-    this.src = src;
+  function AudioStub(this: StubAudio, src?: string) {
+    this.src = src ?? "";
     this.onended = null;
     this.onerror = null;
     this.play = vi.fn(() => (options.playRejects ? Promise.reject(new Error("autoplay")) : Promise.resolve()));
@@ -449,9 +449,53 @@ describe("OpenRouter voice provider (D-53 seam)", () => {
     expect(firstDone).toBe(true);
     expect(h.audios[0]?.pause).toHaveBeenCalled();
     await flush();
-    expect(h.audios).toHaveLength(2);
-    h.audios[1]?.onended?.();
+    expect(h.audios).toHaveLength(1);
+    expect(h.audios[0]?.src).toBe("blob:stub-2");
+    h.audios[0]?.onended?.();
     await expect(second).resolves.toBeUndefined();
+  });
+
+  it("reuses one Audio element across speaks, swapping src, so WebKit keeps it unlocked (I3)", async () => {
+    const h = createHarness();
+    const first = h.provider.speak("one");
+    await flush();
+    h.audios[0]?.onended?.();
+    await first;
+    const second = h.provider.speak("two");
+    await flush();
+
+    expect(h.audios).toHaveLength(1);
+    expect(h.audios[0]?.src).toBe("blob:stub-2");
+    expect(h.audios[0]?.play).toHaveBeenCalledTimes(2);
+    h.audios[0]?.onended?.();
+    await expect(second).resolves.toBeUndefined();
+  });
+
+  it("prime() creates and plays the one Audio element inside the tap; speak then reuses it (I3)", async () => {
+    const h = createHarness();
+    expect(h.provider.prime).toBeTypeOf("function");
+    h.provider.prime!();
+    expect(h.audios).toHaveLength(1);
+    expect(h.audios[0]?.play).toHaveBeenCalledTimes(1);
+    h.provider.prime!();
+    expect(h.audios).toHaveLength(1);
+
+    const spoken = h.provider.speak("hello");
+    await flush();
+    expect(h.audios).toHaveLength(1);
+    expect(h.audios[0]?.src).toBe("blob:stub-1");
+    h.audios[0]?.onended?.();
+    await expect(spoken).resolves.toBeUndefined();
+  });
+
+  it("a failed transcribe tells the founder the voice service is busy, not that the network is down (I2)", async () => {
+    const h = createHarness({ reply: async () => jsonReply({ detail: "too many voice requests" }, 429) });
+    const { handlers, errors } = recordingHandlers();
+    h.provider.startListening(handlers);
+    await flush();
+    h.provider.stopListening();
+    await flush();
+    expect(errors).toEqual([{ code: "network", message: "Chloe's voice service is busy right now. You can keep typing." }]);
   });
 
   it("speak with nothing to say resolves without a request", async () => {
@@ -479,9 +523,9 @@ describe("OpenRouter voice provider: VAD endpointing and barge-in (#128, D-55)",
 
   const ECHO_CANCELLED = { audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true } };
 
-  function withAudioContext(options: HarnessOptions = {}) {
+  function withAudioContext(options: HarnessOptions & { graphThrows?: boolean } = {}) {
     const h = createHarness(options);
-    const audio = { level: 0, contexts: 0, closed: 0 };
+    const audio = { level: 0, contexts: 0, closed: 0, resumed: 0 };
     function AudioContextStub() {
       audio.contexts += 1;
       const analyser: StubAnalyser = {
@@ -489,7 +533,14 @@ describe("OpenRouter voice provider: VAD endpointing and barge-in (#128, D-55)",
         getFloatTimeDomainData: (buffer) => buffer.fill(audio.level),
       };
       return {
-        createMediaStreamSource: () => ({ connect: () => undefined, disconnect: () => undefined }),
+        createMediaStreamSource: () => {
+          if (options.graphThrows) throw new DOMException("no source", "InvalidStateError");
+          return { connect: () => undefined, disconnect: () => undefined };
+        },
+        resume: () => {
+          audio.resumed += 1;
+          return Promise.resolve();
+        },
         createAnalyser: () => analyser,
         close: () => {
           audio.closed += 1;
@@ -510,6 +561,39 @@ describe("OpenRouter voice provider: VAD endpointing and barge-in (#128, D-55)",
       await vi.advanceTimersByTimeAsync(10);
       expect(h.getUserMedia).toHaveBeenCalledWith(ECHO_CANCELLED);
       h.provider.abortListening();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("resumes the AudioContext it creates, since Safari starts one suspended (I3)", async () => {
+    vi.useFakeTimers();
+    try {
+      const h = withAudioContext();
+      h.provider.startListening(recordingHandlers().handlers);
+      await vi.advanceTimersByTimeAsync(10);
+      expect(h.audio.contexts).toBe(1);
+      expect(h.audio.resumed).toBe(1);
+      h.provider.abortListening();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("a graph that throws while being built closes its AudioContext; the turn still records until stop (I3)", async () => {
+    vi.useFakeTimers();
+    try {
+      const h = withAudioContext({ graphThrows: true });
+      const { handlers, events } = recordingHandlers();
+      h.provider.startListening(handlers);
+      await vi.advanceTimersByTimeAsync(10);
+      expect(h.audio.contexts).toBe(1);
+      expect(h.audio.closed).toBe(1);
+
+      h.provider.stopListening();
+      await vi.advanceTimersByTimeAsync(10);
+      expect(h.fetchLike).toHaveBeenCalledTimes(1);
+      expect(events).toEqual(["final:a clinic booking app", "end"]);
     } finally {
       vi.useRealTimers();
     }

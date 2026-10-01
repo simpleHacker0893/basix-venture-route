@@ -8,10 +8,15 @@
  * Choices the interface leaves open:
  * - `stopListening()` while `getUserMedia` is still pending (permission prompt open) ends the
  *   session at once: `onEnd()` fires with no `onFinal`, and a stream granted later is released
- *   untouched, so a `finishListening()` never waits on the prompt. A later denial is not reported.
+ *   untouched, so a graceful stop never waits on the prompt. A later denial is not reported.
  * - `speak()` while a previous speak is in flight cancels the previous one first (it resolves),
  *   exactly like the web provider.
  * - There is no interim result: `onInterim` is never called.
+ * - A failed transcribe (non-2xx, including a 429 or 503, or no network) is a `network` error
+ *   carrying `VOICE_SERVICE_BUSY` as its message, so Chloe does not blame the founder's network.
+ * - Playback uses ONE `Audio` element, created by `prime()` inside the founder's tap (or at the
+ *   first `speak`) and reused by swapping `src`: WebKit keeps an element unlocked once it has
+ *   played in a gesture, so later replies can autoplay.
  *
  * Hands-free turns (#128, D-55): when the browser has an `AudioContext`, a VAD (`vad.ts`) over
  * the same echo-cancelled stream ends the turn on its own (speech, then `END_SILENCE_MS` of
@@ -22,6 +27,12 @@
  */
 import type { ListenHandlers, VoiceErrorCode, VoiceProvider } from "./provider";
 import { audioContextOf, createBargeInDetector, createEndpointer, createVad, type Vad } from "./vad";
+
+/** What Chloe shows and says when the engine's voice proxy cannot transcribe (I2). */
+export const VOICE_SERVICE_BUSY = "Chloe's voice service is busy right now. You can keep typing.";
+
+/** A 44-byte WAV with no samples: played once inside the tap to unlock the element (WebKit). */
+const SILENT_WAV = "data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQAAAAA=";
 
 /** Echo cancellation keeps Chloe's own voice out of the VAD and the recording (D-55). */
 export const MIC_CONSTRAINTS: MediaStreamConstraints = {
@@ -45,13 +56,14 @@ type RecorderCtor = {
 };
 
 type AudioLike = {
+  src: string;
   onended: (() => void) | null;
   onerror: (() => void) | null;
   play(): Promise<void> | void;
   pause(): void;
 };
 
-type AudioCtor = new (src: string) => AudioLike;
+type AudioCtor = new (src?: string) => AudioLike;
 
 type RecordingWindow = {
   navigator?: { mediaDevices?: { getUserMedia?: (constraints: MediaStreamConstraints) => Promise<MediaStream> } };
@@ -115,6 +127,24 @@ export function createOpenRouterProvider(win: Window = window, options: OpenRout
 
   let session: ListenSession | null = null;
   let cancelCurrent: (() => void) | null = null;
+  /** The one playback element (I3), created lazily by `prime()` or the first `speak()`. */
+  let player: AudioLike | null = null;
+
+  function playerElement(): AudioLike {
+    player ??= new AudioCtorRef!();
+    return player;
+  }
+
+  function prime(): void {
+    if (!supported || !AudioCtorRef || player) return;
+    const audio = playerElement();
+    audio.src = SILENT_WAV;
+    try {
+      void Promise.resolve(audio.play()).catch(() => undefined);
+    } catch {
+      // A browser that refuses even this keeps the element; speak() still tries to play.
+    }
+  }
 
   function pickMime(): string {
     return RecorderCtor?.isTypeSupported?.("audio/webm") ? "audio/webm" : "audio/mp4";
@@ -144,7 +174,7 @@ export function createOpenRouterProvider(win: Window = window, options: OpenRout
       })
       .catch(() => {
         if (current.closed) return;
-        current.handlers.onError({ code: "network" });
+        current.handlers.onError({ code: "network", message: VOICE_SERVICE_BUSY });
         finish();
       });
   }
@@ -315,7 +345,8 @@ export function createOpenRouterProvider(win: Window = window, options: OpenRout
           const blob = await response.blob();
           if (settled) return;
           objectUrl = urls.createObjectURL(blob);
-          audio = new AudioCtorRef(objectUrl);
+          audio = playerElement();
+          audio.src = objectUrl;
           audio.onended = finish;
           audio.onerror = finish;
           await audio.play();
@@ -380,5 +411,6 @@ export function createOpenRouterProvider(win: Window = window, options: OpenRout
     stopListening,
     abortListening,
     monitorBargeIn,
+    prime,
   };
 }

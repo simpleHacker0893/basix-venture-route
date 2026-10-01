@@ -1,10 +1,10 @@
-import { useState, type FormEvent } from "react";
+import { useEffect, useRef, useState, type FormEvent } from "react";
 
 import { Button } from "@/components/ui/button";
 
 import { ConsentCaption, MicErrorLine, UnsupportedCaption } from "../../chloe/ui/VoiceCaptions";
 import { VoiceModeButton } from "../../chloe/ui/VoiceModeButton";
-import { VoicePanel } from "../../chloe/ui/VoicePanel";
+import { VoiceModeAnnouncer, VoicePanel } from "../../chloe/ui/VoicePanel";
 import { useChloe } from "../../chloe/useChloe";
 
 type ComposerProps = Readonly<{
@@ -16,12 +16,33 @@ type ComposerProps = Readonly<{
 /**
  * The founder's composer: a two-line text area, Send, the voice-mode mic, and the "Use the form
  * instead" fallback. In voice mode (D-55) the voice panel takes the input row's place; the typed
- * draft is kept and comes back when voice mode ends.
+ * draft is kept and comes back when voice mode ends, with focus on "Start voice mode" (or the
+ * reply box if that button is gone) unless the founder has already moved focus elsewhere.
  */
 export function Composer({ busy, onSend, onUseForm }: ComposerProps) {
   const [text, setText] = useState("");
   const chloe = useChloe();
   const inVoiceMode = chloe !== null && chloe.voiceMode.phase !== "off";
+  const micButton = useRef<HTMLButtonElement>(null);
+  const reply = useRef<HTMLTextAreaElement>(null);
+  // "Voice mode ended" is announced only after it has been on (state adjusted during render).
+  const [wasInVoiceMode, setWasInVoiceMode] = useState(inVoiceMode);
+  const [voiceModeEnded, setVoiceModeEnded] = useState(false);
+  if (wasInVoiceMode !== inVoiceMode) {
+    setWasInVoiceMode(inVoiceMode);
+    setVoiceModeEnded(!inVoiceMode);
+  }
+
+  const leftVoiceMode = !inVoiceMode && voiceModeEnded;
+  useEffect(() => {
+    if (!leftVoiceMode) return;
+    // The panel (and the focused End button) is gone; a focus the founder chose stays put.
+    const active = document.activeElement;
+    if (active !== null && active !== document.body) return;
+    const mic = micButton.current;
+    if (mic && !mic.disabled) mic.focus();
+    else reply.current?.focus();
+  }, [leftVoiceMode]);
 
   function submit(event: FormEvent) {
     event.preventDefault();
@@ -45,6 +66,7 @@ export function Composer({ busy, onSend, onUseForm }: ComposerProps) {
             Reply to assistant
           </label>
           <textarea
+            ref={reply}
             id="founder-reply"
             name="reply"
             autoComplete="off"
@@ -57,7 +79,7 @@ export function Composer({ busy, onSend, onUseForm }: ComposerProps) {
           <div className="flex items-center justify-between border-t border-border pt-3">
             <span className="text-[13px] text-ink-3">Plain language: dates, budget, team roles.</span>
             <div className="flex items-center gap-2">
-              <VoiceModeButton onDictation={setText} />
+              <VoiceModeButton onDictation={setText} buttonRef={micButton} />
               <Button type="submit" disabled={busy}>
                 {busy ? "Sending…" : "Send"}
               </Button>
@@ -65,6 +87,7 @@ export function Composer({ busy, onSend, onUseForm }: ComposerProps) {
           </div>
         </form>
       )}
+      <VoiceModeAnnouncer ended={voiceModeEnded} />
       <MicErrorLine />
       <ConsentCaption />
       <UnsupportedCaption />

@@ -15,14 +15,35 @@ const ORB_CLASSES: Record<ActivePhase, string> = {
 /** Largest extra scale the live mic level can add to the orb while listening. */
 const MAX_LEVEL_SCALE = 0.35;
 
+function prefersReducedMotion(): boolean {
+  return typeof window !== "undefined" && window.matchMedia?.("(prefers-reduced-motion: reduce)").matches === true;
+}
+
+/**
+ * The polite live region for voice mode's state (should-fix 5). The composer renders it outside
+ * the panel so it stays mounted: entering, every state change and leaving are all announced.
+ */
+export function VoiceModeAnnouncer({ ended }: Readonly<{ ended: boolean }>) {
+  const chloe = useChloe();
+  const phase = chloe?.voiceMode.phase ?? "off";
+  const text = phase !== "off" ? `Voice mode: ${VOICE_MODE_LABELS[phase]}` : ended ? "Voice mode ended" : "";
+  return (
+    <p aria-live="polite" data-testid="voice-mode-announcer" className="sr-only">
+      {text}
+    </p>
+  );
+}
+
 /**
  * Voice mode's panel (#128, D-55), shown in place of the composer's input row: the state orb
  * (tap it while Chloe speaks to interrupt her), the state label, the live caption, Mute and End.
- * The state is announced through a polite live region; Escape ends voice mode (useVoiceMode).
+ * The state is announced through `VoiceModeAnnouncer`; Escape ends voice mode (useVoiceMode).
+ * End takes focus on entry; the composer returns it to "Start voice mode" on leaving.
  */
 export function VoicePanel() {
   const chloe = useChloe();
   const orb = useRef<HTMLSpanElement>(null);
+  const endButton = useRef<HTMLButtonElement>(null);
   const phase = chloe?.voiceMode.phase ?? "off";
   const subscribeLevel = chloe?.subscribeLevel;
 
@@ -31,11 +52,17 @@ export function VoicePanel() {
     const element = orb.current;
     if (!element) return;
     element.style.transform = "";
-    if (phase !== "listening" || !subscribeLevel) return;
+    // Reduced motion: the orb keeps its size; the state label still says Listening.
+    if (phase !== "listening" || !subscribeLevel || prefersReducedMotion()) return;
     return subscribeLevel((level) => {
       element.style.transform = `scale(${1 + Math.min(level * 4, MAX_LEVEL_SCALE)})`;
     });
   }, [phase, subscribeLevel]);
+
+  // The panel mounts as voice mode starts: put focus where the founder can end it.
+  useEffect(() => {
+    endButton.current?.focus();
+  }, []);
 
   if (!chloe || phase === "off") return null;
   const { voiceMode, interim, nowSpeaking } = chloe;
@@ -70,7 +97,7 @@ export function VoicePanel() {
           className={`block h-20 w-20 rounded-full transition-transform duration-100 motion-reduce:animate-none motion-reduce:transition-none ${ORB_CLASSES[phase]}`}
         />
       </button>
-      <p aria-live="polite" data-testid="voice-mode-state" className="text-[13px] font-medium uppercase tracking-wider text-ink">
+      <p data-testid="voice-mode-state" className="text-[13px] font-medium uppercase tracking-wider text-ink">
         {VOICE_MODE_LABELS[phase]}
       </p>
       <p className="min-h-10 max-w-prose text-center text-[15px] leading-relaxed text-ink-2">{caption}</p>
@@ -85,6 +112,7 @@ export function VoicePanel() {
           {muted ? "Unmute" : "Mute"}
         </button>
         <button
+          ref={endButton}
           type="button"
           aria-label="End voice mode"
           title="End voice mode (Esc)"

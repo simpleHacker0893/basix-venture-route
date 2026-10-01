@@ -26,6 +26,8 @@ type AudioContextLike = {
   createMediaStreamSource(stream: MediaStream): SourceLike;
   createAnalyser(): AnalyserLike;
   close(): Promise<void> | void;
+  /** Safari creates a context suspended outside a gesture; resuming is harmless elsewhere. */
+  resume?(): Promise<void> | void;
 };
 export type AudioContextCtor = new () => AudioContextLike;
 
@@ -45,10 +47,26 @@ export type Vad = { stop(): void };
  */
 export function createVad(Ctor: AudioContextCtor, stream: MediaStream, onFrame: (rms: number) => void): Vad {
   const context = new Ctor();
-  const source = context.createMediaStreamSource(stream);
-  const analyser = context.createAnalyser();
-  analyser.fftSize = 1024;
-  source.connect(analyser);
+  const closeContext = (): void => {
+    void Promise.resolve()
+      .then(() => context.close())
+      .catch(() => undefined);
+  };
+  void Promise.resolve()
+    .then(() => context.resume?.())
+    .catch(() => undefined);
+  let source: SourceLike;
+  let analyser: AnalyserLike;
+  try {
+    source = context.createMediaStreamSource(stream);
+    analyser = context.createAnalyser();
+    analyser.fftSize = 1024;
+    source.connect(analyser);
+  } catch (cause) {
+    // Never leak a context: browsers cap how many can be open at once.
+    closeContext();
+    throw cause;
+  }
   const buffer = new Float32Array(analyser.fftSize);
   let stopped = false;
   const timer = setInterval(() => {
@@ -64,7 +82,7 @@ export function createVad(Ctor: AudioContextCtor, stream: MediaStream, onFrame: 
       stopped = true;
       clearInterval(timer);
       source.disconnect?.();
-      void Promise.resolve(context.close()).catch(() => undefined);
+      closeContext();
     },
   };
 }

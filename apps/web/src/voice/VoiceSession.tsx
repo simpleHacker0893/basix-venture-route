@@ -2,7 +2,7 @@
  * `VoiceSessionProvider` + `voiceReducer`; `useVoice()` reads the published `VoiceSessionValue`
  * (Sprint 006 blueprint §Interfaces). This is the session layer only: it turns one `VoiceProvider`
  * into `enabled` / `status` / `interim` / `lastError` state and the `enable` / `listen` /
- * `finishListening` / `say` verbs. Chloe's conductor (`chloe/useChloe.ts`) and its voice mode
+ * `abortMic` / `say` verbs. Chloe's conductor (`chloe/useChloe.ts`) and its voice mode
  * (`chloe/useVoiceMode.ts`, D-55) decide *when* to call them; this file has no opinion about the
  * routing store or the conversation.
  */
@@ -172,7 +172,7 @@ export function VoiceSessionProvider({ voice, children }: Props) {
 
   /**
    * One listening turn (D-55). Resolves once the provider ends the turn, on its own endpointing
-   * or after `finishListening()`, with the accumulated final transcript and the turn's error, if
+   * or after its `stopListening()`, with the accumulated final transcript and the turn's error, if
    * any; resolves with "" when the turn is aborted or superseded.
    */
   const listen = useCallback((): Promise<ListenResult> => {
@@ -215,10 +215,6 @@ export function VoiceSessionProvider({ voice, children }: Props) {
     return result;
   }, [voice, supported, resolveAll]);
 
-  const finishListening = useCallback(() => {
-    if (voice && listeningRef.current) voice.stopListening();
-  }, [voice]);
-
   const subscribeLevel = useCallback((listener: (level: number) => void) => {
     levelListeners.current.add(listener);
     return () => {
@@ -246,7 +242,6 @@ export function VoiceSessionProvider({ voice, children }: Props) {
       stopSpeaking,
       isSpeaking,
       listen,
-      finishListening,
       abortMic,
       subscribeLevel,
       markGreeted,
@@ -262,7 +257,6 @@ export function VoiceSessionProvider({ voice, children }: Props) {
       stopSpeaking,
       isSpeaking,
       listen,
-      finishListening,
       abortMic,
       subscribeLevel,
       markGreeted,

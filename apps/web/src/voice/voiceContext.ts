@@ -35,8 +35,6 @@ export type VoiceSessionValue = {
   isSpeaking(): boolean;
   /** Starts one listening turn; resolves once the provider's `onEnd` fires (D-55). */
   listen(): Promise<ListenResult>;
-  /** Ends the current turn early, flushing what was heard; a no-op when nothing is listening. */
-  finishListening(): void;
   /** Discard the current recognition; a pending `listen()` resolves with "". */
   abortMic(): void;
   /** Live mic level while listening (RMS, 0..1), outside React state. Returns the unsubscribe. */

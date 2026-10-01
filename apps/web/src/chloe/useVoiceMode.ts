@@ -163,11 +163,11 @@ export function useVoiceMode({ voice, busy, canListen, turnVoiceOn, submitTransc
     abortMic();
   }, [stopSpeaking, abortMic]);
 
-  // Escape ends voice mode wherever focus is.
+  // Escape ends voice mode wherever focus is, unless another handler (a dialog) already used it.
   useEffect(() => {
     if (phase === "off") return;
     const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") end();
+      if (event.key === "Escape" && !event.defaultPrevented) end();
     };
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
@@ -176,12 +176,14 @@ export function useVoiceMode({ voice, busy, canListen, turnVoiceOn, submitTransc
   const start = useCallback(
     (options: { onDictation?(text: string): void } = {}) => {
       if (!voice.supported) return;
+      // Inside the tap: lets a provider unlock its audio element for later replies (WebKit).
+      provider?.prime?.();
       dictationRef.current = options.onDictation;
       turnVoiceOn();
       lastSpeechAt.current = Date.now();
       dispatch({ type: "enter", chloeSpeaking: isSpeaking() });
     },
-    [voice.supported, turnVoiceOn, isSpeaking],
+    [voice.supported, provider, turnVoiceOn, isSpeaking],
   );
 
   const mute = useCallback(() => dispatch({ type: "mute" }), []);

@@ -7,6 +7,8 @@
 
 export type VoiceErrorCode = "no-speech" | "not-allowed" | "network" | "audio-capture" | "aborted" | "unknown";
 
+/** `message`, when a provider sets it, is the founder-facing line to show and speak instead of
+ * the generic one for `code` (the OpenRouter provider's "voice service is busy"). */
 export type VoiceError = { code: VoiceErrorCode; message?: string };
 
 export type ListenHandlers = {
@@ -45,4 +47,10 @@ export interface VoiceProvider {
    * Web Speech has none: it cannot be echo-cancelled reliably, so it relies on the tap.
    */
   monitorBargeIn?(onBargeIn: () => void): () => void;
+  /**
+   * Optional: called synchronously inside the founder's tap ("Start voice mode", the voice
+   * switch) so a provider that plays through an `Audio` element can unlock it for later replies
+   * (WebKit autoplay). Idempotent.
+   */
+  prime?(): void;
 }

@@ -11,7 +11,7 @@ import { FIELD_LABELS, MODE_LABELS, SKILL_LABELS, VERTICAL_LABELS } from "../lib
 import { dateRange, STATUS_LABEL, usd } from "../lib/format";
 import { formatNairobiSpoken } from "../lib/nairobi";
 import { splitFieldMessages } from "../lib/validationError";
-import type { VoiceErrorCode, VoiceProvider } from "../voice/provider";
+import type { VoiceError, VoiceErrorCode, VoiceProvider } from "../voice/provider";
 
 export const GREETING =
   "Hi, I'm Chloe, Venture Route's assistant. Tell me about your MVP, out loud or by typing, " +
@@ -137,6 +137,14 @@ export const MIC_ERRORS: Record<VoiceErrorCode, string> = {
   aborted: "Let's try that again.",
   unknown: "Let's try that again.",
 };
+
+/**
+ * The line Chloe shows and speaks for a recogniser error: the provider's own message when it set
+ * one (the OpenRouter provider's "voice service is busy", I2), else the generic line for the code.
+ */
+export function micErrorLine(code: VoiceErrorCode, error: VoiceError | null): string {
+  return error !== null && error.code === code && error.message ? error.message : MIC_ERRORS[code];
+}
 
 export const UNSUPPORTED_CAPTION = "Voice needs Chrome or Edge.";
 export const CONSENT_CAPTION =

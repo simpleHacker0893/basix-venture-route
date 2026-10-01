@@ -1,4 +1,5 @@
 import { AudioLines } from "lucide-react";
+import type { Ref } from "react";
 
 import { useRouting } from "../../state/routingContext";
 import { useChloe } from "../useChloe";
@@ -6,6 +7,8 @@ import { useChloe } from "../useChloe";
 type VoiceModeButtonProps = Readonly<{
   /** Keyless engine: a dictated utterance goes to the reply box instead of being sent. */
   onDictation(text: string): void;
+  /** Lets the composer return focus here when voice mode ends. */
+  buttonRef?: Ref<HTMLButtonElement>;
 }>;
 
 /**
@@ -13,7 +16,7 @@ type VoiceModeButtonProps = Readonly<{
  * turns voice on first if it is off (the greeting is spoken inside this tap). Absent with no
  * provider or an unsupported browser; disabled while a request is in flight, exactly like Send.
  */
-export function VoiceModeButton({ onDictation }: VoiceModeButtonProps) {
+export function VoiceModeButton({ onDictation, buttonRef }: VoiceModeButtonProps) {
   const chloe = useChloe();
   const { state } = useRouting();
   if (!chloe || !chloe.provider || !chloe.supported) return null;
@@ -21,6 +24,7 @@ export function VoiceModeButton({ onDictation }: VoiceModeButtonProps) {
 
   return (
     <button
+      ref={buttonRef}
       type="button"
       data-testid="mic-button"
       aria-label="Start voice mode"

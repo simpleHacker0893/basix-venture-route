@@ -9,7 +9,7 @@
  * `spokenForm` is applied by the web provider at the speech boundary (ruling R10).
  */
 import type { ChatResponse } from "@venture-route/contracts";
-import { createContext, useCallback, useContext, useEffect, useReducer, useRef, useState } from "react";
+import { createContext, useCallback, useContext, useEffect, useReducer, useRef } from "react";
 
 import { missingFields } from "../lib/brief";
 import { useRouting } from "../state/routingContext";
@@ -25,7 +25,7 @@ import {
   CONFIRM_PROMPT,
   CONFIRM_YES_REPLY,
   GREETING,
-  MIC_ERRORS,
+  micErrorLine,
   OFFLINE_ASSISTANT,
   questionFor,
   readBack,
@@ -64,8 +64,20 @@ export function useChloeConductor({ formMode }: { formMode: boolean }): ChloeVal
   const voice = useVoice();
   const { state, sendTurn, noteChloe } = useRouting();
   const { view, busy, lastResponse, currentBrief, unreachable } = state;
-  const { enabled, greeted, assistantOffline, lastError, say, stopSpeaking, abortMic, enable, disable, markGreeted, markAssistantOffline } =
-    voice;
+  const {
+    provider,
+    enabled,
+    greeted,
+    assistantOffline,
+    lastError,
+    say,
+    stopSpeaking,
+    abortMic,
+    enable,
+    disable,
+    markGreeted,
+    markAssistantOffline,
+  } = voice;
 
   /** The key of the brief as it stands when complete, else null. */
   const completeKey = currentBrief !== null && missingFields(currentBrief).length === 0 ? JSON.stringify(currentBrief) : null;
@@ -77,7 +89,6 @@ export function useChloeConductor({ formMode }: { formMode: boolean }): ChloeVal
   // intake chat view with voice on, so a brief edit or a missing field closes it by derivation.
   const [askedKey, setAskedKey] = useReducer((_: string | null, next: string | null) => next, null);
   const awaitingConfirmation = enabled && view === "intake" && !formMode && askedKey !== null && askedKey === completeKey;
-  const [emptyRelease, setEmptyRelease] = useState(false);
 
   // The "once" guards start from the store as it is when /route mounts: RoutingProvider and the
   // voice session outlive ChloeProvider, so coming back to /route must not repeat the last
@@ -178,8 +189,8 @@ export function useChloeConductor({ formMode }: { formMode: boolean }): ChloeVal
     utter,
   ]);
 
-  // Recogniser failures are spoken once each. `no-speech` is spoken by the empty release below
-  // instead, and `aborted` is Chloe's own doing (a view change or disabling voice).
+  // Recogniser failures are spoken once each. `no-speech` is not spoken (voice mode just reopens
+  // the mic, D-55), and `aborted` is Chloe's own doing (a view change or disabling voice).
   useEffect(() => {
     if (!enabled || lastError === null || lastError === spokenError.current) return;
     spokenError.current = lastError;
@@ -188,7 +199,7 @@ export function useChloeConductor({ formMode }: { formMode: boolean }): ChloeVal
     setErrorStreak({ code: lastError.code, count });
     // The same failure again on the next turn is not repeated aloud: voice mode mutes instead.
     if (count > 1) return;
-    utter(MIC_ERRORS[lastError.code]);
+    utter(micErrorLine(lastError.code, lastError));
   }, [enabled, lastError, errorStreak, utter]);
 
   // Leaving /route unmounts ChloeProvider: silence her and drop the mic.
@@ -216,21 +227,18 @@ export function useChloeConductor({ formMode }: { formMode: boolean }): ChloeVal
       disable();
       return;
     }
+    // Inside the switch's click: lets a provider unlock its audio element (WebKit autoplay).
+    provider?.prime?.();
     turnVoiceOn();
-  }, [enabled, disable, turnVoiceOn]);
+  }, [enabled, provider, disable, turnVoiceOn]);
 
   const submitTranscript = useCallback(
     async (text: string): Promise<SubmitOutcome> => {
       if (busy) return "held";
       const transcript = text.trim();
-      if (transcript) setErrorStreak(NO_ERROR_STREAK);
-      if (!transcript) {
-        // A recogniser failure (not-allowed, network, …) was already shown and spoken once.
-        if (lastError !== null && lastError.code !== "no-speech" && lastError.code !== "aborted") return "empty";
-        setEmptyRelease(true);
-        utter(MIC_ERRORS["no-speech"]);
-        return "empty";
-      }
+      // Voice mode never submits a silent turn (it reopens the mic); nothing to do here either.
+      if (!transcript) return "empty";
+      setErrorStreak(NO_ERROR_STREAK);
       if (awaitingConfirmation) {
         const answer = matchConfirm(transcript);
         if (answer === "yes") {
@@ -251,7 +259,7 @@ export function useChloeConductor({ formMode }: { formMode: boolean }): ChloeVal
       await sendTurn({ userMessage: transcript, currentBrief: currentBrief ?? null });
       return "sent";
     },
-    [busy, lastError, awaitingConfirmation, assistantOffline, currentBrief, sendTurn, utter],
+    [busy, awaitingConfirmation, assistantOffline, currentBrief, sendTurn, utter],
   );
 
   const mode = useVoiceMode({
@@ -263,26 +271,26 @@ export function useChloeConductor({ formMode }: { formMode: boolean }): ChloeVal
     utter,
     errorStreak,
   });
-  const { start: startMode } = mode;
+  const { start: startMode, unmute: unmuteMode } = mode;
   const start = useCallback<VoiceModeValue["start"]>(
     (options) => {
-      // A fresh start forgets an old empty-transcript line (the press used to clear it) and any
-      // earlier error streak.
-      setEmptyRelease(false);
+      // A fresh start forgets any earlier error streak.
       setErrorStreak(NO_ERROR_STREAK);
       startMode(options);
     },
     [startMode],
   );
-  const voiceMode: VoiceModeValue = { ...mode, start };
+  // Unmute is the founder asking to retry: a repeat of the error that muted voice mode is spoken
+  // again rather than muting at once (should-fix 7).
+  const unmute = useCallback(() => {
+    setErrorStreak(NO_ERROR_STREAK);
+    unmuteMode();
+  }, [unmuteMode]);
+  const voiceMode: VoiceModeValue = { ...mode, start, unmute };
 
   // In voice mode a silent turn just reopens the mic (D-55): `no-speech` is not an error there.
   const quietNoSpeech = voiceMode.phase !== "off" && lastError?.code === "no-speech";
-  const micError: VoiceErrorCode | null = emptyRelease
-    ? "no-speech"
-    : lastError !== null && lastError.code !== "aborted" && !quietNoSpeech
-      ? lastError.code
-      : null;
+  const micError: VoiceErrorCode | null = lastError !== null && lastError.code !== "aborted" && !quietNoSpeech ? lastError.code : null;
 
   return { ...voice, awaitingConfirmation, micError, toggleVoice, submitTranscript, voiceMode };
 }
