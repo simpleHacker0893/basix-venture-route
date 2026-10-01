@@ -192,7 +192,9 @@ export function createWebSpeechProvider(win: Window = window, options: WebSpeech
     }
     const recognition = new RecognitionCtor();
     recognition.lang = lang;
-    recognition.continuous = true;
+    // One utterance per turn (D-55): the recogniser's own endpointing ends it, and `onend` tells
+    // voice mode the founder has finished. A silent turn ends with a `no-speech` error.
+    recognition.continuous = false;
     recognition.interimResults = true;
     recognition.onresult = (event) => {
       for (let i = event.resultIndex; i < event.results.length; i += 1) {

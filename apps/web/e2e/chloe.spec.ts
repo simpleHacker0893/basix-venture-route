@@ -7,7 +7,7 @@
 import { expect, test } from "@playwright/test";
 
 import { GREETING } from "../src/chloe/script";
-import { builderIds, enableVoice, holdAndSay, spoken } from "./helpers";
+import { builderIds, enableVoice, spoken, tapAndSay } from "./helpers";
 
 test.describe("Chloe: voice routes the Agri marketplace exactly like the form", () => {
   test("voice path deep-equals the form path's POST /api/route body, same builder ids in order; spoken() starts with the greeting", async ({
@@ -26,7 +26,7 @@ test.describe("Chloe: voice routes the Agri marketplace exactly like the form", 
     const formRoute = await formResponse.json();
     const formIds = await builderIds(page);
 
-    // Voice path: the same scenario, back to the chat screen, "go ahead" through the fake mic.
+    // Voice path: the same scenario, back to the chat screen, "go ahead" in voice mode (D-55).
     await page.goto("/route");
     await enableVoice(page);
     await page.getByRole("button", { name: "Load scenario: Agri marketplace" }).click();
@@ -38,7 +38,7 @@ test.describe("Chloe: voice routes the Agri marketplace exactly like the form", 
       page.waitForResponse(
         (response) => response.url().endsWith("/api/conversation") && response.request().method() === "POST",
       ),
-      holdAndSay(page, "go ahead"),
+      tapAndSay(page, "go ahead"),
     ]);
     await expect(page.getByTestId("status-badge")).toHaveText("Feasible");
     const conversationJson = await conversationResponse.json();

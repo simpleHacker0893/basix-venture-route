@@ -2,8 +2,9 @@ import { useState, type FormEvent } from "react";
 
 import { Button } from "@/components/ui/button";
 
-import { MicButton } from "../../chloe/ui/MicButton";
 import { ConsentCaption, MicErrorLine, UnsupportedCaption } from "../../chloe/ui/VoiceCaptions";
+import { VoiceModeButton } from "../../chloe/ui/VoiceModeButton";
+import { VoicePanel } from "../../chloe/ui/VoicePanel";
 import { useChloe } from "../../chloe/useChloe";
 
 type ComposerProps = Readonly<{
@@ -12,15 +13,15 @@ type ComposerProps = Readonly<{
   onUseForm(): void;
 }>;
 
-/** The founder's composer: a two-line text area, Send, and the "Use the form instead" fallback. */
+/**
+ * The founder's composer: a two-line text area, Send, the voice-mode mic, and the "Use the form
+ * instead" fallback. In voice mode (D-55) the voice panel takes the input row's place; the typed
+ * draft is kept and comes back when voice mode ends.
+ */
 export function Composer({ busy, onSend, onUseForm }: ComposerProps) {
   const [text, setText] = useState("");
   const chloe = useChloe();
-  // While the mic is held, the box shows the in-progress recognition instead of the typed draft;
-  // the draft itself is untouched and comes back once the interim transcript clears (blueprint
-  // `Composer.tsx`: "interim overlay").
-  const listening = chloe?.status === "listening";
-  const displayed = listening ? chloe.interim : text;
+  const inVoiceMode = chloe !== null && chloe.voiceMode.phase !== "off";
 
   function submit(event: FormEvent) {
     event.preventDefault();
@@ -32,37 +33,38 @@ export function Composer({ busy, onSend, onUseForm }: ComposerProps) {
 
   return (
     <div className="flex flex-col gap-3">
-      <form
-        onSubmit={submit}
-        aria-busy={busy}
-        className="flex flex-col gap-3 rounded-card border border-border bg-surface-strong p-4 focus-within:border-accent-green"
-      >
-        <label htmlFor="founder-reply" className="sr-only">
-          Reply to assistant
-        </label>
-        <textarea
-          id="founder-reply"
-          name="reply"
-          autoComplete="off"
-          rows={2}
-          value={displayed}
-          readOnly={listening}
-          onChange={(event) => {
-            if (!listening) setText(event.target.value);
-          }}
-          placeholder="Reply here…"
-          className={`w-full resize-none border-0 bg-transparent leading-relaxed text-ink placeholder:text-ink-3 focus:outline-none ${listening ? "italic text-ink-3" : ""}`}
-        />
-        <div className="flex items-center justify-between border-t border-border pt-3">
-          <span className="text-[13px] text-ink-3">Plain language: dates, budget, team roles.</span>
-          <div className="flex items-center gap-2">
-            <MicButton onDictation={setText} />
-            <Button type="submit" disabled={busy}>
-              {busy ? "Sending…" : "Send"}
-            </Button>
+      {inVoiceMode ? (
+        <VoicePanel />
+      ) : (
+        <form
+          onSubmit={submit}
+          aria-busy={busy}
+          className="flex flex-col gap-3 rounded-card border border-border bg-surface-strong p-4 focus-within:border-accent-green"
+        >
+          <label htmlFor="founder-reply" className="sr-only">
+            Reply to assistant
+          </label>
+          <textarea
+            id="founder-reply"
+            name="reply"
+            autoComplete="off"
+            rows={2}
+            value={text}
+            onChange={(event) => setText(event.target.value)}
+            placeholder="Reply here…"
+            className="w-full resize-none border-0 bg-transparent leading-relaxed text-ink placeholder:text-ink-3 focus:outline-none"
+          />
+          <div className="flex items-center justify-between border-t border-border pt-3">
+            <span className="text-[13px] text-ink-3">Plain language: dates, budget, team roles.</span>
+            <div className="flex items-center gap-2">
+              <VoiceModeButton onDictation={setText} />
+              <Button type="submit" disabled={busy}>
+                {busy ? "Sending…" : "Send"}
+              </Button>
+            </div>
           </div>
-        </div>
-      </form>
+        </form>
+      )}
       <MicErrorLine />
       <ConsentCaption />
       <UnsupportedCaption />

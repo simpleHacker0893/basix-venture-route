@@ -5,7 +5,10 @@
  */
 import { createContext } from "react";
 
-import type { VoiceError, VoiceProvider } from "./provider";
+import type { VoiceError, VoiceErrorCode, VoiceProvider } from "./provider";
+
+/** How one listening turn ended: what was heard, and the recogniser's error, if any. */
+export type ListenResult = { transcript: string; error: VoiceErrorCode | null };
 
 export type VoiceStatus = "idle" | "listening" | "speaking";
 
@@ -28,11 +31,16 @@ export type VoiceSessionValue = {
   disable(): void;
   say(text: string): Promise<void>;
   stopSpeaking(): void;
-  pressMic(): void;
-  /** Resolves with the accumulated final transcript once the provider's `onEnd` fires. */
-  releaseMic(): Promise<string>;
-  /** Discard the current recognition; a pending `releaseMic()` resolves with "". */
+  /** True while any line is playing or queued; synchronous, unlike `status`. */
+  isSpeaking(): boolean;
+  /** Starts one listening turn; resolves once the provider's `onEnd` fires (D-55). */
+  listen(): Promise<ListenResult>;
+  /** Ends the current turn early, flushing what was heard; a no-op when nothing is listening. */
+  finishListening(): void;
+  /** Discard the current recognition; a pending `listen()` resolves with "". */
   abortMic(): void;
+  /** Live mic level while listening (RMS, 0..1), outside React state. Returns the unsubscribe. */
+  subscribeLevel(listener: (level: number) => void): () => void;
   markGreeted(): void;
   markAssistantOffline(): void;
 };

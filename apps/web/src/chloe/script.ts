@@ -14,8 +14,11 @@ import { splitFieldMessages } from "../lib/validationError";
 import type { VoiceErrorCode, VoiceProvider } from "../voice/provider";
 
 export const GREETING =
-  "Hi, I'm Chloe, Venture Route's assistant. Hold the mic, tell me about your MVP, and let go " +
-  "when you're done. I'll ask for anything that's missing.";
+  "Hi, I'm Chloe, Venture Route's assistant. Tell me about your MVP, out loud or by typing, " +
+  "and I'll ask for anything that's missing.";
+
+/** Voice mode muted itself after two minutes without speech (D-55). */
+export const VOICE_IDLE_MUTED = "I've paused the mic for now. Tap Unmute when you're ready to carry on.";
 
 function joinWithAnd(items: readonly string[]): string {
   if (items.length === 0) return "";
@@ -127,7 +130,7 @@ export function validationSpoken(message: string): string {
 }
 
 export const MIC_ERRORS: Record<VoiceErrorCode, string> = {
-  "no-speech": "I didn't catch that. Hold the mic and try again.",
+  "no-speech": "I didn't catch that. Try again.",
   "not-allowed": "Microphone access is blocked. Allow it in your browser's site settings.",
   network: "Speech recognition needs a network connection.",
   "audio-capture": "I can't find a microphone.",

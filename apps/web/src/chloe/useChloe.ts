@@ -1,6 +1,6 @@
 /**
  * Chloe's conductor (Sprint 006 blueprint §Conductor): one reaction effect over the routing
- * store plus `submitTranscript` for the mic. Chloe restates only what the engine returned
+ * store plus `submitTranscript` for the mic, and voice mode (`useVoiceMode.ts`, D-55) on top. Chloe restates only what the engine returned
  * (script.ts templates over `ChatResponse` / `VentureRoute`) and never decides anything: every
  * request goes through the existing `sendTurn`, and the only post she makes on her own is the
  * read-back "yes", which is exactly what the "Find my route" button posts.
@@ -18,6 +18,7 @@ import type { VoiceErrorCode } from "../voice/provider";
 import { useVoice } from "../voice/VoiceSession";
 import type { VoiceSessionValue } from "../voice/voiceContext";
 import { matchConfirm } from "./confirm";
+import { useVoiceMode, type SubmitOutcome, type VoiceModeValue } from "./useVoiceMode";
 import { isKeyless } from "./engineHints";
 import {
   CONFIRM_NO_REPLY,
@@ -33,7 +34,7 @@ import {
   validationSpoken,
 } from "./script";
 
-export type SubmitOutcome = "sent" | "held" | "dictation" | "empty";
+export type { SubmitOutcome } from "./useVoiceMode";
 
 export type ChloeValue = VoiceSessionValue & {
   /** True between the read-back's "Shall I find your route?" and a yes / no / validation-error. */
@@ -42,10 +43,10 @@ export type ChloeValue = VoiceSessionValue & {
   micError: VoiceErrorCode | null;
   /** The "Voice: Chloe" switch handler: the greeting is spoken here, inside the user gesture. */
   toggleVoice(): void;
-  /** Push-to-talk press: cancels any speech in progress, then starts listening. */
-  pressMic(): void;
-  /** Routes a released transcript: confirm, dictation (keyless), or a founder turn. */
+  /** Routes a finished utterance: confirm, dictation (keyless), or a founder turn. */
   submitTranscript(text: string): Promise<SubmitOutcome>;
+  /** Hands-free voice mode, ChatGPT / Claude style (D-55). */
+  voiceMode: VoiceModeValue;
 };
 
 export const ChloeContext = createContext<ChloeValue | null>(null);
@@ -188,24 +189,24 @@ export function useChloeConductor({ formMode }: { formMode: boolean }): ChloeVal
     [stopSpeaking, abortMic],
   );
 
+  /** Voice on, and the greeting once per session, spoken inside the calling user gesture. */
+  const turnVoiceOn = useCallback(() => {
+    if (enabled) return;
+    enable();
+    if (!greeted) {
+      markGreeted();
+      utter(GREETING);
+    }
+  }, [enabled, greeted, enable, markGreeted, utter]);
+
   const toggleVoice = useCallback(() => {
     if (enabled) {
       setAskedKey(null);
       disable();
       return;
     }
-    enable();
-    if (!greeted) {
-      markGreeted();
-      utter(GREETING);
-    }
-  }, [enabled, greeted, enable, disable, markGreeted, utter]);
-
-  const pressMic = useCallback(() => {
-    stopSpeaking();
-    setEmptyRelease(false);
-    voice.pressMic();
-  }, [stopSpeaking, voice]);
+    turnVoiceOn();
+  }, [enabled, disable, turnVoiceOn]);
 
   const submitTranscript = useCallback(
     async (text: string): Promise<SubmitOutcome> => {
@@ -241,11 +242,32 @@ export function useChloeConductor({ formMode }: { formMode: boolean }): ChloeVal
     [busy, lastError, awaitingConfirmation, assistantOffline, currentBrief, sendTurn, utter],
   );
 
+  const mode = useVoiceMode({
+    voice,
+    busy,
+    canListen: enabled && view === "intake" && !formMode,
+    turnVoiceOn,
+    submitTranscript,
+    utter,
+  });
+  const { start: startMode } = mode;
+  const start = useCallback<VoiceModeValue["start"]>(
+    (options) => {
+      // A fresh start forgets an old empty-transcript line (the press used to clear it).
+      setEmptyRelease(false);
+      startMode(options);
+    },
+    [startMode],
+  );
+  const voiceMode: VoiceModeValue = { ...mode, start };
+
+  // In voice mode a silent turn just reopens the mic (D-55): `no-speech` is not an error there.
+  const quietNoSpeech = voiceMode.phase !== "off" && lastError?.code === "no-speech";
   const micError: VoiceErrorCode | null = emptyRelease
     ? "no-speech"
-    : lastError !== null && lastError.code !== "aborted"
+    : lastError !== null && lastError.code !== "aborted" && !quietNoSpeech
       ? lastError.code
       : null;
 
-  return { ...voice, awaitingConfirmation, micError, toggleVoice, pressMic, submitTranscript };
+  return { ...voice, awaitingConfirmation, micError, toggleVoice, submitTranscript, voiceMode };
 }

@@ -24,7 +24,9 @@ import {
   spokenForm,
   UNREACHABLE,
   UNSUPPORTED_CAPTION,
+  VOICE_IDLE_MUTED,
 } from "../src/chloe/script";
+import { IDLE_MUTE_MS } from "../src/chloe/voiceMode";
 import snapshot from "../src/offline/snapshot.json";
 import { createFakeVoiceProvider, type FakeVoiceProvider } from "../src/voice/fakeVoiceProvider";
 import type { ListenHandlers } from "../src/voice/provider";
@@ -62,12 +64,15 @@ async function enableVoice(user: ReturnType<typeof userEvent.setup>) {
   expect(toggle).toHaveAttribute("aria-checked", "true");
 }
 
-/** Push-to-talk: press the mic, let the fake recogniser hear `text`, release. */
-async function holdAndSay(user: ReturnType<typeof userEvent.setup>, voice: FakeVoiceProvider, text: string | null) {
-  const mic = await screen.findByTestId("mic-button");
-  await user.pointer({ keys: "[MouseLeft>]", target: mic });
-  if (text !== null) act(() => voice.transcribe(text));
-  await user.pointer({ keys: "[/MouseLeft]", target: mic });
+/**
+ * Voice mode (D-55): tap "Start voice mode" once unless the panel is already up, wait until Chloe
+ * has finished and the mic is open by itself, then let the fake provider hear `text` and end the
+ * turn on its own ("" is a silent turn).
+ */
+async function tapAndSay(user: ReturnType<typeof userEvent.setup>, voice: FakeVoiceProvider, text: string) {
+  if (!screen.queryByTestId("voice-panel")) await user.click(await screen.findByRole("button", { name: "Start voice mode" }));
+  await waitFor(() => expect(voice.isListening()).toBe(true));
+  act(() => voice.finishUtterance(text));
 }
 
 /** Leave /route through the footer, then come back through the top nav. */
@@ -137,7 +142,7 @@ describe("Chloe on /route", () => {
     expect(voice.spoken.some((line) => line.startsWith("Shall I find your route?"))).toBe(true);
     expect(screen.getByText(CAPTION)).toBeInTheDocument();
 
-    await holdAndSay(user, voice, "yes");
+    await tapAndSay(user, voice, "yes");
 
     expect(await screen.findByTestId("status-badge")).toHaveTextContent("Feasible");
     const seed = SEED_BRIEFS.find((b) => b.id === "brief-health-01");
@@ -156,7 +161,7 @@ describe("Chloe on /route", () => {
     await enableVoice(user);
     await waitFor(() => expect(voice.spoken).toContain(CONFIRM_PROMPT));
 
-    await holdAndSay(user, voice, "not yet");
+    await tapAndSay(user, voice, "not yet");
 
     await waitFor(() => expect(voice.spoken.at(-1)).toBe(CONFIRM_NO_REPLY));
     expect(engine.conversationPosts()).toHaveLength(0);
@@ -172,7 +177,7 @@ describe("Chloe on /route", () => {
     await openScenarioInChat(user, "Constrained brief");
     await enableVoice(user);
     await waitFor(() => expect(voice.spoken).toContain(CONFIRM_PROMPT));
-    await holdAndSay(user, voice, "go ahead");
+    await tapAndSay(user, voice, "go ahead");
 
     expect(await screen.findByTestId("status-badge")).toHaveTextContent("Partial");
     const route = snapshot.routes["brief-constrained-01"];
@@ -209,7 +214,7 @@ describe("Chloe on /route", () => {
     expect(voice.spoken).toEqual([GREETING, OFFLINE_ASSISTANT]);
     expect(engine.conversationPosts()).toHaveLength(2);
 
-    await holdAndSay(user, voice, "hello");
+    await tapAndSay(user, voice, "hello");
 
     await waitFor(() => expect(screen.getByLabelText("Reply to assistant")).toHaveValue("hello"));
     expect(engine.conversationPosts()).toHaveLength(2);
@@ -251,21 +256,24 @@ describe("Chloe on /route", () => {
     );
   });
 
-  it("a no-speech failure on release shows the mic error line, speaks it, and sends nothing", async () => {
+  it("a no-speech failure in voice mode just reopens the mic: no error line, nothing spoken, nothing sent (D-55)", async () => {
     const voice = createFakeVoiceProvider();
     const user = userEvent.setup();
     const engine = recordingFetch();
     renderApp("/route", engine.fetchLike, { voice });
     await enableVoice(user);
 
-    const mic = await screen.findByTestId("mic-button");
-    await user.pointer({ keys: "[MouseLeft>]", target: mic });
-    act(() => voice.fail("no-speech"));
-    await user.pointer({ keys: "[/MouseLeft]", target: mic });
+    await user.click(await screen.findByRole("button", { name: "Start voice mode" }));
+    await waitFor(() => expect(voice.isListening()).toBe(true));
+    act(() => {
+      voice.fail("no-speech");
+      voice.finishUtterance("");
+    });
 
-    expect(await screen.findByTestId("mic-error")).toHaveTextContent(MIC_ERRORS["no-speech"]);
-    await waitFor(() => expect(voice.spoken.at(-1)).toBe(MIC_ERRORS["no-speech"]));
-    expect(voice.spoken.filter((line) => line === MIC_ERRORS["no-speech"])).toHaveLength(1);
+    await waitFor(() => expect(voice.isListening()).toBe(true));
+    expect(screen.getByTestId("voice-mode-state")).toHaveTextContent("Listening");
+    expect(screen.queryByTestId("mic-error")).not.toBeInTheDocument();
+    expect(voice.spoken).toEqual([GREETING]);
     expect(engine.conversationPosts()).toHaveLength(0);
     expect(screen.getByText(CAPTION)).toBeInTheDocument();
   });
@@ -313,10 +321,10 @@ describe("Chloe on /route", () => {
       return (
         <div>
           <button onClick={() => session.enable()}>enable</button>
-          <button onClick={() => session.pressMic()}>press</button>
-          <button onClick={() => void session.releaseMic().then((text) => setReleased((all) => [...all, text]))}>
-            release
+          <button onClick={() => void session.listen().then(({ transcript }) => setReleased((all) => [...all, transcript]))}>
+            press
           </button>
+          <button onClick={() => session.finishListening()}>release</button>
           <div data-testid="released">{JSON.stringify(released)}</div>
         </div>
       );
@@ -345,7 +353,7 @@ describe("Chloe on /route", () => {
     expect(released).toEqual(["", "second utterance"]);
   });
 
-  it("disabling voice resolves a releaseMic still waiting for the recogniser's end", async () => {
+  it("disabling voice resolves a listen() still waiting for the recogniser's end", async () => {
     const fake = createFakeVoiceProvider();
     // A recogniser that never reports `end` on its own after stop(), like a slow browser.
     const voice = { ...fake, stopListening: () => undefined };
@@ -355,8 +363,8 @@ describe("Chloe on /route", () => {
       return (
         <div>
           <button onClick={() => session.enable()}>enable</button>
-          <button onClick={() => session.pressMic()}>press</button>
-          <button onClick={() => void session.releaseMic().then(setReleased)}>release</button>
+          <button onClick={() => void session.listen().then(({ transcript }) => setReleased(transcript))}>press</button>
+          <button onClick={() => session.finishListening()}>release</button>
           <button onClick={() => session.disable()}>disable</button>
           <div data-testid="released">{released === null ? "pending" : `resolved:${released}`}</div>
         </div>
@@ -452,7 +460,7 @@ describe("Chloe on /route", () => {
     await user.click(screen.getByRole("button", { name: "Send" }));
     await screen.findByRole("alert");
 
-    await holdAndSay(user, voice, "yes");
+    await tapAndSay(user, voice, "yes");
 
     await waitFor(() => expect(engine.conversationPosts()).toHaveLength(2));
     expect(engine.conversationPosts().map((p) => (p.body as { userMessage: string }).userMessage)).toEqual([
@@ -472,7 +480,7 @@ describe("Chloe on /route", () => {
 
     await user.click(screen.getByRole("button", { name: "Use the form instead" }));
     await user.click(await screen.findByRole("button", { name: "Back to chat" }));
-    await holdAndSay(user, voice, "yes");
+    await tapAndSay(user, voice, "yes");
 
     await waitFor(() => expect(engine.conversationPosts()).toHaveLength(1));
     expect((engine.conversationPosts()[0]!.body as { userMessage: string }).userMessage).toBe("yes");
@@ -504,10 +512,12 @@ describe("Chloe on /route", () => {
     renderApp("/route", engine.fetchLike, { voice });
     await enableVoice(user);
 
-    const mic = await screen.findByTestId("mic-button");
-    await user.pointer({ keys: "[MouseLeft>]", target: mic });
-    act(() => voice.fail("not-allowed"));
-    await user.pointer({ keys: "[/MouseLeft]", target: mic });
+    await user.click(await screen.findByRole("button", { name: "Start voice mode" }));
+    await waitFor(() => expect(voice.isListening()).toBe(true));
+    act(() => {
+      voice.fail("not-allowed");
+      voice.finishUtterance("");
+    });
 
     expect(await screen.findByTestId("mic-error")).toHaveTextContent(MIC_ERRORS["not-allowed"]);
     await new Promise((resolve) => setTimeout(resolve, 20));
@@ -601,5 +611,295 @@ describe("Chloe on /route", () => {
     await waitFor(() => expect(voice.spoken).toContain(CONFIRM_PROMPT));
     const readBack = voice.spoken.find((line) => line.startsWith("Here's your brief so far."));
     expect(readBack).toBeDefined();
+  });
+});
+
+/** The fake engine with POST /api/conversation held until the test calls `release()`. */
+function gatedConversation() {
+  let open: () => void = () => undefined;
+  const base = engineFetch();
+  const fetchLike: FetchLike = async (input, init) => {
+    const url = typeof input === "string" ? input : input instanceof URL ? input.href : input.url;
+    if (url.endsWith("/api/conversation")) await new Promise<void>((resolve) => (open = resolve));
+    return base(input, init);
+  };
+  return { fetchLike, release: () => open() };
+}
+
+const voiceState = () => screen.getByTestId("voice-mode-state");
+
+async function startVoiceMode(user: ReturnType<typeof userEvent.setup>) {
+  await user.click(await screen.findByRole("button", { name: "Start voice mode" }));
+}
+
+describe("Chloe's voice mode, ChatGPT / Claude style (#128, D-55)", () => {
+  it("one tap turns voice on, Chloe greets, then the mic opens by itself with no second tap", async () => {
+    const voice = createFakeVoiceProvider({ holdUtterances: true });
+    const user = userEvent.setup();
+    renderApp("/route", engineFetch(), { voice });
+
+    await startVoiceMode(user);
+    expect(voice.spoken).toEqual([GREETING]);
+    expect(screen.getByRole("switch", { name: "Voice: Chloe" })).toHaveAttribute("aria-checked", "true");
+    // The panel replaces the input row; its state is announced politely.
+    expect(screen.getByRole("region", { name: "Voice mode" })).toBeInTheDocument();
+    expect(screen.queryByLabelText("Reply to assistant")).not.toBeInTheDocument();
+    expect(voiceState()).toHaveTextContent("Speaking");
+    expect(voiceState()).toHaveAttribute("aria-live", "polite");
+    expect(voice.isListening()).toBe(false);
+
+    act(() => voice.finishSpeaking());
+    await waitFor(() => expect(voiceState()).toHaveTextContent("Listening"));
+    expect(voice.isListening()).toBe(true);
+    expect(screen.getByRole("button", { name: "Interrupt" })).toBeDisabled();
+    expect(screen.getByText(CONSENT_CAPTION)).toBeInTheDocument();
+  });
+
+  it("a finished utterance is submitted: Thinking while busy, Speaking for her reply, then Listening again", async () => {
+    const voice = createFakeVoiceProvider({ holdUtterances: true });
+    const user = userEvent.setup();
+    const gate = gatedConversation();
+    const engine = recordingFetch(gate.fetchLike);
+    renderApp("/route", engine.fetchLike, { voice });
+
+    await startVoiceMode(user);
+    act(() => voice.finishSpeaking());
+    await waitFor(() => expect(voice.isListening()).toBe(true));
+
+    act(() => voice.finishUtterance("I want to build something for farmers"));
+    await waitFor(() => expect(voiceState()).toHaveTextContent("Thinking"));
+    expect(engine.conversationPosts()).toHaveLength(1);
+    expect((engine.conversationPosts()[0]!.body as { userMessage: string }).userMessage).toBe(
+      "I want to build something for farmers",
+    );
+    expect(voice.isListening()).toBe(false);
+
+    act(() => gate.release());
+    await waitFor(() => expect(voice.spoken.at(-1)).toBe(QUESTIONS.title));
+    await waitFor(() => expect(voiceState()).toHaveTextContent("Speaking"));
+    expect(voice.isListening()).toBe(false);
+
+    act(() => voice.finishSpeaking());
+    await waitFor(() => expect(voiceState()).toHaveTextContent("Listening"));
+    expect(voice.isListening()).toBe(true);
+    expect(engine.conversationPosts()).toHaveLength(1);
+  });
+
+  it("Mute pauses the mic without leaving voice mode; Unmute opens it again", async () => {
+    const voice = createFakeVoiceProvider();
+    const user = userEvent.setup();
+    renderApp("/route", engineFetch(), { voice });
+    await startVoiceMode(user);
+    await waitFor(() => expect(voice.isListening()).toBe(true));
+
+    await user.click(screen.getByRole("button", { name: "Mute" }));
+    expect(voiceState()).toHaveTextContent("Muted");
+    expect(voice.isListening()).toBe(false);
+    expect(screen.getByRole("region", { name: "Voice mode" })).toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: "Unmute" }));
+    await waitFor(() => expect(voiceState()).toHaveTextContent("Listening"));
+    expect(voice.isListening()).toBe(true);
+  });
+
+  it("End and Escape each leave voice mode: Chloe stops, the mic closes, the input row and its draft come back", async () => {
+    const fake = createFakeVoiceProvider({ holdUtterances: true });
+    const cancelSpeech = vi.fn(() => fake.cancelSpeech());
+    const voice = { ...fake, cancelSpeech };
+    const user = userEvent.setup();
+    renderApp("/route", engineFetch(), { voice });
+    await user.type(await screen.findByLabelText("Reply to assistant"), "half a thought");
+
+    await startVoiceMode(user);
+    expect(voiceState()).toHaveTextContent("Speaking");
+    cancelSpeech.mockClear();
+    await user.click(screen.getByRole("button", { name: "End voice mode" }));
+    expect(cancelSpeech).toHaveBeenCalled();
+    expect(screen.queryByTestId("voice-panel")).not.toBeInTheDocument();
+    expect(screen.getByLabelText("Reply to assistant")).toHaveValue("half a thought");
+    expect(fake.isListening()).toBe(false);
+
+    await startVoiceMode(user);
+    await waitFor(() => expect(fake.isListening()).toBe(true));
+    await user.keyboard("{Escape}");
+    expect(screen.queryByTestId("voice-panel")).not.toBeInTheDocument();
+    expect(fake.isListening()).toBe(false);
+    expect(fake.spoken).toEqual([GREETING]);
+  });
+
+  it("tapping the orb while Chloe speaks interrupts her at once, drops her queued lines and starts listening", async () => {
+    const voice = createFakeVoiceProvider({ holdUtterances: true });
+    const user = userEvent.setup();
+    renderApp("/route", engineFetch(), { voice });
+    await openScenarioInChat(user, "Health pilot");
+
+    await startVoiceMode(user);
+    // The greeting is playing (held); the read-back and the confirm prompt wait in the queue.
+    expect(voice.spoken).toEqual([GREETING]);
+    await user.click(screen.getByRole("button", { name: "Interrupt" }));
+
+    await waitFor(() => expect(voiceState()).toHaveTextContent("Listening"));
+    expect(voice.isListening()).toBe(true);
+    act(() => voice.finishSpeaking());
+    await new Promise((resolve) => setTimeout(resolve, 20));
+    expect(voice.spoken).toEqual([GREETING]);
+    expect(voice.isListening()).toBe(true);
+  });
+
+  it("a provider with voice barge-in is watched only while Chloe speaks, and talking over her interrupts", async () => {
+    const fake = createFakeVoiceProvider({ holdUtterances: true });
+    let bargeIn: (() => void) | null = null;
+    const stopWatching = vi.fn();
+    const monitorBargeIn = vi.fn((onBargeIn: () => void) => {
+      bargeIn = onBargeIn;
+      return stopWatching;
+    });
+    const voice = { ...fake, monitorBargeIn };
+    const user = userEvent.setup();
+    renderApp("/route", engineFetch(), { voice });
+
+    await startVoiceMode(user);
+    await waitFor(() => expect(monitorBargeIn).toHaveBeenCalledTimes(1));
+    act(() => bargeIn!());
+
+    await waitFor(() => expect(voiceState()).toHaveTextContent("Listening"));
+    expect(fake.isListening()).toBe(true);
+    expect(stopWatching).toHaveBeenCalled();
+    expect(monitorBargeIn).toHaveBeenCalledTimes(1);
+  });
+
+  it("the route on screen ends voice mode once Chloe has read it", async () => {
+    const voice = createFakeVoiceProvider();
+    const user = userEvent.setup();
+    renderApp("/route", engineFetch(), { voice });
+    await openScenarioInChat(user, "Health pilot");
+
+    await tapAndSay(user, voice, "yes");
+    expect(await screen.findByTestId("status-badge")).toHaveTextContent("Feasible");
+    await waitFor(() => expect(voice.spoken.at(-1)).toBe("The full route is on screen, with the evidence behind each choice."));
+    await new Promise((resolve) => setTimeout(resolve, 20));
+    expect(voice.isListening()).toBe(false);
+
+    await user.click(screen.getByRole("button", { name: "Change brief" }));
+    await user.click(await screen.findByRole("button", { name: "Back to chat" }));
+    expect(screen.queryByTestId("voice-panel")).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Start voice mode" })).toBeInTheDocument();
+    expect(voice.isListening()).toBe(false);
+  });
+
+  it("turning voice off, leaving the chat for the form, and leaving /route each end voice mode", async () => {
+    const voice = createFakeVoiceProvider();
+    const user = userEvent.setup();
+    renderApp("/route", engineFetch(), { voice });
+
+    await startVoiceMode(user);
+    await waitFor(() => expect(voice.isListening()).toBe(true));
+    await user.click(screen.getByRole("switch", { name: "Voice: Chloe" }));
+    expect(screen.queryByTestId("voice-panel")).not.toBeInTheDocument();
+    expect(voice.isListening()).toBe(false);
+
+    await startVoiceMode(user);
+    await waitFor(() => expect(voice.isListening()).toBe(true));
+    await user.click(screen.getByRole("button", { name: "Use the form instead" }));
+    await user.click(await screen.findByRole("button", { name: "Back to chat" }));
+    expect(screen.queryByTestId("voice-panel")).not.toBeInTheDocument();
+    expect(voice.isListening()).toBe(false);
+
+    await startVoiceMode(user);
+    await waitFor(() => expect(voice.isListening()).toBe(true));
+    await leaveAndReturn(user);
+    await screen.findByRole("heading", { level: 1, name: "Describe your MVP" });
+    expect(screen.queryByTestId("voice-panel")).not.toBeInTheDocument();
+    expect(voice.isListening()).toBe(false);
+  });
+
+  it.each(["not-allowed", "audio-capture"] as const)("a %s error is spoken once and ends voice mode", async (code) => {
+    const voice = createFakeVoiceProvider();
+    const user = userEvent.setup();
+    const engine = recordingFetch();
+    renderApp("/route", engine.fetchLike, { voice });
+    await startVoiceMode(user);
+    await waitFor(() => expect(voice.isListening()).toBe(true));
+
+    act(() => {
+      voice.fail(code);
+      voice.finishUtterance("");
+    });
+
+    await waitFor(() => expect(screen.queryByTestId("voice-panel")).not.toBeInTheDocument());
+    expect(await screen.findByTestId("mic-error")).toHaveTextContent(MIC_ERRORS[code]);
+    await new Promise((resolve) => setTimeout(resolve, 20));
+    expect(voice.spoken.filter((line) => line === MIC_ERRORS[code])).toHaveLength(1);
+    expect(voice.isListening()).toBe(false);
+    expect(engine.conversationPosts()).toHaveLength(0);
+  });
+
+  it("silent turns reopen the mic and send nothing; after two minutes without speech it mutes itself and says so once", async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    try {
+      const voice = createFakeVoiceProvider();
+      const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+      const engine = recordingFetch();
+      renderApp("/route", engine.fetchLike, { voice });
+      await startVoiceMode(user);
+
+      for (let turn = 0; turn < 2; turn += 1) {
+        await waitFor(() => expect(voice.isListening()).toBe(true));
+        act(() => voice.finishUtterance(""));
+      }
+      await waitFor(() => expect(voice.isListening()).toBe(true));
+      expect(voiceState()).toHaveTextContent("Listening");
+      expect(engine.conversationPosts()).toHaveLength(0);
+
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(IDLE_MUTE_MS);
+      });
+      await waitFor(() => expect(voiceState()).toHaveTextContent("Muted"));
+      expect(voice.isListening()).toBe(false);
+      expect(voice.spoken.filter((line) => line === VOICE_IDLE_MUTED)).toHaveLength(1);
+      expect(engine.conversationPosts()).toHaveLength(0);
+
+      await user.click(screen.getByRole("button", { name: "Unmute" }));
+      await waitFor(() => expect(voice.isListening()).toBe(true));
+      expect(voice.spoken.filter((line) => line === VOICE_IDLE_MUTED)).toHaveLength(1);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("a spoken 'not yet' to the read-back keeps the conversation going: her reply, then the mic reopens", async () => {
+    const voice = createFakeVoiceProvider();
+    const user = userEvent.setup();
+    const engine = recordingFetch();
+    renderApp("/route", engine.fetchLike, { voice });
+    await openScenarioInChat(user, "Health pilot");
+
+    await tapAndSay(user, voice, "not yet");
+    await waitFor(() => expect(voice.spoken.at(-1)).toBe(CONFIRM_NO_REPLY));
+    await waitFor(() => expect(voice.isListening()).toBe(true));
+    expect(voiceState()).toHaveTextContent("Listening");
+    expect(engine.conversationPosts()).toHaveLength(0);
+
+    await tapAndSay(user, voice, "make it five builders");
+    await waitFor(() => expect(engine.conversationPosts()).toHaveLength(1));
+    expect((engine.conversationPosts()[0]!.body as { userMessage: string }).userMessage).toBe("make it five builders");
+  });
+
+  it("dictation (keyless engine) puts the words in the reply box and ends voice mode", async () => {
+    const voice = createFakeVoiceProvider();
+    const user = userEvent.setup();
+    const engine = recordingFetch(engineFetch({ conversation: () => jsonResponse(keylessClarificationFor({})) }));
+    renderApp("/route", engine.fetchLike, { voice });
+    await enableVoice(user);
+    await user.type(screen.getByLabelText("Reply to assistant"), "a clinic triage tool");
+    await user.click(screen.getByRole("button", { name: "Send" }));
+    await waitFor(() => expect(voice.spoken).toEqual([GREETING, OFFLINE_ASSISTANT]));
+
+    await tapAndSay(user, voice, "for community health workers");
+
+    await waitFor(() => expect(screen.getByLabelText("Reply to assistant")).toHaveValue("for community health workers"));
+    expect(screen.queryByTestId("voice-panel")).not.toBeInTheDocument();
+    expect(voice.isListening()).toBe(false);
+    expect(engine.conversationPosts()).toHaveLength(1);
   });
 });

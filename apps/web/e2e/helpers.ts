@@ -9,6 +9,8 @@ type ChloeVoiceWindowHook = {
   spoken(): string[];
   transcribe(text: string): void;
   fail(code: string): void;
+  finishUtterance(text: string): void;
+  isListening(): boolean;
   finishSpeaking(): void;
 };
 
@@ -26,17 +28,17 @@ export async function enableVoice(page: Page) {
 }
 
 /**
- * Push-to-talk through the fake provider (Sprint 006 blueprint `holdAndSay`): holds the mic
- * button, injects `text` as a recognition result via `window.__chloeVoice.transcribe`, then
- * releases, exactly like a founder speaking and letting go.
+ * Voice mode through the fake provider (D-55, replaces Sprint 006's `holdAndSay`): taps "Start
+ * voice mode" once unless the voice panel is already up, waits until Chloe has finished and the
+ * mic has opened by itself, then lets the fake hear `text` and end the turn on its own, exactly
+ * like a founder speaking and pausing.
  */
-export async function holdAndSay(page: Page, text: string) {
-  const mic = page.getByTestId("mic-button");
-  await mic.hover();
-  await page.mouse.down();
-  await page.waitForFunction(() => window.__chloeVoice !== undefined);
-  await page.evaluate((spoken) => window.__chloeVoice!.transcribe(spoken), text);
-  await page.mouse.up();
+export async function tapAndSay(page: Page, text: string) {
+  if ((await page.getByTestId("voice-panel").count()) === 0) {
+    await page.getByRole("button", { name: "Start voice mode" }).click();
+  }
+  await page.waitForFunction(() => window.__chloeVoice?.isListening() === true);
+  await page.evaluate((spoken) => window.__chloeVoice!.finishUtterance(spoken), text);
 }
 
 /** Every line the fake voice provider has spoken so far, in order (Sprint 006 blueprint `spoken`). */
