@@ -6,7 +6,7 @@
 | Q-02 | Anthropic API key available in `.env` for Sprint 001? | Operator | Wed 2026-09-23 | Closed — D-26: all keys arrive via `.env`; the Builder reads `ANTHROPIC_API_KEY` from it and never asks in chat |
 | Q-03 | Clerk application (publishable + secret keys, webhook signing secret) created? | Operator | Sat 2026-09-26 | Open — values will be delivered via `.env` (D-26) |
 | Q-04 | Neon project created; pooled `DATABASE_URL` for `main` and a `demo` branch known? (Neon MCP is connected in the Architect session and can create it on request.) | Operator | Sat 2026-09-26 | Open — value will be delivered via `.env` (D-26) |
-| Q-05 | Railway project and Vercel project names, or should the Builder create them via CLI in Sprint 005? | Operator | Tue 2026-09-29 | Closed — D-27: the Operator runs every Railway and Vercel CLI command by hand from `docs/DEPLOY.md` |
+| Q-05 | Render (Railway at the time) project and Vercel project names, or should the Builder create them via CLI in Sprint 005? | Operator | Tue 2026-09-29 | Closed — D-27: the Operator runs every Render (Railway at the time, D-57) and Vercel CLI command by hand from `docs/DEPLOY.md` |
 | Q-06 | Does the hackathon require a public URL at submission, or is laptop + recording enough? | Operator | Sun 2026-09-27 | Open |
 | Q-07 | Recording tool for the fallback demo (OBS, Loom, QuickTime)? | Operator | Tue 2026-09-29 | Closed — D-28: Playwright CLI records the demo video |
 | Q-08 | Names of any additional team members and their roles (reviewer? designer?). | Operator | Before the pitch deck is finalised (Sprint 005) | Open — Operator 2026-09-24: founder is **Njuguna Njenga**; every other name stays blank on the deck and README until the Operator supplies it |

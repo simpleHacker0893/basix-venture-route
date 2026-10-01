@@ -399,7 +399,7 @@ Planning follows the 120x Architect/Builder Operating Pack. Start with `AGENTS.m
 | 003 Marketplace | 23 Sep | Clerk roles, Postgres store, profiles and proof, admin confirmation projected into the graph | merged |
 | 004 Requests & interviews | 24 Sep | requests published from a route, eligibility-gated bids, interview bookings, founder dashboard | merged |
 | 005a Builder Showcase | 25–27 Sep | public showcase of shipped products, certifications and skills, admin-gated, display-only (D-42, D-43) | merged |
-| 005 Demo hardening | 28 Sep – 1 Oct | single launch command, Railway + Vercel deploy, recording, pitch, freeze | in progress |
+| 005 Demo hardening | 28 Sep – 1 Oct | single launch command, Render + Vercel deploy, recording, pitch, freeze | in progress |
 | 006 Chloe voice intake | folded into 005a | browser-speech voice skin over the unchanged conversation API (D-38, D-51) | merged |
 
 ## Limitations and what is next
@@ -409,7 +409,7 @@ We would rather state these than have you find them.
 - **Demo data only.** Every builder, credential, project, cohort, university and partner is fictional and labelled. No real BASIX integration, personal data, IP ownership claim or partner relationship is represented.
 - **No payments, contracting or hiring.** Requests, bids and interview bookings are in-app state only.
 - **The language model is optional.** Without a key the engine uses a null adapter and the structured form; routes are identical, because the model never decides them.
-- **Hosted deployment** (Railway engine, Vercel web) is being completed for the demo; until then run it locally with the [Quick start](#quick-start). Reprojection latency on the hosted Neon database is a tracked item (issue #51).
+- **Hosted deployment** (Render engine, Vercel web) is being completed for the demo; until then run it locally with the [Quick start](#quick-start). Reprojection latency on the hosted Neon database is a tracked item (issue #51).
 
 **Next:** real BASIX data replacing the seed graph through the existing projection path, voice intake hardening, and richer partner and cohort facts for the rules to reason over. The rule names stay fixed; new facts, not new matchers.
 

@@ -1,4 +1,4 @@
-# Vercel hosts only apps/web (D-05); the engine runs on Railway. Upload just what the web build
+# Vercel hosts only apps/web (D-05); the engine runs on Render. Upload just what the web build
 # needs: the pnpm workspace root files, apps/web and packages/contracts.
 
 # Secrets never leave the machine; Vercel env vars are set in the project instead.

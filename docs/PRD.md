@@ -344,7 +344,7 @@ Projection: on every confirmed write (profile, project, credential, confirmation
 This document is kept as written. Where `planning/DECISIONS.md` supersedes it, the decision wins:
 
 - **Database:** Neon Postgres with SQLModel and Alembic, as written in §6 (D-17; a same-day switch to Convex, D-02, was reversed).
-- **Deploy:** engine container on Railway (Render fallback), web on Vercel, Neon for the database (D-05).
+- **Deploy:** engine container on Render, web on Vercel, Neon for the database (D-05).
 - **LLM:** Anthropic `claude-opus-5` through the official Python SDK (D-06).
 - **Open questions 1–5** are resolved by D-08, D-09, D-07, D-15 and D-03. Question 6 is answered by `docs/design/stitch-prompts.md`. Questions 7 and 8 remain in `planning/QUESTIONS.md` and `planning/TIMELINE.md` (scope-floor trigger at gate G2).
 - **Timeline:** demo is Thursday 1 October 2026; see `planning/TIMELINE.md`.
