@@ -19,6 +19,7 @@ import { ApiValidationError } from "../../api/client";
 import { useMarketplaceApi } from "../../api/marketplaceContext";
 import { useAuthState } from "../../auth/authContext";
 import { SIGN_IN_TO_PUBLISH, stashAvailable, writeStash } from "../../lib/publishStash";
+import { writeRoleIntent } from "../../lib/roleIntent";
 import { routeSnapshot } from "../../lib/routeSnapshot";
 import { errorMessage } from "../builder/formStyles";
 
@@ -48,6 +49,8 @@ export function PublishRequestButton({ brief, route }: Props) {
         variant="secondary"
         onClick={() => {
           writeStash({ brief, route });
+          // Only founders publish, so sign-in skips "Who are you?" and saves founder (D-54).
+          writeRoleIntent("founder");
           void navigate(SIGN_IN_TO_PUBLISH);
         }}
       >

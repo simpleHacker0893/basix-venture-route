@@ -142,19 +142,22 @@ describe("formatNairobi", () => {
 });
 
 describe("/dashboard", () => {
-  it("shows every tile from counts, the briefs-and-routes table, bids received and upcoming interviews", async () => {
+  it("shows the next step, each venture's pipeline, the bids to review, the interviews and the counts", async () => {
     const marketplace = renderDashboard();
 
-    await screen.findByRole("heading", { level: 1, name: "Your ventures" });
+    await screen.findByRole("heading", { level: 1, name: "Home" });
     expect(marketplace.getDashboard).toHaveBeenCalledTimes(1);
+    const next = screen.getByRole("region", { name: "Next step" });
+    expect(next).toHaveTextContent("You have 1 bid on");
+    expect(within(next).getByRole("link", { name: /Review bids/ })).toHaveAttribute("href", "/dashboard#bids");
     const tiles = screen.getAllByTestId("tile");
     expect(tiles.map((tile) => tile.dataset.tile)).toEqual(["briefs", "routes", "openRequests", "bidsReceived", "bookings"]);
-    expect(tiles.map((tile) => within(tile).getByTestId("tile-count").textContent)).toEqual(["2", "2", "1", "1", "2"]);
-    expect(tiles[1]).toHaveTextContent("1 feasible · 1 partial · 0 infeasible");
-    expect(screen.getByRole("link", { name: "New brief" })).toHaveAttribute("href", "/route");
+    expect(tiles.map((tile) => within(tile).getByTestId("tile-count").textContent)).toEqual(["2", "1 · 1", "1", "1", "2"]);
+    expect(tiles[1]).toHaveTextContent("feasible · partial routes");
+    expect(screen.getAllByRole("link", { name: "New route" })[0]).toHaveAttribute("href", "/route");
 
-    const table = screen.getByRole("table", { name: "Briefs and routes" });
-    const rows = within(table).getAllByRole("row").slice(1);
+    const list = screen.getByRole("list", { name: "Briefs and routes" });
+    const rows = within(list).getAllByRole("listitem", { name: /./ }).filter((item) => item.parentElement === list);
     expect(rows).toHaveLength(2);
     expect(rows[0]).toHaveTextContent(constrained.title);
     expect(rows[0]).toHaveTextContent("Agri");
@@ -164,9 +167,10 @@ describe("/dashboard", () => {
     expect(within(rows[0]!).getByText("Demo data")).toBeInTheDocument();
     expect(rows[1]).toHaveTextContent("Feasible");
     expect(rows[1]).toHaveTextContent("Closed");
-    expect(rows[1]).toHaveTextContent("3");
+    expect(rows[1]).toHaveTextContent("team of 3");
+    expect(within(rows[0]!).getByRole("list", { name: `${constrained.title} progress` })).toHaveTextContent("Bids (1)");
 
-    const bids = screen.getByRole("region", { name: "Bids received" });
+    const bids = screen.getByRole("region", { name: "Bids to review" });
     expect(bids).toHaveTextContent("Naomi Chebet");
     expect(bids).toHaveTextContent("USD 120 / day");
     expect(bids).toHaveTextContent(`for ${constrained.title}`);
@@ -175,7 +179,7 @@ describe("/dashboard", () => {
       "/bookings/new?builder=naomi-chebet&request=r-constrained",
     );
 
-    const interviews = screen.getByRole("region", { name: "Upcoming interviews" });
+    const interviews = screen.getByRole("region", { name: "Interviews" });
     const link = within(interviews).getByRole("link", { name: /Naomi Chebet/ });
     expect(link).toHaveAttribute("href", "/bookings/k-1");
     expect(interviews).toHaveTextContent("Fri 25 Sep 2026 · 09:00 EAT");
@@ -186,10 +190,10 @@ describe("/dashboard", () => {
   it("View route re-routes the stored brief through the engine and opens the route result", async () => {
     const user = userEvent.setup();
     renderDashboard();
-    await screen.findByRole("heading", { level: 1, name: "Your ventures" });
+    await screen.findByRole("heading", { level: 1, name: "Home" });
 
-    const table = screen.getByRole("table", { name: "Briefs and routes" });
-    await user.click(within(table).getAllByRole("button", { name: "View route" })[0]!);
+    const list = screen.getByRole("list", { name: "Briefs and routes" });
+    await user.click(within(list).getAllByRole("button", { name: "View route" })[0]!);
 
     expect(await screen.findByRole("heading", { level: 1, name: "Your route through BASIX" })).toBeInTheDocument();
     expect(screen.getByTestId("status-badge")).toHaveTextContent(/^Partial$/);
@@ -199,8 +203,9 @@ describe("/dashboard", () => {
   it("renders the empty states", async () => {
     renderDashboard(empty);
 
-    await screen.findByRole("heading", { level: 1, name: "Your ventures" });
-    expect(screen.getAllByTestId("tile-count").map((el) => el.textContent)).toEqual(["0", "0", "0", "0", "0"]);
+    await screen.findByRole("heading", { level: 1, name: "Home" });
+    expect(screen.getAllByTestId("tile-count").map((el) => el.textContent)).toEqual(["0", "0 · 0", "0", "0", "0"]);
+    expect(screen.getByRole("region", { name: "Next step" })).toHaveTextContent("Route your first venture");
     expect(screen.getByText("No briefs published yet. Route a brief and publish it as a request.")).toBeInTheDocument();
     expect(screen.getByText("No bids yet.")).toBeInTheDocument();
     expect(screen.getByText("No interviews booked yet.")).toBeInTheDocument();
@@ -209,6 +214,6 @@ describe("/dashboard", () => {
   it("is behind the founder guard", async () => {
     renderDashboard(dashboard, builderAuth);
 
-    await waitFor(() => expect(screen.queryByRole("heading", { level: 1, name: "Your ventures" })).not.toBeInTheDocument());
+    await waitFor(() => expect(screen.queryByRole("region", { name: "Next step" })).not.toBeInTheDocument());
   });
 });

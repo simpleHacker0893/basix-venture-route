@@ -6,16 +6,21 @@
 import type { RoleChoice, RoleResponse } from "@venture-route/contracts";
 import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { createRequest } from "../src/api/client";
 import type { MarketplaceApi } from "../src/api/marketplace";
 import { App } from "../src/App";
 import type { AuthState, Role } from "../src/auth/authContext";
 import { createOfflineSource } from "../src/api/offline";
+import { ROLE_INTENT_KEY } from "../src/lib/roleIntent";
 import { fakeMarketplace as fakeApi } from "./fakeMarketplace";
 
 const source = createOfflineSource();
+
+beforeEach(() => {
+  window.sessionStorage.clear();
+});
 
 function authState(overrides: Partial<AuthState> = {}): AuthState {
   return {
@@ -51,12 +56,16 @@ describe("no-key mode", () => {
     expect(screen.getByRole("heading", { level: 1, name: "Describe your MVP" })).toBeInTheDocument();
   });
 
-  it("renders the sign-in frame with the panel inside", () => {
+  it("renders the role step, then the sign-in frame with the panel inside", async () => {
+    const user = userEvent.setup();
     render(<App initialPath="/sign-in" source={source} />);
+
+    expect(screen.getByRole("heading", { level: 1, name: "Who are you?" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Route without an account" })).toHaveAttribute("href", "/route");
+    await user.click(screen.getByRole("button", { name: "Continue as founder" }));
 
     expect(screen.getByRole("heading", { level: 1, name: "Welcome back" })).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Sign-in is not configured" })).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "Route without an account" })).toHaveAttribute("href", "/route");
   });
 });
 
@@ -64,29 +73,31 @@ describe("RequireRole", () => {
   it("sends a signed-out visitor at /admin to the sign-in screen", () => {
     render(<App initialPath="/admin" source={source} auth={authState()} />);
 
-    expect(screen.getByRole("heading", { level: 1, name: "Welcome back" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { level: 1, name: "Who are you?" })).toBeInTheDocument();
   });
 
   it("sends a signed-in user without a role to the role cards", () => {
     render(<App initialPath="/profile" source={source} auth={signedIn(null)} />);
 
-    expect(screen.getByRole("button", { name: /I am a founder/ })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /I am a builder/ })).toBeInTheDocument();
-    // Requests, bids and interviews are Sprint 004: the cards describe only what ships (rule 10, D-36).
-    expect(screen.queryByText(/bid on requests|post requests|book interviews/i)).not.toBeInTheDocument();
-    expect(screen.getByText(/describe your MVP/i)).toBeInTheDocument();
+    expect(screen.getByRole("heading", { level: 1, name: "Who are you?" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /I’m a founder/ })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /I’m a builder/ })).toBeInTheDocument();
+    // Requests, bids and interviews shipped in Sprint 004, so the cards may name them (rule 10).
+    expect(screen.getByText("Publish requests, book interviews")).toBeInTheDocument();
+    expect(screen.getByText("Bid on requests, take interviews")).toBeInTheDocument();
+    expect(screen.getByText(/role is set once/i)).toBeInTheDocument();
   });
 
-  it("sends a builder away from /admin to their profile", () => {
+  it("sends a builder away from /admin to their home", () => {
     render(<App initialPath="/admin" source={source} auth={signedIn("builder")} />);
 
-    expect(screen.getByRole("heading", { level: 1, name: "Your profile" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { level: 1, name: "Home" })).toBeInTheDocument();
   });
 
   it("lets an admin see the confirmation queue", () => {
     render(<App initialPath="/admin" source={source} auth={signedIn("admin")} />);
 
-    expect(screen.getByRole("heading", { level: 1, name: "Confirmation queue" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { level: 1, name: "Review queue" })).toBeInTheDocument();
   });
 
   it("sends a founder away from /profile to the routing page", () => {
@@ -112,9 +123,12 @@ describe("RoleSelect", () => {
     });
 
     render(<App initialPath="/choose-role" source={source} auth={state} marketplace={marketplace} />);
-    await user.click(screen.getByRole("button", { name: /I am a builder/ }));
+    await user.click(screen.getByRole("button", { name: /I’m a builder/ }));
+    expect(screen.getByRole("button", { name: /I’m a builder/ })).toHaveAttribute("aria-pressed", "true");
+    expect(posted).toEqual([]); // selecting a card saves nothing until Continue
+    await user.click(screen.getByRole("button", { name: "Continue as builder" }));
 
-    await waitFor(() => expect(screen.getByRole("heading", { level: 1, name: "Your profile" })).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByRole("heading", { level: 1, name: "Home" })).toBeInTheDocument());
     expect(posted).toEqual([{ role: "builder" }]);
     expect(reload).toHaveBeenCalledTimes(1);
   });
@@ -126,16 +140,17 @@ describe("RoleSelect", () => {
     });
 
     render(<App initialPath="/choose-role" source={source} auth={signedIn(null)} marketplace={marketplace} />);
-    await user.click(screen.getByRole("button", { name: /I am a founder/ }));
+    await user.click(screen.getByRole("button", { name: /I’m a founder/ }));
+    await user.click(screen.getByRole("button", { name: "Continue as founder" }));
 
     expect(await screen.findByRole("alert")).toHaveTextContent(/409/);
-    expect(screen.getByRole("button", { name: /I am a founder/ })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /I’m a founder/ })).toBeInTheDocument();
   });
 
   it("redirects a user who already has a role to that role's home", () => {
     render(<App initialPath="/choose-role" source={source} auth={signedIn("admin")} />);
 
-    expect(screen.getByRole("heading", { level: 1, name: "Confirmation queue" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { level: 1, name: "Review queue" })).toBeInTheDocument();
   });
 });
 
@@ -162,5 +177,82 @@ describe("bearer token", () => {
       ["/api/scenarios", null],
       ["/health", null],
     ]);
+  });
+});
+
+describe("role first (D-54)", () => {
+  it("asks who you are before sign-in, remembers the pick and shows it on the sign-up step", async () => {
+    const user = userEvent.setup();
+    render(<App initialPath="/sign-up" source={source} auth={authState()} />);
+
+    expect(screen.getByRole("heading", { level: 1, name: "Who are you?" })).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: /I’m a builder/ }));
+    await user.click(screen.getByRole("button", { name: "Continue as builder" }));
+
+    expect(screen.getByRole("heading", { level: 1, name: "Create your builder account" })).toBeInTheDocument();
+    expect(window.sessionStorage.getItem(ROLE_INTENT_KEY)).toBe("builder");
+    await user.click(screen.getByRole("button", { name: "Builder: change role" }));
+    expect(screen.getByRole("heading", { level: 1, name: "Who are you?" })).toBeInTheDocument();
+    expect(window.sessionStorage.getItem(ROLE_INTENT_KEY)).toBeNull();
+  });
+
+  it("goes back from sign-in to the role step with the pick kept, and from the role step to the landing page", async () => {
+    const user = userEvent.setup();
+    render(<App initialPath="/sign-in" source={source} auth={authState()} />);
+
+    await user.click(screen.getByRole("button", { name: /I’m a builder/ }));
+    await user.click(screen.getByRole("button", { name: "Continue as builder" }));
+    expect(screen.getByRole("heading", { level: 1, name: "Welcome back" })).toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: "Back" }));
+    expect(screen.getByRole("heading", { level: 1, name: "Who are you?" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /I’m a builder/ })).toHaveAttribute("aria-pressed", "true");
+    expect(window.sessionStorage.getItem(ROLE_INTENT_KEY)).toBeNull();
+
+    // Opened directly (no history in this tab), Back on the role step goes to the landing page.
+    await user.click(screen.getByRole("button", { name: "Back" }));
+    expect(await screen.findByRole("heading", { level: 1, name: "A founding team you can verify." })).toBeInTheDocument();
+  });
+
+  it("lets a BASIX admin skip the role cards", async () => {
+    const user = userEvent.setup();
+    render(<App initialPath="/sign-in" source={source} auth={authState()} />);
+
+    await user.click(screen.getByRole("button", { name: "BASIX admin? Sign in" }));
+
+    expect(screen.getByRole("heading", { level: 1, name: "Welcome back" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Admin: change role" })).toBeInTheDocument();
+  });
+
+  it("saves the picked role once after sign-in and lands on that role's home", async () => {
+    window.sessionStorage.setItem(ROLE_INTENT_KEY, "builder");
+    const posted: RoleChoice[] = [];
+    const state = signedIn(null);
+    state.reload = vi.fn(async () => {
+      state.role = "builder";
+    });
+    const marketplace = fakeMarketplace(async (choice) => {
+      posted.push(choice);
+      return { clerkId: "user_1", role: choice.role, confirmed: false };
+    });
+
+    render(<App initialPath="/choose-role" source={source} auth={state} marketplace={marketplace} />);
+
+    expect(await screen.findByRole("heading", { level: 1, name: "Home" })).toBeInTheDocument();
+    expect(posted).toEqual([{ role: "builder" }]);
+    expect(window.sessionStorage.getItem(ROLE_INTENT_KEY)).toBeNull();
+  });
+
+  it("keeps an existing account's role and says so when the other card was picked", async () => {
+    window.sessionStorage.setItem(ROLE_INTENT_KEY, "builder");
+    const postRole = vi.fn();
+    render(<App initialPath="/choose-role" source={source} auth={signedIn("founder")} marketplace={fakeMarketplace(postRole)} />);
+
+    expect(await screen.findByRole("status", { name: "Role note" })).toHaveTextContent(
+      "You picked builder, but this account is already a founder account. A role is set once, so you're signed in as a founder.",
+    );
+    expect(screen.getByRole("heading", { level: 1, name: "Describe your MVP" })).toBeInTheDocument();
+    expect(postRole).not.toHaveBeenCalled();
+    expect(window.sessionStorage.getItem(ROLE_INTENT_KEY)).toBeNull();
   });
 });

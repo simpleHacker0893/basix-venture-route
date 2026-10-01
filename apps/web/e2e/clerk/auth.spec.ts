@@ -17,10 +17,10 @@ test.describe("three-role smoke", () => {
     await expect(page.getByRole("heading", { level: 1, name: HOME_HEADING.founder })).toBeVisible();
   });
 
-  test("builder signs in, lands on Your profile, is refused on /api/admin/pending and sent away from /admin", async ({ page }) => {
+  test("builder signs in, lands on Home, is refused on /api/admin/pending and sent away from /admin", async ({ page }) => {
     await signInAs(page, "builder");
 
-    await expect(page).toHaveURL(/\/profile$/);
+    await expect(page).toHaveURL(/\/home$/);
     const token = await expectRoleClaim(page, "/api/me/credentials");
     const pending = await engineGet(page, "/api/admin/pending", token);
     expect(pending.status()).toBe(403);
@@ -28,7 +28,7 @@ test.describe("three-role smoke", () => {
 
     await page.goto("/admin");
     await expect(page.getByRole("heading", { level: 1, name: HOME_HEADING.builder })).toBeVisible();
-    await expect(page).toHaveURL(/\/profile$/);
+    await expect(page).toHaveURL(/\/home$/);
   });
 
   test("admin (bootstrapped by the ADMIN_EMAILS webhook) signs in and lands on the confirmation queue", async ({ page }) => {

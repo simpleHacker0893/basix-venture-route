@@ -86,7 +86,7 @@ test("founder routes the Constrained brief and publishes it as a request", async
 
   await page.getByRole("button", { name: "Publish as request" }).click();
 
-  await expect(page.getByRole("heading", { level: 1, name: "Your ventures" })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1, name: "Home" })).toBeVisible();
   const table = page.getByRole("table", { name: "Briefs and routes" });
   const rows = table.getByRole("row");
   await expect(rows).toHaveCount(2);
@@ -120,7 +120,7 @@ test("builder sees Eligible · Mobile on the board and bids", async ({ page }) =
 test("founder sees the bid on the dashboard and proposes an interview", async ({ page }) => {
   await signInAs(page, "founder");
   await page.goto("/dashboard");
-  const bids = page.getByRole("region", { name: "Bids received" });
+  const bids = page.getByRole("region", { name: "Bids to review" });
   await expect(bids).toContainText(displayName());
   await expect(bids).toContainText("USD 120 / day");
 

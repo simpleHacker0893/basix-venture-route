@@ -24,8 +24,11 @@ COPY scripts ./scripts
 RUN --mount=type=cache,target=/root/.cache/uv \
     uv sync --frozen --no-dev
 
-RUN groupadd --system app && useradd --system --gid app --home /app app
+RUN groupadd --system app && useradd --system --gid app --home /app app \
+    && chown -R app:app /app /opt/venv
 USER app
+ENV HOME=/app
+ENV PATH="/opt/venv/bin:$PATH"
 
 EXPOSE 8000
 ENV PATH="/opt/venv/bin:$PATH"

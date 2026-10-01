@@ -2,7 +2,9 @@ import { useEffect } from "react";
 import { Outlet, Route, Routes, useLocation } from "react-router";
 
 import { RequireRole } from "./auth/RequireRole";
+import { AppShell } from "./components/AppShell";
 import { OfflineBanner } from "./components/OfflineBanner";
+import { RoleIntentBridge } from "./components/RoleIntentBridge";
 import { SiteFooter } from "./components/SiteFooter";
 import { TopNav } from "./components/TopNav";
 import { AdminHome } from "./features/admin/AdminHome";
@@ -11,6 +13,7 @@ import { SignInScreen } from "./features/auth/SignInScreen";
 import { BookingProposePage } from "./features/booking/BookingProposePage";
 import { BookingStatusPage } from "./features/booking/BookingStatusPage";
 import { AddProjectPage } from "./features/builder/AddProjectPage";
+import { BuilderHome } from "./features/builder/BuilderHome";
 import { ProfilePage } from "./features/builder/ProfilePage";
 import { CandidatePage } from "./features/candidate/CandidatePage";
 import { DashboardPage } from "./features/dashboard/DashboardPage";
@@ -58,9 +61,29 @@ function Layout() {
   );
 }
 
+/** Sign-in, sign-up and role choice render full-screen in the split AuthShell (own <main>). */
+function AuthLayout() {
+  return (
+    <div className="min-h-screen bg-ground text-ink">
+      <ScrollToHash />
+      <OfflineBanner />
+      <Outlet />
+    </div>
+  );
+}
+
 export function AppRoutes() {
   return (
-    <Routes>
+    <>
+      {/* Saves the role picked before sign-in wherever Clerk lands the person (D-54). */}
+      <RoleIntentBridge />
+      <Routes>
+      <Route element={<AuthLayout />}>
+        {/* Clerk's path routing owns the sub-paths (factor steps, SSO callback). */}
+        <Route path="sign-in/*" element={<SignInScreen />} />
+        <Route path="sign-up/*" element={<SignInScreen />} />
+        <Route path="choose-role" element={<RoleSelect />} />
+      </Route>
       <Route element={<Layout />}>
         <Route index element={<LandingPage />} />
         <Route path="route" element={<RoutePage />} />
@@ -70,33 +93,43 @@ export function AppRoutes() {
         <Route path="showcase" element={<ShowcaseGalleryPage />} />
         <Route path="showcase/:projectId" element={<ShowcaseDetailPage />} />
         <Route path="privacy" element={<PrivacyPage />} />
-        {/* Clerk's path routing owns the sub-paths (factor steps, SSO callback). */}
-        <Route path="sign-in/*" element={<SignInScreen />} />
-        <Route path="sign-up/*" element={<SignInScreen />} />
-        <Route path="choose-role" element={<RoleSelect />} />
-        <Route element={<RequireRole roles={["builder"]} />}>
+      </Route>
+      {/* Signed-in pages: the role gate, then the app shell (sidebar, top bar, tab bar). */}
+      <Route element={<RequireRole roles={["builder"]} />}>
+        <Route element={<AppShell />}>
+          {/* The builder's home: status, requests with the engine's verdicts, bids, interviews. */}
+          <Route path="home" element={<BuilderHome />} />
           <Route path="profile" element={<ProfilePage />} />
           <Route path="profile/projects/new" element={<AddProjectPage />} />
           {/* Sprint 004 screen 10: the requests board with the engine's eligibility verdicts. */}
           <Route path="requests" element={<RequestsBoard />} />
         </Route>
-        <Route element={<RequireRole roles={["founder", "admin"]} />}>
+      </Route>
+      <Route element={<RequireRole roles={["founder", "admin"]} />}>
+        <Route element={<AppShell />}>
           <Route path="builders/:builderId" element={<CandidatePage />} />
         </Route>
-        <Route element={<RequireRole roles={["founder"]} />}>
+      </Route>
+      <Route element={<RequireRole roles={["founder"]} />}>
+        <Route element={<AppShell />}>
           {/* Sprint 004 screen 11: the founder dashboard fed by GET /api/me/dashboard. */}
           <Route path="dashboard" element={<DashboardPage />} />
           {/* Sprint 004 screen 13, propose variant: ?builder=<slug>&request=<id>. */}
           <Route path="bookings/new" element={<BookingProposePage />} />
         </Route>
-        <Route element={<RequireRole roles={["founder", "builder"]} />}>
+      </Route>
+      <Route element={<RequireRole roles={["founder", "builder"]} />}>
+        <Route element={<AppShell />}>
           {/* Sprint 004 screen 13, status and counter variants, for either party. */}
           <Route path="bookings/:bookingId" element={<BookingStatusPage />} />
         </Route>
-        <Route element={<RequireRole roles={["admin"]} />}>
+      </Route>
+      <Route element={<RequireRole roles={["admin"]} />}>
+        <Route element={<AppShell />}>
           <Route path="admin" element={<AdminHome />} />
         </Route>
       </Route>
     </Routes>
+    </>
   );
 }

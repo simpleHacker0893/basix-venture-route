@@ -18,7 +18,8 @@ import type {
   PendingQueue,
   PendingShowcase,
 } from "@venture-route/contracts";
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ReactNode } from "react";
+import { useSearchParams } from "react-router";
 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
@@ -33,6 +34,13 @@ import { ShowcaseStatusPill, StatusPill } from "../builder/StatusPill";
 type Decision = "confirm" | "reject";
 
 type LastDecision = { decision: AdminDecision; label: string };
+
+/** Filter pills in the design; the active one is filled ink. */
+const TAB =
+  "h-10 flex-none rounded-pill border border-border bg-surface-strong px-4 text-[14px] font-medium text-ink-2 data-active:border-ink data-active:bg-ink data-active:text-white data-active:shadow-none";
+
+const TABS = ["accounts", "credentials", "projects", "showcase", "decided"] as const;
+type TabValue = (typeof TABS)[number];
 
 const KIND_LABEL: Record<AdminDecisionKind, string> = {
   account: "account",
@@ -56,6 +64,37 @@ function SkillCell({ skillId }: Readonly<{ skillId: PendingCredential["skillId"]
 
 function submitted(iso: string): string {
   return isoDate(iso.slice(0, 10));
+}
+
+/** How long a row has waited: "3 d" or "4 h". */
+function age(iso: string, now: number): { short: string; days: number } {
+  const hours = Math.max(0, Math.floor((now - Date.parse(iso)) / 36e5));
+  const days = Math.floor(hours / 24);
+  return { short: days >= 1 ? `${days} d` : `${Math.max(hours, 1)} h`, days };
+}
+
+/** One pending account, credential or project, as the split view's detail panel shows it. */
+type QueueItem = {
+  kind: Exclude<AdminDecisionKind, "showcase">;
+  id: string;
+  label: string;
+  heading: string;
+  builderId: string | null;
+  submittedAt: string;
+  detail: ReactNode;
+  preview: ProjectionPreview;
+};
+
+const ACCENT: Record<QueueItem["kind"], string> = {
+  account: "bg-surface text-ink-2 border border-border-strong",
+  credential: "bg-credential-tint text-accent-green",
+  project: "bg-project-tint text-project",
+};
+
+function KindPill({ kind }: Readonly<{ kind: QueueItem["kind"] }>) {
+  return (
+    <span className={`rounded-pill px-2.5 py-0.5 text-[12.5px] font-semibold capitalize ${ACCENT[kind]}`}>{kind}</span>
+  );
 }
 
 type DecidedRowData = {
@@ -120,6 +159,10 @@ export function AdminHome() {
   const [actionError, setActionError] = useState<string | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
   const [expanded, setExpanded] = useState<string | null>(null);
+  // The open tab lives in the URL (?tab=decided) so the shell's Queue / Decided links select it.
+  const [params, setParams] = useSearchParams();
+  const tabParam = params.get("tab");
+  const initialTab: TabValue = (TABS as readonly string[]).includes(tabParam ?? "") ? (tabParam as TabValue) : "accounts";
 
   useEffect(() => {
     let cancelled = false;
@@ -202,40 +245,108 @@ export function AdminHome() {
   const total = counts.accounts + counts.credentials + counts.projects + counts.showcase;
   const decidedList = decided ? decidedRows(decided) : [];
 
-  const rowProps = (kind: AdminDecisionKind, id: string, label: string, preview: ProjectionPreview) => ({
+  const rowProps = (kind: AdminDecisionKind, id: string, label: string, submittedAt: string) => ({
     kind,
     id,
     label,
-    preview,
+    age: age(submittedAt, now).short,
     busy: busy === id,
     expanded: expanded === id,
     onToggle: () => setExpanded((current) => (current === id ? null : id)),
     onDecide: (decision: Decision) => decide(decision, kind, id, label),
   });
 
-  return (
-    <div className="mx-auto flex w-full max-w-[1200px] flex-col gap-6 px-6 py-8">
-      <div className="flex items-center gap-1 font-mono text-[11px] uppercase tracking-wider">
-        <span className="text-ink-3">Registry</span>
-        <span aria-hidden="true" className="text-border-strong">
-          /
-        </span>
-        <span className="font-medium text-ink">Confirmation queue</span>
-      </div>
+  const [now] = useState(() => Date.now());
+  const items: QueueItem[] = queue
+    ? [
+        ...queue.accounts.map((account) => ({
+          kind: "account" as const,
+          id: account.id,
+          label: account.displayName ?? account.email,
+          heading: account.displayName ?? account.email,
+          builderId: account.builderId,
+          submittedAt: account.submittedAt,
+          detail: <AccountDetail account={account} />,
+          preview: accountPreview(account),
+        })),
+        ...queue.credentials.map((credential) => ({
+          kind: "credential" as const,
+          id: credential.id,
+          label: credential.title,
+          heading: `${credential.displayName} · ${credential.skillId ? SKILL_LABELS[credential.skillId] : credential.title}`,
+          builderId: credential.builderId,
+          submittedAt: credential.submittedAt,
+          detail: <CredentialDetail credential={credential} />,
+          preview: credentialPreview(credential),
+        })),
+        ...queue.projects.map((project) => ({
+          kind: "project" as const,
+          id: project.id,
+          label: project.title,
+          heading: `${project.displayName} · ${project.title}`,
+          builderId: project.builderId,
+          submittedAt: project.submittedAt,
+          detail: <ProjectDetail project={project} />,
+          preview: projectPreview(project),
+        })),
+      ]
+    : [];
+  const selected = items.find((item) => item.id === expanded) ?? null;
+  const pendingOf = (list: readonly { submittedAt: string }[]) => {
+    const oldest = list.reduce<string | null>((min, row) => (min === null || row.submittedAt < min ? row.submittedAt : min), null);
+    return oldest ? age(oldest, now).days : null;
+  };
+  const today = new Date(now).toDateString();
+  const decidedToday = decidedList.filter((row) => new Date(row.decidedAt).toDateString() === today);
+  const confirmedToday = decidedToday.filter((row) => row.status === "confirmed").length;
+  const otherRecords = selected?.builderId
+    ? [
+        ...items
+          .filter((item) => item.builderId === selected.builderId && item.id !== selected.id)
+          .map((item) => ({ key: item.id, label: `${item.kind === "account" ? "Account" : item.label}`, status: "pending" as const })),
+        ...(decided ? decidedRows(decided) : [])
+          .filter((row) => row.builder === selected.builderId || (decided?.accounts.find((a) => a.id === row.id)?.builderId ?? null) === selected.builderId)
+          .map((row) => ({ key: row.id, label: row.kind === "account" ? "Account" : row.label, status: row.status })),
+      ]
+    : [];
 
-      <header className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
-        <div className="flex flex-col gap-2">
-          <h1 className="font-display text-3xl font-semibold text-ink">Confirmation queue</h1>
-          <p className="max-w-2xl text-sm leading-relaxed text-ink-muted">
-            Only confirmed accounts, credentials, and projects appear in routes and bids. Each decision rebuilds the MeTTa
-            space from confirmed rows in the same request; <code className="font-mono">projected_rows</code> is the atom
-            count after the rebuild.
-          </p>
-        </div>
-        <span className="font-mono text-[12px] text-ink-3">
-          Showing <span className="font-medium text-ink">{total}</span> pending review
+  return (
+    <div className="mx-auto flex w-full max-w-[1400px] flex-col gap-6 px-4 py-6 sm:px-6 lg:px-10 lg:py-8">
+      <h1 className="sr-only">Review queue</h1>
+      <p className="max-w-3xl text-[14px] leading-relaxed text-ink-3">
+        Only confirmed accounts, credentials and projects appear in routes and bids. Each decision rebuilds the MeTTa
+        space in the same request; <code className="font-mono">projected_rows</code> is the atom count after the rebuild.
+        <span className="ml-1 font-mono text-[12.5px] text-ink-2">
+          Showing <span className="font-semibold text-ink">{total}</span> pending review
         </span>
-      </header>
+      </p>
+
+      {queue ? (
+        <section aria-label="Queue summary" className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+          {(
+            [
+              ["Accounts", counts.accounts, pendingOf(queue.accounts)],
+              ["Credentials", counts.credentials, pendingOf(queue.credentials)],
+              ["Projects + Showcase", counts.projects + counts.showcase, pendingOf([...queue.projects, ...queue.showcase])],
+            ] as const
+          ).map(([label, count, oldest]) => (
+            <div key={label} className="flex flex-col gap-1 rounded-2xl border border-border bg-surface-strong px-5 py-4">
+              <span className="text-[14px] text-ink-2">{label}</span>
+              <span className="font-display text-[34px] leading-none text-ink">{count}</span>
+              <span className={`text-[13.5px] ${oldest !== null && oldest >= 2 ? "font-semibold text-amber-ink" : "text-ink-3"}`}>
+                {count === 0 ? "none pending" : oldest !== null && oldest >= 1 ? `oldest ${oldest} ${oldest === 1 ? "day" : "days"}` : "pending"}
+              </span>
+            </div>
+          ))}
+          <div className="flex flex-col gap-1 rounded-2xl border border-border bg-surface-strong px-5 py-4">
+            <span className="text-[14px] text-ink-2">Decided today</span>
+            <span className="font-display text-[34px] leading-none text-ink">{decidedToday.length}</span>
+            <span className="text-[13.5px] text-ink-3">
+              {confirmedToday} confirmed · {decidedToday.length - confirmedToday} rejected
+            </span>
+          </div>
+        </section>
+      ) : null}
 
       {loadError ? (
         <p role="alert" className="rounded-card border border-danger/40 bg-surface-strong px-3 py-2 text-[13px] text-danger">
@@ -265,25 +376,29 @@ export function AdminHome() {
       ) : null}
 
       {queue ? (
-        <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_320px]">
-          <Tabs defaultValue="accounts" className="gap-4">
-            <TabsList variant="line" className="border-b border-border">
-              <TabsTrigger value="accounts" className="gap-2 px-3">
+        <div className="grid grid-cols-1 items-start gap-6 xl:grid-cols-[minmax(0,1.25fr)_minmax(0,1fr)]">
+          <Tabs
+            value={initialTab}
+            onValueChange={(value) => setParams(value === "accounts" ? {} : { tab: String(value) }, { replace: true })}
+            className="gap-4"
+          >
+            <TabsList className="h-auto flex-wrap justify-start gap-2 bg-transparent p-0 group-data-horizontal/tabs:h-auto">
+              <TabsTrigger value="accounts" className={TAB}>
                 <span>Accounts</span>
                 <Count value={counts.accounts} />
               </TabsTrigger>
-              <TabsTrigger value="credentials" className="gap-2 px-3">
+              <TabsTrigger value="credentials" className={TAB}>
                 <span>Credentials</span>
                 <Count value={counts.credentials} />
               </TabsTrigger>
-              <TabsTrigger value="projects" className="gap-2 px-3">
+              <TabsTrigger value="projects" className={TAB}>
                 <span>Projects</span>
                 <Count value={counts.projects} />
               </TabsTrigger>
-              <TabsTrigger value="showcase" className="gap-2 px-3">
+              <TabsTrigger value="showcase" className={TAB}>
                 <span>Showcase ({counts.showcase})</span>
               </TabsTrigger>
-              <TabsTrigger value="decided" className="gap-2 px-3">
+              <TabsTrigger value="decided" className={TAB}>
                 <span>Decided</span>
                 <Count value={decidedList.length} />
               </TabsTrigger>
@@ -297,8 +412,7 @@ export function AdminHome() {
                 rows={queue.accounts.map((account) => (
                   <QueueRow
                     key={account.id}
-                    {...rowProps("account", account.id, account.displayName ?? account.email, accountPreview(account))}
-                    detail={<AccountDetail account={account} />}
+                    {...rowProps("account", account.id, account.displayName ?? account.email, account.submittedAt)}
                     cells={[
                       <RoleCell key="role" role={account.role} />,
                       account.cohortId ?? "—",
@@ -317,8 +431,7 @@ export function AdminHome() {
                 rows={queue.credentials.map((credential) => (
                   <QueueRow
                     key={credential.id}
-                    {...rowProps("credential", credential.id, credential.title, credentialPreview(credential))}
-                    detail={<CredentialDetail credential={credential} />}
+                    {...rowProps("credential", credential.id, credential.title, credential.submittedAt)}
                     cells={[
                       credential.displayName,
                       <SkillCell key="skill" skillId={credential.skillId} />,
@@ -337,8 +450,7 @@ export function AdminHome() {
                 rows={queue.projects.map((project) => (
                   <QueueRow
                     key={project.id}
-                    {...rowProps("project", project.id, project.title, projectPreview(project))}
-                    detail={<ProjectDetail project={project} />}
+                    {...rowProps("project", project.id, project.title, project.submittedAt)}
                     cells={[project.displayName, VERTICAL_LABELS[project.vertical], submitted(project.submittedAt)]}
                     sub={project.licensable ? "Licensable as reusable IP" : "Not licensable"}
                   />
@@ -365,29 +477,7 @@ export function AdminHome() {
             </TabsContent>
           </Tabs>
 
-          <aside className="flex flex-col gap-6">
-            <section aria-label="What confirming means" className="flex flex-col gap-3 rounded-card border border-border bg-surface p-6">
-              <h2 className="font-display text-xl font-semibold text-ink">What confirming means</h2>
-              <ul className="flex flex-col gap-2 text-[13px] leading-relaxed text-ink-2">
-                <li>
-                  <strong className="text-ink">Accounts:</strong> appear in routes and can bid on venture requests.
-                </li>
-                <li>
-                  <strong className="text-ink">Credentials:</strong> become proof for the skill they name (
-                  <code className="font-mono">verified-for-skill</code>, evidence credential).
-                </li>
-                <li>
-                  <strong className="text-ink">Projects:</strong> become proof for their skills and, if licensable, reusable IP (
-                  <code className="font-mono">reuse-fit</code>).
-                </li>
-              </ul>
-              <p className="border-t border-border pt-3 text-[12px] text-ink-3">
-                Every decision reprojects the graph; the same count is on <code className="font-mono">GET /health</code> as{" "}
-                <code className="font-mono">projected_rows</code>. A mistaken decision is reversed from the Decided tab; every
-                step stays in the confirmations log.
-              </p>
-            </section>
-          </aside>
+          <DetailPanel selected={selected} otherRecords={otherRecords} now={now} />
         </div>
       ) : null}
     </div>
@@ -419,13 +509,17 @@ function QueueTable({
 }: Readonly<{ caption: string; columns: readonly string[]; rows: React.ReactNode[]; empty: string; noun?: string }>) {
   return (
     <div className="flex flex-col gap-3">
-      <div className="overflow-x-auto rounded-card border border-border bg-surface">
-        <table className="w-full text-sm">
+      <div className="overflow-x-auto rounded-2xl border border-border bg-surface-strong">
+        <table className="w-full text-[14px]">
           <caption className="sr-only">{caption}</caption>
           <thead>
-            <tr className="border-b border-border font-mono text-[11px] uppercase tracking-wider text-ink-3">
-              {columns.map((column) => (
-                <th key={column} scope="col" className="px-4 py-3 text-left font-medium">
+            <tr className="border-b border-border bg-surface font-mono text-[11px] uppercase tracking-wider text-ink-3">
+              {columns.map((column, index) => (
+                <th
+                  key={column}
+                  scope="col"
+                  className={`px-3 py-3 text-left font-medium first:pl-4 ${index > 0 && index < columns.length - 1 && noun === "pending" ? "max-sm:hidden" : ""}`}
+                >
                   {column}
                 </th>
               ))}
@@ -453,12 +547,10 @@ function QueueTable({
 
 function QueueRow({
   id,
-  kind,
   label,
   sub,
   cells,
-  detail,
-  preview,
+  age: waited,
   busy,
   expanded,
   onToggle,
@@ -469,8 +561,7 @@ function QueueRow({
   label: string;
   sub: string;
   cells: React.ReactNode[];
-  detail: React.ReactNode;
-  preview: ProjectionPreview;
+  age: string;
   busy: boolean;
   expanded: boolean;
   onToggle(): void;
@@ -479,35 +570,37 @@ function QueueRow({
   const panelId = `row-${id}`;
   return (
     <>
-      <tr aria-label={label} className="align-top">
+      <tr aria-label={label} className={`align-top transition-colors ${expanded ? "bg-sage/70 shadow-[inset_3px_0_0_var(--vr-accent)]" : ""}`}>
         <td className="px-4 py-3">
           <div className="flex items-start gap-2">
             <button
               type="button"
               aria-label={expanded ? "Collapse row" : "Expand row"}
               aria-expanded={expanded}
-              aria-controls={panelId}
+              aria-controls={expanded ? panelId : undefined}
               onClick={onToggle}
-              className="mt-0.5 inline-flex h-5 w-5 items-center justify-center rounded border border-border-strong font-mono text-[11px] text-ink-3 hover:border-accent-green"
+              className="mt-0.5 inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-border-strong bg-surface-strong font-mono text-[13px] text-ink-3 hover:border-accent-green hover:text-accent-green"
             >
               <span aria-hidden="true">{expanded ? "−" : "+"}</span>
             </button>
             <div className="flex flex-col gap-1">
               <div className="flex flex-wrap items-center gap-2">
-                <span className="font-medium text-ink">{label}</span>
+                <span className="text-[15px] font-semibold text-ink">{label}</span>
                 <DemoDataPill />
               </div>
-              <span className="text-[12px] text-ink-3">{sub}</span>
+              <span className="text-[13px] text-ink-3">
+                {sub} · waiting {waited}
+              </span>
             </div>
           </div>
         </td>
         {cells.map((cell, index) => (
-          <td key={index} className="px-4 py-3 text-ink-2">
+          <td key={index} className="px-3 py-3 text-ink-2 max-sm:hidden">
             {cell}
           </td>
         ))}
-        <td className="px-4 py-3">
-          <div className="flex items-center gap-2">
+        <td className="px-3 py-3 pr-4">
+          <div className="flex flex-wrap items-center gap-2">
             <button
               type="button"
               disabled={busy}
@@ -527,37 +620,7 @@ function QueueRow({
           </div>
         </td>
       </tr>
-      {expanded ? (
-        <tr id={panelId}>
-          <td colSpan={cells.length + 2} className="bg-surface-strong px-4 py-4">
-            <div className="flex flex-col gap-4">
-              <span className="font-mono text-[11px] uppercase tracking-wider text-ink-3">
-                {KIND_LABEL[kind]} detail · submitted for confirmation
-              </span>
-              {detail}
-              <section
-                aria-label="Projection preview"
-                className="flex flex-col gap-2 rounded-card bg-dark p-4 font-mono text-[13px] text-accent-on-dark"
-              >
-                <div className="flex flex-wrap items-center justify-between gap-2 text-[11px] uppercase tracking-wider text-ledger-dim">
-                  <span>MeTTa fact projection · preview</span>
-                  <span>facts this row would add on confirmation</span>
-                </div>
-                {preview.facts.length > 0 ? (
-                  <ul translate="no" className="flex flex-col gap-0.5">
-                    {preview.facts.map((fact) => (
-                      <li key={fact}>{fact}</li>
-                    ))}
-                  </ul>
-                ) : (
-                  <p className="text-ledger-dim">(no facts)</p>
-                )}
-                <p className="text-[12px] text-ledger-dim">{preview.note}</p>
-              </section>
-            </div>
-          </td>
-        </tr>
-      ) : null}
+
     </>
   );
 }
@@ -733,6 +796,114 @@ function ShowcaseEntryCard({
         </button>
       </div>
     </article>
+  );
+}
+
+/**
+ * The split view's right side: the selected pending row's submitted evidence, the builder's other
+ * records from the two queues, and the facts the row would add on confirmation (client-side
+ * preview from `lib/projection.ts`, not the projection itself). With nothing selected it explains
+ * what confirming means. Decisions stay on the row; reversing lives in the Decided tab.
+ */
+function DetailPanel({
+  selected,
+  otherRecords,
+  now,
+}: Readonly<{
+  selected: QueueItem | null;
+  otherRecords: ReadonlyArray<{ key: string; label: string; status: "pending" | DecisionStatus }>;
+  now: number;
+}>) {
+  if (!selected) {
+    return (
+      <aside
+        aria-label="What confirming means"
+        className="flex flex-col gap-4 rounded-2xl border border-border bg-surface-strong p-6 xl:sticky xl:top-24"
+      >
+        <h2 className="font-display text-[22px] text-ink">What confirming means</h2>
+        <p className="text-[14px] text-ink-3">Open a row with + to see its evidence and the facts it adds to the MeTTa graph.</p>
+        <ul className="flex flex-col gap-2 text-[14px] leading-relaxed text-ink-2">
+          <li>
+            <strong className="text-ink">Accounts:</strong> appear in routes and can bid on venture requests.
+          </li>
+          <li>
+            <strong className="text-ink">Credentials:</strong> become proof for the skill they name (
+            <code className="font-mono">verified-for-skill</code>, evidence credential).
+          </li>
+          <li>
+            <strong className="text-ink">Projects:</strong> become proof for their skills and, if licensable, reusable IP (
+            <code className="font-mono">reuse-fit</code>).
+          </li>
+        </ul>
+        <p className="border-t border-border pt-3 text-[12.5px] leading-relaxed text-ink-3">
+          Every decision reprojects the graph; the same count is on <code className="font-mono">GET /health</code> as{" "}
+          <code className="font-mono">projected_rows</code>. A mistaken decision is reversed from the Decided tab; every step
+          stays in the confirmations log.
+        </p>
+      </aside>
+    );
+  }
+  const waited = age(selected.submittedAt, now);
+  return (
+    <aside
+      id={`row-${selected.id}`}
+      aria-label={`${selected.label} detail`}
+      className="flex flex-col gap-5 rounded-2xl border border-border bg-surface-strong p-6 xl:sticky xl:top-24"
+    >
+      <div className="flex flex-col gap-2">
+        <span className="flex flex-wrap items-center gap-2">
+          <KindPill kind={selected.kind} />
+          <DemoDataPill />
+        </span>
+        <h2 className="font-display text-[26px] leading-tight text-ink sm:text-[30px]">{selected.heading}</h2>
+        <span className="text-[14px] text-ink-3">
+          Submitted {waited.days >= 1 ? `${waited.days} ${waited.days === 1 ? "day" : "days"}` : waited.short.replace(" h", " hours")} ago
+        </span>
+      </div>
+      <div className="grid grid-cols-1 gap-4 2xl:grid-cols-2">
+        <section aria-label="Submitted evidence" className="flex flex-col gap-3 rounded-xl border border-border p-4">
+          <span className="font-mono text-[11.5px] font-semibold uppercase tracking-[0.12em] text-ink-2">Submitted evidence</span>
+          {selected.detail}
+        </section>
+        <section aria-label="Builder's other records" className="flex flex-col gap-3 rounded-xl border border-border p-4">
+          <span className="font-mono text-[11.5px] font-semibold uppercase tracking-[0.12em] text-ink-2">Builder's other records</span>
+          {otherRecords.length === 0 ? (
+            <p className="text-[14px] text-ink-3">No other records in the queue or the decided log.</p>
+          ) : (
+            <ul className="flex flex-col gap-2">
+              {otherRecords.map((record) => (
+                <li key={record.key} className="flex items-center justify-between gap-3 text-[14px] text-ink">
+                  <span className="truncate">{record.label}</span>
+                  {record.status === "pending" ? (
+                    <span className="rounded-pill bg-amber-fill px-2.5 py-0.5 text-[12.5px] font-medium text-amber-ink">Pending</span>
+                  ) : (
+                    <StatusPill status={record.status} />
+                  )}
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
+      </div>
+      <section aria-label="Projection preview" className="flex flex-col gap-3 rounded-2xl bg-dark p-5 font-mono text-[13px] text-accent-on-dark">
+        <span className="text-[11.5px] uppercase tracking-[0.12em] text-ledger-dim">If confirmed, this enters the MeTTa graph</span>
+        {selected.preview.facts.length > 0 ? (
+          <ul translate="no" className="flex flex-col gap-1.5">
+            {selected.preview.facts.map((fact) => (
+              <li key={fact} className="rounded-lg border border-border-dark bg-surface-dark-card px-3.5 py-2.5 text-[14px] text-[#f3f1ea]">
+                {fact}
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <p className="text-ledger-dim">(no facts)</p>
+        )}
+        <p className="font-sans text-[13px] text-ledger-dim">{selected.preview.note}</p>
+      </section>
+      <p className="border-t border-border pt-4 text-[13.5px] text-ink-3">
+        Confirm or reject from the row. Every decision can be reversed from the Decided tab.
+      </p>
+    </aside>
   );
 }
 

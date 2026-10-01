@@ -1,5 +1,7 @@
 import { Link } from "react-router";
 
+import { LogoMark } from "./Logo";
+
 /**
  * The Stitch footer (design/stitch/batch-2/landing-page, D-36), on every route: wordmark and
  * tagline, three link columns, the bottom links and the copyright line.
@@ -41,20 +43,23 @@ const REPO = "https://github.com/simpleHacker0893/basix-venture-route";
 
 export function SiteFooter() {
   return (
-    <footer className="mt-auto border-t border-[#26282d] bg-dark px-6 py-14 text-[#a3a29e]">
+    <footer className="mt-auto border-t border-border-dark bg-dark px-6 py-14 text-[#a7b8b0]">
       <div className="mx-auto max-w-[1200px]">
         <div className="pb-10">
-          <div className="font-display text-xl font-bold text-white">Venture Route</div>
+          <div className="flex items-center gap-2.5 font-display text-xl font-semibold text-white">
+            <LogoMark />
+            Venture Route
+          </div>
           <p className="mt-2 max-w-xl text-sm leading-relaxed text-ink-subtle">
             Built for the BASIX hackathon, SingularityNET MeTTa track. All records are fictional
             demo data.
           </p>
         </div>
-        <div className="grid grid-cols-2 gap-8 border-t border-[#26282d] py-8 text-sm md:grid-cols-3">
+        <div className="grid grid-cols-2 gap-8 border-t border-border-dark py-8 text-sm md:grid-cols-3">
           {COLUMNS.map((column) => (
             <nav key={column.heading} aria-label={column.heading}>
               <h2 className="mb-3 text-sm font-semibold text-white">{column.heading}</h2>
-              <ul className="space-y-2 text-ink-subtle">
+              <ul className="space-y-1 text-ink-subtle sm:space-y-2">
                 {column.links.map((link) =>
                   link.external ? (
                     <li key={link.label}>
@@ -62,14 +67,14 @@ export function SiteFooter() {
                         href={link.to}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="transition-colors hover:text-white"
+                        className="inline-block py-1.5 transition-colors hover:text-white sm:py-0"
                       >
                         {link.label}
                       </a>
                     </li>
                   ) : (
                     <li key={link.label}>
-                      <Link to={link.to} className="transition-colors hover:text-white">
+                      <Link to={link.to} className="inline-block py-1.5 transition-colors hover:text-white sm:py-0">
                         {link.label}
                       </Link>
                     </li>
@@ -79,12 +84,12 @@ export function SiteFooter() {
             </nav>
           ))}
         </div>
-        <div className="flex flex-col items-start justify-between gap-4 border-t border-[#26282d] pt-8 text-sm sm:flex-row sm:items-center">
+        <div className="flex flex-col items-start justify-between gap-4 border-t border-border-dark pt-8 text-sm sm:flex-row sm:items-center">
           <div className="flex items-center gap-6">
-            <a href={`${REPO}/blob/master/docs/PRD.md`} className="underline decoration-ink-subtle/40 underline-offset-4 hover:text-white">
+            <a href={`${REPO}/blob/master/docs/PRD.md`} className="inline-block py-2 underline decoration-ink-subtle/40 underline-offset-4 hover:text-white sm:py-0">
               PRD
             </a>
-            <Link to="/privacy" className="underline decoration-ink-subtle/40 underline-offset-4 hover:text-white">
+            <Link to="/privacy" className="inline-block py-2 underline decoration-ink-subtle/40 underline-offset-4 hover:text-white sm:py-0">
               Privacy
             </Link>
           </div>

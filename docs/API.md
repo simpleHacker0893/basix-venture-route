@@ -105,8 +105,12 @@ Responses, discriminated by `type`:
 - `validation-error`: the merged brief failed a cross-field rule, e.g.
   `{ "type": "validation-error", "message": "availabilityEnd: availabilityEnd must not precede availabilityStart" }`.
 
-Adapter selection (D-06, D-26): `LLM_PROVIDER=anthropic` with `ANTHROPIC_API_KEY` set uses the
-Anthropic adapter for intake and for the route summary; with the key unset, or
+Adapter selection (D-06, D-26, D-53): `LLM_PROVIDER=anthropic` with `ANTHROPIC_API_KEY` set uses
+the Anthropic adapter for intake and for the route summary; `LLM_PROVIDER=openrouter` with
+`OPENROUTER_API_KEY`, `OPENROUTER_INTAKE_MODEL` and `OPENROUTER_EXPLAIN_MODEL` set sends the
+same prompts through OpenRouter's chat-completions API (`OPENROUTER_BASE_URL`): intake on the
+intake model with reasoning off and a strict JSON schema, the route summary on the explain model
+with reasoning on. With the selected provider's key (or, for `openrouter`, either model) unset, or
 `LLM_PROVIDER=null`, the `NullAdapter` extracts nothing and keeps the engine's template summary,
 so the structured form is the only input path. If the model times out or errors, the turn falls
 back to `NullAdapter` behaviour and `message` carries the form-fallback hint; the client never
