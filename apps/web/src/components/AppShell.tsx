@@ -14,6 +14,8 @@ import {
   LayoutGrid,
   ListChecks,
   LogOut,
+  PanelLeftClose,
+  PanelLeftOpen,
   Plus,
   Send,
   UserRound,
@@ -28,6 +30,25 @@ import { useAuthState, type Role } from "../auth/authContext";
 import { FounderVoiceToggle } from "../chloe/ui/FounderVoiceToggle";
 import { LogoMark } from "./Logo";
 import { OfflineBanner } from "./OfflineBanner";
+
+/** The desktop sidebar's collapsed state, remembered per browser; blocked storage means expanded. */
+const SIDEBAR_KEY = "venture-route:sidebar-collapsed";
+
+function readCollapsed(): boolean {
+  try {
+    return window.localStorage.getItem(SIDEBAR_KEY) === "1";
+  } catch {
+    return false;
+  }
+}
+
+function writeCollapsed(collapsed: boolean): void {
+  try {
+    window.localStorage.setItem(SIDEBAR_KEY, collapsed ? "1" : "0");
+  } catch {
+    // The choice only lasts for this page view.
+  }
+}
 
 type NavItem = Readonly<{ to: string; label: string; icon: LucideIcon; tab?: boolean }>;
 
@@ -114,9 +135,37 @@ function useBuilderStatus(role: Role | null): AccountStatus | null {
   return status;
 }
 
-function AccountChip({ role, status, dark }: Readonly<{ role: Role; status: AccountStatus | null; dark: boolean }>) {
+function AccountChip({
+  role,
+  status,
+  dark,
+  compact = false,
+}: Readonly<{ role: Role; status: AccountStatus | null; dark: boolean; compact?: boolean }>) {
   const auth = useAuthState();
   const name = auth.user?.name ?? auth.user?.email ?? (role === "admin" ? "BASIX admin" : ROLE_LABEL[role]);
+  if (compact) {
+    const summary = [name, ROLE_LABEL[role], role === "builder" && status ? STATUS_PILL[status][0] : null].filter(Boolean);
+    return (
+      <div className="flex flex-col items-center gap-2">
+        <span
+          title={summary.join(" · ")}
+          className={`grid h-10 w-10 place-items-center rounded-full text-[13px] font-semibold ${dark ? "bg-accent-green text-white" : "bg-sage text-accent-green"}`}
+        >
+          <span aria-hidden="true">{initials(name)}</span>
+          <span className="sr-only">{summary.join(", ")}</span>
+        </span>
+        <button
+          type="button"
+          onClick={() => void auth.signOut()}
+          aria-label="Sign out"
+          title="Sign out"
+          className={`grid h-10 w-10 place-items-center rounded-xl border transition-colors ${dark ? "border-border-dark text-[#cfd8d3] hover:bg-white/5" : "border-border-strong text-ink-2 hover:bg-surface"}`}
+        >
+          <LogOut aria-hidden="true" className="h-4 w-4" />
+        </button>
+      </div>
+    );
+  }
   return (
     <div
       className={`flex flex-col gap-3 rounded-2xl border p-3.5 ${dark ? "border-border-dark bg-surface-dark-card" : "border-border bg-surface-strong"}`}
@@ -169,6 +218,7 @@ export function AppShell() {
   const role = auth.role ?? "founder";
   const { pathname, search, hash } = useLocation();
   const [menuOpen, setMenuOpen] = useState(false);
+  const [collapsed, setCollapsed] = useState(readCollapsed);
   const status = useBuilderStatus(auth.role);
   const items = NAV[role];
   const dark = role === "admin";
@@ -192,7 +242,13 @@ export function AppShell() {
       </Link>
     ) : null;
 
-  const navLinks = (onPick?: () => void, compact = false) =>
+  function toggleSidebar() {
+    writeCollapsed(!collapsed);
+    setCollapsed(!collapsed);
+  }
+
+  /** `rail` is the collapsed desktop sidebar: icons only, the label kept for screen readers and on hover. */
+  const navLinks = (onPick?: () => void, compact = false, rail = false) =>
     items.map((item) => {
       const active = isActive(item, pathname, search, hash);
       const Icon = item.icon;
@@ -202,7 +258,8 @@ export function AppShell() {
           to={item.to}
           onClick={onPick}
           aria-current={active ? "page" : undefined}
-          className={`flex items-center gap-3 rounded-xl px-3.5 font-medium transition-colors ${compact ? "min-h-[48px] text-[16px]" : "h-12 text-[15px]"} ${
+          title={rail ? item.label : undefined}
+          className={`flex items-center gap-3 rounded-xl font-medium transition-colors ${rail ? "justify-center" : "px-3.5"} ${compact ? "min-h-[48px] text-[16px]" : "h-12 text-[15px]"} ${
             active
               ? dark
                 ? "bg-accent-green text-white"
@@ -212,14 +269,16 @@ export function AppShell() {
                 : "text-ink-2 hover:bg-surface-strong"
           }`}
         >
-          <Icon aria-hidden="true" className="h-5 w-5" />
-          {item.label}
+          <Icon aria-hidden="true" className="h-5 w-5 shrink-0" />
+          <span className={rail ? "sr-only" : undefined}>{item.label}</span>
         </Link>
       );
     });
 
   return (
-    <div className="min-h-screen bg-ground text-ink lg:grid lg:grid-cols-[272px_minmax(0,1fr)]">
+    <div
+      className={`min-h-screen bg-ground text-ink lg:grid ${collapsed ? "lg:grid-cols-[84px_minmax(0,1fr)]" : "lg:grid-cols-[272px_minmax(0,1fr)]"}`}
+    >
       <a
         href="#main"
         className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-[60] focus:rounded-card focus:bg-surface-strong focus:px-3 focus:py-2 focus:text-ink focus:ring-2 focus:ring-ring"
@@ -230,35 +289,55 @@ export function AppShell() {
       {/* The sidebar's colour runs the full page height, behind the sticky sidebar itself. */}
       <div
         aria-hidden="true"
-        className={`fixed inset-y-0 left-0 hidden w-[272px] border-r lg:block ${dark ? "border-border-dark bg-dark" : "border-border bg-surface"}`}
+        className={`fixed inset-y-0 left-0 hidden border-r lg:block ${collapsed ? "w-[84px]" : "w-[272px]"} ${dark ? "border-border-dark bg-dark" : "border-border bg-surface"}`}
       />
-      <aside className="sticky top-0 z-10 hidden h-screen flex-col gap-6 overflow-y-auto px-4 py-6 lg:flex">
-        <Link
-          to="/"
-          className={`flex items-center gap-2.5 whitespace-nowrap px-2 font-display font-semibold tracking-tight ${dark ? "text-[19px] text-white" : "text-[21px] text-ink"}`}
-        >
-          <LogoMark size={34} />
-          Venture Route
-          {dark ? (
-            <span className="rounded-pill bg-accent-on-dark/15 px-2 py-0.5 font-mono text-[10.5px] font-medium uppercase tracking-wider text-accent-on-dark">
-              Admin
-            </span>
-          ) : null}
-        </Link>
+      <aside
+        className={`sticky top-0 z-10 hidden h-screen flex-col gap-6 overflow-y-auto overflow-x-hidden py-6 lg:flex ${collapsed ? "px-3" : "px-4"}`}
+      >
+        <div className={`flex items-center gap-2 ${collapsed ? "flex-col" : "justify-between"}`}>
+          <Link
+            to="/"
+            title={collapsed ? "Venture Route" : undefined}
+            className={`flex items-center gap-2.5 whitespace-nowrap font-display font-semibold tracking-tight ${collapsed ? "" : "px-2"} ${dark ? "text-[19px] text-white" : "text-[21px] text-ink"}`}
+          >
+            <LogoMark size={34} />
+            <span className={collapsed ? "sr-only" : undefined}>Venture Route</span>
+            {dark && !collapsed ? (
+              <span className="rounded-pill bg-accent-on-dark/15 px-2 py-0.5 font-mono text-[10.5px] font-medium uppercase tracking-wider text-accent-on-dark">
+                Admin
+              </span>
+            ) : null}
+          </Link>
+          <button
+            type="button"
+            onClick={toggleSidebar}
+            aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+            aria-expanded={!collapsed}
+            title={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+            className={`grid h-9 w-9 shrink-0 place-items-center rounded-lg transition-colors ${dark ? "text-[#cfd8d3] hover:bg-white/5" : "text-ink-3 hover:bg-surface-strong hover:text-ink"}`}
+          >
+            {collapsed ? (
+              <PanelLeftOpen aria-hidden="true" className="h-[18px] w-[18px]" />
+            ) : (
+              <PanelLeftClose aria-hidden="true" className="h-[18px] w-[18px]" />
+            )}
+          </button>
+        </div>
         <nav aria-label="Sections" className="flex flex-col gap-1">
-          {navLinks()}
+          {navLinks(undefined, false, collapsed)}
           {role === "founder" ? (
             <Link
               to="/route"
+              title={collapsed ? "New route" : undefined}
               className="mt-5 flex h-12 items-center justify-center gap-2 rounded-xl border border-dashed border-accent-green/70 text-[15px] font-semibold text-accent-green transition-colors hover:bg-sage"
             >
               <Plus aria-hidden="true" className="h-4 w-4" />
-              New route
+              <span className={collapsed ? "sr-only" : undefined}>New route</span>
             </Link>
           ) : null}
         </nav>
         <div className="mt-auto">
-          <AccountChip role={role} status={status} dark={dark} />
+          <AccountChip role={role} status={status} dark={dark} compact={collapsed} />
         </div>
       </aside>
 
