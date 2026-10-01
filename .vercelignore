@@ -1,0 +1,32 @@
+# Vercel hosts only apps/web (D-05); the engine runs on Railway. Upload just what the web build
+# needs: the pnpm workspace root files, apps/web and packages/contracts.
+
+# Secrets never leave the machine; Vercel env vars are set in the project instead.
+.env
+.env.*
+!.env.example
+
+# Not part of the web build
+services/
+planning/
+design/
+docs/
+graphify-out/
+scripts/
+.claude/
+.github/
+.playwright-cli/
+.run-shots/
+
+# Build output and caches (Vercel installs and builds from scratch)
+**/node_modules/
+**/dist/
+**/dist-*/
+**/.turbo/
+**/.venv/
+**/__pycache__/
+**/.mypy_cache/
+**/.pytest_cache/
+**/.ruff_cache/
+apps/web/playwright-report*/
+apps/web/test-results*/

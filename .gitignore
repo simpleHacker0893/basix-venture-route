@@ -26,3 +26,5 @@ dist/
 
 # run-venture-route driver screenshots
 .run-shots/
+
+.vercel
