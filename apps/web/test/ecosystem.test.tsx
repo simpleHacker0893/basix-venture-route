@@ -27,7 +27,7 @@ describe("footer links (#79)", () => {
       expect(link).toHaveAttribute("target", "_blank");
       expect(link).toHaveAttribute("rel", expect.stringContaining("noopener"));
     }
-    expect(within(footer).getByRole("link", { name: "Partners" })).toHaveAttribute("href", "/partners");
+    expect(within(footer).getByRole("link", { name: "Ecosystem partners (demo)" })).toHaveAttribute("href", "/partners");
     expect(within(footer).getByRole("link", { name: "Privacy" })).toHaveAttribute("href", "/privacy");
     expect(within(footer).queryByRole("link", { name: "GitHub" })).not.toBeInTheDocument();
     expect(within(footer).getByRole("link", { name: "PRD" })).toBeInTheDocument();
