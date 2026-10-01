@@ -11,7 +11,7 @@
 import { expect, test, type APIResponse, type Page } from "@playwright/test";
 
 import { readState } from "./env";
-import { engineGet, expectRoleClaim, signInAs, signOut } from "./helpers";
+import { engineGet, expectRoleClaim, publishedRequests, publishedRequestTitle, signInAs, signOut } from "./helpers";
 
 // Named to sort after marketplace.spec.ts and requests.spec.ts: those assume a founder with no briefs
 // and an unconfirmed builder, so this spec (which adds both) must run last.
@@ -85,10 +85,9 @@ test("founder routes the Health pilot and publishes it as a request", async ({ p
   await page.getByRole("button", { name: "Publish as request" }).click();
 
   await expect(page.getByRole("heading", { level: 1, name: "Home" })).toBeVisible();
-  const rows = page.getByRole("table", { name: "Briefs and routes" }).getByRole("row");
-  const healthRow = rows.filter({ hasText: "Health pilot" }).first();
+  const healthRow = publishedRequests(page).filter({ hasText: "Health pilot" }).first();
   await expect(healthRow).toContainText("Open");
-  requestTitle = (await healthRow.getByRole("cell").first().locator("span").first().textContent()) ?? "";
+  requestTitle = await publishedRequestTitle(healthRow);
   expect(requestTitle).toContain("Health pilot");
 });
 

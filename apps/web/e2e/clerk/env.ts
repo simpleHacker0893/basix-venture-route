@@ -37,8 +37,13 @@ export const ENGINE_PORT = SUITES[SUITE].enginePort;
 export const WEB_PORT = SUITES[SUITE].webPort;
 export const ENGINE_URL = `http://localhost:${ENGINE_PORT}`;
 export const WEB_URL = `http://localhost:${WEB_PORT}`;
-/** The compose `db` (postgres:18, D-37); never Neon for this suite. */
-export const COMPOSE_DATABASE_URL = "postgresql+asyncpg://postgres:postgres@localhost:5432/venture_route";
+/**
+ * The compose `db` (postgres:18, D-37); never Neon for this suite. Its host port follows
+ * docker-compose.yml's `POSTGRES_PORT` (the process environment first, then the repo-root .env),
+ * default 5432, so a worktree whose stack runs on another port points the suite at its own db.
+ */
+export const COMPOSE_DB_PORT = process.env.POSTGRES_PORT || rootEnv().POSTGRES_PORT || "5432";
+export const COMPOSE_DATABASE_URL = `postgresql+asyncpg://postgres:postgres@localhost:${COMPOSE_DB_PORT}/venture_route`;
 export const OUTPUT_DIR = path.resolve(WEB_DIR, SUITES[SUITE].outputDir);
 export const STATE_FILE = path.join(OUTPUT_DIR, "clerk-users.json");
 export const BUILD_DIR = SUITES[SUITE].buildDir;
@@ -66,7 +71,18 @@ export function clerkKeys(): { publishableKey: string; secretKey: string } {
   return { publishableKey, secretKey };
 }
 
-export type RunIdentity = { runId: string; webhookSecret: string; emails: Record<Role, string> };
+/** The roles a demo signs up through the real Clerk form (#146, #147). */
+export type SignUpRole = Exclude<Role, "admin">;
+export const SIGN_UP_ROLES: readonly SignUpRole[] = ["founder", "builder"];
+
+export type RunIdentity = {
+  runId: string;
+  webhookSecret: string;
+  /** The users the global setup creates through the Backend API. */
+  emails: Record<Role, string>;
+  /** Fresh addresses no user has yet, for a sign-up shown on camera; the teardown deletes them. */
+  signUpEmails: Record<SignUpRole, string>;
+};
 
 /** Minted once per run; workers inherit the values from the runner's environment. */
 export function runIdentity(): RunIdentity {
@@ -80,7 +96,10 @@ export function runIdentity(): RunIdentity {
   const emails = Object.fromEntries(
     ROLES.map((role) => [role, `vr-e2e-${runId}-${role}+clerk_test@example.com`]),
   ) as Record<Role, string>;
-  return { runId, webhookSecret: process.env.E2E_CLERK_WEBHOOK_SECRET, emails };
+  const signUpEmails = Object.fromEntries(
+    SIGN_UP_ROLES.map((role) => [role, `vr-e2e-${runId}-${role}-signup+clerk_test@example.com`]),
+  ) as Record<SignUpRole, string>;
+  return { runId, webhookSecret: process.env.E2E_CLERK_WEBHOOK_SECRET, emails, signUpEmails };
 }
 
 export function readState(): SuiteState {

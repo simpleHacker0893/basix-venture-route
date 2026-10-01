@@ -14,7 +14,15 @@ import { expect, test, type APIResponse, type Page } from "@playwright/test";
 
 import { routeScenario } from "../helpers";
 import { readState } from "./env";
-import { engineGet, expectRoleClaim, sessionToken, signInAs, signOut } from "./helpers";
+import {
+  engineGet,
+  expectRoleClaim,
+  publishedRequests,
+  publishedRequestTitle,
+  sessionToken,
+  signInAs,
+  signOut,
+} from "./helpers";
 
 test.describe.configure({ mode: "serial" });
 
@@ -87,12 +95,11 @@ test("founder routes the Constrained brief and publishes it as a request", async
   await page.getByRole("button", { name: "Publish as request" }).click();
 
   await expect(page.getByRole("heading", { level: 1, name: "Home" })).toBeVisible();
-  const table = page.getByRole("table", { name: "Briefs and routes" });
-  const rows = table.getByRole("row");
-  await expect(rows).toHaveCount(2);
-  const firstRow = rows.nth(1);
-  await expect(firstRow).toContainText("Open");
-  requestTitle = (await firstRow.getByRole("cell").first().locator("span").first().textContent()) ?? "";
+  const requests = publishedRequests(page);
+  await expect(requests).toHaveCount(1);
+  const first = requests.first();
+  await expect(first).toContainText("Open");
+  requestTitle = await publishedRequestTitle(first);
   expect(requestTitle.length).toBeGreaterThan(0);
   await expect(page.locator('[data-tile="briefs"]')).toContainText("1");
 });
