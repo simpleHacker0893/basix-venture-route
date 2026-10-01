@@ -332,6 +332,53 @@ async def test_speak_rejects_invalid_text_with_422(
     assert upstream.requests == []
 
 
+async def test_speak_rejects_a_declared_length_over_32_kb_with_413_unread(
+    make_client: Client,
+) -> None:
+    upstream = Upstream()
+    async with make_client(voice_settings(), upstream) as api:
+        response = await api.post(
+            SPEAK,
+            content=b'{"text": "Hello"}',
+            headers={"content-type": "application/json", "content-length": str(32 * 1024 + 1)},
+        )
+
+    assert response.status_code == 413
+    assert upstream.requests == []
+
+
+async def test_speak_rejects_a_streamed_body_over_32_kb_with_413(make_client: Client) -> None:
+    async def chunks() -> AsyncIterator[bytes]:
+        yield b'{"text": "'
+        for _ in range(40):
+            yield b"x" * 1024
+        yield b'"}'
+
+    upstream = Upstream()
+    async with make_client(voice_settings(), upstream) as api:
+        response = await api.post(
+            SPEAK, content=chunks(), headers={"content-type": "application/json"}
+        )
+
+    assert response.status_code == 413
+    assert upstream.requests == []
+
+
+async def test_speak_answers_malformed_json_with_a_fixed_422(make_client: Client) -> None:
+    upstream = Upstream()
+    async with make_client(voice_settings(), upstream) as api:
+        response = await api.post(
+            SPEAK,
+            content=b'{"text": "' + TEXT_MARKER.encode() + b'",',
+            headers={"content-type": "application/json"},
+        )
+
+    assert response.status_code == 422
+    assert response.json()["type"] == "validation-error"
+    assert TEXT_MARKER not in response.text
+    assert upstream.requests == []
+
+
 async def test_speak_accepts_4096_characters(make_client: Client) -> None:
     upstream = Upstream()
     async with make_client(voice_settings(), upstream) as api:
@@ -419,6 +466,93 @@ async def test_the_window_slides_after_60_seconds(make_client: Client) -> None:
     assert (first.status_code, blocked.status_code, after.status_code) == (200, 429, 200)
 
 
+async def test_a_spoofed_forwarded_for_does_not_change_the_bucket_by_default(
+    make_client: Client,
+) -> None:
+    upstream = Upstream()
+    async with make_client(voice_settings(voice_rate_limit_per_minute=1), upstream) as api:
+        first = await api.post(
+            SPEAK, json={"text": "Hello"}, headers={"x-forwarded-for": "198.51.100.1"}
+        )
+        spoofed = await api.post(
+            SPEAK, json={"text": "Hello"}, headers={"x-forwarded-for": "198.51.100.2"}
+        )
+
+    assert (first.status_code, spoofed.status_code) == (200, 429)
+
+
+async def test_one_trusted_hop_keys_on_the_rightmost_forwarded_entry(make_client: Client) -> None:
+    upstream = Upstream()
+    settings = voice_settings(voice_rate_limit_per_minute=1, voice_trusted_proxy_hops=1)
+    async with make_client(settings, upstream) as api:
+        first = await api.post(
+            SPEAK, json={"text": "Hello"}, headers={"x-forwarded-for": "10.0.0.1, 203.0.113.7"}
+        )
+        # The client prepends a fresh entry; the proxy still appends the same real address.
+        prepended = await api.post(
+            SPEAK, json={"text": "Hello"}, headers={"x-forwarded-for": "10.0.0.2, 203.0.113.7"}
+        )
+        other_visitor = await api.post(
+            SPEAK, json={"text": "Hello"}, headers={"x-forwarded-for": "203.0.113.8"}
+        )
+        # No header: falls back to the peer address, its own bucket.
+        no_header = await api.post(SPEAK, json={"text": "Hello"})
+
+    assert [r.status_code for r in (first, prepended, other_visitor, no_header)] == [
+        200,
+        429,
+        200,
+        200,
+    ]
+
+
+async def test_too_few_forwarded_entries_fall_back_to_the_peer_address(
+    make_client: Client,
+) -> None:
+    upstream = Upstream()
+    settings = voice_settings(voice_rate_limit_per_minute=1, voice_trusted_proxy_hops=2)
+    async with make_client(settings, upstream) as api:
+        first = await api.post(
+            SPEAK, json={"text": "Hello"}, headers={"x-forwarded-for": "203.0.113.7"}
+        )
+        second = await api.post(
+            SPEAK, json={"text": "Hello"}, headers={"x-forwarded-for": "203.0.113.9"}
+        )
+
+    assert (first.status_code, second.status_code) == (200, 429)
+
+
+async def test_a_full_key_table_fails_closed_and_sweeps_at_most_once_per_window(
+    make_client: Client, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from app.api import voice
+
+    monkeypatch.setattr(voice, "MAX_LIMITER_KEYS", 2)
+    start = datetime(2026, 9, 23, 12, 0, tzinfo=UTC)
+    now = [start]
+    settings = voice_settings(voice_trusted_proxy_hops=1)
+
+    async def from_ip(api: AsyncClient, ip: str) -> int:
+        response = await api.post(SPEAK, json={"text": "Hi"}, headers={"x-forwarded-for": ip})
+        return response.status_code
+
+    async with make_client(settings, Upstream(), clock=lambda: now[0]) as api:
+        a = await from_ip(api, "203.0.113.1")
+        now[0] = start + timedelta(seconds=30)
+        b = await from_ip(api, "203.0.113.2")
+        full = await from_ip(api, "203.0.113.3")  # sweeps at +30s; nothing has expired
+        known = await from_ip(api, "203.0.113.1")  # a tracked key is still served
+        now[0] = start + timedelta(seconds=75)
+        # The first two hits from a expired at +60s, but the last sweep was only 45s ago.
+        not_yet = await from_ip(api, "203.0.113.3")
+        now[0] = start + timedelta(seconds=95)
+        swept = await from_ip(api, "203.0.113.3")
+
+    assert (a, b, full, known) == (200, 200, 429, 200)
+    assert not_yet == 429
+    assert swept == 200
+
+
 async def test_audio_and_text_never_reach_the_logs(
     make_client: Client, caplog: pytest.LogCaptureFixture
 ) -> None:
@@ -463,4 +597,5 @@ async def test_voice_settings_treat_blanks_as_unset() -> None:
     assert settings.voice_tts_model is None
     assert settings.voice_tts_voice is None
     assert settings.voice_tts_instructions is None
-    assert Settings.model_fields["voice_rate_limit_per_minute"].default == 20
+    assert Settings.model_fields["voice_rate_limit_per_minute"].default == 60
+    assert Settings.model_fields["voice_trusted_proxy_hops"].default == 0

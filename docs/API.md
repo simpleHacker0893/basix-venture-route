@@ -116,7 +116,7 @@ so the structured form is the only input path. If the model times out or errors,
 back to `NullAdapter` behaviour and `message` carries the form-fallback hint; the client never
 sees a `500`. A summary that names an entity outside the route is discarded for the template.
 
-Voice is a client-side skin over this endpoint (D-38, D-51): the founder's browser transcribes and speaks with the Web Speech API, and a spoken "yes" posts the same `{ "userMessage": "", "currentBrief": <brief> }` as the Find my route button. The engine has no voice endpoint and receives no audio.
+Voice is a client-side skin over this endpoint (D-38, D-51): the founder's browser transcribes and speaks with the Web Speech API, and a spoken "yes" posts the same `{ "userMessage": "", "currentBrief": <brief> }` as the Find my route button. With `VITE_VOICE_PROVIDER=openrouter` the browser instead records and plays through the engine's public voice proxy (D-53, below); this endpoint still receives only the transcribed text.
 
 ## POST /api/route
 
@@ -447,13 +447,15 @@ notes:
 
 Public, no auth: no token needed, and a token, if sent, is ignored (never `401`/`403`). The
 engine proxies OpenRouter speech so the browser never holds `OPENROUTER_API_KEY`. Both endpoints
-share one in-memory sliding-window limit per client IP (`request.client.host`, which is the
-visitor's address only when uvicorn trusts the proxy's `X-Forwarded-For`: `FORWARDED_ALLOW_IPS`,
-set to `"*"` in the engine Dockerfile because the engine is reachable only through the host's
-proxy; narrow it to the proxy's CIDR if the port is ever exposed directly):
-`VOICE_RATE_LIMIT_PER_MINUTE` requests (default 20) in any 60 seconds. Every request that passes
-the configuration check counts, including ones later refused with `413`, `415` or `422`; a `429`
-does not. Audio, text and upstream bodies are never stored or logged; a failure logs only the
+share one in-memory sliding-window limit per client IP: `VOICE_RATE_LIMIT_PER_MINUTE` requests
+(default 60) in any 60 seconds. The client IP is the TCP peer (`request.client.host`) when
+`VOICE_TRUSTED_PROXY_HOPS` is 0 (the default); with N > 0 it is the Nth `X-Forwarded-For` entry
+from the right, the one our own proxy appended (set 1 behind Railway or any single proxy).
+Entries to its left are client-written and ignored; fewer than N entries, or no header, falls back
+to the peer. Uvicorn keeps its default of trusting proxy headers only from loopback. At most
+10,000 addresses are tracked; when the table is full, and a sweep of emptied windows (at most once
+per minute) frees nothing, a new address gets `429`. Every request that passes the configuration
+check counts, including ones later refused with `413`, `415` or `422`; a `429` does not. Audio, text and upstream bodies are never stored or logged; a failure logs only the
 upstream status code or the exception class name. The upstream timeout is 30 seconds (5 to
 connect), with no retries. The request model is local to the voice router, not part of
 `packages/contracts`.
@@ -461,7 +463,7 @@ connect), with no retries. The request model is local to the voice router, not p
 | Status | Body | When |
 |---|---|---|
 | `503` | `{"detail": "voice not configured"}` | no OpenRouter key, or the endpoint's model (or, for speak, the voice) is unset |
-| `429` | `{"detail": "too many voice requests"}` | over the per-IP limit |
+| `429` | `{"detail": "too many voice requests"}` | over the per-IP limit, or a new address while the limiter's address table is full |
 | `502` | `{"detail": "voice provider unavailable"}` | OpenRouter answered non-2xx, timed out or failed, or (transcribe) its body had no `text` |
 
 ### POST /api/voice/transcribe
@@ -490,7 +492,11 @@ with `file=("audio.<ext>", bytes, type)` (`webm`, `mp4`, `ogg`, or `mp3` for `au
 { "text": "Here is the route I found." }
 ```
 
-`text` is 1–4096 characters (otherwise `422`, `type: validation-error`). The engine forwards
+The body is read only after the two checks above and at most 32 KB of it: a larger
+`Content-Length` (before reading) or more bytes received answers `413` `{"detail": "request over
+32 KB"}`. `text` is 1–4096 characters; a missing or invalid `text`, or malformed JSON, answers
+`422` `{"type": "validation-error", "message": "text: must be a JSON object with text of 1 to 4096
+characters"}`, a fixed message that never echoes the input. The engine forwards
 `{model: VOICE_TTS_MODEL, input: text, voice: VOICE_TTS_VOICE, instructions:
 VOICE_TTS_INSTRUCTIONS, response_format: "mp3"}` as JSON to `POST
 {OPENROUTER_BASE_URL}/audio/speech`; `instructions` is left out when unset. Response `200`,

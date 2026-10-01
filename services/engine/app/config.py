@@ -5,7 +5,7 @@ from functools import lru_cache
 from pathlib import Path
 from typing import Literal
 
-from pydantic import ValidationInfo, field_validator
+from pydantic import Field, ValidationInfo, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 PACKAGE_ROOT = Path(__file__).resolve().parent.parent
@@ -66,7 +66,11 @@ class Settings(BaseSettings):
     voice_tts_voice: str | None = None
     voice_tts_instructions: str | None = None
     # Per client IP, shared by both voice endpoints, over a sliding 60-second window.
-    voice_rate_limit_per_minute: int = 20
+    voice_rate_limit_per_minute: int = 60
+    # How many trusted proxies sit in front of the engine. 0 keys the limit on the TCP peer; N
+    # keys it on the Nth X-Forwarded-For entry from the right (the one our proxy appended), so a
+    # client-written entry is never trusted. 1 behind Railway or any single proxy.
+    voice_trusted_proxy_hops: int = Field(default=0, ge=0)
     # Browser origins allowed to call the engine, comma-separated (D-30). Credentials stay off
     # in Sprint 002; Sprint 005 adds the Vercel origin on the host.
     cors_origins: str = DEFAULT_CORS_ORIGINS

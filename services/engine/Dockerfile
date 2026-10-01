@@ -31,13 +31,6 @@ ENV HOME=/app
 ENV PATH="/opt/venv/bin:$PATH"
 
 EXPOSE 8000
-ENV PATH="/opt/venv/bin:$PATH"
-# Trust X-Forwarded-For from any peer so `request.client.host` is the visitor, not the host's
-# proxy; the per-IP voice limit (#126) keys on it. Uvicorn reads this variable and has proxy
-# headers on by default. Safe only because the engine is reachable solely through the host's
-# proxy (Railway); if port 8000 is ever exposed directly, narrow this to the proxy's CIDR, or a
-# client can spoof the header to dodge the limit.
-ENV FORWARDED_ALLOW_IPS="*"
 HEALTHCHECK --interval=10s --timeout=3s --retries=5 \
     CMD python -c "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:8000/health').status == 200 else 1)"
 CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]

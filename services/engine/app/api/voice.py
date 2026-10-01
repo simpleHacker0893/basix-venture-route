@@ -7,8 +7,15 @@ exception class name.
 
 Transcribe checks, in order: configured (503), rate limit (429), content type (415), declared
 `Content-Length` (413, before any byte is read), bytes actually read (413), empty body (422).
+Speak runs the same configured and rate-limit checks first, then reads at most 32 KB (413) and
+only then validates `{text}` (422, with a fixed message that never echoes the input).
 Cheap refusals come first; the limit counts every request that gets past configuration, whatever
 its later fate, so a client cannot probe for free with malformed calls.
+
+The limit keys on the client IP: the TCP peer by default, or, with `VOICE_TRUSTED_PROXY_HOPS=N`,
+the Nth `X-Forwarded-For` entry from the right, the one our own proxy appended. Entries to its
+left are written by the client and never trusted. At most `MAX_LIMITER_KEYS` addresses are
+tracked; when the table is full and no emptied window can be swept, a new address gets 429.
 """
 
 from __future__ import annotations
@@ -20,7 +27,8 @@ from typing import Annotated, Any
 
 import httpx
 from fastapi import APIRouter, Depends, HTTPException, Request, Response
-from pydantic import BaseModel, Field
+from fastapi.responses import JSONResponse
+from pydantic import BaseModel, Field, ValidationError
 
 from app.config import Settings
 
@@ -29,6 +37,10 @@ logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/voice", tags=["voice"])
 
 MAX_AUDIO_BYTES = 5 * 1024 * 1024
+# `{text}` of at most 4096 characters fits easily, even as multi-byte UTF-8 with JSON escapes.
+MAX_SPEAK_BYTES = 32 * 1024
+# Hard cap on tracked client addresses, so the limiter's memory is bounded whatever arrives.
+MAX_LIMITER_KEYS = 10_000
 # The recording types the browser's MediaRecorder produces, mapped to the upload extension.
 AUDIO_EXTENSIONS = {
     "audio/webm": "webm",
@@ -41,6 +53,7 @@ RATE_WINDOW_SECONDS = 60.0
 
 NOT_CONFIGURED = "voice not configured"
 UNAVAILABLE = "voice provider unavailable"
+SPEAK_INVALID = "text: must be a JSON object with text of 1 to 4096 characters"
 
 
 class SpeakRequest(BaseModel):
@@ -55,25 +68,37 @@ class Transcript(BaseModel):
 
 class SlidingWindowLimiter:
     """At most `limit` hits per key in any `window` seconds. In memory, per process: it resets on
-    restart and is not shared across replicas, which is enough for one engine instance."""
+    restart and is not shared across replicas, which is enough for one engine instance.
 
-    # Past this many tracked keys, drop the ones whose window has emptied.
-    _SWEEP_AT = 10_000
+    At most `MAX_LIMITER_KEYS` keys are tracked. A new key that finds the table full triggers a
+    sweep of keys whose window has emptied, at most once per window; if the table is still full,
+    the key is refused (fail closed), so memory stays bounded under a flood of addresses."""
 
     def __init__(
-        self, limit: int, now: Callable[[], float], window: float = RATE_WINDOW_SECONDS
+        self,
+        limit: int,
+        now: Callable[[], float],
+        window: float = RATE_WINDOW_SECONDS,
+        max_keys: int | None = None,
     ) -> None:
         self._limit = limit
         self._now = now
         self._window = window
+        self._max_keys = MAX_LIMITER_KEYS if max_keys is None else max_keys
         self._hits: dict[str, deque[float]] = {}
+        self._last_sweep = float("-inf")
 
     def allow(self, key: str) -> bool:
         now = self._now()
         cutoff = now - self._window
-        if len(self._hits) > self._SWEEP_AT:
-            self._hits = {k: q for k, q in self._hits.items() if q and q[-1] > cutoff}
-        hits = self._hits.setdefault(key, deque())
+        hits = self._hits.get(key)
+        if hits is None:
+            if len(self._hits) >= self._max_keys and now - self._last_sweep >= self._window:
+                self._last_sweep = now
+                self._hits = {k: q for k, q in self._hits.items() if q and q[-1] > cutoff}
+            if len(self._hits) >= self._max_keys:
+                return False
+            hits = self._hits[key] = deque()
         while hits and hits[0] <= cutoff:
             hits.popleft()
         if len(hits) >= self._limit:
@@ -92,9 +117,22 @@ def _client(request: Request) -> httpx.AsyncClient:
     return client
 
 
+def client_ip(request: Request, trusted_hops: int) -> str:
+    """The TCP peer, or with `trusted_hops` N > 0 the Nth `X-Forwarded-For` entry from the right
+    (appended by our own proxy). Too few entries, or no header, falls back to the peer."""
+    peer = request.client.host if request.client else "unknown"
+    if trusted_hops <= 0:
+        return peer
+    forwarded = ",".join(request.headers.getlist("x-forwarded-for"))
+    entries = [entry.strip() for entry in forwarded.split(",") if entry.strip()]
+    if len(entries) < trusted_hops:
+        return peer
+    return entries[-trusted_hops]
+
+
 def _enforce_limit(request: Request) -> None:
     limiter: SlidingWindowLimiter = request.app.state.voice_limiter
-    key = request.client.host if request.client else "unknown"
+    key = client_ip(request, _settings(request).voice_trusted_proxy_hops)
     if not limiter.allow(key):
         raise HTTPException(status_code=429, detail="too many voice requests")
 
@@ -108,8 +146,8 @@ async def transcribe_guard(request: Request) -> Settings:
 
 
 async def speak_guard(request: Request) -> Settings:
-    """Runs before the body is validated, so an invalid `text` still counts toward the limit.
-    Async (like `transcribe_guard`) so the limiter is only ever touched on the event loop."""
+    """Runs before `speak` reads the body, so an oversized or invalid one still counts toward the
+    limit. Async (like `transcribe_guard`) so the limiter is only ever touched on the event loop."""
     settings = _settings(request)
     if (
         settings.openrouter_api_key is None
@@ -131,19 +169,21 @@ def _unavailable(
     return HTTPException(status_code=502, detail=UNAVAILABLE)
 
 
-async def _read_capped(request: Request) -> bytes:
+async def _read_capped(
+    request: Request, limit: int = MAX_AUDIO_BYTES, detail: str = "recording over 5 MB"
+) -> bytes:
     declared = request.headers.get("content-length")
     if declared is not None:
         try:
-            if int(declared) > MAX_AUDIO_BYTES:
-                raise HTTPException(status_code=413, detail="recording over 5 MB")
+            if int(declared) > limit:
+                raise HTTPException(status_code=413, detail=detail)
         except ValueError:
             pass  # Unparseable header: the running count below still enforces the cap.
     received = bytearray()
     async for chunk in request.stream():
         received += chunk
-        if len(received) > MAX_AUDIO_BYTES:
-            raise HTTPException(status_code=413, detail="recording over 5 MB")
+        if len(received) > limit:
+            raise HTTPException(status_code=413, detail=detail)
     return bytes(received)
 
 
@@ -185,11 +225,19 @@ async def transcribe(
 
 @router.post("/speak", response_class=Response)
 async def speak(
-    body: SpeakRequest,
+    request: Request,
     settings: Annotated[Settings, Depends(speak_guard)],
     client: Annotated[httpx.AsyncClient, Depends(_client)],
 ) -> Response:
-    """`{text}` (1–4096 characters) in, MP3 bytes out."""
+    """`{text}` (1–4096 characters) in, MP3 bytes out. The body is read only after the guard, at
+    most `MAX_SPEAK_BYTES`, and validated here, so a bad one is never echoed back."""
+    raw = await _read_capped(request, MAX_SPEAK_BYTES, "request over 32 KB")
+    try:
+        body = SpeakRequest.model_validate_json(raw)
+    except ValidationError:
+        return JSONResponse(
+            status_code=422, content={"type": "validation-error", "message": SPEAK_INVALID}
+        )
     payload: dict[str, str] = {
         "model": settings.voice_tts_model or "",
         "input": body.text,
