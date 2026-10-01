@@ -11,7 +11,7 @@ Venture Route turns a founder's plain-language brief into the **smallest credibl
 
 | Quick links | |
 |---|---|
-| Live demo | _to be added once deployed_ |
+| Live demo | _pending, filled at #142_ |
 | Demo video (3 min) | _to be added_ |
 | Pitch deck | [canva.link/venture-route](https://canva.link/venture-route) |
 | Run it locally | [Quick start](#quick-start) (about five minutes, no API keys needed) |
@@ -34,7 +34,7 @@ Venture Route turns a founder's plain-language brief into the **smallest credibl
 
 ## Contents
 
-[The problem](#the-problem) · [Our answer](#our-answer) · [A worked example](#a-worked-example) · [Why this is different](#why-this-is-different) · [For MeTTa judges](#for-metta-judges-where-the-metta-lives) · [What runs today](#what-runs-today) · [Quick start](#quick-start) · [Test, lint, type-check](#test-lint-type-check) · [Architecture](#architecture) · [Demo scenarios](#demo-scenarios) · [Limitations and what is next](#limitations-and-what-is-next) · [Roadmap](#roadmap)
+[The problem](#the-problem) · [Our answer](#our-answer) · [A worked example](#a-worked-example) · [Why this is different](#why-this-is-different) · [For MeTTa judges](#for-metta-judges-where-the-metta-lives) · [What runs today](#what-runs-today) · [Quick start](#quick-start) · [Deploy](#deploy) · [Test, lint, type-check](#test-lint-type-check) · [Architecture](#architecture) · [Demo scenarios](#demo-scenarios) · [Limitations and what is next](#limitations-and-what-is-next) · [Roadmap](#roadmap)
 
 ## The problem
 
@@ -138,7 +138,7 @@ Then open `http://localhost:5173/route`, pick **Health pilot**, open **Why this 
 
 | What | Link |
 |---|---|
-| Live demo | _to be added once deployed_ |
+| Live demo | _pending, filled at #142_ |
 | Demo video (3 min) | _to be added_ |
 | Pitch deck (Canva, 12 slides) | [canva.link/venture-route](https://canva.link/venture-route) |
 | Repository | [github.com/simpleHacker0893/basix-venture-route](https://github.com/simpleHacker0893/basix-venture-route) |
@@ -247,6 +247,32 @@ docker compose up                    # db (postgres:18), then seed, then engine
 The one-shot `seed` service runs `alembic upgrade head` and then `scripts/seed_showcase_demo.py`, which writes the Showcase demo entries (Venture Route plus two fictional ones) from `services/engine/seed/showcase_demo.json`; edit that file to change titles or links. The seed is idempotent, touches only its own `demo_data` rows and never changes a route. The engine starts once the seed exits successfully. See `docs/API.md` §Demo seed.
 
 The engine image is `python:3.12-slim` with uv, a non-root user, the migrations, and a health check. The web app is served by Vite locally and by Vercel in deployment (D-27).
+
+## Deploy
+
+The hosted demo is: browser, then the **web app on Vercel**, then the **engine on Render** (FastAPI + Hyperon, Docker), then **Neon** Postgres. **Clerk** handles sign-in. Deploy in this order: Render, then Vercel, then connect them (the engine's `CORS_ORIGINS` and the Clerk production webhook). After setup, every push to `master` redeploys both hosts. The full step-by-step wizard, with the values to collect and the checks to paste back, is [docs/DEPLOY.md](docs/DEPLOY.md); this section does not repeat it.
+
+| Service | Host | URL |
+|---|---|---|
+| Web app | Vercel | _pending, filled at #142_ |
+| Engine (`/health`) | Render | _pending, filled at #142_ |
+
+### Install the deploy tools
+
+The Render dashboard Blueprint flow is the primary path, so the Render CLI is optional. The Vercel CLI is needed.
+
+| Tool | Install | Check and log in |
+|---|---|---|
+| Vercel CLI | `npm i -g vercel` or `pnpm add -g vercel` (any OS) | `vercel --version`, then `vercel login` |
+| Render CLI (optional) | macOS: `brew install render-oss/render/render`. Linux or macOS: the install script from the [render-oss/cli](https://github.com/render-oss/cli) repo. Windows: the release binary from [its releases](https://github.com/render-oss/cli/releases) where policy allows, otherwise WSL or the Linux CLI in Docker | `render --version`, then `render login` (in Docker, authenticate with `RENDER_API_KEY` instead) |
+
+On Windows machines with Application Control the native `render.exe` can be blocked; use the dashboard, or the Docker route in [DEPLOY.md section 0.1](docs/DEPLOY.md#01-install-the-tools).
+
+### Demo video and submission
+
+- [docs/demo/SCRIPT.md](docs/demo/SCRIPT.md): the demo video plan and script.
+- [SUBMISSION.md](SUBMISSION.md): the hackathon submission text.
+- The demo harness run instructions are not merged yet (#145); link to be added once they are.
 
 ## Test, lint, type-check
 
