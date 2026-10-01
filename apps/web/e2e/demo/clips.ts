@@ -78,3 +78,23 @@ export function webmSize(file: string): { width: number; height: number } {
   const video = [SEGMENT, TRACKS, TRACK_ENTRY, VIDEO].reduce((parent, id) => child(buf, parent, id), root);
   return { width: uint(buf, child(buf, video, PIXEL_WIDTH)), height: uint(buf, child(buf, video, PIXEL_HEIGHT)) };
 }
+
+/**
+ * The size of a JPEG (a screencast frame), from its first SOF marker. The WebM header only states
+ * the canvas: Playwright pads smaller frames into it, so a clip can claim 1920×1080 while the page
+ * fills its top-left corner. The fixture checks the frames themselves.
+ */
+export function jpegSize(buf: Buffer): { width: number; height: number } {
+  let pos = 2;
+  while (pos + 9 < buf.length) {
+    if (buf[pos] !== 0xff) throw new Error(`invalid JPEG marker at byte ${pos}`);
+    const marker = buf[pos + 1] ?? 0;
+    const length = buf.readUInt16BE(pos + 2);
+    // SOF0–SOF15, except DHT (C4), JPG (C8) and DAC (CC).
+    if (marker >= 0xc0 && marker <= 0xcf && ![0xc4, 0xc8, 0xcc].includes(marker)) {
+      return { width: buf.readUInt16BE(pos + 7), height: buf.readUInt16BE(pos + 5) };
+    }
+    pos += 2 + length;
+  }
+  throw new Error("JPEG has no SOF marker");
+}

@@ -37,8 +37,13 @@ export const ENGINE_PORT = SUITES[SUITE].enginePort;
 export const WEB_PORT = SUITES[SUITE].webPort;
 export const ENGINE_URL = `http://localhost:${ENGINE_PORT}`;
 export const WEB_URL = `http://localhost:${WEB_PORT}`;
-/** The compose `db` (postgres:18, D-37); never Neon for this suite. */
-export const COMPOSE_DATABASE_URL = "postgresql+asyncpg://postgres:postgres@localhost:5432/venture_route";
+/**
+ * The compose `db` (postgres:18, D-37); never Neon for this suite. Its host port follows
+ * docker-compose.yml's `POSTGRES_PORT` (the process environment first, then the repo-root .env),
+ * default 5432, so a worktree whose stack runs on another port points the suite at its own db.
+ */
+export const COMPOSE_DB_PORT = process.env.POSTGRES_PORT || rootEnv().POSTGRES_PORT || "5432";
+export const COMPOSE_DATABASE_URL = `postgresql+asyncpg://postgres:postgres@localhost:${COMPOSE_DB_PORT}/venture_route`;
 export const OUTPUT_DIR = path.resolve(WEB_DIR, SUITES[SUITE].outputDir);
 export const STATE_FILE = path.join(OUTPUT_DIR, "clerk-users.json");
 export const BUILD_DIR = SUITES[SUITE].buildDir;

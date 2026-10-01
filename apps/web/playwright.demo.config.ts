@@ -32,6 +32,9 @@ export default defineConfig(
     timeout: 180_000,
     projectUse: {
       viewport: VIDEO_SIZE,
+      // Trace screenshots open the page's shared screencast first at Playwright's default 800 px
+      // size, and every later recording would get those small frames padded to 1920×1080.
+      trace: { mode: "retain-on-failure", screenshots: false, snapshots: true },
       launchOptions: { slowMo: 250 },
     },
     engineEnv: { LLM_PROVIDER: rootEnv().LLM_PROVIDER || "null" },

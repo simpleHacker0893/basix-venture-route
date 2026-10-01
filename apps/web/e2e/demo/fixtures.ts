@@ -11,9 +11,10 @@
  *   new worker), the context starts from that file and the role resumes signed in.
  * - **One clip per scene, from that scene's page.** Each scene records its own screencast of the
  *   role's page (`page.screencast`, 1920×1080) into the test's output dir. Only a scene whose
- *   body passed and whose clip is 1920×1080 copies it to `demo-output/clips/<clip>.webm`: a
- *   failed or timed-out scene never writes or overwrites its clip, and never advances the role's
- *   saved session. A failure fails the run: a flaky take never counts.
+ *   body passed, and whose clip and every captured frame are 1920×1080, copies it to
+ *   `demo-output/clips/<clip>.webm`: a failed or timed-out scene never writes or overwrites its
+ *   clip, and never advances the role's saved session. A failure fails the run: a flaky take
+ *   never counts.
  */
 import { copyFileSync, existsSync, mkdirSync } from "node:fs";
 import path from "node:path";
@@ -23,7 +24,7 @@ import { test as base, expect, type Browser, type Page } from "@playwright/test"
 
 import { OUTPUT_DIR, WEB_URL } from "../clerk/env";
 import { installCaptions, showCaption } from "./captions";
-import { clipPath, CLIPS_DIR, VIDEO_SIZE, webmSize } from "./clips";
+import { clipPath, CLIPS_DIR, jpegSize, VIDEO_SIZE, webmSize } from "./clips";
 import { SCENES, type SceneId, type SceneRole } from "./scenes";
 
 const ROLE_STATE_DIR = path.join(OUTPUT_DIR, "roles");
@@ -89,7 +90,16 @@ export function scene(id: SceneId, role: SceneRole, body: (page: Page) => Promis
     const page = await rolePages.page(role);
     await showCaption(page, caption);
     const draft = testInfo.outputPath(`${clip}.webm`);
-    await page.screencast.start({ path: draft, size: VIDEO_SIZE });
+    // The frames' own size: the page's screencast is shared, and its first client sets the size.
+    const frameSizes = new Set<string>();
+    await page.screencast.start({
+      path: draft,
+      size: VIDEO_SIZE,
+      onFrame: ({ data }) => {
+        const size = jpegSize(data);
+        frameSizes.add(`${size.width}x${size.height}`);
+      },
+    });
     try {
       await body(page);
     } finally {
@@ -97,6 +107,7 @@ export function scene(id: SceneId, role: SceneRole, body: (page: Page) => Promis
     }
     // Reached only when the body passed.
     expect(webmSize(draft), `${clip}.webm frame size`).toEqual(VIDEO_SIZE);
+    expect([...frameSizes], `${clip} captured frame sizes`).toEqual([`${VIDEO_SIZE.width}x${VIDEO_SIZE.height}`]);
     mkdirSync(CLIPS_DIR, { recursive: true });
     copyFileSync(draft, clipPath(clip));
     await rolePages.persist(role);
