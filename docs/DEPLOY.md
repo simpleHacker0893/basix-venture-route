@@ -5,10 +5,16 @@ Hyperon, Docker) on **Render** from the committed Blueprint `render.yaml`, and t
 (Vite SPA, `apps/web`) on **Vercel** from the committed `apps/web/vercel.json`. Both read **Neon**
 `production` (D-17) and **Clerk** (D-03). After setup, every push to `master` redeploys both.
 
-**Who does what (D-57).** The Operator runs every `render` and `vercel` command that creates or
-changes something and types every secret straight into the CLI or the dashboard. The agent only
-runs read-only checks (`curl /health`, the CORS check, `render blueprints validate`). A secret
-never goes into chat, a tracked file or a terminal echo (D-26).
+**Who does what (D-57).** The Operator does every Render and Vercel step that creates or changes
+something, in the dashboard or the CLI, and types every secret straight into it. The agent only
+runs read-only checks: `curl /health` and the CORS check from its own machine, and
+`render blueprints validate`, which is read-only but runs only wherever the Render CLI runs (on
+this Windows machine that is the Docker container in [§0.1](#01-install-the-tools), not the
+agent's shell). A secret never goes into chat, a tracked file or a terminal echo (D-26).
+
+**Render is dashboard-first.** Windows Application Control on the Operator's machine blocks the
+Render CLI binary (`render.exe`, like the uv and pytest shims), so every Render step below is
+written for the Render dashboard and names the optional CLI command next to it.
 
 **How to follow it.** Go top to bottom: [Prerequisites](#0-prerequisites) → [Render](#2-render-the-engine)
 → [Vercel](#3-vercel-the-web-app) → [Connect](#4-connect-the-two) → [Verify](#5-verify).
@@ -30,28 +36,57 @@ slash), `<srv-id>` is the Render service id (`srv-…`).
 
 ## 0. Prerequisites
 
-### 0.1 Install the CLIs
+### 0.1 Install the tools
 
-| Tool | Windows (PowerShell) | macOS / Linux |
-|---|---|---|
-| Render CLI | `winget install Render.CLI`, or download the Windows zip from <https://github.com/render-oss/cli/releases> and put `render.exe` on `PATH` | `brew install render-oss/render/render`, or the release binary from the same page |
-| Vercel CLI | `npm i -g vercel` | `npm i -g vercel` |
-| GitHub CLI | `winget install GitHub.cli` (already used for issues) | `brew install gh` |
-| uv | already installed for the engine (`services/engine`) | same |
+| Tool | Needed? | Windows | macOS / Linux |
+|---|---|---|---|
+| Render dashboard | **yes**, the primary path | <https://dashboard.render.com> | same |
+| Vercel CLI | yes | `npm i -g vercel` | `npm i -g vercel` |
+| GitHub CLI | yes (checks) | already installed | `brew install gh` |
+| uv | yes (migration, seed) | already installed for `services/engine` | same |
+| Render CLI | optional | blocked natively by Application Control here; use the Docker container below, or `winget install Render.CLI` / the release zip from <https://github.com/render-oss/cli/releases> where policy allows | `brew install render-oss/render/render` |
 
-Check:
+**Render CLI in Docker (optional, works on this machine).** Docker Desktop runs the official
+Linux CLI. Browser `render login` does not work inside a container, so it authenticates with an
+API key: Render dashboard → Account Settings → **API Keys** → Create API key. Export it in your
+own shell without echo; `-e RENDER_API_KEY` passes it by name, so it never appears in argv.
+Build the image once (Git Bash, repo root):
 
 ```bash
-render --version
+printf '%s\n' 'FROM debian:stable-slim' \
+  'RUN apt-get update && apt-get install -y --no-install-recommends curl unzip ca-certificates && curl -fsSL https://raw.githubusercontent.com/render-oss/cli/refs/heads/main/bin/install.sh | sh && rm -rf /var/lib/apt/lists/*' \
+  'ENTRYPOINT ["render"]' | docker build -t render-cli -
+```
+
+Then, in each Git Bash session where you want `render`:
+
+```bash
+read -rs RENDER_API_KEY && export RENDER_API_KEY   # paste the API key, then Enter
+render() { MSYS_NO_PATHCONV=1 docker run --rm -i -e RENDER_API_KEY -e RENDER_OUTPUT=text \
+  -v render-cli-config:/root/.render -v "$(pwd -W)":/repo -w /repo render-cli "$@"; }
+render --version                                   # expect: render v2.28.0 or later
+render workspaces                                  # lists workspaces and their tea-… ids
+render workspace set <workspace-id>                # stored in the render-cli-config volume
+render blueprints validate render.yaml
+```
+
+The named volume keeps only the CLI config (the active workspace) between runs; remove it after
+the demo with `docker volume rm render-cli-config`. Every later `render …` command in this doc
+works through this function unchanged. (On macOS or Linux use `"$PWD"` instead of
+`"$(pwd -W)"` and drop `MSYS_NO_PATHCONV=1`.)
+
+Check Vercel:
+
+```bash
 vercel --version
 ```
 
 ### 0.2 Log in
 
+- Render: sign in at <https://dashboard.render.com> and pick the workspace that will own the
+  engine (top-left switcher). Optional CLI: the API key and `render workspace set` above.
+
 ```bash
-render login                 # opens the browser; approve, then come back
-render workspaces            # list workspaces
-render workspace set         # pick the workspace that will own the engine (interactive)
 vercel login
 vercel whoami
 ```
@@ -77,11 +112,14 @@ The Clerk dev instance (`pk_test`) is fine for the demo (spec #135, out of scope
 
 ```bash
 git fetch origin && git show origin/master:render.yaml | head -20
-render blueprints validate render.yaml
 ```
 
-> **Paste back:** the last lines of `render blueprints validate` (expect it to report the
-> Blueprint as valid).
+Validation: the dashboard validates the Blueprint when you open it in step 2.2 (an invalid file
+shows an error there instead of the service preview). Optional CLI (Docker, §0.1):
+`render blueprints validate render.yaml`.
+
+> **Paste back:** "render.yaml is on master", plus the last lines of `render blueprints validate`
+> if you ran it.
 
 ---
 
@@ -167,15 +205,16 @@ before a live demo. The Blueprint says `plan: starter`. For the free plan see
 
 ### 2.3 Find the service id
 
-```bash
-render services -o json
-```
-
-Note the `id` (`srv-…`) of `venture-route-engine`. Every command below uses it as `<srv-id>`.
+Dashboard: open `venture-route-engine`; the id is the `srv-…` part of the page URL
+(`dashboard.render.com/web/srv-…`) and is also shown under **Settings**. Optional CLI:
+`render services -o json`. The CLI commands below use it as `<srv-id>`.
 
 > **Paste back:** the `srv-…` id and the service URL.
 
 ### 2.4 Watch the first deploy
+
+Dashboard: `venture-route-engine` → **Events** (each deploy and its status) and **Logs** (live
+log stream). Optional CLI:
 
 ```bash
 render deploys list <srv-id>
@@ -184,11 +223,12 @@ render logs -r <srv-id> --tail
 
 On Starter the deploy runs `alembic upgrade head` as its pre-deploy command first (Alembic
 resolves `ALEMBIC_DATABASE_URL`, then `DATABASE_URL_DIRECT`, then `DATABASE_URL`), then starts
-uvicorn and waits for `/health` to return 200. Stop the log tail with Ctrl-C once you see
-`Application startup complete`.
+uvicorn and waits for `/health` to return 200. Wait for `Application startup complete` in
+the logs (stop a CLI tail with Ctrl-C).
 
-> **Paste back:** the top line of `render deploys list <srv-id>` (status `live`) and any log
-> line that says `ERROR` or `Traceback` (none expected).
+> **Paste back:** the latest deploy's status from Events (`Deploy live`) or the top line of
+> `render deploys list <srv-id>`, and any log line that says `ERROR` or `Traceback` (none
+> expected).
 
 ### 2.5 Migrate by hand (free plan only; skip on Starter)
 
@@ -223,10 +263,11 @@ Expected (numbers vary):
 
 ### 2.7 Manual redeploy (whenever you change a variable)
 
-The dashboard's **Save, rebuild and deploy** does it, or:
+Dashboard: **Environment** → edit → **Save, rebuild and deploy**, or **Manual Deploy** →
+**Deploy latest commit** (top right of the service page). Optional CLI:
 
 ```bash
-render deploys create <srv-id> --wait
+render deploys create <srv-id> --wait --confirm
 ```
 
 `--wait` exits non-zero if the deploy fails.
@@ -385,12 +426,15 @@ sign-up in [§5](#5-verify) is the test.
    reference before you run it). The secret key is read without echo:
 
    ```bash
-   read -rs CLERK_SECRET_KEY && export CLERK_SECRET_KEY    # paste sk_test_…, then Enter
-   curl -s -X PATCH https://api.clerk.com/v1/instance \
-     -H "Authorization: Bearer $CLERK_SECRET_KEY" -H "Content-Type: application/json" \
-     -d '{"allowed_origins":["<web-url>","http://localhost:5173"]}' -o /dev/null -w "%{http_code}\n"
+   read -rs CLERK_SECRET_KEY                               # paste sk_test_…, then Enter
+   printf 'Authorization: Bearer %s\n' "$CLERK_SECRET_KEY" | \
+     curl -s -X PATCH https://api.clerk.com/v1/instance -H @- \
+       -H "Content-Type: application/json" \
+       -d '{"allowed_origins":["<web-url>","http://localhost:5173"]}' -o /dev/null -w "%{http_code}\n"
    unset CLERK_SECRET_KEY
    ```
+
+   The key travels to curl on stdin (`-H @-`), so it is never in a process's argv.
 
    Expect `204` or `200`.
 2. Check only (already set in Sprint 002): Clerk Dashboard → **Sessions → Customize session
@@ -412,8 +456,10 @@ read -rs DATABASE_URL && export DATABASE_URL     # paste the Neon production POO
 uv run python scripts/seed_showcase_demo.py
 unset DATABASE_URL
 cd ../..
-render restart <srv-id>                          # the engine reprojects at start-up (D-15)
 ```
+
+Then restart the engine so it reprojects at start-up (D-15). Dashboard: **Manual Deploy** →
+**Restart service**. Optional CLI: `render restart <srv-id> --confirm`.
 
 > **Paste back:** the `[showcase seed] …` line the script prints and the
 > `projected_rows` value from `curl -s <engine-url>/health` after the restart (expect it above 0).
@@ -477,12 +523,13 @@ paste `<engine-url>` and `<web-url>`.
 
 **Engine (Render).**
 
-- Dashboard → `venture-route-engine` → Events → an earlier successful deploy → **Rollback**.
-- Or by CLI, redeploying a known good commit:
+- Dashboard → `venture-route-engine` → **Events** → an earlier successful deploy →
+  **Rollback**.
+- Optional CLI, redeploying a known good commit:
 
   ```bash
   render deploys list <srv-id>                         # find the last good commit
-  render deploys create <srv-id> --commit <sha> --wait
+  render deploys create <srv-id> --commit <sha> --wait --confirm
   ```
 
 - Auto-deploy is on, so the next push to `master` deploys again. Make the fix durable with
@@ -525,6 +572,7 @@ After a rollback Vercel stops auto-promoting new production deploys until you pr
 | Browser console: CORS error on `<engine-url>` | `CORS_ORIGINS` does not match the origin exactly | Step 4.1, then verify step 2 |
 | Every signed-in call answers 403 | session token lacks the `metadata` claim | Step 4.3 check |
 | Sign-up works but no `users` row | webhook secret still the placeholder, or the wrong URL | Step 4.2; Message Attempts shows 400/401 |
+| `render.exe` "blocked by an Application Control policy" | Windows policy on this machine | Use the dashboard, or the Docker CLI in §0.1 |
 | `/api/showcase` empty | seed not run, or the engine not restarted | Step 4.4 |
 | Marketplace routes answer 503 | `DATABASE_URL` empty or still the placeholder | Re-enter it on Render (asyncpg form, `?ssl=require`) |
 | Changed a `VITE_*` value, site unchanged | `VITE_*` is baked at build time | `vercel --prod` again |

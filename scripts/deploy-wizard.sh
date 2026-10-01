@@ -211,6 +211,63 @@ run_cmd() {
 # paste_back "what" says what to copy into the agent chat (never a secret).
 paste_back() { printf '\n  %s%sPaste back to the agent:%s %s\n' "$BOLD" "$GREEN" "$RESET" "$1"; }
 
+# ask_match KEY "Prompt" REGEX "hint" re-asks until the (public) value matches REGEX.
+ask_match() {
+  local key="$1" prompt="$2" regex="$3" hint="$4"
+  while true; do
+    ask "$key" "$prompt"
+    printf -v "$key" '%s' "${!key%/}"
+    [[ "${!key}" =~ $regex ]] && return 0
+    warn "that does not look right ($hint); try again"
+  done
+}
+
+# The Render CLI is optional: the dashboard is the primary path. Application Control blocks the
+# native render.exe on the Operator's Windows machine, so the CLI can also run as the Linux
+# binary in Docker (docs/DEPLOY.md section 0.1), authenticated by RENDER_API_KEY.
+RENDER_CMD=""
+render_setup() {
+  if command -v render >/dev/null 2>&1 && render --version >/dev/null 2>&1; then
+    RENDER_CMD="render"
+    note "Render CLI: native binary works"
+    return
+  fi
+  if ! command -v docker >/dev/null 2>&1; then
+    note "Render CLI: not available (no working binary, no Docker). Dashboard only."
+    return
+  fi
+  confirm "Use the Render CLI through Docker (needs a Render API key)?" || { note "Dashboard only."; return; }
+  if ! docker image inspect render-cli >/dev/null 2>&1; then
+    say "Building the render-cli image once (debian:stable-slim + the official install.sh):"
+    printf '%s\n' 'FROM debian:stable-slim' \
+      'RUN apt-get update && apt-get install -y --no-install-recommends curl unzip ca-certificates && curl -fsSL https://raw.githubusercontent.com/render-oss/cli/refs/heads/main/bin/install.sh | sh && rm -rf /var/lib/apt/lists/*' \
+      'ENTRYPOINT ["render"]' | docker build -q -t render-cli - >/dev/null \
+      || { warn "image build failed. Dashboard only."; return; }
+  fi
+  if [[ -z "${RENDER_API_KEY:-}" ]]; then
+    open_url "https://dashboard.render.com/u/settings#api-keys"
+    step "Account Settings, API Keys, Create API key, copy it."
+    printf '  RENDER_API_KEY (hidden): '
+    read -rs RENDER_API_KEY || true
+    printf '\n'
+    export RENDER_API_KEY   # passed to docker by name (-e RENDER_API_KEY), never in argv
+  fi
+  local host_dir
+  host_dir="$(pwd -W 2>/dev/null || pwd)"
+  RENDER_CMD="MSYS_NO_PATHCONV=1 docker run --rm -i --init -e RENDER_API_KEY -e RENDER_OUTPUT=text -v render-cli-config:/root/.render -v \"$host_dir\":/repo -w /repo render-cli"
+  note "Render CLI: Docker container render-cli"
+}
+
+# render_opt "args" offers an optional Render CLI command after the dashboard instruction.
+render_opt() {
+  if [[ -z "$RENDER_CMD" ]]; then
+    note "(optional CLI skipped: render $1)"
+    return
+  fi
+  note "Optional CLI equivalent:"
+  run_cmd "$RENDER_CMD $1"
+}
+
 cd "$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
 if [[ ! -f render.yaml || ! -f apps/web/vercel.json ]]; then
   warn "run this from the Venture Route repo"
@@ -222,29 +279,32 @@ VERCEL_SCOPE="simplenjenga4-6645s-projects"
 VERCEL_PROJECT="basix-venture-route"
 
 banner "Venture Route deploy: Render engine + Vercel web"
+note "Note: this wizard saves nothing (write_env is unused), so a re-run starts from scratch."
 
 # ── 0. Prerequisites ─────────────────────────────────────────────────────
-stage "Prerequisites: CLIs and log-ins"
-say "Install if missing (docs/DEPLOY.md section 0.1):"
-step "Render CLI: winget install Render.CLI, or the release zip from github.com/render-oss/cli/releases"
-step "            (macOS/Linux: brew install render-oss/render/render)"
-step "Vercel CLI: npm i -g vercel"
-if command -v render >/dev/null 2>&1; then note "render found"; else warn "render CLI not on PATH"; fi
-if command -v vercel >/dev/null 2>&1; then note "vercel found"; else warn "vercel CLI not on PATH"; fi
-say "Log in to both (each opens a browser):"
-run_cmd "render login"
-run_cmd "render workspace set"
+stage "Prerequisites: Render dashboard, Vercel CLI, optional Render CLI"
+say "Render is dashboard-first (docs/DEPLOY.md section 0.1)."
+open_url "https://dashboard.render.com"
+step "Sign in and pick the workspace that will own the engine (top-left switcher)."
+if command -v vercel >/dev/null 2>&1; then note "vercel found"; else warn "vercel CLI not on PATH: npm i -g vercel"; fi
 run_cmd "vercel login"
+render_setup
+if [[ -n "$RENDER_CMD" ]]; then
+  render_opt "workspaces"
+  ask_match RENDER_WORKSPACE_ID "Paste the workspace id to use (tea-...), or Enter to skip:" '^(tea-.*)?$' "starts with tea-"
+  if [[ -n "$RENDER_WORKSPACE_ID" ]]; then run_cmd "$RENDER_CMD workspace set $RENDER_WORKSPACE_ID"; fi
+fi
 say "Have ready in your password manager (section 0.3): Neon production pooled and direct URLs in"
 say "the asyncpg form (postgresql+asyncpg://...?ssl=require), Clerk JWKS URL, sk_test, pk_test,"
 say "the Anthropic and OpenRouter keys, ADMIN_EMAILS."
-pause "Press Enter when both CLIs are logged in"
+pause "Press Enter when the dashboard and Vercel are signed in"
 
-stage "Render: validate the Blueprint"
+stage "Render: the Blueprint is on master"
 say "Render deploys render.yaml from master, so it must be merged first."
 run_cmd "git fetch origin && git show origin/master:render.yaml >/dev/null && echo 'render.yaml is on master'"
-run_cmd "render blueprints validate render.yaml"
-paste_back "the last lines of 'render blueprints validate'"
+say "The dashboard validates the Blueprint when you open it in the next stage."
+render_opt "blueprints validate render.yaml"
+paste_back "'render.yaml is on master' (plus the validate output if you ran it)"
 pause
 
 # ── 2. Render ────────────────────────────────────────────────────────────
@@ -258,18 +318,19 @@ note "  CLERK_JWKS_URL, CLERK_SECRET_KEY, ADMIN_EMAILS,"
 note "  CLERK_WEBHOOK_SIGNING_SECRET = whsec_replace-me (the real one comes in a later stage),"
 note "  CORS_ORIGINS = http://localhost:5173,http://localhost:4173 (Vercel origin added later)."
 step "Click Apply and wait for the first build (several minutes)."
-ask ENGINE_URL "Paste the service URL (https://venture-route-engine-....onrender.com):"
-ENGINE_URL="${ENGINE_URL%/}"
+ask_match ENGINE_URL "Paste the service URL (https://venture-route-engine-....onrender.com):" '^https://[^ ]+$' "starts with https://"
 paste_back "$ENGINE_URL"
 pause
 
 stage "Render: service id and first deploy"
-run_cmd "render services -o json"
-ask SRV_ID "Paste the srv-... id of venture-route-engine:"
-run_cmd "render deploys list $SRV_ID"
-say "Tail the logs until 'Application startup complete', then Ctrl-C:"
-run_cmd "render logs -r $SRV_ID --tail"
-paste_back "the srv id, the top 'render deploys list' line (live) and any ERROR or Traceback line"
+step "Open venture-route-engine in the dashboard: the srv-... id is in the page URL"
+step "(dashboard.render.com/web/srv-...) and under Settings."
+render_opt "services -o json"
+ask_match SRV_ID "Paste the srv-... id of venture-route-engine:" '^srv-[a-z0-9]+$' "starts with srv-"
+step "Watch the Events tab (deploy status) and the Logs tab until 'Application startup complete'."
+render_opt "deploys list $SRV_ID"
+render_opt "logs -r $SRV_ID --tail"
+paste_back "the srv id, the deploy status from Events (Deploy live) and any ERROR or Traceback line"
 pause
 
 stage "Render: migration (free plan only)"
@@ -331,8 +392,7 @@ stage "Vercel: first production deploy"
 note "Git is already connected (production branch master). Run 'vercel git connect' only if"
 note "Settings, Git shows no repository."
 run_cmd "vercel --prod"
-ask WEB_URL "Paste the Aliased production URL (https://....vercel.app):"
-WEB_URL="${WEB_URL%/}"
+ask_match WEB_URL "Paste the Aliased production URL (https://....vercel.app):" '^https://[^ ]+$' "starts with https://"
 paste_back "$WEB_URL"
 pause
 
@@ -367,10 +427,12 @@ if confirm "Send the PATCH now?"; then
     printf '  CLERK_SECRET_KEY (hidden): '
     read -rs CLERK_SECRET_KEY
     printf '\n'
-    curl -s -X PATCH https://api.clerk.com/v1/instance \
-      -H "Authorization: Bearer $CLERK_SECRET_KEY" -H "Content-Type: application/json" \
-      -d "{\"allowed_origins\":[\"$WEB_URL\",\"http://localhost:5173\"]}" \
-      -o /dev/null -w '  HTTP %{http_code}\n'
+    # The key reaches curl on stdin (-H @-), never in argv.
+    printf 'Authorization: Bearer %s\n' "$CLERK_SECRET_KEY" |
+      curl -s -X PATCH https://api.clerk.com/v1/instance -H @- \
+        -H "Content-Type: application/json" \
+        -d "{\"allowed_origins\":[\"$WEB_URL\",\"http://localhost:5173\"]}" \
+        -o /dev/null -w '  HTTP %{http_code}\n'
   ) || warn "request failed"
 fi
 step "Check only: Sessions, Customize session token contains:"
@@ -389,7 +451,8 @@ if confirm "Seed now?"; then
     export DATABASE_URL
     uv run python scripts/seed_showcase_demo.py
   ) || warn "seed failed; read the output above"
-  run_cmd "render restart $SRV_ID"
+  step "Restart so the engine reprojects: dashboard, Manual Deploy, Restart service."
+  render_opt "restart $SRV_ID --confirm"
 fi
 paste_back "the '[showcase seed] ...' line and projected_rows from /health after the restart"
 pause
@@ -417,3 +480,4 @@ note "Web:    $WEB_URL"
 note "Render service: $SRV_ID"
 note "Rollback and free-plan notes: docs/DEPLOY.md sections 6 and 7."
 printf '\n'
+unset RENDER_API_KEY
