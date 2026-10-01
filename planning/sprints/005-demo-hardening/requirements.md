@@ -154,13 +154,13 @@ One branch, `sprint/005a-showcase`, and one PR, "Sprint 005a: Showcase and Chloe
 ## Part B — Demo hardening (unchanged goal; no new features)
 1. `docker compose up` brings up `db`, `engine` **and `web`** with migrations and seed applied. `README.md` documents: prerequisites, `.env.example`, the single launch command, the offline demo flag, and the demo script (scenarios in order with the expected screens).
 2. Deploy (D-27): `docs/DEPLOY.md` step-by-step wizard:
-   - engine Docker image to Railway (Render fallback), with `/health`;
+   - engine Docker image to Render (Blueprint, D-57), with `/health`;
    - web to Vercel with `VITE_API_URL`;
    - Neon `production` branch as `DATABASE_URL`, with `alembic upgrade head` as the release command;
    - every env var from `.env.example`, with where to paste it;
    - the Clerk instance and the session-token claim step.
 
-   The Operator runs every `railway` and `vercel` command and pastes back the URLs and `/health` responses. The Builder never runs them.
+   The Operator runs every `render` and `vercel` write command and pastes back the URLs and `/health` responses. The Builder never runs them.
 3. `docs/DEMO.md`: click-by-click, timings, the named rules to mention, the judge-facing "change a constraint" moment, and a 30-second Showcase moment (Part A).
 4. Recording (D-28): Playwright records `demo.spec.ts` (five scenarios, "change a constraint", Showcase, a Chloe voice moment on the fake provider) from a clean `docker compose up` after it passes twice. Saved under `docs/demo/`, linked from README. The UI shows "Offline demonstration mode" when `VITE_OFFLINE_DEMO=1`.
 5. Pitch deck (D-28): a Slides artifact rebuilt from the existing pitch PDF (Q-19), plus `docs/PITCH.md` with a timed script per slide and the video on the demo slide. Team names are placeholders (Q-08).
