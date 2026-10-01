@@ -14,11 +14,15 @@
  */
 import { useCallback, useEffect, useReducer, useRef } from "react";
 
+import type { VoiceErrorCode } from "../voice/provider";
 import type { VoiceSessionValue } from "../voice/voiceContext";
 import { VOICE_IDLE_MUTED } from "./script";
 import { IDLE_MUTE_MS, VOICE_MODE_OFF, voiceModeReducer, type VoiceModePhase } from "./voiceMode";
 
 export type SubmitOutcome = "sent" | "held" | "dictation" | "empty";
+
+/** The conductor's count of consecutive turns that failed with the same spoken error. */
+export type ErrorStreak = { code: VoiceErrorCode | null; count: number };
 
 export type VoiceModeValue = {
   phase: VoiceModePhase;
@@ -41,12 +45,14 @@ type Options = {
   turnVoiceOn(): void;
   submitTranscript(text: string): Promise<SubmitOutcome>;
   utter(text: string): void;
+  /** The conductor's streak of turns failing with the same spoken error. */
+  errorStreak: ErrorStreak;
 };
 
 /** Errors after which listening cannot work: Chloe speaks them once and voice mode ends. */
 const FATAL: ReadonlySet<string> = new Set(["not-allowed", "audio-capture"]);
 
-export function useVoiceMode({ voice, busy, canListen, turnVoiceOn, submitTranscript, utter }: Options): VoiceModeValue {
+export function useVoiceMode({ voice, busy, canListen, turnVoiceOn, submitTranscript, utter, errorStreak }: Options): VoiceModeValue {
   const [state, dispatch] = useReducer(voiceModeReducer, VOICE_MODE_OFF);
   const { phase, turn } = state;
   const { enabled, lastError, isSpeaking, listen, abortMic, stopSpeaking, provider } = voice;
@@ -56,8 +62,10 @@ export function useVoiceMode({ voice, busy, canListen, turnVoiceOn, submitTransc
   const submitRef = useRef(submitTranscript);
   const dictationRef = useRef<((text: string) => void) | undefined>(undefined);
   const lastSpeechAt = useRef(0);
+  const busyRef = useRef(busy);
   useEffect(() => {
     submitRef.current = submitTranscript;
+    busyRef.current = busy;
   });
 
   // Follow the world on every render; the reducer returns the same state when nothing changed,
@@ -73,6 +81,12 @@ export function useVoiceMode({ voice, busy, canListen, turnVoiceOn, submitTransc
 
   // A mic that cannot work ends voice mode as soon as the error lands, before the turn's own end:
   // the conductor speaks the error once, and that line must not reopen the mic after it.
+  // A non-fatal error (network, unknown) that hits the next turn too would be spoken every turn:
+  // the conductor has spoken it once, so mute and let the founder Unmute to retry (fix round 1).
+  useEffect(() => {
+    if (errorStreak.count > 1) dispatch({ type: "mute" });
+  }, [errorStreak]);
+
   useEffect(() => {
     if (lastError !== null && FATAL.has(lastError.code)) dispatch({ type: "end" });
   }, [lastError]);
@@ -119,7 +133,7 @@ export function useVoiceMode({ voice, busy, canListen, turnVoiceOn, submitTransc
   const interrupt = useCallback(() => {
     stopSpeaking();
     lastSpeechAt.current = Date.now();
-    dispatch({ type: "interrupt" });
+    dispatch({ type: "interrupt", busy: busyRef.current });
   }, [stopSpeaking]);
 
   // Voice barge-in, where the provider can (openrouter): watch the mic while Chloe speaks.
@@ -173,7 +187,7 @@ export function useVoiceMode({ voice, busy, canListen, turnVoiceOn, submitTransc
   const mute = useCallback(() => dispatch({ type: "mute" }), []);
   const unmute = useCallback(() => {
     lastSpeechAt.current = Date.now();
-    dispatch({ type: "unmute", chloeSpeaking: isSpeaking() });
+    dispatch({ type: "unmute", chloeSpeaking: isSpeaking(), busy: busyRef.current });
   }, [isSpeaking]);
 
   return { phase, start, end, mute, unmute, interrupt };

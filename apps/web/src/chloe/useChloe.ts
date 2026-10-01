@@ -18,7 +18,7 @@ import type { VoiceErrorCode } from "../voice/provider";
 import { useVoice } from "../voice/VoiceSession";
 import type { VoiceSessionValue } from "../voice/voiceContext";
 import { matchConfirm } from "./confirm";
-import { useVoiceMode, type SubmitOutcome, type VoiceModeValue } from "./useVoiceMode";
+import { useVoiceMode, type ErrorStreak, type SubmitOutcome, type VoiceModeValue } from "./useVoiceMode";
 import { isKeyless } from "./engineHints";
 import {
   CONFIRM_NO_REPLY,
@@ -48,6 +48,8 @@ export type ChloeValue = VoiceSessionValue & {
   /** Hands-free voice mode, ChatGPT / Claude style (D-55). */
   voiceMode: VoiceModeValue;
 };
+
+const NO_ERROR_STREAK: ErrorStreak = { code: null, count: 0 };
 
 export const ChloeContext = createContext<ChloeValue | null>(null);
 
@@ -88,6 +90,11 @@ export function useChloeConductor({ formMode }: { formMode: boolean }): ChloeVal
   const confirmedBriefKey = useRef<string | null>(enabled ? completeKey : null);
   const spokenUnreachable = useRef<string | null>(null);
   const spokenError = useRef<unknown>(null);
+  /**
+   * The spoken recogniser error and how many turns in a row have hit it (fix round 1, D-55):
+   * only the first is spoken; voice mode mutes on the second. A turn that hears words resets it.
+   */
+  const [errorStreak, setErrorStreak] = useReducer((_: ErrorStreak, next: ErrorStreak) => next, NO_ERROR_STREAK);
   /** Set while Chloe's own "yes" post starts, so its request-started does not cut her reply. */
   const chloePosting = useRef(false);
 
@@ -177,8 +184,12 @@ export function useChloeConductor({ formMode }: { formMode: boolean }): ChloeVal
     if (!enabled || lastError === null || lastError === spokenError.current) return;
     spokenError.current = lastError;
     if (lastError.code === "no-speech" || lastError.code === "aborted") return;
+    const count = errorStreak.code === lastError.code ? errorStreak.count + 1 : 1;
+    setErrorStreak({ code: lastError.code, count });
+    // The same failure again on the next turn is not repeated aloud: voice mode mutes instead.
+    if (count > 1) return;
     utter(MIC_ERRORS[lastError.code]);
-  }, [enabled, lastError, utter]);
+  }, [enabled, lastError, errorStreak, utter]);
 
   // Leaving /route unmounts ChloeProvider: silence her and drop the mic.
   useEffect(
@@ -212,6 +223,7 @@ export function useChloeConductor({ formMode }: { formMode: boolean }): ChloeVal
     async (text: string): Promise<SubmitOutcome> => {
       if (busy) return "held";
       const transcript = text.trim();
+      if (transcript) setErrorStreak(NO_ERROR_STREAK);
       if (!transcript) {
         // A recogniser failure (not-allowed, network, …) was already shown and spoken once.
         if (lastError !== null && lastError.code !== "no-speech" && lastError.code !== "aborted") return "empty";
@@ -249,12 +261,15 @@ export function useChloeConductor({ formMode }: { formMode: boolean }): ChloeVal
     turnVoiceOn,
     submitTranscript,
     utter,
+    errorStreak,
   });
   const { start: startMode } = mode;
   const start = useCallback<VoiceModeValue["start"]>(
     (options) => {
-      // A fresh start forgets an old empty-transcript line (the press used to clear it).
+      // A fresh start forgets an old empty-transcript line (the press used to clear it) and any
+      // earlier error streak.
       setEmptyRelease(false);
+      setErrorStreak(NO_ERROR_STREAK);
       startMode(options);
     },
     [startMode],

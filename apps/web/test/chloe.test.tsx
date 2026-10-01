@@ -15,6 +15,7 @@ import { FORM_FALLBACK_HINT } from "../src/chloe/engineHints";
 import {
   CONFIRM_NO_REPLY,
   CONFIRM_PROMPT,
+  CONFIRM_YES_REPLY,
   CONSENT_CAPTION,
   GREETING,
   MIC_ERRORS,
@@ -615,9 +616,8 @@ describe("Chloe on /route", () => {
 });
 
 /** The fake engine with POST /api/conversation held until the test calls `release()`. */
-function gatedConversation() {
+function gatedConversation(base: FetchLike = engineFetch()) {
   let open: () => void = () => undefined;
-  const base = engineFetch();
   const fetchLike: FetchLike = async (input, init) => {
     const url = typeof input === "string" ? input : input instanceof URL ? input.href : input.url;
     if (url.endsWith("/api/conversation")) await new Promise<void>((resolve) => (open = resolve));
@@ -883,6 +883,116 @@ describe("Chloe's voice mode, ChatGPT / Claude style (#128, D-55)", () => {
     await tapAndSay(user, voice, "make it five builders");
     await waitFor(() => expect(engine.conversationPosts()).toHaveLength(1));
     expect((engine.conversationPosts()[0]!.body as { userMessage: string }).userMessage).toBe("make it five builders");
+  });
+
+  it("a non-fatal error repeated on the next turn is spoken once, then voice mode mutes itself; Unmute retries (fix round 1)", async () => {
+    const voice = createFakeVoiceProvider();
+    const user = userEvent.setup();
+    const engine = recordingFetch();
+    renderApp("/route", engine.fetchLike, { voice });
+    await startVoiceMode(user);
+
+    await waitFor(() => expect(voice.isListening()).toBe(true));
+    act(() => {
+      voice.fail("network");
+      voice.finishUtterance("");
+    });
+    await waitFor(() => expect(voice.spoken).toContain(MIC_ERRORS.network));
+    await waitFor(() => expect(voice.isListening()).toBe(true));
+
+    act(() => {
+      voice.fail("network");
+      voice.finishUtterance("");
+    });
+    await waitFor(() => expect(voiceState()).toHaveTextContent("Muted"));
+    await new Promise((resolve) => setTimeout(resolve, 20));
+    expect(voice.spoken.filter((line) => line === MIC_ERRORS.network)).toHaveLength(1);
+    expect(voice.isListening()).toBe(false);
+    expect(engine.conversationPosts()).toHaveLength(0);
+
+    await user.click(screen.getByRole("button", { name: "Unmute" }));
+    await waitFor(() => expect(voice.isListening()).toBe(true));
+  });
+
+  it("a successful turn between two errors resets the repeat count (fix round 1)", async () => {
+    const voice = createFakeVoiceProvider();
+    const user = userEvent.setup();
+    renderApp("/route", engineFetch(), { voice });
+    await startVoiceMode(user);
+
+    await waitFor(() => expect(voice.isListening()).toBe(true));
+    act(() => {
+      voice.fail("network");
+      voice.finishUtterance("");
+    });
+    await tapAndSay(user, voice, "I want to build something for farmers");
+    await waitFor(() => expect(voice.spoken.at(-1)).toBe(QUESTIONS.title));
+    await waitFor(() => expect(voice.isListening()).toBe(true));
+    act(() => {
+      voice.fail("network");
+      voice.finishUtterance("");
+    });
+
+    await waitFor(() => expect(voice.spoken.filter((line) => line === MIC_ERRORS.network)).toHaveLength(2));
+    await waitFor(() => expect(voice.isListening()).toBe(true));
+    expect(voiceState()).toHaveTextContent("Listening");
+  });
+
+  it("Unmute while a request is in flight stays Thinking, and the mic opens only once the reply has been spoken (fix round 1)", async () => {
+    const voice = createFakeVoiceProvider();
+    const user = userEvent.setup();
+    const gate = gatedConversation();
+    renderApp("/route", gate.fetchLike, { voice });
+    await startVoiceMode(user);
+    await waitFor(() => expect(voice.isListening()).toBe(true));
+
+    act(() => voice.finishUtterance("I want to build something for farmers"));
+    await waitFor(() => expect(voiceState()).toHaveTextContent("Thinking"));
+    await user.click(screen.getByRole("button", { name: "Mute" }));
+    expect(voiceState()).toHaveTextContent("Muted");
+    await user.click(screen.getByRole("button", { name: "Unmute" }));
+
+    await new Promise((resolve) => setTimeout(resolve, 20));
+    expect(voiceState()).toHaveTextContent("Thinking");
+    expect(voice.isListening()).toBe(false);
+
+    act(() => gate.release());
+    await waitFor(() => expect(voice.spoken.at(-1)).toBe(QUESTIONS.title));
+    await waitFor(() => expect(voiceState()).toHaveTextContent("Listening"));
+    expect(voice.isListening()).toBe(true);
+  });
+
+  it("interrupting Chloe while a request is in flight does not open the mic until the reply is in (fix round 1)", async () => {
+    const voice = createFakeVoiceProvider({ holdUtterances: true });
+    const user = userEvent.setup();
+    // The read-back's "yes" posts the brief while Chloe says "Finding your route."; the engine
+    // answers with a clarification so the chat stays on screen.
+    const gate = gatedConversation(engineFetch({ conversation: () => jsonResponse(clarificationFor({})) }));
+    renderApp("/route", gate.fetchLike, { voice });
+    await openScenarioInChat(user, "Health pilot");
+    await startVoiceMode(user);
+    // Greeting, read-back, confirm prompt.
+    for (let line = 0; line < 3; line += 1) {
+      await waitFor(() => expect(voice.spoken).toHaveLength(line + 1));
+      act(() => voice.finishSpeaking());
+    }
+    await waitFor(() => expect(voice.isListening()).toBe(true));
+
+    act(() => voice.finishUtterance("yes"));
+    await waitFor(() => expect(voice.spoken.at(-1)).toBe(CONFIRM_YES_REPLY));
+    await waitFor(() => expect(voiceState()).toHaveTextContent("Speaking"));
+    await user.click(screen.getByRole("button", { name: "Interrupt" }));
+
+    await new Promise((resolve) => setTimeout(resolve, 20));
+    expect(voice.isListening()).toBe(false);
+    expect(voiceState()).toHaveTextContent("Thinking");
+
+    act(() => gate.release());
+    await waitFor(() => expect(voice.spoken.at(-1)).toBe(QUESTIONS.title));
+    expect(voice.isListening()).toBe(false);
+    act(() => voice.finishSpeaking());
+    await waitFor(() => expect(voiceState()).toHaveTextContent("Listening"));
+    expect(voice.isListening()).toBe(true);
   });
 
   it("dictation (keyless engine) puts the words in the reply box and ends voice mode", async () => {

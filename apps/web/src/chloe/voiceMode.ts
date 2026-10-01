@@ -44,9 +44,9 @@ export type VoiceModeAction =
   | { type: "heard" }
   | { type: "submitted" }
   | { type: "silence" }
-  | { type: "interrupt" }
+  | { type: "interrupt"; busy: boolean }
   | { type: "mute" }
-  | { type: "unmute"; chloeSpeaking: boolean }
+  | { type: "unmute"; chloeSpeaking: boolean; busy: boolean }
   | { type: "end" }
   | ({ type: "sync" } & VoiceModeWorld);
 
@@ -73,12 +73,15 @@ export function voiceModeReducer(state: VoiceModeState, action: VoiceModeAction)
       // Silence costs nothing (D-55): the turn just reopens.
       return state.phase === "listening" ? listening(state) : state;
     case "interrupt":
-      return state.phase === "speaking" ? listening(state) : state;
+      // Half-duplex holds while a request is in flight: Chloe stops, but the mic waits.
+      if (state.phase !== "speaking") return state;
+      return action.busy ? { ...state, phase: "thinking" } : listening(state);
     case "mute":
       return state.phase === "off" || state.phase === "muted" ? state : { ...state, phase: "muted", pending: false };
     case "unmute":
       if (state.phase !== "muted") return state;
-      return action.chloeSpeaking ? { ...state, phase: "speaking" } : listening(state);
+      if (action.chloeSpeaking) return { ...state, phase: "speaking" };
+      return action.busy ? { ...state, phase: "thinking" } : listening(state);
     case "end":
       return state.phase === "off" ? state : { ...VOICE_MODE_OFF, turn: state.turn };
     case "sync":
@@ -93,7 +96,9 @@ function sync(state: VoiceModeState, world: VoiceModeWorld): VoiceModeState {
   switch (state.phase) {
     case "listening":
       if (!world.canListen) return { ...VOICE_MODE_OFF, turn: state.turn };
-      return world.chloeSpeaking ? { ...state, phase: "speaking" } : state;
+      if (world.chloeSpeaking) return { ...state, phase: "speaking" };
+      // Never listen while a request is in flight: whatever is heard would be held and dropped.
+      return world.busy ? { ...state, phase: "thinking" } : state;
     case "thinking":
     case "speaking": {
       if (world.chloeSpeaking) return state.phase === "speaking" ? state : { ...state, phase: "speaking" };
