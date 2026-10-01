@@ -367,9 +367,12 @@ export function BuilderHome() {
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2 xl:grid-cols-3">
         <section id="bids" aria-labelledby="my-bids-heading" className="flex scroll-mt-24 flex-col gap-4 rounded-2xl border border-border bg-surface-strong p-6">
-          <h2 id="my-bids-heading" className="text-[19px] font-semibold text-ink">
-            My bids
-          </h2>
+          <div className="flex flex-col gap-1">
+            <h2 id="my-bids-heading" className="text-[19px] font-semibold text-ink">
+              My bids
+            </h2>
+            <p className="text-[13.5px] text-ink-3">Requests you've applied to work on, and their status.</p>
+          </div>
           {bids.length === 0 ? (
             <EmptyBox title="No bids yet" body="Bids you place on open requests show here." />
           ) : (

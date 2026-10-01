@@ -189,6 +189,7 @@ describe("/home (builder)", () => {
     expect(screen.getByText("Eligible: Python")).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Place a bid" })).toHaveAttribute("href", "/requests");
     expect(screen.getByRole("region", { name: "My bids" })).toHaveTextContent("USD 120 / day · Sent");
+    expect(screen.getByText("Requests you've applied to work on, and their status.")).toBeInTheDocument();
     const interviews = screen.getByRole("region", { name: "Upcoming interviews" });
     expect(within(interviews).getByRole("link", { name: "Health pilot" })).toHaveAttribute("href", "/bookings/bk-1");
     expect(interviews).toHaveTextContent("Fri 25 Sep 2026 · 09:00 EAT");
