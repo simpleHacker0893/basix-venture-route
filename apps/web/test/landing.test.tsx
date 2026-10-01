@@ -14,7 +14,7 @@ describe("landing page (refined UI over the Stitch structure)", () => {
     renderApp("/");
 
     const sections = screen.getAllByTestId(/^landing-section-/).map((s) => s.dataset.section);
-    expect(sections).toEqual(["hero", "how-it-works", "evidence", "for-builders"]);
+    expect(sections).toEqual(["hero", "how-it-works", "evidence", "for-builders", "hackathon-partners"]);
 
     const hero = screen.getByTestId("landing-section-hero");
     expect(within(hero).getByRole("heading", { level: 1 })).toHaveTextContent("A founding team you can verify.");
@@ -101,12 +101,20 @@ describe("landing page (refined UI over the Stitch structure)", () => {
     renderApp(path);
 
     const footer = screen.getByRole("contentinfo");
+    expect(footer).toHaveTextContent("A founding team you can verify. MeTTa rules decide, every match shows its evidence.");
+    expect(within(footer).getByRole("link", { name: "Route my venture" })).toHaveAttribute("href", "/route");
     expect(footer).toHaveTextContent(
-      "Built for the BASIX hackathon, SingularityNET MeTTa track. All records are fictional demo data.",
+      "Built for the BASIX hackathon, SingularityNET MeTTa track. Seed records are fictional demo data; hackathon partners are real organisations.",
     );
     const columns: Record<string, string[]> = {
       Product: ["How it works", "Evidence & rules", "For builders", "Demo scenarios"],
-      Ecosystem: ["BASIX", "MeTTa OmniUniversity", "SingularityNET MeTTa", "Partners"],
+      Ecosystem: [
+        "BASIX",
+        "MeTTa OmniUniversity",
+        "SingularityNET MeTTa",
+        "Ecosystem partners (demo)",
+        "Hackathon partners",
+      ],
       Account: ["Sign in", "Create a founder account", "Create a builder profile", "Admin"],
     };
     for (const [heading, links] of Object.entries(columns)) {
@@ -116,6 +124,6 @@ describe("landing page (refined UI over the Stitch structure)", () => {
     for (const name of ["PRD", "Privacy"]) {
       expect(within(footer).getByRole("link", { name })).toBeInTheDocument();
     }
-    expect(footer).toHaveTextContent("© 2026 Venture Route. Deterministic evaluation registry.");
+    expect(footer).toHaveTextContent("© 2026 Venture Route");
   });
 });

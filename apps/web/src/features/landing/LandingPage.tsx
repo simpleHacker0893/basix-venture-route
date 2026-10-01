@@ -12,6 +12,7 @@ import { Link } from "react-router";
 import { DemoDataPill } from "../../components/DemoDataPill";
 import { RollingNumber } from "../../components/RollingNumber";
 import { EvidenceBadge, StatusBadge } from "../route/Badges";
+import { HackathonPartners } from "./HackathonPartners";
 
 type SectionProps = Readonly<{ id: string; className?: string; children: React.ReactNode }>;
 
@@ -452,6 +453,7 @@ export function LandingPage() {
       <HowItWorks />
       <Evidence />
       <ForBuilders />
+      <HackathonPartners />
     </div>
   );
 }

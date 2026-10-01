@@ -81,7 +81,7 @@ async function tapAndSay(user: ReturnType<typeof userEvent.setup>, voice: FakeVo
 async function leaveAndReturn(user: ReturnType<typeof userEvent.setup>) {
   await user.click(screen.getAllByRole("link", { name: /privacy/i })[0]!);
   await waitFor(() => expect(screen.queryByTestId("mic-button")).not.toBeInTheDocument());
-  await user.click(screen.getByRole("link", { name: "Route my venture" }));
+  await user.click(within(screen.getByRole("navigation", { name: "Primary" })).getByRole("link", { name: "Route my venture" }));
 }
 
 async function openScenarioInChat(user: ReturnType<typeof userEvent.setup>, chip: string) {
