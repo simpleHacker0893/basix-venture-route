@@ -1,28 +1,157 @@
 # Venture Route
 
-> Evidence-backed venture routing through the BASIX ecosystem, decided by MeTTa graph rules.
+[![CI](https://github.com/simpleHacker0893/basix-venture-route/actions/workflows/ci.yml/badge.svg)](https://github.com/simpleHacker0893/basix-venture-route/actions/workflows/ci.yml)
+![Hyperon 0.2.10](https://img.shields.io/badge/MeTTa-Hyperon%200.2.10-1e5a45)
+![Rules](https://img.shields.io/badge/named%20rules-7-35418a)
+![Demo data](https://img.shields.io/badge/data-fictional%20demo-8a4b12)
 
-**Status:** Sprints 000–004 merged (engine, routing core, founder UI, marketplace with Clerk and Neon Postgres, requests, bids and interview bookings). Sprint 005 (Builder Showcase, then demo hardening and deployment) is next. Hackathon proof of concept for the SingularityNET MeTTa track; demo Thursday 1 October 2026. Every record is fictional demo data.
+> **AI explains. MeTTa decides.** Evidence-backed venture routing through the BASIX ecosystem, decided by MeTTa graph rules.
+
+Venture Route turns a founder's plain-language brief into the **smallest credible team** from the BASIX ecosystem, shows **exactly why** each person qualifies, and says **"no, and here is why"** when the ecosystem cannot deliver.
+
+| Quick links | |
+|---|---|
+| Live demo | _to be added once deployed_ |
+| Demo video (3 min) | _to be added_ |
+| Pitch deck | [canva.link/venture-route](https://canva.link/venture-route) |
+| Run it locally | [Quick start](#quick-start) (about five minutes, no API keys needed) |
+| For MeTTa judges | [Where the MeTTa lives](#for-metta-judges-where-the-metta-lives) |
+
+<table>
+  <tr>
+    <td><img src="docs/screenshots/route-feasible.png" alt="A feasible route: three builders with evidence badges, reusable IP, cohort and partner"></td>
+    <td><img src="docs/screenshots/why-this-route.png" alt="The Why this route drawer listing the named rule and its source facts"></td>
+  </tr>
+  <tr>
+    <td align="center">A route: team, cost, reusable IP, cohort, partner</td>
+    <td align="center">"Why this route?": the rule and the facts behind it</td>
+  </tr>
+</table>
+
+**Status:** Sprints 000–005a merged: the MeTTa engine, the routing core, the founder app, the marketplace (Clerk sign-in, Neon Postgres, requests, eligibility-gated bids, interview bookings), the public Builder Showcase and Chloe voice intake. Demo hardening and deployment are in progress. Hackathon proof of concept for the SingularityNET MeTTa track; demo Thursday 1 October 2026. Every record is fictional demo data.
+
+**Team:** Simon Njuguna (founder and team lead) and Antony Peter (team mate).
+
+## Contents
+
+[The problem](#the-problem) · [Our answer](#our-answer) · [A worked example](#a-worked-example) · [Why this is different](#why-this-is-different) · [For MeTTa judges](#for-metta-judges-where-the-metta-lives) · [What runs today](#what-runs-today) · [Quick start](#quick-start) · [Test, lint, type-check](#test-lint-type-check) · [Architecture](#architecture) · [Demo scenarios](#demo-scenarios) · [Limitations and what is next](#limitations-and-what-is-next) · [Roadmap](#roadmap)
+
+## The problem
+
+BASIX already holds the ingredients of a venture: verified learning, credentials, builders, completed IP, cohorts, universities and partners. They exist as **records, not as a delivery path**.
+
+A founder with an MVP today has to:
+
+- browse profiles and **guess whether a stated skill is credible**;
+- estimate whether a team can meet the **dates, delivery mode and daily budget**;
+- discover reusable IP **by chance**;
+- ask BASIX staff for introductions to the right cohort or partner.
+
+That is slow, hard to audit, and it produces recommendations nobody can verify. Asking a language model to "match" people makes it worse: the answer reads confidently, but no one can tell which facts it relied on, or whether it invented any.
+
+## Our answer
 
 Venture Route turns a founder's plain-language venture brief into the smallest credible route through a BASIX-shaped ecosystem: verified builders, reusable IP, cohort and university context, a relevant partner, daily cost, and explicit capability gaps.
 
 It is not an AI matcher. MeTTa relationship rules over inspectable facts decide eligibility, evidence, availability, delivery-mode fit, reusable-IP fit, partner fit and gaps. A language model may make intake conversational and explain a computed route, but it never selects people, invents evidence, or sets the route status. Those rules are non-negotiable and are listed in `AGENTS.md`.
 
+## A worked example
+
+A founder types: *"I need a health-sector pilot: Python, AI/MeTTa and UI/UX, hybrid, USD 400 a day, reusable IP preferred."* The brief is extracted into editable chips and confirmed. Then the rules run.
+
+| Step | What the founder sees | Decided by |
+|---|---|---|
+| Feasible route | Three builders for **USD 370 a day**: Amina Otieno (Python), Daniel Kiptoo (AI/MeTTa), Grace Wambui (UI/UX), each tagged `credential`, `project` or `both` | `verified-for-skill`, `mode-compatible`, `available-for-brief`, `eligible-builder`, then the deterministic assembler |
+| Reusable IP and partner | `asset-afya-triage`, and the partner `amani-health` reached through a **four-hop chain** | `reuse-fit`, `partner-fit` |
+| Why this route? | The named rule and the exact source facts behind every card | the reasoning paths the engine returns |
+| Change one constraint: budget USD 250 | **No team.** One named `budget` gap: "Raise daily budget to USD 370" | `assembler.budget-fit` |
+| Change another: on-site in Kisumu | `infeasible`, with three `location` gaps; no builders invented | `route-gap` |
+
+The last two rows are the point: when a hard constraint cannot be met, the system reports a **named gap with engine-supplied next actions** instead of producing a plausible-looking team.
+
+## Why this is different
+
+| A typical AI matcher | Venture Route |
+|---|---|
+| A language model picks people from profiles | **MeTTa rules over inspectable facts** decide eligibility; the model cannot select anyone |
+| "Verified" is a label on a profile | A skill is verified **only** when a confirmed credential or a confirmed project proves it; self-described skills never count |
+| A recommendation with a confident paragraph | Every builder, IP asset, cohort and partner carries `{ rule, source facts, conclusion }` |
+| Always returns a result | Returns `partial` or `infeasible` with a **named gap** and approved next actions |
+| Cannot be re-run to the same answer | Route status is a **pure function** of coverage and gaps; the same brief gives the same route |
+| Demo data indistinguishable from real data | Every seed or user-entered record shows an amber **Demo data** pill |
+
+## For MeTTa judges: where the MeTTa lives
+
+This section is the shortest path from "is it really MeTTa?" to evidence you can check yourself.
+
+**What runs:** the official Hyperon runtime (`hyperon==0.2.10`) **in-process** with the FastAPI engine. The graph is **181 facts** (14 builders, 10 credentials, 5 projects, 3 licensable IP assets, 3 cohorts, 4 partners, 9 skills) and **seven named rules**, loaded once at start-up.
+
+| Concept | Where |
+|---|---|
+| The rules | [`services/engine/seed/rules.metta`](services/engine/seed/rules.metta) |
+| The facts | [`services/engine/seed/facts.metta`](services/engine/seed/facts.metta) |
+| The only module that touches Hyperon | [`services/engine/app/engine/metta_engine.py`](services/engine/app/engine/metta_engine.py) |
+| Rule semantics and expected outcomes | [`planning/DOMAIN.md`](planning/DOMAIN.md) |
+| Why decisions were made | [`planning/DECISIONS.md`](planning/DECISIONS.md) and [`docs/adr/`](docs/adr/) |
+
+**Two of the rules, verbatim from `rules.metta`.** A skill is verified by a confirmed credential *or* a confirmed completed project:
+
+```metta
+(= (verified-for-skill $b $s)
+   (match &self (, (earned $b $c) (proves $c $s) (confirmed $adm $c))
+      (evidence credential ((earned $b $c) (proves $c $s) (confirmed $adm $c)))))
+(= (verified-for-skill $b $s)
+   (match &self (, (built $b $p) (demonstrates $p $s) (confirmed $adm $p))
+      (evidence project ((built $b $p) (demonstrates $p $s) (confirmed $adm $p)))))
+```
+
+The four-hop `partner-fit` chain: brief vertical → partner → university → cohort → builder, in one query:
+
+```metta
+(= (partner-fit $brief $b)
+   (match &self (, (brief-vertical $brief $v) (supports-vertical $p $v) (partners-with $p $u)
+                   (cohort-of $c $u) (belongs-to $b $c))
+      (partner $p $u $c ((supports-vertical $p $v) (partners-with $p $u)
+                         (cohort-of $c $u) (belongs-to $b $c)))))
+```
+
+Every rule returns **witnesses that embed the facts they matched**. The adapter turns them into the reasoning paths the UI shows, without re-deriving anything in Python.
+
+**Guarantees you can verify:**
+
+1. **No Python matcher.** Eligibility, evidence, fit and gaps come from MeTTa. The only Python-grounded atom is date arithmetic (`overlap-days`); the rule that uses it is MeTTa. Review checks that no matcher is reintroduced.
+2. **The LLM is a translator.** It extracts brief fields into a strict schema, asks for missing ones, and phrases an explanation from the engine's structured result. It may not select, rank, reject or substitute any person; it receives no raw graph data; the status is not its to set. The system instruction is verbatim in `planning/DOMAIN.md`.
+3. **Real runtime in tests.** Engine tests run against Hyperon with no mocks, and the suite **fails rather than skips** if the runtime is missing.
+4. **Marketplace data reaches the graph through the same predicates.** An admin confirms a builder; `reproject()` rebuilds the space from the seed files plus confirmed rows, using the same predicates and the same seven rules. No new rule, no side channel.
+
+**Check it in two minutes** (after the [Quick start](#quick-start)):
+
+```bash
+curl -s http://127.0.0.1:8000/health
+# {"status":"ok","facts_loaded":181,"rules_loaded":7,"projected_rows":0,"hyperon_version":"0.2.10",...}
+curl -s http://127.0.0.1:8000/api/scenarios      # the five demo briefs
+```
+
+Then open `http://localhost:5173/route`, pick **Health pilot**, open **Why this route?**, and compare each source fact with `facts.metta`. Re-run the **Budget challenge** chip and watch the route turn into a named gap.
+
 ## Demo links
 
 | What | Link |
 |---|---|
-| Live demo | _to be added by the Operator_ |
-| Demo video (YouTube) | _to be added by the Operator_ |
-| Pitch deck (Canva, 12 slides) | [canva.link/324jdfx6j1knlgn](https://canva.link/324jdfx6j1knlgn) |
+| Live demo | _to be added once deployed_ |
+| Demo video (3 min) | _to be added_ |
+| Pitch deck (Canva, 12 slides) | [canva.link/venture-route](https://canva.link/venture-route) |
+| Repository | [github.com/simpleHacker0893/basix-venture-route](https://github.com/simpleHacker0893/basix-venture-route) |
 
-Founder: **Njuguna Njenga** (Operator). Other team members: _to be named_ (Q-08).
+**Team:** Simon Njuguna (founder and team lead), Antony Peter (team mate).
 
 ## What runs today
 
 - **Engine** (`services/engine`): FastAPI with the official Hyperon runtime (`hyperon==0.2.10`) in-process, seven named MeTTa rules over a fictional seed graph, a deterministic team assembler, and a language-model adapter that only narrates. `POST /api/route` answers the structured form; `POST /api/conversation` answers chat. Every result carries typed reasoning paths.
 - **Web app** (`apps/web`): React 19 PWA. Chat or form intake, brief review, the route result with gaps above team cards, the "Why this route?" drawer over the reasoning paths, a plain-text handoff, an offline demonstration mode, and the landing page from the approved Stitch designs.
 - **Marketplace** (Sprints 003–004): Clerk sign-in with founder, builder and admin roles, a Postgres store with Alembic migrations, builder profiles, credentials and projects, a founder-facing candidate view, an admin queue whose confirmations rebuild the MeTTa space so user-entered builders appear in routes with the same evidence as seed builders, requests published from a route, bids gated by the engine's eligibility verdict, interview bookings on a founder-owned state machine, and a founder dashboard.
+- **Builder Showcase** (Sprint 005a): a public gallery of shipped products with live and demo links, a YouTube pitch facade, certifications and skill sets. Entries go public only after a BASIX admin confirms them, and Showcase data is **display-only**: it never enters the MeTTa space, and a test proves the five scenario routes are identical with or without it. Contact details are visible only to a signed-in founder.
+- **Chloe voice intake** (Sprint 006, folded into 005a): a "Voice: Chloe" switch on `/route` that speaks and listens through the browser, over the unchanged conversation API, so the voice path returns the same route as the form path.
 
 `GET /health` proves the runtime loaded the graph and all seven rules:
 
@@ -34,7 +163,7 @@ Founder: **Njuguna Njenga** (Operator). Other team members: _to be named_ (Q-08)
 
 ## Screens
 
-Captured from the merged app with Playwright (`docs/screenshots/`, engine on `LLM_PROVIDER=null`, no Clerk key).
+Captured from the merged app with Playwright (`docs/screenshots/`, engine on `LLM_PROVIDER=null`, no Clerk key). The Showcase and Chloe screens were captured later against a local Postgres seeded with the three demo Showcase entries (`docker compose up` does the same), and Chloe through the fake voice provider, so no microphone was used.
 
 | | |
 |---|---|
@@ -46,6 +175,10 @@ Captured from the merged app with Playwright (`docs/screenshots/`, engine on `LL
 | "Why this route?": the named rule and its facts, no model text | Partial route: the gap and its next actions come first |
 | ![Partners page from the seed graph](docs/screenshots/partners.png) | ![Plain-text venture handoff](docs/screenshots/handoff.png) |
 | Partners, universities, cohorts and reusable IP from the seed graph | Handoff text built client-side from the route |
+| ![Public Showcase gallery with three demo entries, skill and vertical filters](docs/screenshots/showcase-gallery.png) | ![Showcase detail: verified skills with Project evidence, links, and about text](docs/screenshots/showcase-detail.png) |
+| Builder Showcase: admin-confirmed projects, Demo data pills, filters | Showcase detail: skills shown with their evidence; display-only, never a MeTTa fact |
+| ![Chloe voice intake: greeting, brief read-back and a confirmation prompt with a hold-to-talk microphone](docs/screenshots/chloe-voice.png) | |
+| Chloe voice intake: reads the brief back and asks before routing; the form is always one click away | |
 
 ## Quick start
 
@@ -135,6 +268,18 @@ pnpm --filter web e2e                          # Playwright: builds, starts the 
 ```
 
 Engine tests run against the real Hyperon runtime; there are no mocks of it, and the suite fails rather than skips when hyperon is missing. Marketplace tests run `alembic upgrade head` once on an empty `TEST_DATABASE_URL` and roll every test back. Never point that variable at a database you care about.
+
+### Last recorded CI result
+
+From the last recorded run on `master` (CI run 36622550686 at `e712d35`, 29 September 2026); the live status is the CI badge at the top.
+
+| Suite | Result |
+|---|---|
+| Engine (pytest, real Hyperon runtime, Postgres 18 service container) | 565 passed |
+| Web (Vitest) | 268 passed |
+| Playwright, no-key suite against `vite preview` | 23 passed |
+| Playwright, Clerk suite (real sign-in, blocking in CI) | 21 passed |
+| Lint and types | ruff, `mypy .` strict, TypeScript strict and eslint, Zod ↔ Pydantic schema check, offline-snapshot check |
 
 ## Configuration
 
@@ -229,7 +374,7 @@ Seed briefs in `services/engine/seed/briefs.json`, loaded as chips on `/route`. 
 | `brief-agri-01` | Agri marketplace: frontend, backend, domain-research; remote | `feasible`: a different team for USD 315, `asset-shamba-records`, partner `shamba-agri` |
 | `brief-constrained-01` | Mobile + Rust, remote, two weeks | `partial`: Rust builder eligible, `skill` gap for mobile |
 | `brief-budget-01` | Health pilot at USD 250/day | `partial`: no team, one `budget` gap naming the USD 370 team |
-| `brief-onsite-01` | Health pilot on-site in Kisumu | `partial`: `location` gaps |
+| `brief-onsite-01` | Health pilot on-site in Kisumu | `infeasible`: three `location` gaps, no builders, IP or partner (D-23) |
 
 All builders, credentials, projects, cohorts, universities and partners are fictional and carry `demoData: true`; the UI shows a Demo data pill on every seed-derived or user-entered record.
 
@@ -252,9 +397,27 @@ Planning follows the 120x Architect/Builder Operating Pack. Start with `AGENTS.m
 | 002 Founder UI | 25–26 Sep | React intake, brief review, route result with gaps first, "Why this route?" drawer, handoff, PWA, landing | merged |
 | 003 Marketplace | 23 Sep | Clerk roles, Postgres store, profiles and proof, admin confirmation projected into the graph | merged |
 | 004 Requests & interviews | 24 Sep | requests published from a route, eligibility-gated bids, interview bookings, founder dashboard | merged |
-| 005a Builder Showcase | 25–27 Sep | public showcase of shipped products, certifications and skills, admin-gated, display-only (D-42, D-43) | next |
-| 005 Demo hardening | 28–30 Sep | single launch command, Railway + Vercel deploy, recording, pitch, freeze | planned |
-| 006 Chloe voice intake | after the demo | browser-speech voice skin over the unchanged conversation API (D-38) | planned |
+| 005a Builder Showcase | 25–27 Sep | public showcase of shipped products, certifications and skills, admin-gated, display-only (D-42, D-43) | merged |
+| 005 Demo hardening | 28 Sep – 1 Oct | single launch command, Railway + Vercel deploy, recording, pitch, freeze | in progress |
+| 006 Chloe voice intake | folded into 005a | browser-speech voice skin over the unchanged conversation API (D-38, D-51) | merged |
+
+## Limitations and what is next
+
+We would rather state these than have you find them.
+
+- **Demo data only.** Every builder, credential, project, cohort, university and partner is fictional and labelled. No real BASIX integration, personal data, IP ownership claim or partner relationship is represented.
+- **No payments, contracting or hiring.** Requests, bids and interview bookings are in-app state only.
+- **The language model is optional.** Without a key the engine uses a null adapter and the structured form; routes are identical, because the model never decides them.
+- **Hosted deployment** (Railway engine, Vercel web) is being completed for the demo; until then run it locally with the [Quick start](#quick-start). Reprojection latency on the hosted Neon database is a tracked item (issue #51).
+
+**Next:** real BASIX data replacing the seed graph through the existing projection path, voice intake hardening, and richer partner and cohort facts for the rules to reason over. The rule names stay fixed; new facts, not new matchers.
+
+## Team
+
+| | |
+|---|---|
+| **Simon Njuguna** | Founder and team lead |
+| **Antony Peter** | Team mate |
 
 ## Contributing
 
