@@ -14,8 +14,9 @@ export const CLIPS_DIR = path.resolve(HERE, "../../demo-output/clips");
 
 export const VIDEO_SIZE = { width: 1920, height: 1080 } as const;
 
-export function clipPath(sceneId: string): string {
-  return path.join(CLIPS_DIR, `${sceneId}.webm`);
+/** `clip` is the scene's stable clip name from the script (`scenes.ts`), e.g. `F1-signup`. */
+export function clipPath(clip: string): string {
+  return path.join(CLIPS_DIR, `${clip}.webm`);
 }
 
 const SEGMENT = 0x18538067;

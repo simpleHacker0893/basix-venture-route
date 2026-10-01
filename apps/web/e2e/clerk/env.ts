@@ -66,7 +66,18 @@ export function clerkKeys(): { publishableKey: string; secretKey: string } {
   return { publishableKey, secretKey };
 }
 
-export type RunIdentity = { runId: string; webhookSecret: string; emails: Record<Role, string> };
+/** The roles a demo signs up through the real Clerk form (#146, #147). */
+export type SignUpRole = Exclude<Role, "admin">;
+export const SIGN_UP_ROLES: readonly SignUpRole[] = ["founder", "builder"];
+
+export type RunIdentity = {
+  runId: string;
+  webhookSecret: string;
+  /** The users the global setup creates through the Backend API. */
+  emails: Record<Role, string>;
+  /** Fresh addresses no user has yet, for a sign-up shown on camera; the teardown deletes them. */
+  signUpEmails: Record<SignUpRole, string>;
+};
 
 /** Minted once per run; workers inherit the values from the runner's environment. */
 export function runIdentity(): RunIdentity {
@@ -80,7 +91,10 @@ export function runIdentity(): RunIdentity {
   const emails = Object.fromEntries(
     ROLES.map((role) => [role, `vr-e2e-${runId}-${role}+clerk_test@example.com`]),
   ) as Record<Role, string>;
-  return { runId, webhookSecret: process.env.E2E_CLERK_WEBHOOK_SECRET, emails };
+  const signUpEmails = Object.fromEntries(
+    SIGN_UP_ROLES.map((role) => [role, `vr-e2e-${runId}-${role}-signup+clerk_test@example.com`]),
+  ) as Record<SignUpRole, string>;
+  return { runId, webhookSecret: process.env.E2E_CLERK_WEBHOOK_SECRET, emails, signUpEmails };
 }
 
 export function readState(): SuiteState {
