@@ -8,7 +8,7 @@ import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import { createRequest } from "../src/api/client";
+import { ApiStatusError, createRequest } from "../src/api/client";
 import type { MarketplaceApi } from "../src/api/marketplace";
 import { App } from "../src/App";
 import type { AuthState, Role } from "../src/auth/authContext";
@@ -241,6 +241,82 @@ describe("role first (D-54)", () => {
     expect(await screen.findByRole("heading", { level: 1, name: "Home" })).toBeInTheDocument();
     expect(posted).toEqual([{ role: "builder" }]);
     expect(window.sessionStorage.getItem(ROLE_INTENT_KEY)).toBeNull();
+  });
+
+  it("stays on /choose-role with an error and Try again when saving the picked role fails", async () => {
+    const user = userEvent.setup();
+    const errorLog = vi.spyOn(console, "error").mockImplementation(() => undefined);
+    window.sessionStorage.setItem(ROLE_INTENT_KEY, "builder");
+    const state = signedIn(null);
+    state.reload = vi.fn(async () => {
+      state.role = "builder";
+    });
+    let attempts = 0;
+    const marketplace = fakeMarketplace(async (choice) => {
+      attempts += 1;
+      if (attempts === 1) throw new ApiStatusError(500, "The routing engine answered 500.");
+      return { clerkId: "user_1", role: choice.role, confirmed: false };
+    });
+
+    render(<App initialPath="/choose-role" source={source} auth={state} marketplace={marketplace} />);
+
+    expect(await screen.findByRole("alert")).toHaveTextContent("We couldn't save your role. Please try again.");
+    expect(screen.getByRole("heading", { level: 1, name: "Setting up your builder account…" })).toBeInTheDocument();
+    expect(state.reload).not.toHaveBeenCalled();
+    expect(errorLog).toHaveBeenCalledWith(expect.stringContaining("status 500"), expect.anything());
+
+    await user.click(screen.getByRole("button", { name: "Try again" }));
+
+    expect(await screen.findByRole("heading", { level: 1, name: "Home" })).toBeInTheDocument();
+    expect(attempts).toBe(2);
+    errorLog.mockRestore();
+  });
+
+  it("treats a 409 as saved and moves on", async () => {
+    window.sessionStorage.setItem(ROLE_INTENT_KEY, "builder");
+    const state = signedIn(null);
+    state.reload = vi.fn(async () => {
+      state.role = "builder";
+    });
+    const marketplace = fakeMarketplace(async () => {
+      throw new ApiStatusError(409, "The routing engine answered 409.");
+    });
+
+    render(<App initialPath="/choose-role" source={source} auth={state} marketplace={marketplace} />);
+
+    expect(await screen.findByRole("heading", { level: 1, name: "Home" })).toBeInTheDocument();
+  });
+
+  it("shows the error and does not navigate when the bridge's save fails away from /choose-role", async () => {
+    const errorLog = vi.spyOn(console, "error").mockImplementation(() => undefined);
+    window.sessionStorage.setItem(ROLE_INTENT_KEY, "builder");
+    const state = signedIn(null);
+    const marketplace = fakeMarketplace(async () => {
+      throw new ApiStatusError(503, "The routing engine answered 503.");
+    });
+
+    render(<App initialPath="/route" source={source} auth={state} marketplace={marketplace} />);
+
+    expect(await screen.findByRole("alert")).toHaveTextContent("We couldn't save your role. Please try again.");
+    expect(screen.getByRole("button", { name: "Try again" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { level: 1, name: "Describe your MVP" })).toBeInTheDocument();
+    errorLog.mockRestore();
+  });
+
+  it("shows the error on the manual Who are you? screen and keeps it there", async () => {
+    const user = userEvent.setup();
+    const errorLog = vi.spyOn(console, "error").mockImplementation(() => undefined);
+    const marketplace = fakeMarketplace(async () => {
+      throw new ApiStatusError(500, "The routing engine answered 500.");
+    });
+
+    render(<App initialPath="/choose-role" source={source} auth={signedIn(null)} marketplace={marketplace} />);
+
+    await user.click(await screen.findByRole("button", { name: "Continue as founder" }));
+
+    expect(await screen.findByRole("alert")).toHaveTextContent("We couldn't save your role. Please try again.");
+    expect(screen.getByRole("heading", { level: 1, name: "Who are you?" })).toBeInTheDocument();
+    errorLog.mockRestore();
   });
 
   it("keeps an existing account's role and says so when the other card was picked", async () => {

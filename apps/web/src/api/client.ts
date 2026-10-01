@@ -31,6 +31,17 @@ export class ApiUnreachableError extends Error {
   }
 }
 
+/** The engine answered an error status the screens do not model separately; `status` is the HTTP code. */
+export class ApiStatusError extends ApiUnreachableError {
+  readonly status: number;
+
+  constructor(status: number, message: string) {
+    super(message);
+    this.name = "ApiStatusError";
+    this.status = status;
+  }
+}
+
 /** The engine answered 404: the record does not exist yet (`{"detail": "no profile yet"}`). */
 export class ApiNotFoundError extends ApiUnreachableError {
   constructor(message = "The routing engine answered 404.", cause?: unknown) {
@@ -142,7 +153,7 @@ export function createRequest(baseUrl: string, fetchLike: FetchLike = fetch, get
     }
     if (!response.ok) {
       const suffix = detail === null ? "" : ` ${detail}`;
-      throw new ApiUnreachableError(`The routing engine answered ${response.status}.${suffix}`);
+      throw new ApiStatusError(response.status, `The routing engine answered ${response.status}.${suffix}`);
     }
     const parsed = schema.safeParse(body);
     if (!parsed.success) {
