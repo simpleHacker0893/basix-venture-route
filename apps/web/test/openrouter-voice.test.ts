@@ -5,9 +5,16 @@
  */
 import { describe, expect, it, vi } from "vitest";
 
-import { createOpenRouterProvider } from "../src/voice/openRouterProvider";
+import { createOpenRouterProvider, MIC_CONSTRAINTS } from "../src/voice/openRouterProvider";
 import type { ListenHandlers, VoiceError } from "../src/voice/provider";
 import { selectProvider } from "../src/voice/selectProvider";
+import {
+  BARGE_IN_HOLD_MS,
+  BARGE_IN_RMS_THRESHOLD,
+  END_SILENCE_MS,
+  MAX_UTTERANCE_MS,
+  SPEECH_RMS_THRESHOLD,
+} from "../src/voice/vad";
 
 const BASE = "http://engine.test";
 
@@ -182,7 +189,7 @@ describe("OpenRouter voice provider (D-53 seam)", () => {
     const { handlers, events } = recordingHandlers();
     h.provider.startListening(handlers);
     await flush();
-    expect(h.getUserMedia).toHaveBeenCalledWith({ audio: true });
+    expect(h.getUserMedia).toHaveBeenCalledWith(MIC_CONSTRAINTS);
     expect(h.recorders[0]?.state).toBe("recording");
 
     h.provider.stopListening();
@@ -300,7 +307,7 @@ describe("OpenRouter voice provider (D-53 seam)", () => {
     const { handlers, events } = recordingHandlers();
     h.provider.startListening(handlers);
     h.provider.stopListening();
-    // The caller's releaseMic() must not wait on the permission prompt: onEnd fires immediately.
+    // The caller's finishListening() must not wait on the permission prompt: onEnd fires immediately.
     expect(events).toEqual(["end"]);
 
     grant(h.makeStream());
@@ -459,5 +466,197 @@ describe("selectProvider with openrouter", () => {
     expect(selectProvider("openrouter", false, {} as Window)?.kind).toBe("openrouter");
     expect(selectProvider("openrouter", true, {} as Window)).toBeNull();
     expect(selectProvider("off", false, {} as Window)).toBeNull();
+  });
+});
+
+/**
+ * #128 (D-55): voice-activity detection over the same echo-cancelled stream. The stub
+ * `AudioContext` hands out one analyser whose RMS is whatever `level` the test scripts; fake
+ * timers drive the provider's sampling interval and `Date.now()`.
+ */
+describe("OpenRouter voice provider: VAD endpointing and barge-in (#128, D-55)", () => {
+  type StubAnalyser = { fftSize: number; getFloatTimeDomainData(buffer: Float32Array): void };
+
+  const ECHO_CANCELLED = { audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true } };
+
+  function withAudioContext(options: HarnessOptions = {}) {
+    const h = createHarness(options);
+    const audio = { level: 0, contexts: 0, closed: 0 };
+    function AudioContextStub() {
+      audio.contexts += 1;
+      const analyser: StubAnalyser = {
+        fftSize: 0,
+        getFloatTimeDomainData: (buffer) => buffer.fill(audio.level),
+      };
+      return {
+        createMediaStreamSource: () => ({ connect: () => undefined, disconnect: () => undefined }),
+        createAnalyser: () => analyser,
+        close: () => {
+          audio.closed += 1;
+          return Promise.resolve();
+        },
+      };
+    }
+    const win = { ...(h.win as unknown as Record<string, unknown>), AudioContext: AudioContextStub } as unknown as Window;
+    const provider = createOpenRouterProvider(win, { baseUrl: BASE, fetchLike: h.fetchLike as unknown as typeof fetch });
+    return { ...h, provider, audio };
+  }
+
+  it("asks for an echo-cancelled, noise-suppressed, gain-controlled stream", async () => {
+    vi.useFakeTimers();
+    try {
+      const h = withAudioContext();
+      h.provider.startListening(recordingHandlers().handlers);
+      await vi.advanceTimersByTimeAsync(10);
+      expect(h.getUserMedia).toHaveBeenCalledWith(ECHO_CANCELLED);
+      h.provider.abortListening();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("speech then END_SILENCE_MS of silence ends the turn on its own with exactly one POST", async () => {
+    vi.useFakeTimers();
+    try {
+      const h = withAudioContext();
+      const { handlers, events } = recordingHandlers();
+      const levels: number[] = [];
+      h.provider.startListening({ ...handlers, onLevel: (level) => levels.push(level) });
+      await vi.advanceTimersByTimeAsync(100);
+
+      h.audio.level = 0.1;
+      await vi.advanceTimersByTimeAsync(600);
+      h.audio.level = 0;
+      await vi.advanceTimersByTimeAsync(END_SILENCE_MS - 200);
+      expect(h.fetchLike).not.toHaveBeenCalled();
+      expect(events).toEqual([]);
+
+      await vi.advanceTimersByTimeAsync(400);
+      expect(h.fetchLike).toHaveBeenCalledTimes(1);
+      expect(h.fetchLike.mock.calls[0]![0]).toBe(`${BASE}/api/voice/transcribe`);
+      expect(events).toEqual(["final:a clinic booking app", "end"]);
+      expect(h.tracks[0]?.stop).toHaveBeenCalled();
+      expect(h.audio.closed).toBe(1);
+      // The live level reaches the caller for the orb.
+      expect(levels.some((level) => level > 0.09)).toBe(true);
+
+      await vi.advanceTimersByTimeAsync(MAX_UTTERANCE_MS);
+      expect(h.fetchLike).toHaveBeenCalledTimes(1);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("silence only: the turn ends at MAX_UTTERANCE_MS and nothing is ever sent", async () => {
+    vi.useFakeTimers();
+    try {
+      const h = withAudioContext();
+      const { handlers, events } = recordingHandlers();
+      h.provider.startListening(handlers);
+      // Below the speech threshold the whole time: room noise, not speech.
+      h.audio.level = SPEECH_RMS_THRESHOLD / 2;
+      await vi.advanceTimersByTimeAsync(MAX_UTTERANCE_MS - 500);
+      expect(events).toEqual([]);
+
+      await vi.advanceTimersByTimeAsync(1000);
+      expect(events).toEqual(["end"]);
+      expect(h.fetchLike).not.toHaveBeenCalled();
+      expect(h.tracks[0]?.stop).toHaveBeenCalled();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("a graceful stop with no speech heard sends nothing either", async () => {
+    vi.useFakeTimers();
+    try {
+      const h = withAudioContext();
+      const { handlers, events } = recordingHandlers();
+      h.provider.startListening(handlers);
+      await vi.advanceTimersByTimeAsync(2000);
+      h.provider.stopListening();
+      await vi.advanceTimersByTimeAsync(10);
+      expect(events).toEqual(["end"]);
+      expect(h.fetchLike).not.toHaveBeenCalled();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("speech that never pauses is cut at MAX_UTTERANCE_MS and sent once", async () => {
+    vi.useFakeTimers();
+    try {
+      const h = withAudioContext();
+      const { handlers, events } = recordingHandlers();
+      h.provider.startListening(handlers);
+      h.audio.level = 0.2;
+      await vi.advanceTimersByTimeAsync(MAX_UTTERANCE_MS - 500);
+      expect(h.fetchLike).not.toHaveBeenCalled();
+
+      await vi.advanceTimersByTimeAsync(1000);
+      expect(h.fetchLike).toHaveBeenCalledTimes(1);
+      expect(events).toEqual(["final:a clinic booking app", "end"]);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("barge-in fires once when the louder threshold holds for BARGE_IN_HOLD_MS, then releases the mic", async () => {
+    vi.useFakeTimers();
+    try {
+      const h = withAudioContext();
+      const onBargeIn = vi.fn();
+      expect(h.provider.monitorBargeIn).toBeTypeOf("function");
+      h.provider.monitorBargeIn!(onBargeIn);
+      await vi.advanceTimersByTimeAsync(100);
+      expect(h.getUserMedia).toHaveBeenCalledWith(ECHO_CANCELLED);
+
+      // Speech-level sound (Chloe's own echo, a cough) is not enough.
+      h.audio.level = (SPEECH_RMS_THRESHOLD + BARGE_IN_RMS_THRESHOLD) / 2;
+      await vi.advanceTimersByTimeAsync(2000);
+      // Loud, but shorter than the hold.
+      h.audio.level = BARGE_IN_RMS_THRESHOLD * 2;
+      await vi.advanceTimersByTimeAsync(BARGE_IN_HOLD_MS - 100);
+      h.audio.level = 0;
+      await vi.advanceTimersByTimeAsync(500);
+      expect(onBargeIn).not.toHaveBeenCalled();
+
+      h.audio.level = BARGE_IN_RMS_THRESHOLD * 2;
+      await vi.advanceTimersByTimeAsync(BARGE_IN_HOLD_MS + 100);
+      expect(onBargeIn).toHaveBeenCalledTimes(1);
+      expect(h.tracks[0]?.stop).toHaveBeenCalled();
+      expect(h.audio.closed).toBe(1);
+
+      await vi.advanceTimersByTimeAsync(2000);
+      expect(onBargeIn).toHaveBeenCalledTimes(1);
+      expect(h.fetchLike).not.toHaveBeenCalled();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("cancelling the barge-in monitor releases the mic and never fires", async () => {
+    vi.useFakeTimers();
+    try {
+      const h = withAudioContext();
+      const onBargeIn = vi.fn();
+      const cancel = h.provider.monitorBargeIn!(onBargeIn);
+      await vi.advanceTimersByTimeAsync(100);
+      cancel();
+      expect(h.tracks[0]?.stop).toHaveBeenCalled();
+      h.audio.level = 1;
+      await vi.advanceTimersByTimeAsync(2000);
+      expect(onBargeIn).not.toHaveBeenCalled();
+
+      // Cancelled before the permission prompt resolves: the late stream is released untouched.
+      const late = withAudioContext();
+      const stop = late.provider.monitorBargeIn!(onBargeIn);
+      stop();
+      await vi.advanceTimersByTimeAsync(100);
+      expect(late.tracks[0]?.stop).toHaveBeenCalled();
+      expect(late.audio.contexts).toBe(0);
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });

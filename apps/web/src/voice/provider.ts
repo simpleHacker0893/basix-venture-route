@@ -12,11 +12,17 @@ export type VoiceError = { code: VoiceErrorCode; message?: string };
 export type ListenHandlers = {
   /** A not-yet-final recognition result; never sent anywhere, only shown. */
   onInterim(text: string): void;
-  /** One finalised recognition result; accumulated into the transcript `releaseMic` resolves. */
+  /** One finalised recognition result; accumulated into the transcript `listen()` resolves. */
   onFinal(text: string): void;
   onError(error: VoiceError): void;
-  /** Fires once recognition has fully stopped, after any pending final results. */
+  /**
+   * Fires once recognition has fully stopped, after any pending final results. A provider ends a
+   * turn on its own when the founder stops talking (D-55): Web Speech's own endpointing, the
+   * OpenRouter provider's VAD; `stopListening` forces the same end early.
+   */
   onEnd(): void;
+  /** Optional live mic level (RMS, 0..1) while listening, for the voice-mode orb. */
+  onLevel?(level: number): void;
 };
 
 export interface VoiceProvider {
@@ -33,4 +39,10 @@ export interface VoiceProvider {
   stopListening(): void;
   /** Discard: recognition stops without flushing a final result. */
   abortListening(): void;
+  /**
+   * Optional voice barge-in (D-55, openrouter only): watch the mic while Chloe speaks and call
+   * `onBargeIn` once, when the founder talks over her. Returns the function that stops watching.
+   * Web Speech has none: it cannot be echo-cancelled reliably, so it relies on the tap.
+   */
+  monitorBargeIn?(onBargeIn: () => void): () => void;
 }

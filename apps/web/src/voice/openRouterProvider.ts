@@ -8,12 +8,25 @@
  * Choices the interface leaves open:
  * - `stopListening()` while `getUserMedia` is still pending (permission prompt open) ends the
  *   session at once: `onEnd()` fires with no `onFinal`, and a stream granted later is released
- *   untouched, so `releaseMic()` never waits on the prompt. A later denial is not reported.
+ *   untouched, so a `finishListening()` never waits on the prompt. A later denial is not reported.
  * - `speak()` while a previous speak is in flight cancels the previous one first (it resolves),
  *   exactly like the web provider.
  * - There is no interim result: `onInterim` is never called.
+ *
+ * Hands-free turns (#128, D-55): when the browser has an `AudioContext`, a VAD (`vad.ts`) over
+ * the same echo-cancelled stream ends the turn on its own (speech, then `END_SILENCE_MS` of
+ * silence, or `MAX_UTTERANCE_MS`), reports the live level through `onLevel`, and gates the
+ * request: a turn in which it heard no speech ends with `onEnd()` alone and sends nothing, however
+ * it ends. Without an `AudioContext` the provider records until `stopListening()` as before.
+ * `monitorBargeIn` runs the same VAD at `BARGE_IN_RMS_THRESHOLD` while Chloe speaks.
  */
 import type { ListenHandlers, VoiceErrorCode, VoiceProvider } from "./provider";
+import { audioContextOf, createBargeInDetector, createEndpointer, createVad, type Vad } from "./vad";
+
+/** Echo cancellation keeps Chloe's own voice out of the VAD and the recording (D-55). */
+export const MIC_CONSTRAINTS: MediaStreamConstraints = {
+  audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true },
+};
 
 type FetchLike = (input: string, init?: RequestInit) => Promise<Response>;
 
@@ -80,6 +93,10 @@ type ListenSession = {
   stream: MediaStream | null;
   recorder: RecorderLike | null;
   controller: AbortController | null;
+  /** The VAD for this turn, when the browser has an `AudioContext`. */
+  vad: Vad | null;
+  /** False until the VAD hears speech; always true without a VAD (nothing to gate on). */
+  heardSpeech: () => boolean;
   /** Set once the session is over from the caller's point of view (stop pre-start, or abort). */
   closed: boolean;
 };
@@ -94,6 +111,7 @@ export function createOpenRouterProvider(win: Window = window, options: OpenRout
   const fetchLike: FetchLike = options.fetchLike ?? ((input, init) => (w.fetch as FetchLike)(input, init));
   const transform = options.transform ?? ((text: string) => text);
   const urls = w.URL ?? URL;
+  const AudioContextCtor = audioContextOf(win);
 
   let session: ListenSession | null = null;
   let cancelCurrent: (() => void) | null = null;
@@ -131,6 +149,28 @@ export function createOpenRouterProvider(win: Window = window, options: OpenRout
       });
   }
 
+  /** End the recording now (VAD endpoint or a graceful stop); `onstop` decides whether to send. */
+  function finishRecording(current: ListenSession): void {
+    current.vad?.stop();
+    if (current.recorder && current.recorder.state !== "inactive") current.recorder.stop();
+  }
+
+  function startVad(current: ListenSession, stream: MediaStream): void {
+    if (!AudioContextCtor) return;
+    const endpointer = createEndpointer(Date.now());
+    try {
+      current.vad = createVad(AudioContextCtor, stream, (rms) => {
+        if (current.closed || session !== current) return;
+        current.handlers.onLevel?.(rms);
+        if (endpointer.frame(rms, Date.now()) !== null) finishRecording(current);
+      });
+      current.heardSpeech = endpointer.heardSpeech;
+    } catch {
+      // No usable audio graph: fall back to recording until stopListening(), as before D-55.
+      current.vad = null;
+    }
+  }
+
   function beginRecording(current: ListenSession, stream: MediaStream): void {
     current.stream = stream;
     const mime = pickMime();
@@ -152,11 +192,13 @@ export function createOpenRouterProvider(win: Window = window, options: OpenRout
       if (event.data && event.data.size > 0) chunks.push(event.data);
     };
     recorder.onstop = () => {
+      current.vad?.stop();
       releaseStream(stream);
       if (current.closed) return;
       const type = recorder.mimeType || mime;
       const blob = new Blob(chunks, { type });
-      if (blob.size === 0) {
+      // Silence costs nothing (D-55): no speech heard means no request, however the turn ended.
+      if (blob.size === 0 || !current.heardSpeech()) {
         if (session === current) session = null;
         current.handlers.onEnd();
         return;
@@ -166,12 +208,13 @@ export function createOpenRouterProvider(win: Window = window, options: OpenRout
     try {
       recorder.start();
     } catch {
-      // Never leave a session whose stop() cannot end it: releaseMic() would hang.
+      // Never leave a session whose stop() cannot end it: listen() would hang.
       recorder.onstop = null;
       failToStart();
       return;
     }
     current.recorder = recorder;
+    startVad(current, stream);
   }
 
   function startListening(handlers: ListenHandlers): void {
@@ -181,9 +224,17 @@ export function createOpenRouterProvider(win: Window = window, options: OpenRout
     }
     // One recording at a time: a new press discards whatever the previous one was doing.
     if (session) abortListening();
-    const current: ListenSession = { handlers, stream: null, recorder: null, controller: null, closed: false };
+    const current: ListenSession = {
+      handlers,
+      stream: null,
+      recorder: null,
+      controller: null,
+      vad: null,
+      heardSpeech: () => true,
+      closed: false,
+    };
     session = current;
-    getUserMedia.call(w.navigator!.mediaDevices, { audio: true }).then(
+    getUserMedia.call(w.navigator!.mediaDevices, MIC_CONSTRAINTS).then(
       (stream) => {
         if (current.closed) {
           releaseStream(stream);
@@ -204,7 +255,7 @@ export function createOpenRouterProvider(win: Window = window, options: OpenRout
     const current = session;
     if (!current) return;
     if (current.recorder) {
-      if (current.recorder.state !== "inactive") current.recorder.stop();
+      finishRecording(current);
       return;
     }
     // getUserMedia is still pending: end now with no transcript (see the header comment).
@@ -219,6 +270,7 @@ export function createOpenRouterProvider(win: Window = window, options: OpenRout
     current.closed = true;
     session = null;
     current.controller?.abort();
+    current.vad?.stop();
     if (current.recorder && current.recorder.state !== "inactive") current.recorder.stop();
     releaseStream(current.stream);
   }
@@ -276,5 +328,57 @@ export function createOpenRouterProvider(win: Window = window, options: OpenRout
     cancelCurrent?.();
   }
 
-  return { kind: "openrouter", supported, speak, cancelSpeech, startListening, stopListening, abortListening };
+  /**
+   * Voice barge-in (D-55): a second echo-cancelled stream watched at `BARGE_IN_RMS_THRESHOLD`
+   * while Chloe plays. Fires `onBargeIn` at most once, then releases the mic; nothing is recorded
+   * or sent. A no-op without an `AudioContext`.
+   */
+  function monitorBargeIn(onBargeIn: () => void): () => void {
+    if (!supported || !getUserMedia || !AudioContextCtor) return () => undefined;
+    const Ctor = AudioContextCtor;
+    let done = false;
+    let stream: MediaStream | null = null;
+    let vad: Vad | null = null;
+    const cleanup = (): void => {
+      done = true;
+      vad?.stop();
+      vad = null;
+      releaseStream(stream);
+      stream = null;
+    };
+    getUserMedia.call(w.navigator!.mediaDevices, MIC_CONSTRAINTS).then(
+      (granted) => {
+        if (done) {
+          releaseStream(granted);
+          return;
+        }
+        stream = granted;
+        const detector = createBargeInDetector();
+        try {
+          vad = createVad(Ctor, granted, (rms) => {
+            if (done || !detector.frame(rms, Date.now())) return;
+            cleanup();
+            onBargeIn();
+          });
+        } catch {
+          cleanup();
+        }
+      },
+      () => {
+        done = true;
+      },
+    );
+    return cleanup;
+  }
+
+  return {
+    kind: "openrouter",
+    supported,
+    speak,
+    cancelSpeech,
+    startListening,
+    stopListening,
+    abortListening,
+    monitorBargeIn,
+  };
 }
