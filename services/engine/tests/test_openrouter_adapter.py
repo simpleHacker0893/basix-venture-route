@@ -154,6 +154,7 @@ def test_extract_brief_posts_the_intake_model_without_reasoning_and_a_strict_sch
     assert fmt["json_schema"]["strict"] is True
     assert fmt["json_schema"]["name"]
     assert fmt["json_schema"]["schema"] == strict_json_schema(ExtractedBrief.model_json_schema())
+    assert body["provider"] == {"require_parameters": True}
     system, user = system_and_user(body)
     assert system == EXTRACTION_INSTRUCTION
     assert SYSTEM_INSTRUCTION in system
@@ -174,6 +175,7 @@ def test_suggest_skills_posts_the_intake_model_with_the_suggested_skills_schema(
     assert fmt["type"] == "json_schema"
     assert fmt["json_schema"]["strict"] is True
     assert fmt["json_schema"]["schema"] == strict_json_schema(SuggestedSkills.model_json_schema())
+    assert body["provider"] == {"require_parameters": True}
     system, user = system_and_user(body)
     assert system == SUGGEST_INSTRUCTION
     assert "Built Python services on Kubernetes." in user
@@ -188,6 +190,7 @@ def test_explain_route_posts_the_explain_model_with_reasoning_and_no_facts() -> 
     body = api.bodies[0]
     assert body["model"] == EXPLAIN_MODEL
     assert body["reasoning"] == {"enabled": True}
+    assert body["max_tokens"] == 4096
     assert "response_format" not in body
     system, user = system_and_user(body)
     assert system == EXPLANATION_INSTRUCTION
@@ -308,6 +311,7 @@ FAILURES: list[tuple[str, Callable[[httpx.Request], httpx.Response]]] = [
     ("empty-content", ok(None)),
     ("length", ok(json.dumps({"skills": ["Python"]}), finish_reason="length")),
     ("content-filter", ok(json.dumps({"skills": ["Python"]}), finish_reason="content_filter")),
+    ("error-finish", ok(json.dumps({"skills": ["Python"]}), finish_reason="error")),
 ]
 
 

@@ -10,8 +10,11 @@ The prompts, `SuggestedSkills` and `FACTS_EXCLUDED` are the Anthropic adapter's,
 than copied, so both providers stay on one LLM boundary. The key and models come from settings
 (`.env`, D-26) and nowhere else.
 
-Every failure (transport error, timeout, non-2xx status, a `length` or `content_filter` finish,
-an empty or unparsable body, a schema error) raises `LlmUnavailable` with a fixed message
+Intake calls also send `provider.require_parameters`, so OpenRouter routes only to providers that
+honour the strict schema; the explain call is capped at `EXPLAIN_MAX_TOKENS`.
+
+Every failure (transport error, timeout, non-2xx status, a `length`, `content_filter` or `error`
+finish, an empty or unparsable body, a schema error) raises `LlmUnavailable` with a fixed message
 `from None`, outside any `except` block, so neither the input (a résumé is personal data, D-50)
 nor the upstream reply or error can reach a log line or the exception chain.
 """
@@ -41,8 +44,10 @@ log = logging.getLogger(__name__)
 
 TIMEOUT_SECONDS = 20.0
 COMPLETIONS_PATH = "/chat/completions"
-# Finish reasons that mean the reply is cut short or withheld.
-INCOMPLETE_FINISH_REASONS = frozenset({"length", "content_filter"})
+# Finish reasons that mean the reply is cut short, withheld or failed mid-generation.
+INCOMPLETE_FINISH_REASONS = frozenset({"length", "content_filter", "error"})
+# Cap on the explain call's output (reasoning included), so a runaway model stays bounded.
+EXPLAIN_MAX_TOKENS = 4096
 
 ModelT = TypeVar("ModelT", bound=BaseModel)
 
@@ -139,6 +144,7 @@ class OpenRouterAdapter:
                 "model": self.explain_model,
                 "messages": _messages(EXPLANATION_INSTRUCTION, json.dumps(payload, indent=2)),
                 "reasoning": {"enabled": True},
+                "max_tokens": EXPLAIN_MAX_TOKENS,
             }
         )
         text = content.strip()
@@ -157,6 +163,8 @@ class OpenRouterAdapter:
                 "model": self.intake_model,
                 "messages": _messages(system, user),
                 "reasoning": {"enabled": False},
+                # Only providers that support every parameter, so the strict schema is honoured.
+                "provider": {"require_parameters": True},
                 "response_format": {
                     "type": "json_schema",
                     "json_schema": {
