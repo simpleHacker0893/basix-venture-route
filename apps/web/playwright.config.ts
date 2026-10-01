@@ -11,6 +11,10 @@ import { defineConfig, devices } from "@playwright/test";
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const ENGINE_DIR = path.resolve(HERE, "../../services/engine");
 const isCI = !!process.env.CI;
+// E2E_ENGINE_PORT moves the engine Playwright starts (and every build pointing at it) off 8000,
+// for a machine where another process already holds that port.
+const ENGINE_PORT = process.env.E2E_ENGINE_PORT ?? "8000";
+const ENGINE_URL = `http://localhost:${ENGINE_PORT}`;
 
 export default defineConfig({
   testDir: "./e2e",
@@ -31,9 +35,9 @@ export default defineConfig({
   projects: [{ name: "chromium", use: { ...devices["Desktop Chrome"], viewport: { width: 1440, height: 900 } } }],
   webServer: [
     {
-      command: "uv run python -m uvicorn app.main:app --port 8000",
+      command: `uv run python -m uvicorn app.main:app --port ${ENGINE_PORT}`,
       cwd: ENGINE_DIR,
-      url: "http://localhost:8000/health",
+      url: `${ENGINE_URL}/health`,
       reuseExistingServer: !isCI,
       timeout: 180_000,
       env: { LLM_PROVIDER: "null", CORS_ORIGINS: "http://localhost:4173", ENGINE_DEV_QUERY: "0" },
@@ -48,7 +52,7 @@ export default defineConfig({
       // VITE_VOICE_PROVIDER=fake (Sprint 006 #108): the build exposes window.__chloeVoice so
       // Playwright can drive Chloe without a real microphone or speaker (e2e/chloe.spec.ts).
       env: {
-        VITE_API_URL: "http://localhost:8000",
+        VITE_API_URL: ENGINE_URL,
         VITE_OFFLINE_DEMO: "0",
         VITE_CLERK_PUBLISHABLE_KEY: "pk_test_replace-me",
         VITE_VOICE_PROVIDER: "fake",
@@ -60,7 +64,7 @@ export default defineConfig({
       url: "http://localhost:4174",
       reuseExistingServer: !isCI,
       timeout: 180_000,
-      env: { VITE_API_URL: "http://localhost:8000", VITE_OFFLINE_DEMO: "1", VITE_CLERK_PUBLISHABLE_KEY: "pk_test_replace-me" },
+      env: { VITE_API_URL: ENGINE_URL, VITE_OFFLINE_DEMO: "1", VITE_CLERK_PUBLISHABLE_KEY: "pk_test_replace-me" },
     },
   ],
 });
