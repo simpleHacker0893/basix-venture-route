@@ -39,7 +39,7 @@ from the `metadata.role` claim the Operator adds to Clerk's session token templa
 | Status | Body | When |
 |---|---|---|
 | `401` | `{"detail": "invalid session"}` | missing, malformed, expired or wrong-issuer token, or Clerk not configured. Never a `500`. |
-| `403` | `{"detail": "role builder required"}` (or `founder or admin`, `admin`) | wrong role, no role yet, or no users row yet (webhook not arrived) |
+| `403` | `{"detail": "role builder required"}` (or `founder or admin`, `admin`) | wrong role, or no role yet. A `builder` or `founder` claim with no users row yet creates the row instead (D-56); an `admin` claim without a row stays 403 |
 | `503` | `{"detail": "marketplace store not configured"}` | `DATABASE_URL` is the `.env.example` placeholder; routing still works from seed |
 
 Roles: `founder` and `builder` are chosen once through `POST /api/me/role`; `admin` comes only

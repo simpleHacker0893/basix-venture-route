@@ -13,6 +13,7 @@ from uuid import uuid4
 import pytest
 from fastapi import FastAPI
 from httpx import ASGITransport, AsyncClient
+from sqlmodel import select
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 from app.auth.clerk import JwksCache
@@ -83,9 +84,48 @@ async def test_token_signed_by_another_key_is_401(api: AsyncClient) -> None:
     assert response.status_code == 401
 
 
-async def test_verified_token_without_user_row_is_403(api: AsyncClient, bearer: Bearer) -> None:
-    """The webhook has not created the row yet: only the role endpoint accepts this state."""
-    response = await api.get("/api/me/profile", headers=bearer(sub="user_new", role="builder"))
+async def test_verified_role_claim_without_user_row_creates_the_row(
+    api: AsyncClient, bearer: Bearer, db_session: AsyncSession
+) -> None:
+    """Clerk already holds the role (D-56) but this database has no row: the webhook never
+    arrived, or the engine points at a fresh branch. The claim is server-written, so the row is
+    created from it, once, and the request goes through."""
+    headers = bearer(sub="user_new", role="builder")
+
+    first = await api.get("/api/me/profile", headers=headers)
+    second = await api.get("/api/me/profile", headers=headers)
+
+    # No profile yet: 404, the same answer as a builder whose row the webhook created.
+    assert (first.status_code, second.status_code) == (404, 404)
+    rows = (await db_session.exec(select(User).where(User.clerk_id == "user_new"))).all()
+    assert [(row.role, row.status, row.email) for row in rows] == [
+        ("builder", "pending", "user_new@pending.clerk.invalid")
+    ]
+
+
+async def test_role_claim_for_another_route_creates_no_row(
+    api: AsyncClient, bearer: Bearer, db_session: AsyncSession
+) -> None:
+    response = await api.get("/api/me/profile", headers=bearer(sub="user_f", role="founder"))
+
+    assert response.status_code == 403
+    assert response.json() == {"detail": "role builder required"}
+    assert (await db_session.exec(select(User).where(User.clerk_id == "user_f"))).first() is None
+
+
+async def test_admin_claim_without_user_row_creates_no_row(
+    api: AsyncClient, bearer: Bearer, db_session: AsyncSession
+) -> None:
+    """Admin comes only from ADMIN_EMAILS through the webhook, never from a claim alone."""
+    response = await api.get("/api/admin/pending", headers=bearer(sub="user_a", role="admin"))
+
+    assert response.status_code == 403
+    assert (await db_session.exec(select(User).where(User.clerk_id == "user_a"))).first() is None
+
+
+async def test_verified_token_without_role_or_row_is_403(api: AsyncClient, bearer: Bearer) -> None:
+    """No role chosen yet: only the role endpoint accepts this state."""
+    response = await api.get("/api/me/profile", headers=bearer(sub="user_new", role=None))
 
     assert response.status_code == 403
 
