@@ -214,6 +214,15 @@ describe("role first (D-54)", () => {
     expect(await screen.findByRole("heading", { level: 1, name: "A founding team you can verify." })).toBeInTheDocument();
   });
 
+  it("shows only Loading… and no role cards while Clerk has not loaded", () => {
+    render(<App initialPath="/sign-in" source={source} auth={authState({ isLoaded: false })} />);
+
+    expect(screen.getByText("Loading…")).toBeInTheDocument();
+    expect(screen.queryByRole("heading", { level: 1, name: "Who are you?" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /Continue as/ })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /I’m a founder/ })).not.toBeInTheDocument();
+  });
+
   it("lets a BASIX admin skip the role cards", async () => {
     const user = userEvent.setup();
     render(<App initialPath="/sign-in" source={source} auth={authState()} />);
