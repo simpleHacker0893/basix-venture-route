@@ -5,74 +5,21 @@
  * secret and ADMIN_EMAILS set to the run's admin address (port 8001), and a production build
  * with the real VITE_CLERK_PUBLISHABLE_KEY from the repo-root .env served by vite preview on
  * 4175. Both ports differ from the no-key suite's so the two never reuse each other's servers.
+ * The harness itself is `e2e/clerk/harness.ts`, shared with the demo recording (#145).
  */
-import { defineConfig, devices } from "@playwright/test";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
 
-import {
-  BUILD_DIR,
-  COMPOSE_DATABASE_URL,
-  ENGINE_DIR,
-  ENGINE_PORT,
-  ENGINE_URL,
-  OUTPUT_DIR,
-  rootEnv,
-  runIdentity,
-  WEB_PORT,
-  WEB_URL,
-} from "./e2e/clerk/env";
+import { defineConfig } from "@playwright/test";
 
-const identity = runIdentity();
-const env = rootEnv();
+import { clerkHarnessConfig } from "./e2e/clerk/harness";
 
-export default defineConfig({
-  testDir: "./e2e/clerk",
-  outputDir: OUTPUT_DIR,
-  fullyParallel: false,
-  workers: 1,
-  retries: 0,
-  globalSetup: "./e2e/clerk/global-setup.ts",
-  globalTeardown: "./e2e/clerk/global-teardown.ts",
-  reporter: [["list"], ["html", { open: "never", outputFolder: "playwright-report-clerk" }]],
-  timeout: 90_000,
-  expect: { timeout: 20_000 },
-  use: {
-    baseURL: WEB_URL,
-    trace: "retain-on-failure",
-    screenshot: "only-on-failure",
-  },
-  projects: [{ name: "chromium", use: { ...devices["Desktop Chrome"], viewport: { width: 1440, height: 900 } } }],
-  webServer: [
-    {
-      // The reset removes the rows earlier runs' +clerk_test users left in the compose db before
-      // the engine projects the store (#76), so every run starts from seed-only atoms.
-      command: `uv run python scripts/e2e_reset.py && uv run python -m uvicorn app.main:app --port ${ENGINE_PORT}`,
-      cwd: ENGINE_DIR,
-      url: `${ENGINE_URL}/health`,
-      reuseExistingServer: false,
-      timeout: 180_000,
-      env: {
-        DATABASE_URL: COMPOSE_DATABASE_URL,
-        LLM_PROVIDER: "null",
-        CORS_ORIGINS: WEB_URL,
-        ENGINE_DEV_QUERY: "0",
-        CLERK_WEBHOOK_SIGNING_SECRET: identity.webhookSecret,
-        ADMIN_EMAILS: identity.emails.admin,
-        // Passed through so the engine never depends on finding the repo-root .env (CI has none;
-        // without the JWKS URL every gated route answers 401, #77).
-        ...(env.CLERK_JWKS_URL ? { CLERK_JWKS_URL: env.CLERK_JWKS_URL } : {}),
-        ...(env.CLERK_SECRET_KEY ? { CLERK_SECRET_KEY: env.CLERK_SECRET_KEY } : {}),
-      },
-    },
-    {
-      command: `pnpm exec vite build --outDir ${BUILD_DIR} && pnpm exec vite preview --outDir ${BUILD_DIR} --port ${WEB_PORT} --strictPort`,
-      url: WEB_URL,
-      reuseExistingServer: false,
-      timeout: 180_000,
-      env: {
-        VITE_API_URL: ENGINE_URL,
-        VITE_OFFLINE_DEMO: "0",
-        VITE_CLERK_PUBLISHABLE_KEY: env.VITE_CLERK_PUBLISHABLE_KEY ?? "",
-      },
-    },
-  ],
-});
+const HERE = path.dirname(fileURLToPath(import.meta.url));
+
+export default defineConfig(
+  clerkHarnessConfig({
+    testDir: path.join(HERE, "e2e/clerk"),
+    reportFolder: "playwright-report-clerk",
+    timeout: 90_000,
+  }),
+);

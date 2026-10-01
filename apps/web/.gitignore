@@ -30,3 +30,9 @@ test-results
 test-results-clerk
 dist-offline
 dist-clerk
+
+# The demo recording (#145): its test output, build, report and the per-scene clips
+test-results-demo
+dist-demo
+playwright-report-demo
+demo-output
