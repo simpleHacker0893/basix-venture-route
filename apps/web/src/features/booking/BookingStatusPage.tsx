@@ -157,7 +157,7 @@ export function BookingStatusPage() {
       <div>
         <Link
           to={role === "founder" ? "/dashboard" : "/requests"}
-          className="inline-flex items-center gap-1.5 text-[13px] text-ink-3 hover:text-ink"
+          className="inline-flex min-h-11 items-center gap-1.5 text-[13px] text-ink-3 hover:text-ink sm:min-h-0"
         >
           <span aria-hidden="true">←</span>
           <span>{role === "founder" ? "Back to your ventures" : "Back to open requests"}</span>

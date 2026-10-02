@@ -34,7 +34,7 @@ export function BriefPanel({ brief, onFindRoute }: BriefPanelProps) {
           chip.value === null ? (
             <li
               key={chip.field}
-              className="inline-flex h-8 items-center gap-1 rounded-pill border border-dashed border-border-strong px-3 text-sm text-ink-3"
+              className="inline-flex h-11 sm:h-8 items-center gap-1 rounded-pill border border-dashed border-border-strong px-3 text-sm text-ink-3"
             >
               <span>{chip.label}:</span>
               <span className="italic text-danger">missing</span>
@@ -42,7 +42,7 @@ export function BriefPanel({ brief, onFindRoute }: BriefPanelProps) {
           ) : (
             <li
               key={chip.field}
-              className="inline-flex h-8 items-center gap-1 rounded-pill border border-border-strong bg-surface-strong px-3 text-sm text-ink"
+              className="inline-flex h-11 sm:h-8 items-center gap-1 rounded-pill border border-border-strong bg-surface-strong px-3 text-sm text-ink"
             >
               <span className="text-ink-3">{chip.label}:</span>
               <span className={chip.field === "dailyBudget" ? "font-mono" : "font-medium"}>{chip.value}</span>

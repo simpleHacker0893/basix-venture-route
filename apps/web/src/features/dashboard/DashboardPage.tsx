@@ -206,7 +206,7 @@ export function DashboardPage() {
             className="flex flex-col gap-5 rounded-3xl bg-dark px-6 py-7 text-white sm:px-10 lg:flex-row lg:items-center lg:justify-between"
           >
             <div className="flex flex-col gap-3">
-              <span className="flex items-center gap-2.5">
+              <span className="flex flex-wrap items-center gap-x-2.5 gap-y-1">
                 <span className="font-mono text-[11px] font-medium uppercase tracking-[0.14em] text-accent-on-dark">Next step</span>
                 {anyDemo ? <DemoDataPill tone="strong" /> : null}
               </span>
@@ -235,7 +235,7 @@ export function DashboardPage() {
             {data.requests.length === 0 ? (
               <div className="flex flex-col items-center gap-3 rounded-2xl border border-dashed border-border-strong bg-surface px-6 py-10 text-center">
                 <p className="text-[15px] text-ink-2">No briefs published yet. Route a brief and publish it as a request.</p>
-                <Link to="/route" className="-my-2 inline-flex items-center gap-1.5 py-2.5 text-[14px] font-semibold text-accent-green hover:underline">
+                <Link to="/route" className="-my-2 inline-flex items-center gap-1.5 py-3 text-[14px] font-semibold text-accent-green hover:underline">
                   Describe your MVP
                   <ArrowRight aria-hidden="true" className="h-3.5 w-3.5" />
                 </Link>
@@ -259,13 +259,13 @@ export function DashboardPage() {
                             {usd(request.route.totalDailyRate)} of {usd(request.dailyBudget)}
                           </span>
                         </div>
-                        <div className="flex items-center gap-3">
+                        <div className="flex flex-wrap items-center gap-x-3">
                           {request.demoData ? <DemoDataPill /> : null}
                           <button
                             type="button"
                             onClick={() => void viewRoute(request)}
                             disabled={routing !== null}
-                            className="-my-2 py-2.5 text-[15px] font-semibold text-accent-green hover:underline disabled:opacity-60"
+                            className="-my-2 py-3 text-[15px] font-semibold text-accent-green hover:underline disabled:opacity-60"
                           >
                             {routing === request.id ? "Routing…" : "View route"}
                           </button>
@@ -313,7 +313,7 @@ export function DashboardPage() {
                               <span className="text-[14px] text-ink-3">{bid.eligibleSkills.map((s) => SKILL_LABELS[s]).join(", ")}</span>
                               {bid.demoData ? <DemoDataPill /> : null}
                             </span>
-                            <span className="truncate text-[14px] text-ink-3">
+                            <span className="min-w-0 break-words text-[14px] text-ink-3 sm:truncate">
                               for {bid.requestTitle}
                               {bid.message ? ` · “${bid.message}”` : ""}
                             </span>
@@ -390,7 +390,7 @@ export function DashboardPage() {
                                 <span className="text-[13.5px] text-ink-3">
                                   {formatNairobi(booking.proposedStartLocal)} · {booking.durationMin} min
                                 </span>
-                                <span className="flex items-center gap-2">
+                                <span className="flex flex-wrap items-center gap-x-2">
                                   <span className={`rounded-pill px-2.5 py-0.5 text-[12.5px] font-medium ${STATE_PILL[booking.state]}`}>
                                     {STATE_LABEL[booking.state]}
                                   </span>

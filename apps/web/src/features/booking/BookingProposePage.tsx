@@ -103,7 +103,7 @@ export function BookingProposePage() {
   return (
     <div className="mx-auto flex w-full max-w-[1200px] flex-col gap-6 px-6 py-8">
       <div>
-        <Link to="/dashboard" className="inline-flex items-center gap-1.5 text-[13px] text-ink-3 hover:text-ink">
+        <Link to="/dashboard" className="inline-flex min-h-11 items-center gap-1.5 text-[13px] text-ink-3 hover:text-ink sm:min-h-0">
           <span aria-hidden="true">←</span>
           <span>Back to your ventures</span>
         </Link>

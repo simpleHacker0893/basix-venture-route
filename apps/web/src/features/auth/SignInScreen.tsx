@@ -31,7 +31,7 @@ function ExploreLink() {
   return (
     <>
       Just exploring?{" "}
-      <Link to="/route" className="-my-2 inline-flex items-center gap-1 py-2.5 font-semibold text-accent-green hover:underline">
+      <Link to="/route" className="inline-flex min-h-11 items-center gap-1 font-semibold text-accent-green hover:underline">
         Route without an account
         <ArrowRight aria-hidden="true" className="h-3.5 w-3.5" />
       </Link>
@@ -99,14 +99,14 @@ export function SignInScreen() {
             {`Continue as ${selected}`}
             <ArrowRight aria-hidden="true" className="h-4 w-4" />
           </button>
-          <div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-2 text-[14px] text-ink-2">
+          <div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-1 text-[14px] text-ink-2">
             <span>
               <ExploreLink />
             </span>
             <button
               type="button"
               onClick={() => choose("admin")}
-              className="-my-2 py-2.5 text-ink-3 hover:text-ink hover:underline"
+              className="inline-flex min-h-11 items-center text-ink-3 hover:text-ink hover:underline"
             >
               BASIX admin? Sign in
             </button>
@@ -130,7 +130,7 @@ export function SignInScreen() {
                 type="button"
                 onClick={changeRole}
                 aria-label={`${INTENT_LABEL[intent]}: change role`}
-                className="inline-flex h-9 items-center gap-2 rounded-pill bg-sage px-3.5 text-[14px] font-semibold text-accent-green transition-colors hover:bg-credential-tint"
+                className="inline-flex h-11 sm:h-9 items-center gap-2 rounded-pill bg-sage px-3.5 text-[14px] font-semibold text-accent-green transition-colors hover:bg-credential-tint"
               >
                 <span aria-hidden="true" className="h-1.5 w-1.5 rounded-full bg-accent-green" />
                 {INTENT_LABEL[intent]}
@@ -153,7 +153,7 @@ export function SignInScreen() {
                   key={tab.mode}
                   to={`${tab.to}${search}`}
                   aria-current={active ? "page" : undefined}
-                  className={`rounded-lg px-3 py-2.5 text-center text-[15px] transition-colors ${active ? "bg-surface-strong font-semibold text-ink shadow-card" : "font-medium text-ink-3 hover:text-ink"}`}
+                  className={`rounded-lg px-3 py-3 text-center text-[15px] transition-colors ${active ? "bg-surface-strong font-semibold text-ink shadow-card" : "font-medium text-ink-3 hover:text-ink"}`}
                 >
                   {tab.label}
                 </Link>

@@ -380,7 +380,7 @@ export function AppShell() {
           className={`sticky top-0 z-40 border-b backdrop-blur-sm ${dark ? "border-border-dark bg-dark lg:border-border lg:bg-ground/95" : "border-border bg-ground/95"}`}
         >
           <nav aria-label="Primary" className="flex h-16 items-center gap-3 px-4 sm:px-6 lg:h-[72px] lg:px-10">
-            <Link to="/" aria-label="Venture Route" className="lg:hidden">
+            <Link to="/" aria-label="Venture Route" className="grid h-11 w-11 place-items-center lg:hidden">
               <LogoMark size={32} />
             </Link>
             {title ? (
@@ -449,7 +449,7 @@ export function AppShell() {
                 }`}
               >
                 <Icon aria-hidden="true" className="h-5 w-5" />
-                <span className="max-w-full truncate px-1">{item.label}</span>
+                <span className="max-w-full px-1 text-center leading-[1.1]">{item.label}</span>
               </Link>
             );
           })}

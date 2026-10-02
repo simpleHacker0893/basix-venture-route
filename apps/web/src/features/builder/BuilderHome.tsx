@@ -371,7 +371,7 @@ export function BuilderHome() {
                 Bidding opens once you’re confirmed
               </span>
             ) : null}
-            <Link to="/requests" className="-my-2 inline-flex items-center gap-1 py-2.5 font-semibold text-accent-green hover:underline">
+            <Link to="/requests" className="-my-2 inline-flex items-center gap-1 py-3 font-semibold text-accent-green hover:underline">
               See all open requests
               <ArrowRight aria-hidden="true" className="h-4 w-4" />
             </Link>

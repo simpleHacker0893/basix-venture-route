@@ -135,7 +135,7 @@ export function ResumeSuggestions({ onAccept, currentSkills, max = 20 }: ResumeS
           {suggestions.map((suggestion) => (
             <li
               key={suggestion.label}
-              className="inline-flex min-h-9 flex-wrap items-center gap-1 rounded-pill border border-dashed border-border-strong bg-surface-strong pl-1.5 pr-1.5 text-[14px] text-ink-2"
+              className="inline-flex min-h-11 sm:min-h-9 flex-wrap items-center gap-1 rounded-pill border border-dashed border-border-strong bg-surface-strong pl-1.5 pr-1.5 text-[14px] text-ink-2"
             >
               <button
                 type="button"

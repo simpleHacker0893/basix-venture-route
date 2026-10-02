@@ -143,7 +143,7 @@ function RoutePreview() {
                   aria-controls="hero-why-panel"
                   aria-label={`Why ${builder.name}`}
                   onClick={() => setSelectedId(builder.id)}
-                  className={`-my-1 inline-flex min-h-9 items-center gap-0.5 rounded-md px-1.5 text-[12.5px] transition-colors hover:bg-ink/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-green/40 ${active ? "font-semibold text-accent-green" : "font-medium text-ink-3"}`}
+                  className={`-my-1 inline-flex min-h-11 sm:min-h-9 items-center gap-0.5 rounded-md px-1.5 text-[12.5px] transition-colors hover:bg-ink/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-green/40 ${active ? "font-semibold text-accent-green" : "font-medium text-ink-3"}`}
                 >
                   Why
                   {active ? (
@@ -172,7 +172,7 @@ function RoutePreview() {
               >
                 <Check aria-hidden="true" className="h-3.5 w-3.5 self-center text-accent-on-dark" strokeWidth={2.5} />
                 <span className="text-accent-on-dark">{rule}</span>
-                <span title={fact} className="col-start-2 truncate text-[#a7b8b0] sm:col-start-3">
+                <span title={fact} className="col-start-2 min-w-0 break-words text-[#a7b8b0] sm:col-start-3 sm:truncate">
                   {fact}
                 </span>
               </li>

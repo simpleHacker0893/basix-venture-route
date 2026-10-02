@@ -49,7 +49,7 @@ export function GapsPanel({ gaps, onPatch }: GapsPanelProps) {
                       key={action}
                       type="button"
                       variant="secondary"
-                      className="h-auto min-h-10 max-w-full shrink whitespace-normal py-2 text-left"
+                      className="h-auto min-h-11 max-w-full shrink whitespace-normal py-2 text-left"
                       onClick={() => onPatch(patch)}
                     >
                       {action}
@@ -60,7 +60,7 @@ export function GapsPanel({ gaps, onPatch }: GapsPanelProps) {
                       type="button"
                       variant="secondary"
                       aria-disabled="true"
-                      className="h-auto min-h-10 max-w-full shrink whitespace-normal py-2 text-left opacity-60"
+                      className="h-auto min-h-11 max-w-full shrink whitespace-normal py-2 text-left opacity-60"
                       onClick={(event) => event.preventDefault()}
                     >
                       {action}

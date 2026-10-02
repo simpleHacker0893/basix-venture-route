@@ -69,7 +69,7 @@ export function AuthShell({ step, onBack, children }: AuthShellProps) {
             <button
               type="button"
               onClick={onBack}
-              className="-ml-2 inline-flex h-10 w-fit items-center gap-2 rounded-lg px-2 text-[15px] font-medium text-ink-2 transition-colors hover:bg-ink/5 hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-green/40"
+              className="-ml-2 inline-flex h-11 w-fit items-center gap-2 rounded-lg px-2 text-[15px] font-medium text-ink-2 transition-colors hover:bg-ink/5 hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-green/40"
             >
               <ArrowLeft aria-hidden="true" className="h-4 w-4" />
               Back

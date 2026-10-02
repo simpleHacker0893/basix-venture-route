@@ -377,7 +377,7 @@ export function ProfileForm({ profile, projectCount = 0, onSave }: ProfileFormPr
                   {draft.suggestedSkills.map((skill) => (
                     <li
                       key={skill}
-                      className="inline-flex h-9 items-center gap-1.5 rounded-pill border border-accent-green/60 bg-sage pl-3.5 pr-1.5 text-[14px] font-medium text-accent-green"
+                      className="inline-flex h-11 sm:h-9 items-center gap-1.5 rounded-pill border border-accent-green/60 bg-sage pl-3.5 pr-1.5 text-[14px] font-medium text-accent-green"
                     >
                       <span>{skill}</span>
                       <button

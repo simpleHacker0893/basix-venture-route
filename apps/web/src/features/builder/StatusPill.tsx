@@ -78,7 +78,7 @@ export function Card({
       aria-label={title}
       className={`flex flex-col gap-4 rounded-card border border-border bg-surface-strong p-6 shadow-card ${className}`}
     >
-      <div className="flex items-start justify-between gap-3">
+      <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="flex flex-col gap-1">
           {eyebrow ? <span className="font-mono text-[11px] uppercase tracking-wider text-ink-3">{eyebrow}</span> : null}
           <h2 className="font-display text-xl font-semibold text-ink">{title}</h2>
@@ -100,7 +100,7 @@ export function Toggle({
   description,
 }: Readonly<{ id: string; label: string; checked: boolean; onChange(next: boolean): void; description?: React.ReactNode }>) {
   return (
-    <div className="flex items-center justify-between gap-4">
+    <div className="flex min-h-11 items-center justify-between gap-4">
       <div className="flex flex-col gap-0.5">
         <label htmlFor={id} className="text-sm font-medium text-ink">
           {label}
