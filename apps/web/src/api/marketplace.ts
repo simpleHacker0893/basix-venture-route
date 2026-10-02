@@ -156,6 +156,19 @@ const Requests = z.array(Request);
 const Bids = z.array(Bid);
 const Bookings = z.array(Booking);
 
+/** Calls made while the previous call is still pending get that same promise; nothing is cached after it settles. */
+function shareWhileInFlight<T>(call: () => Promise<T>): () => Promise<T> {
+  let pending: Promise<T> | null = null;
+  return () => {
+    if (pending === null) {
+      pending = call().finally(() => {
+        pending = null;
+      });
+    }
+    return pending;
+  };
+}
+
 export function createMarketplaceApi(baseUrl: string, fetchLike: FetchLike, getToken: GetToken): MarketplaceApi {
   const request = createRequest(baseUrl, fetchLike, getToken);
   const id = encodeURIComponent;
@@ -176,7 +189,9 @@ export function createMarketplaceApi(baseUrl: string, fetchLike: FetchLike, getT
     listMyBookings: () => request("/api/me/bookings", Bookings),
     getDashboard: () => request("/api/me/dashboard", Dashboard),
     postRole: (choice) => request("/api/me/role", RoleResponse, jsonPost(choice)),
-    getProfile: () => request("/api/me/profile", BuilderProfile),
+    // The shell's status chip and the home page ask for the profile in the same tick; share the
+    // one request while it is in flight. Nothing is kept after it settles, so a save is never stale.
+    getProfile: shareWhileInFlight(() => request("/api/me/profile", BuilderProfile)),
     putProfile: (input) => request("/api/me/profile", BuilderProfile, jsonPut(input)),
     listCredentials: () => request("/api/me/credentials", Credentials),
     postCredential: (input) => request("/api/me/credentials", Credential, jsonPost(input)),
