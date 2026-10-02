@@ -13,6 +13,9 @@ import { helpClass } from "./formStyles";
 import { ShowcaseEditor } from "./ShowcaseEditor";
 import { Card, ShowcaseStatusPill, StatusPill } from "./StatusPill";
 
+/** Only web links become anchors; the engine validates too, this keeps a stray scheme inert. */
+const isWebUrl = (url: string | null): url is string => url !== null && /^https?:\/\//i.test(url);
+
 const PENDING_NOTE = "A BASIX admin reviews every change before it goes live.";
 
 type ProjectsCardProps = Readonly<{
@@ -25,6 +28,8 @@ export function ProjectsCard({ projects, hasProfile, onSaveShowcase }: ProjectsC
   const [expanded, setExpanded] = useState<string | null>(null);
   return (
     <Card
+      id="showcase"
+      className="scroll-mt-24"
       title="Showcase projects"
       eyebrow="Proof"
       lead="A confirmed completed project demonstrates its skills (verified-for-skill, evidence project)."
@@ -37,6 +42,9 @@ export function ProjectsCard({ projects, hasProfile, onSaveShowcase }: ProjectsC
         </Link>
       }
     >
+      <Link to="/showcase" className="w-fit text-[13px] text-ink-2 underline-offset-4 hover:text-accent-green hover:underline">
+        View public Showcase ↗
+      </Link>
       {!hasProfile ? <p className={helpClass}>Save your profile first, then add projects.</p> : null}
       {projects.length > 0 ? (
         <ul aria-label="Projects" className="flex flex-col divide-y divide-border">
@@ -71,6 +79,27 @@ export function ProjectsCard({ projects, hasProfile, onSaveShowcase }: ProjectsC
                     Edit showcase
                   </button>
                 </div>
+              </div>
+              <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-[13px]">
+                {isWebUrl(project.liveUrl) ? (
+                  <a href={project.liveUrl} target="_blank" rel="noopener noreferrer" className="text-ink-2 underline-offset-4 hover:text-accent-green hover:underline">
+                    Project link ↗
+                  </a>
+                ) : null}
+                {isWebUrl(project.demoUrl) ? (
+                  <a href={project.demoUrl} target="_blank" rel="noopener noreferrer" className="text-ink-2 underline-offset-4 hover:text-accent-green hover:underline">
+                    Demo link ↗
+                  </a>
+                ) : null}
+                {!isWebUrl(project.liveUrl) && !isWebUrl(project.demoUrl) ? (
+                  <button
+                    type="button"
+                    onClick={() => setExpanded(project.id)}
+                    className="text-ink-2 underline-offset-4 hover:text-accent-green hover:underline"
+                  >
+                    Add a link
+                  </button>
+                ) : null}
               </div>
               {project.showcaseStatus === "pending" ? <p className="text-[13px] text-ink-2">{PENDING_NOTE}</p> : null}
               {expanded === project.id ? <ShowcaseEditor project={project} onSave={onSaveShowcase} /> : null}

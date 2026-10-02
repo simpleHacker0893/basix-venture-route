@@ -1,19 +1,21 @@
 /**
  * /choose-role: where Clerk lands a signed-in account (D-03). With a role picked before sign-in
- * (D-54), `RoleIntentBridge` is already saving it, so this screen only says so. Without one, it is
+ * (D-54), this screen saves it itself (the bridge leaves /choose-role to it) and says so; a failed
+ * save shows "We couldn't save your role" with Try again instead of moving on. Without one, it is
  * the fallback "Who are you?": a card selects, "Continue as <role>" posts the one-time
  * POST /api/me/role (a second call answers 409), then the Clerk user is reloaded and the screen
  * moves to the role's home. A user who already has a role goes straight home.
  */
 import type { UserRole } from "@venture-route/contracts";
 import { ArrowRight } from "lucide-react";
-import { useState } from "react";
-import { Navigate, useNavigate } from "react-router";
+import { useEffect, useRef, useState } from "react";
+import { Navigate, useLocation, useNavigate } from "react-router";
 
 import { useMarketplaceApi } from "../../api/marketplaceContext";
 import { useAuthState } from "../../auth/authContext";
 import { ROLE_HOME } from "../../auth/config";
-import { readRoleIntent } from "../../lib/roleIntent";
+import { clearRoleIntent, readRoleIntent, readRoleParam, withoutRoleParam } from "../../lib/roleIntent";
+import { ROLE_SAVE_FAILED, saveRole } from "../../lib/saveRole";
 import { AuthShell, StepEyebrow } from "./AuthShell";
 import { NotConfiguredPanel } from "./NotConfiguredPanel";
 import { RoleCards } from "./RoleCards";
@@ -22,14 +24,44 @@ export function RoleSelect() {
   const auth = useAuthState();
   const api = useMarketplaceApi();
   const navigate = useNavigate();
+  const { pathname, search, hash } = useLocation();
+  // Session storage first; the ?role= the sign-in redirect carried covers a lost tab (founder or builder only).
   const [pending] = useState(() => {
     const intent = readRoleIntent();
-    return intent === "founder" || intent === "builder" ? intent : null;
+    return intent === "founder" || intent === "builder" ? intent : readRoleParam(search);
   });
   const [manual, setManual] = useState(false);
   const [selected, setSelected] = useState<UserRole>(pending ?? "founder");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [intentFailed, setIntentFailed] = useState(false);
+  const intentStarted = useRef(false);
+  const ready = auth.configured && auth.isLoaded && auth.isSignedIn && auth.role === null;
+
+  /** Saves the role picked before sign-in; on failure stays here and offers Try again. */
+  async function saveIntent(role: UserRole) {
+    setIntentFailed(false);
+    if ((await saveRole(api, role)).kind === "failed") {
+      setIntentFailed(true);
+      return;
+    }
+    await auth.reload();
+    navigate(ROLE_HOME[role], { replace: true });
+  }
+
+  // The pick is held in state now; drop ?role= from the address bar.
+  useEffect(() => {
+    if (readRoleParam(search) !== null) navigate({ pathname, search: withoutRoleParam(search), hash }, { replace: true });
+  }, [navigate, pathname, search, hash]);
+
+  useEffect(() => {
+    if (!ready || !pending || manual || intentStarted.current) return;
+    intentStarted.current = true;
+    clearRoleIntent();
+    void saveIntent(pending);
+    // saveIntent only closes over values that are stable for this mount; the ref guards a repeat.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [ready, pending, manual]);
 
   if (!auth.configured) {
     return (
@@ -58,9 +90,22 @@ export function RoleSelect() {
           <h1 className="font-display text-[34px] font-normal leading-[1.08] tracking-[-0.02em] text-ink sm:text-[44px]">
             Setting up your {pending} account…
           </h1>
-          <p aria-live="polite" className="text-[15px] leading-relaxed text-ink-2">
-            Saving the role you picked. You’ll land on your home in a moment.
-          </p>
+          {intentFailed ? (
+            <div role="alert" className="flex flex-col items-start gap-3 rounded-card border border-danger/40 bg-danger-tint px-3 py-3 text-sm text-danger">
+              <p>{ROLE_SAVE_FAILED}</p>
+              <button
+                type="button"
+                onClick={() => void saveIntent(pending)}
+                className="h-10 rounded-xl bg-accent-green px-4 text-[14px] font-semibold text-white hover:bg-accent-green-hover"
+              >
+                Try again
+              </button>
+            </div>
+          ) : (
+            <p aria-live="polite" className="text-[15px] leading-relaxed text-ink-2">
+              Saving the role you picked. You’ll land on your home in a moment.
+            </p>
+          )}
           <button
             type="button"
             onClick={() => setManual(true)}
@@ -76,14 +121,15 @@ export function RoleSelect() {
   async function confirm() {
     setSaving(true);
     setError(null);
-    try {
-      await api.postRole({ role: selected });
-      await auth.reload();
-      navigate(ROLE_HOME[selected], { replace: true });
-    } catch (cause) {
-      setError(cause instanceof Error ? cause.message : "The role could not be saved.");
+    const result = await saveRole(api, selected);
+    if (result.kind !== "saved") {
+      // A 409 keeps its own message (the role was set elsewhere); any other failure gets the retry wording.
+      setError(result.kind === "conflict" ? result.message : ROLE_SAVE_FAILED);
       setSaving(false);
+      return;
     }
+    await auth.reload();
+    navigate(ROLE_HOME[selected], { replace: true });
   }
 
   return (
@@ -113,7 +159,7 @@ export function RoleSelect() {
           disabled={saving}
           className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-accent-green text-[16px] font-semibold text-white shadow-card transition-colors hover:bg-accent-green-hover disabled:opacity-70"
         >
-          {saving ? "Saving…" : `Continue as ${selected}`}
+          {saving ? "Saving…" : error ? "Try again" : `Continue as ${selected}`}
           <ArrowRight aria-hidden="true" className="h-4 w-4" />
         </button>
 

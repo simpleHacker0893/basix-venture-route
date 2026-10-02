@@ -6,6 +6,7 @@
  */
 import type { BuilderProfile, Credential, ShowcaseProject } from "@venture-route/contracts";
 import { useEffect, useState } from "react";
+import { useLocation } from "react-router";
 
 import { ApiNotFoundError } from "../../api/client";
 import { useMarketplaceApi } from "../../api/marketplaceContext";
@@ -29,6 +30,9 @@ export function ProfilePage() {
   const api = useMarketplaceApi();
   const [loaded, setLoaded] = useState<Loaded | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
+  // A message handed over by the screen that sent the builder here (e.g. a link that did not save).
+  const location = useLocation();
+  const notice = (location.state as { notice?: string } | null)?.notice ?? null;
 
   useEffect(() => {
     let cancelled = false;
@@ -47,6 +51,12 @@ export function ProfilePage() {
       cancelled = true;
     };
   }, [api]);
+
+  // The router scrolls to a hash before this async content exists, so finish the job once it does.
+  const ready = loaded !== null;
+  useEffect(() => {
+    if (ready && location.hash) document.getElementById(location.hash.slice(1))?.scrollIntoView({ block: "start" });
+  }, [ready, location.hash]);
 
   const profile = loaded?.profile ?? null;
   const pending = profile !== null && profile.accountStatus !== "confirmed";
@@ -83,6 +93,12 @@ export function ProfilePage() {
             confirms your account.
           </p>
         </section>
+      ) : null}
+
+      {notice ? (
+        <p role="status" className="rounded-card border border-amber-ink/40 bg-amber-fill/40 px-3 py-2 text-[13px] text-amber-ink">
+          {notice}
+        </p>
       ) : null}
 
       {loadError ? (

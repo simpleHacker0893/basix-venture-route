@@ -65,7 +65,7 @@ const NAV: Record<Role, readonly NavItem[]> = {
     { to: "/requests", label: "Open requests", icon: BriefcaseBusiness, tab: true },
     { to: "/home#bids", label: "My bids", icon: Send, tab: true },
     { to: "/home#interviews", label: "Interviews", icon: CalendarDays },
-    { to: "/showcase", label: "Showcase", icon: LayoutGrid },
+    { to: "/profile#showcase", label: "My showcase", icon: LayoutGrid },
   ],
   admin: [
     { to: "/admin", label: "Queue", icon: ListChecks, tab: true },

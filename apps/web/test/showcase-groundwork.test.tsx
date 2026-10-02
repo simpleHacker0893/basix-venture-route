@@ -7,6 +7,7 @@ import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it } from "vitest";
 
+import { ApiNotFoundError } from "../src/api/client";
 import { createOfflineSource } from "../src/api/offline";
 import { App } from "../src/App";
 import type { AuthState } from "../src/auth/authContext";
@@ -70,5 +71,45 @@ describe("public Showcase routes (spec #86 stories 30-31, 39)", () => {
     renderShell(undefined, "/showcase/venture-route");
 
     expect(await screen.findByRole("heading", { level: 1 })).toBeInTheDocument();
+  });
+});
+
+describe("the way back from the Showcase", () => {
+  const founderAuth: AuthState = { ...builderAuth, role: "founder", getToken: async () => "tok-founder" };
+
+  it("shows a Back to Home link to the builder's home when a builder is signed in", async () => {
+    renderShell(builderAuth, "/showcase");
+
+    expect(await screen.findByRole("link", { name: "← Back to Home" })).toHaveAttribute("href", "/home");
+  });
+
+  it("points a founder at the founder home", async () => {
+    renderShell(founderAuth, "/showcase");
+
+    expect(await screen.findByRole("link", { name: "← Back to Home" })).toHaveAttribute("href", "/route");
+  });
+
+  it("shows no back link when signed out", () => {
+    renderShell(undefined, "/showcase");
+
+    expect(screen.queryByRole("link", { name: "← Back to Home" })).not.toBeInTheDocument();
+  });
+
+  it("keeps the builder sidebar's My showcase pointing at the profile section, with a link to the public page", async () => {
+    const marketplace = fakeMarketplace({
+      getProfile: async () => {
+        throw new ApiNotFoundError();
+      },
+      listCredentials: async () => [],
+      listProjects: async () => [],
+    });
+    render(<App initialPath="/profile" source={source} auth={builderAuth} marketplace={marketplace} />);
+
+    const sections = await screen.findByRole("navigation", { name: "Sections" });
+    expect(within(sections).getByRole("link", { name: "My showcase" })).toHaveAttribute("href", "/profile#showcase");
+    expect(within(sections).queryByRole("link", { name: "Showcase" })).not.toBeInTheDocument();
+    const card = await screen.findByRole("region", { name: "Showcase projects" });
+    expect(card).toHaveAttribute("id", "showcase");
+    expect(within(card).getByRole("link", { name: /View public Showcase/ })).toHaveAttribute("href", "/showcase");
   });
 });

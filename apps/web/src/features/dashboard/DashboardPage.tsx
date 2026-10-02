@@ -286,9 +286,12 @@ export function DashboardPage() {
               className="flex scroll-mt-24 flex-col overflow-hidden rounded-2xl border border-border bg-surface-strong"
             >
               <div className="flex items-center justify-between gap-3 border-b border-border px-5 py-5 sm:px-7">
-                <h2 id="bids-heading" className="text-[18px] font-semibold text-ink sm:text-[20px]">
-                  Bids to review
-                </h2>
+                <div className="flex flex-col gap-1">
+                  <h2 id="bids-heading" className="text-[18px] font-semibold text-ink sm:text-[20px]">
+                    Bids to review
+                  </h2>
+                  <p className="text-[13.5px] text-ink-3">Builders who applied to work on your published request.</p>
+                </div>
                 <span className="text-[13.5px] text-ink-3">From confirmed builders</span>
               </div>
               {data.bidsReceived.length === 0 ? (

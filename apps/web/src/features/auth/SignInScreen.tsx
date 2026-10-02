@@ -2,9 +2,10 @@
  * /sign-in and /sign-up (design/refined-ui), role first (D-54). Step 1 "Who are you?" picks
  * founder or builder, or takes the "BASIX admin? Sign in" link; the pick is remembered for this tab
  * (lib/roleIntent.ts). Step 2 is Clerk's prebuilt sign-in or sign-up inside our card, with the pick
- * shown as a chip that goes back to step 1. After Clerk, `RoleIntentBridge` saves a new account's
- * role once through POST /api/me/role; an existing account keeps its role. Clerk's own sub-paths
- * (factor steps, SSO callback) always show the form. Visitors can still route without an account.
+ * shown as a chip that goes back to step 1. Step 1 waits for Clerk to load, so it never flashes
+ * for a signed-in visitor. After Clerk, `RoleIntentBridge` saves a new account's role once through
+ * POST /api/me/role; an existing account keeps its role. Clerk's own sub-paths (factor steps, SSO
+ * callback) always show the form. Visitors can still route without an account.
  */
 import { SignIn, SignUp } from "@clerk/react";
 import type { UserRole } from "@venture-route/contracts";
@@ -13,7 +14,7 @@ import { useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router";
 
 import { useAuthState, useClerkMounted } from "../../auth/authContext";
-import { readRoleIntent, writeRoleIntent, clearRoleIntent, type RoleIntent } from "../../lib/roleIntent";
+import { clearRoleIntent, readRoleIntent, roleRedirectUrl, writeRoleIntent, type RoleIntent } from "../../lib/roleIntent";
 import { AuthShell, StepEyebrow } from "./AuthShell";
 import { NotConfiguredPanel } from "./NotConfiguredPanel";
 import { RoleCards } from "./RoleCards";
@@ -63,6 +64,17 @@ export function SignInScreen() {
   function leave() {
     if (key !== "default") void navigate(-1);
     else void navigate("/");
+  }
+
+  // Clerk answers "signed out" until it has loaded, so step 1 would flash for a signed-in visitor.
+  if (atStart && intent === null && !auth.isLoaded) {
+    return (
+      <AuthShell step={1} onBack={leave}>
+        <p className="text-sm text-ink-muted" aria-live="polite">
+          Loading…
+        </p>
+      </AuthShell>
+    );
   }
 
   if (atStart && intent === null && !auth.isSignedIn) {
@@ -159,7 +171,7 @@ export function SignInScreen() {
                 routing="path"
                 path="/sign-up"
                 signInUrl="/sign-in"
-                fallbackRedirectUrl="/choose-role"
+                fallbackRedirectUrl={roleRedirectUrl(intent)}
                 appearance={clerkAppearance}
               />
             ) : (
@@ -167,7 +179,7 @@ export function SignInScreen() {
                 routing="path"
                 path="/sign-in"
                 signUpUrl="/sign-up"
-                fallbackRedirectUrl="/choose-role"
+                fallbackRedirectUrl={roleRedirectUrl(intent)}
                 appearance={clerkAppearance}
               />
             )}

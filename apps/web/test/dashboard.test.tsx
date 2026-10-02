@@ -171,6 +171,7 @@ describe("/dashboard", () => {
     expect(within(rows[0]!).getByRole("list", { name: `${constrained.title} progress` })).toHaveTextContent("Bids (1)");
 
     const bids = screen.getByRole("region", { name: "Bids to review" });
+    expect(within(bids).getByText("Builders who applied to work on your published request.")).toBeInTheDocument();
     expect(bids).toHaveTextContent("Naomi Chebet");
     expect(bids).toHaveTextContent("USD 120 / day");
     expect(bids).toHaveTextContent(`for ${constrained.title}`);

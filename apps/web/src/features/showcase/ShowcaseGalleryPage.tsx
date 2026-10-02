@@ -8,10 +8,12 @@
  */
 import type { ShowcasePage as ShowcasePageT, SkillId, Vertical } from "@venture-route/contracts";
 import { type FormEvent, useEffect, useMemo, useState } from "react";
-import { useSearchParams } from "react-router";
+import { Link, useSearchParams } from "react-router";
 
 import type { ShowcaseListParams } from "../../api/marketplace";
 import { useMarketplaceApi } from "../../api/marketplaceContext";
+import { useAuthState } from "../../auth/authContext";
+import { ROLE_HOME } from "../../auth/config";
 import { SKILL_LABELS, SKILLS, VERTICAL_LABELS, VERTICALS } from "../../lib/brief";
 import { errorMessage } from "../builder/formStyles";
 import { ShowcaseCard } from "./ShowcaseCard";
@@ -70,6 +72,9 @@ function chipClass(selected: boolean): string {
 
 export function ShowcaseGalleryPage() {
   const api = useMarketplaceApi();
+  const auth = useAuthState();
+  // A signed-in builder or founder always has a way back to their own home (admins keep the site nav).
+  const backTo = auth.isSignedIn && (auth.role === "builder" || auth.role === "founder") ? ROLE_HOME[auth.role] : null;
   const [params, setParams] = useSearchParams();
   const filters = useMemo(() => filtersFromParams(params), [params]);
   // The lazy initial value only seeds the box from the URL on first render (a chip click keeps
@@ -132,6 +137,11 @@ export function ShowcaseGalleryPage() {
 
   return (
     <div className="mx-auto flex w-full max-w-[1200px] flex-col gap-6 px-6 py-16">
+      {backTo ? (
+        <Link to={backTo} className="w-fit text-sm text-ink-2 underline-offset-4 hover:text-accent-green hover:underline">
+          ← Back to Home
+        </Link>
+      ) : null}
       <header className="flex flex-col gap-3">
         <h1 className="font-display text-4xl leading-tight text-ink">Showcase</h1>
         <p className="max-w-2xl text-sm leading-relaxed text-ink-muted">

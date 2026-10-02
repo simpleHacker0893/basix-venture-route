@@ -56,6 +56,7 @@ export function ShowcaseStatusPill({ status }: Readonly<{ status: ShowcaseStatus
 
 /** Card chrome shared by the profile and add-project screens (Stitch batch-3 cards). */
 export function Card({
+  id,
   title,
   eyebrow,
   lead,
@@ -63,6 +64,7 @@ export function Card({
   children,
   className = "",
 }: Readonly<{
+  id?: string;
   title: string;
   eyebrow?: string;
   lead?: string;
@@ -72,6 +74,7 @@ export function Card({
 }>) {
   return (
     <section
+      id={id}
       aria-label={title}
       className={`flex flex-col gap-4 rounded-card border border-border bg-surface-strong p-6 shadow-card ${className}`}
     >
