@@ -1,14 +1,16 @@
 /**
  * The split sign-in shell (design/refined-ui auth screens): a deep-forest panel with the mark, the
  * promise and the step progress, and the working area on paper. The steps follow the flow: choose
- * the one-time role (D-03, D-54), sign in with Clerk, then set up. On phones the panel collapses
+ * the one-time role (D-03, D-54), sign in with Clerk, then set up. The steps are the shared
+ * `Stepper` (components/Stepper.tsx): done, current and upcoming. On phones the panel collapses
  * into a header with the steps in a row.
  */
-import { ArrowLeft, Check } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
 import type { ReactNode } from "react";
 import { Link } from "react-router";
 
 import { LogoMark } from "../../components/Logo";
+import { Stepper } from "../../components/Stepper";
 
 const AUTH_STEPS = ["Choose role", "Sign in", "Set up"] as const;
 
@@ -20,61 +22,18 @@ type AuthShellProps = Readonly<{
   children: ReactNode;
 }>;
 
-function StepDot({ state }: Readonly<{ state: "done" | "current" | "todo" }>) {
-  if (state === "done") {
-    return (
-      <span aria-hidden="true" className="grid h-4 w-4 place-items-center rounded-full border-2 border-accent-on-dark">
-        <Check className="h-2.5 w-2.5 text-accent-on-dark" strokeWidth={3} />
-      </span>
-    );
-  }
-  return (
-    <span
-      aria-hidden="true"
-      className={
-        state === "current"
-          ? "h-4 w-4 rounded-full bg-accent-on-dark ring-4 ring-accent-on-dark/20"
-          : "h-4 w-4 rounded-full border-2 border-[#a7b8b0]/60"
-      }
-    />
-  );
-}
-
 function Steps({ step, layout }: Readonly<{ step: number; layout: "column" | "row" }>) {
-  const row = layout === "row";
   return (
-    <ol aria-label="Sign-in progress" className={row ? "flex items-center gap-2" : "flex flex-col"}>
-      {AUTH_STEPS.map((label, index) => {
-        const position = index + 1;
-        const state = position < step ? "done" : position === step ? "current" : "todo";
-        return (
-          <li
-            key={label}
-            aria-current={state === "current" ? "step" : undefined}
-            className={row ? "flex min-w-0 flex-1 items-center gap-2 last:flex-none" : "flex flex-col"}
-          >
-            <span className="flex items-center gap-3">
-              <StepDot state={state} />
-              <span
-                className={`whitespace-nowrap text-[14px] ${state === "current" ? "font-semibold text-[#f3f1ea]" : "text-[#a7b8b0]"}`}
-              >
-                {label}
-              </span>
-            </span>
-            {index < AUTH_STEPS.length - 1 ? (
-              <span
-                aria-hidden="true"
-                className={
-                  row
-                    ? `h-px min-w-4 flex-1 ${position < step ? "bg-accent-on-dark" : "bg-border-dark"}`
-                    : `ml-[7px] h-7 w-px ${position < step ? "bg-accent-on-dark" : "bg-border-dark"}`
-                }
-              />
-            ) : null}
-          </li>
-        );
-      })}
-    </ol>
+    <Stepper
+      ariaLabel="Sign-in progress"
+      layout={layout}
+      tone="dark"
+      size="sm"
+      steps={AUTH_STEPS.map((label, index) => ({
+        label,
+        state: index + 1 < step ? "done" : index + 1 === step ? "current" : "upcoming",
+      }))}
+    />
   );
 }
 
