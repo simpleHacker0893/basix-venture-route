@@ -36,7 +36,7 @@ function candidate(contact: Record<string, string>): Candidate {
     headline: "Backend builder",
     cohortId: "cohort-2026a",
     location: "Nairobi",
-    dayRate: 140,
+    hourlyRate: 18,
     modes: { remote: true, hybrid: true, onSite: false },
     availability: [{ start: "2026-09-15", end: "2026-10-20" }],
     skills: [
@@ -72,6 +72,7 @@ describe("/builders/:builderId", () => {
 
     expect(await screen.findByRole("heading", { level: 1, name: "Jane Mwangi" })).toBeInTheDocument();
     expect(screen.getByText("Confirmed by admin")).toBeInTheDocument();
+    expect(screen.getByText("USD 18 an hour")).toBeInTheDocument();
     expect(screen.getAllByText("Demo data").length).toBeGreaterThan(0);
 
     const contact = screen.getByRole("region", { name: "Shared contact" });

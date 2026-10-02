@@ -115,7 +115,7 @@ def test_brief_rejects_each_invalid_case_with_a_field_specific_message(
 BUILDER_PROFILE: dict[str, Any] = {
     "displayName": "Amina Otieno",
     "location": "Nairobi",
-    "dayRate": 150,
+    "hourlyRate": 19,
     "modes": {"remote": True, "hybrid": False, "onSite": False},
     "selfDescribedSkills": [],
     "sharing": {"email": True, "phone": False, "linkedin": False},
@@ -150,3 +150,25 @@ def test_profile_input_skill_labels_validation_names_the_field(
     assert len(errors) == 1
     location = ".".join(str(part) for part in errors[0]["loc"])
     assert location.split(".")[0] == field
+
+
+@pytest.mark.parametrize("rate", [0, 50])
+def test_profile_input_accepts_an_hourly_rate_of_zero_to_fifty(rate: int) -> None:
+    """D-59: USD 0-50 an hour, 0 meaning free or volunteer."""
+    assert ProfileInput.model_validate({**BUILDER_PROFILE, "hourlyRate": rate}).hourly_rate == rate
+
+
+@pytest.mark.parametrize("rate", [-1, 51, 12.5])
+def test_profile_input_rejects_an_hourly_rate_outside_zero_to_fifty(rate: float) -> None:
+    with pytest.raises(ValidationError) as excinfo:
+        ProfileInput.model_validate({**BUILDER_PROFILE, "hourlyRate": rate})
+
+    errors = excinfo.value.errors()
+    assert [error["loc"] for error in errors] == [("hourlyRate",)]
+
+
+def test_profile_input_no_longer_takes_a_day_rate() -> None:
+    body = {key: value for key, value in BUILDER_PROFILE.items() if key != "hourlyRate"}
+
+    with pytest.raises(ValidationError):
+        ProfileInput.model_validate({**body, "dayRate": 150})

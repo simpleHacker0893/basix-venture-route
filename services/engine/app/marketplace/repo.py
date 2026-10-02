@@ -509,7 +509,7 @@ async def confirmed_builders(session: AsyncSession) -> list[ConfirmedBuilder]:
         out.append(
             ConfirmedBuilder(
                 builder_id=profile.builder_id,
-                day_rate=profile.day_rate,
+                hourly_rate=profile.hourly_rate,
                 location=profile.location,
                 modes=modes,
                 availability=availability,

@@ -45,7 +45,7 @@ type Draft = {
   headline: string;
   cohortId: string;
   location: string;
-  dayRate: string;
+  hourlyRate: string;
   modes: DeliveryModes;
   selfDescribedSkills: SkillId[];
   phone: string;
@@ -76,7 +76,7 @@ function draftFrom(profile: BuilderProfile | null): Draft {
     headline: profile?.headline ?? "",
     cohortId: profile?.cohortId ?? "",
     location: profile?.location ?? "",
-    dayRate: profile ? String(profile.dayRate) : "",
+    hourlyRate: profile ? String(profile.hourlyRate) : "",
     modes: profile?.modes ?? { remote: false, hybrid: false, onSite: false },
     selfDescribedSkills: profile?.selfDescribedSkills ?? [],
     phone: profile?.contact.phone ?? "",
@@ -102,7 +102,7 @@ function toInput(draft: Draft): unknown {
     headline: draft.headline.trim(),
     cohortId: draft.cohortId.trim() || null,
     location: draft.location.trim(),
-    dayRate: draft.dayRate === "" ? undefined : Number(draft.dayRate),
+    hourlyRate: draft.hourlyRate === "" ? undefined : Number(draft.hourlyRate),
     modes: draft.modes,
     selfDescribedSkills: draft.selfDescribedSkills,
     phone: draft.phone.trim() || null,
@@ -424,32 +424,34 @@ export function ProfileForm({ profile, onSave }: ProfileFormProps) {
             </Button>
           </div>
           <div className="flex flex-col gap-1 border-t border-border pt-4">
-            <label htmlFor="profile-day-rate" className={labelClass}>
-              Day rate
+            <label htmlFor="profile-hourly-rate" className={labelClass}>
+              Hourly rate (USD, 0–50)
             </label>
             <div
               className={`flex h-10 w-fit items-center rounded-card border bg-surface-strong px-3 font-mono focus-within:border-accent-green focus-within:ring-2 focus-within:ring-ring/50 ${
-                errors.dayRate ? "border-danger" : "border-border-strong"
+                errors.hourlyRate ? "border-danger" : "border-border-strong"
               }`}
             >
               <span className="text-ink-3">USD</span>
               <input
-                id="profile-day-rate"
+                id="profile-hourly-rate"
                 inputMode="numeric"
                 type="number"
-                min={1}
-                value={draft.dayRate}
-                aria-invalid={invalid("dayRate")}
-                aria-describedby={describedBy("dayRate") ?? "profile-day-rate-help"}
-                onChange={(e) => patch({ dayRate: e.target.value })}
+                min={0}
+                max={50}
+                step={1}
+                value={draft.hourlyRate}
+                aria-invalid={invalid("hourlyRate")}
+                aria-describedby={describedBy("hourlyRate") ?? "profile-hourly-rate-help"}
+                onChange={(e) => patch({ hourlyRate: e.target.value })}
                 className="w-24 bg-transparent px-2 focus:outline-none"
               />
-              <span className="text-ink-3">/ day</span>
+              <span className="text-ink-3">an hour</span>
             </div>
-            <span id="profile-day-rate-help" className={helpClass}>
-              Compared with the founder's daily budget by the assembler's budget-fit rule.
+            <span id="profile-hourly-rate-help" className={helpClass}>
+              A whole number from 0 (free) to 50. Compared with the founder's hourly budget by the assembler's budget-fit rule.
             </span>
-            <FieldError field="dayRate" errors={errors} />
+            <FieldError field="hourlyRate" errors={errors} />
           </div>
         </Card>
 

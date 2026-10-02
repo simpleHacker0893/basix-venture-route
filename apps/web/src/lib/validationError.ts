@@ -30,7 +30,7 @@ export const PROFILE_FIELDS: readonly string[] = [
   "headline",
   "cohortId",
   "location",
-  "dayRate",
+  "hourlyRate",
   "modes",
   "selfDescribedSkills",
   "phone",

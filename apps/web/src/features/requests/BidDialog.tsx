@@ -67,7 +67,7 @@ function mapFailure(cause: unknown): { form?: string; fields: Record<string, str
 
 export function BidDialog({ request, profile, onClose, onPlaced }: Props) {
   const api = useMarketplaceApi();
-  const [rate, setRate] = useState(profile ? String(profile.dayRate) : "");
+  const [rate, setRate] = useState(profile ? String(profile.hourlyRate) : "");
   const [message, setMessage] = useState("");
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [formError, setFormError] = useState<string | null>(null);

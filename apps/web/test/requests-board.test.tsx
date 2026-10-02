@@ -128,7 +128,7 @@ const profile: BuilderProfile = {
   headline: "Mobile builder",
   cohortId: null,
   location: "Nairobi",
-  dayRate: 120,
+  hourlyRate: 15,
   modes: { remote: true, hybrid: false, onSite: false },
   selfDescribedSkills: ["mobile"],
   contact: { email: "naomi@example.com", phone: null, linkedin: null },

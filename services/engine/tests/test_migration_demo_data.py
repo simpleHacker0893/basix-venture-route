@@ -161,7 +161,7 @@ async def _seed_chain(session: AsyncSession) -> Seeded:
         builder_id=f"builder-{uuid4().hex[:8]}",
         display_name="Test Builder",
         location="nairobi",
-        day_rate=100,
+        hourly_rate=13,
         supports_remote=True,
     )
     session.add(profile)
@@ -188,7 +188,7 @@ def _rows(seeded: Seeded) -> list[Callable[[], DemoRow]]:
             builder_id=f"builder-{uuid4().hex[:8]}",
             display_name="Other",
             location="kisumu",
-            day_rate=90,
+            hourly_rate=11,
             supports_hybrid=True,
         ),
         lambda: Skill(id=f"skill-{uuid4().hex[:6]}", name="Temporary"),

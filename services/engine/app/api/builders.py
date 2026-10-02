@@ -57,7 +57,7 @@ async def candidate(
         headline=profile.headline,
         cohort_id=profile.cohort_id,
         location=profile.location,
-        day_rate=profile.day_rate,
+        hourly_rate=profile.hourly_rate,
         modes=DeliveryModes(
             remote=profile.supports_remote,
             hybrid=profile.supports_hybrid,

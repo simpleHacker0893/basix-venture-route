@@ -1,6 +1,6 @@
 """Seam: migration 0003_showcase over TEST_DATABASE_URL (#88, spec #86 §Store, D-19).
 
-Acceptance §Part A Must 1: `alembic upgrade head` applies 0003 clean, `alembic downgrade -1 &&
+Acceptance §Part A Must 1: `alembic upgrade head` applies 0003 clean, `alembic downgrade 0002 &&
 alembic upgrade head` runs clean, and rows written under 0002 keep their values across the
 upgrade. The sync tests drive Alembic directly (its env.py runs its own event loop) and leave the
 database at head; the async tests prove the new CHECKs and defaults through the ORM session.
@@ -111,7 +111,7 @@ def test_upgrade_head_adds_the_showcase_columns(at_head: str) -> None:
 
 
 def test_downgrade_removes_them_and_upgrade_restores_them(at_head: str) -> None:
-    command.downgrade(_config(), "-1")
+    command.downgrade(_config(), "0002")
     schema = _schema(at_head)
 
     assert not PROJECT_COLUMNS & schema["columns"]["projects"].keys()
@@ -155,7 +155,8 @@ def test_rows_written_under_0002_keep_their_values(at_head: str) -> None:
         {"credential": ids["credential"], "profile": ids["profile"]},
     )
     try:
-        command.upgrade(_config(), "head")
+        # 0003, not head: 0004 (D-59) renames day_rate and converts it to an hourly rate.
+        command.upgrade(_config(), "0003")
 
         project = _run(
             at_head,
@@ -230,7 +231,7 @@ async def _chain(session: AsyncSession) -> tuple[User, Profile, Project]:
         builder_id=f"builder-{uuid4().hex[:8]}",
         display_name="Showcase Builder",
         location="nairobi",
-        day_rate=100,
+        hourly_rate=13,
         supports_remote=True,
     )
     session.add(profile)

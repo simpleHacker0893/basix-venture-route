@@ -124,7 +124,7 @@ async def _render(session: AsyncSession, user: User, profile: Profile) -> Builde
         headline=profile.headline,
         cohort_id=profile.cohort_id,
         location=profile.location,
-        day_rate=profile.day_rate,
+        hourly_rate=profile.hourly_rate,
         modes=DeliveryModes(
             remote=profile.supports_remote,
             hybrid=profile.supports_hybrid,
@@ -185,14 +185,14 @@ async def put_profile(
             builder_id=builder_id,
             display_name=body.display_name,
             location=body.location,
-            day_rate=body.day_rate,
+            hourly_rate=body.hourly_rate,
         )
         session.add(profile)
     profile.display_name = body.display_name
     profile.headline = body.headline
     profile.cohort_id = body.cohort_id
     profile.location = body.location
-    profile.day_rate = body.day_rate
+    profile.hourly_rate = body.hourly_rate
     profile.supports_remote = body.modes.remote
     profile.supports_hybrid = body.modes.hybrid
     profile.supports_onsite = body.modes.on_site

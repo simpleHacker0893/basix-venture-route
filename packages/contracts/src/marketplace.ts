@@ -38,11 +38,13 @@ export const DisplayName = z.string().min(1).max(80);
 export const Headline = z.string().max(200);
 export const ContactField = z.string().max(100);
 export const CohortId = z.string().min(1).max(40);
-/** A positive integer USD amount. Ticket #159 turns the profile rate into `hourlyRate` (0-50) and
- * ticket #160 the request budget into `hourlyBudget` (D-59); until then both keep this shape. */
+/** A positive integer USD amount: the request budget until ticket #160 (`hourlyBudget`, D-59)
+ * and a bid's own rate. */
 export const PositiveUsd = z.int().positive();
-/** Integer USD per day (D-16), until ticket #159. */
+/** A bid's rate (D-16); the profile rate is `HourlyRate` below. */
 export const DayRate = PositiveUsd;
+/** A builder's rate: a whole USD 0-50 an hour, 0 meaning free or volunteer (D-59). */
+export const HourlyRate = z.int().min(0).max(50);
 
 /**
  * Sprint 005a (spec #86, D-43/D-52): showcase description, plain link strings (the `https://` /
@@ -91,7 +93,7 @@ export const ProfileInput = z.strictObject({
   headline: Headline.default(""),
   cohortId: CohortId.nullable().default(null),
   location: Location,
-  dayRate: DayRate,
+  hourlyRate: HourlyRate,
   modes: DeliveryModes,
   selfDescribedSkills: z.array(SkillId).max(9),
   phone: ContactField.nullable().default(null),
@@ -131,7 +133,7 @@ export const BuilderProfile = z.strictObject({
   headline: Headline,
   cohortId: CohortId.nullable().default(null),
   location: Location,
-  dayRate: DayRate,
+  hourlyRate: HourlyRate,
   modes: DeliveryModes,
   selfDescribedSkills: z.array(SkillId),
   contact: Contact,
@@ -348,7 +350,7 @@ export const Candidate = z.strictObject({
   headline: Headline,
   cohortId: CohortId.nullable().default(null),
   location: Location,
-  dayRate: DayRate,
+  hourlyRate: HourlyRate,
   modes: DeliveryModes,
   availability: z.array(AvailabilityRange),
   skills: z.array(ProfileSkill),

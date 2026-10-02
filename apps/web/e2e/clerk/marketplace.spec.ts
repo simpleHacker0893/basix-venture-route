@@ -43,7 +43,7 @@ test("builder creates a profile with availability, a mobile credential and a lic
   const form = page.getByRole("form", { name: "Builder profile" });
   await form.getByLabel("Display name").fill(displayName());
   await form.getByLabel("Primary location / base").fill("Nairobi");
-  await form.getByLabel("Day rate").fill("120");
+  await form.getByLabel("Hourly rate (USD, 0–50)").fill("15");
   await form.getByRole("checkbox", { name: "Remote" }).check({ force: true });
   await form.getByRole("checkbox", { name: "Mobile" }).check({ force: true });
   await page.getByRole("button", { name: /September 22nd, 2026/ }).first().click();

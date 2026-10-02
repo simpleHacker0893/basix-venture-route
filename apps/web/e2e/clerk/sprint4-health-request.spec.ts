@@ -39,7 +39,7 @@ test("admin confirms the builder's account and python credential", async ({ page
     headline: "Python builder",
     cohortId: null,
     location: "Nairobi",
-    dayRate: 120,
+    hourlyRate: 15,
     modes: { remote: true, hybrid: true, onSite: false },
     selfDescribedSkills: ["python"],
     phone: null,
@@ -107,5 +107,5 @@ test("builder sees Eligible · Python on the Health request and bids", async ({ 
   await dialog.getByRole("button", { name: "Submit bid" }).click();
 
   await expect(dialog).toBeHidden();
-  await expect(card.getByText("Bid placed · USD 120 / day")).toBeVisible();
+  await expect(card.getByText("Bid placed · USD 15 / day")).toBeVisible();
 });

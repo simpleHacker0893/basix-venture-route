@@ -84,11 +84,11 @@ ADMIN_KEY = "seed-basix-admin"
 ADMIN_CLERK_ID = "seed_basix_admin"
 EMAIL_DOMAIN = "seed.venture-route.invalid"
 
-# Schema placeholders, not claims: the store requires a location, a day rate and one mode on
+# Schema placeholders, not claims: the store requires a location, an hourly rate and one mode on
 # every profile. The Showcase never displays them and no route reads them (seed builders have no
 # availability rows, so `available-for-brief` never holds for them).
 PLACEHOLDER_LOCATION = "Schema placeholder"
-PLACEHOLDER_DAY_RATE = 1
+PLACEHOLDER_HOURLY_RATE = 1
 
 # Gallery order is newest confirmation first: entry 0 gets the latest instant.
 SHOWCASE_CONFIRMED_BASE = datetime(2026, 9, 22, 9, 0, tzinfo=UTC)
@@ -389,7 +389,7 @@ async def seed(session: AsyncSession, demo: ShowcaseDemo) -> tuple[int, int]:
                 "headline": owner.headline,
                 "cohort_id": owner.cohort,
                 "location": PLACEHOLDER_LOCATION,
-                "day_rate": PLACEHOLDER_DAY_RATE,
+                "hourly_rate": PLACEHOLDER_HOURLY_RATE,
                 "supports_remote": True,
                 "supports_hybrid": False,
                 "supports_onsite": False,

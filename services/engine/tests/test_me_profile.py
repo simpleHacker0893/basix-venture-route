@@ -32,7 +32,7 @@ def profile_input(**overrides: Any) -> dict[str, Any]:
         "headline": "Backend builder",
         "cohortId": "cohort-2026a",
         "location": "Nairobi",
-        "dayRate": 140,
+        "hourlyRate": 18,
         "modes": {"remote": True, "hybrid": True, "onSite": False},
         "selfDescribedSkills": ["python", "backend"],
         "phone": "+254700000000",
@@ -128,7 +128,7 @@ async def test_put_creates_the_profile_with_a_slug_and_self_described_skills(
     assert body["displayName"] == "Jane Mwangi"
     assert body["cohortId"] == "cohort-2026a"
     assert body["location"] == "Nairobi"
-    assert body["dayRate"] == 140
+    assert body["hourlyRate"] == 18
     assert body["modes"] == {"remote": True, "hybrid": True, "onSite": False}
     assert body["availability"] == [{"start": "2026-09-22", "end": "2026-10-20"}]
     assert body["contact"] == {
@@ -162,7 +162,7 @@ async def test_put_replaces_fields_and_availability_but_never_the_slug(
         "/api/me/profile",
         json=profile_input(
             displayName="Jane W. Mwangi",
-            dayRate=160,
+            hourlyRate=20,
             selfDescribedSkills=["rust"],
             availability=[
                 {"start": "2026-10-01", "end": "2026-10-05"},
@@ -176,7 +176,7 @@ async def test_put_replaces_fields_and_availability_but_never_the_slug(
     body = response.json()
     assert body["builderId"] == "jane-mwangi"
     assert body["displayName"] == "Jane W. Mwangi"
-    assert body["dayRate"] == 160
+    assert body["hourlyRate"] == 20
     assert [skill["id"] for skill in body["skills"]] == ["rust"]
     assert body["availability"] == [
         {"start": "2026-10-01", "end": "2026-10-05"},
@@ -212,7 +212,9 @@ async def test_slug_collisions_get_a_numeric_suffix_including_seed_builders(
 @pytest.mark.parametrize(
     ("override", "fragment"),
     [
-        ({"dayRate": 0}, "dayRate"),
+        ({"hourlyRate": -1}, "hourlyRate"),
+        ({"hourlyRate": 51}, "hourlyRate"),
+        ({"hourlyRate": 12.5}, "hourlyRate"),
         ({"modes": {"remote": False, "hybrid": False, "onSite": False}}, "modes"),
         ({"selfDescribedSkills": ["cobol"]}, "selfDescribedSkills"),
         ({"cohortId": "cohort-1999z"}, "cohortId"),
@@ -239,6 +241,23 @@ async def test_invalid_profile_input_is_422_with_the_field_named(
     assert response.status_code == 422
     assert response.json()["type"] == "validation-error"
     assert fragment in response.json()["message"]
+
+
+@pytest.mark.parametrize("rate", [0, 50])
+async def test_hourly_rate_accepts_zero_and_fifty(
+    api: AsyncClient, bearer: Bearer, db_session: AsyncSession, rate: int
+) -> None:
+    """D-59: a builder's rate is a whole USD 0-50 an hour; 0 means free or volunteer."""
+    await _user(db_session, "user_rate")
+
+    response = await api.put(
+        "/api/me/profile",
+        json=profile_input(hourlyRate=rate),
+        headers=bearer(sub="user_rate", role="builder"),
+    )
+
+    assert response.status_code == 200, response.text
+    assert response.json()["hourlyRate"] == rate
 
 
 async def test_profile_routes_are_builder_only(

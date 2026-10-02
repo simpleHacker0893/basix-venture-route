@@ -483,11 +483,6 @@
         ],
         "type": "object"
       },
-      "dayRate": {
-        "exclusiveMinimum": 0,
-        "maximum": 9007199254740991,
-        "type": "integer"
-      },
       "demoData": {
         "default": true,
         "type": "boolean"
@@ -512,6 +507,11 @@
       "headline": {
         "maxLength": 200,
         "type": "string"
+      },
+      "hourlyRate": {
+        "maximum": 50,
+        "minimum": 0,
+        "type": "integer"
       },
       "linkedinUrl": {
         "anyOf": [
@@ -668,9 +668,9 @@
       "builderId",
       "confirmed",
       "contact",
-      "dayRate",
       "displayName",
       "headline",
+      "hourlyRate",
       "location",
       "modes",
       "selfDescribedSkills",
@@ -761,11 +761,6 @@
         },
         "type": "object"
       },
-      "dayRate": {
-        "exclusiveMinimum": 0,
-        "maximum": 9007199254740991,
-        "type": "integer"
-      },
       "demoData": {
         "default": true,
         "type": "boolean"
@@ -778,6 +773,11 @@
       "headline": {
         "maxLength": 200,
         "type": "string"
+      },
+      "hourlyRate": {
+        "maximum": 50,
+        "minimum": 0,
+        "type": "integer"
       },
       "location": {
         "maxLength": 100,
@@ -936,9 +936,9 @@
       "builderId",
       "confirmed",
       "contact",
-      "dayRate",
       "displayName",
       "headline",
+      "hourlyRate",
       "location",
       "modes",
       "projects",
@@ -4234,11 +4234,6 @@
         ],
         "default": null
       },
-      "dayRate": {
-        "exclusiveMinimum": 0,
-        "maximum": 9007199254740991,
-        "type": "integer"
-      },
       "displayName": {
         "maxLength": 80,
         "minLength": 1,
@@ -4260,6 +4255,11 @@
         "default": "",
         "maxLength": 200,
         "type": "string"
+      },
+      "hourlyRate": {
+        "maximum": 50,
+        "minimum": 0,
+        "type": "integer"
       },
       "linkedin": {
         "anyOf": [
@@ -4383,8 +4383,8 @@
     },
     "required": [
       "availability",
-      "dayRate",
       "displayName",
+      "hourlyRate",
       "location",
       "modes",
       "selfDescribedSkills",

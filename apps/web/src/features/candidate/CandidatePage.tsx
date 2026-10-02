@@ -13,7 +13,7 @@ import { ApiNotFoundError } from "../../api/client";
 import { useMarketplaceApi } from "../../api/marketplaceContext";
 import { DemoDataPill } from "../../components/DemoDataPill";
 import { SKILL_LABELS, VERTICAL_LABELS } from "../../lib/brief";
-import { EVIDENCE_LABEL, dateRange, isoDate, usd } from "../../lib/format";
+import { EVIDENCE_LABEL, dateRange, isoDate, usdPerHour } from "../../lib/format";
 import { errorMessage } from "../builder/formStyles";
 import { EvidenceBadge } from "../route/Badges";
 
@@ -168,7 +168,7 @@ function CandidateView({ candidate }: Readonly<{ candidate: Candidate }>) {
         <dl className="grid grid-cols-1 gap-4 border-t border-border px-6 py-4 font-mono text-[13px] sm:grid-cols-2 lg:grid-cols-4">
           <div className="flex flex-col gap-0.5">
             <dt className="text-ink-3">Rate:</dt>
-            <dd className="text-ink">{usd(candidate.dayRate)}</dd>
+            <dd className="text-ink">{usdPerHour(candidate.hourlyRate)}</dd>
           </div>
           <div className="flex flex-col gap-0.5">
             <dt className="text-ink-3">Availability:</dt>

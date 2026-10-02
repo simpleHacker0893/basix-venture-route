@@ -6,8 +6,8 @@ export function usdPerHour(amount: number): string {
   return `USD ${amount} an hour`;
 }
 
-/** `USD 120 / day` (D-16). Only the marketplace profile rate and request budget still use it;
- * tickets #159 and #160 move them to `usdPerHour` (D-59). */
+/** `USD 120 / day` (D-16). Only the request budget and a bid's own rate still use it; ticket #160
+ * moves the request budget to `usdPerHour` (D-59). */
 export function usd(amount: number): string {
   return `USD ${amount} / day`;
 }

@@ -51,6 +51,8 @@ Location = Annotated[str, Field(min_length=1, max_length=100)]
 ContactField = Annotated[str, Field(max_length=100)]
 CohortId = Annotated[str, Field(min_length=1, max_length=40)]
 Title = Annotated[str, Field(min_length=1, max_length=120)]
+# D-59: a builder's rate is a whole USD 0-50 an hour; 0 means free or volunteer.
+HourlyRate = Annotated[int, Field(ge=0, le=50)]
 Issuer = Annotated[str, Field(min_length=1, max_length=120)]
 
 # Sprint 005a (spec #86, D-43/D-52): showcase description, plain link strings (the `https://` /
@@ -115,7 +117,7 @@ class ProfileInput(Wire):
     headline: Headline = ""
     cohort_id: CohortId | None = Field(default=None, alias="cohortId")
     location: Location
-    day_rate: PositiveSafeInt = Field(alias="dayRate")
+    hourly_rate: HourlyRate = Field(alias="hourlyRate")
     modes: DeliveryModes
     self_described_skills: list[SkillId] = Field(alias="selfDescribedSkills", max_length=9)
     phone: ContactField | None = None
@@ -198,7 +200,7 @@ class BuilderProfile(Wire):
     headline: Headline
     cohort_id: CohortId | None = Field(default=None, alias="cohortId")
     location: Location
-    day_rate: PositiveSafeInt = Field(alias="dayRate")
+    hourly_rate: HourlyRate = Field(alias="hourlyRate")
     modes: DeliveryModes
     self_described_skills: list[SkillId] = Field(alias="selfDescribedSkills")
     contact: Contact
@@ -408,7 +410,7 @@ class Candidate(Wire):
     headline: Headline
     cohort_id: CohortId | None = Field(default=None, alias="cohortId")
     location: Location
-    day_rate: PositiveSafeInt = Field(alias="dayRate")
+    hourly_rate: HourlyRate = Field(alias="hourlyRate")
     modes: DeliveryModes
     availability: list[AvailabilityRange]
     skills: list[ProfileSkill]

@@ -43,7 +43,7 @@ test("builder creates a profile and a project, then puts it on the Showcase (Pen
     headline: "Showcase e2e builder",
     cohortId: null,
     location: "Nairobi",
-    dayRate: 150,
+    hourlyRate: 19,
     modes: { remote: true, hybrid: false, onSite: false },
     selfDescribedSkills: ["frontend"],
     phone: null,

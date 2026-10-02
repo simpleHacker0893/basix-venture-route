@@ -34,7 +34,7 @@ function profile(overrides: Partial<BuilderProfile> = {}): BuilderProfile {
     headline: "Python and MeTTa builder",
     cohortId: "cohort-2026a",
     location: "Nairobi",
-    dayRate: 120,
+    hourlyRate: 15,
     modes: { remote: true, hybrid: true, onSite: false },
     selfDescribedSkills: [],
     contact: { email: "amina@example.com", phone: null, linkedin: null },

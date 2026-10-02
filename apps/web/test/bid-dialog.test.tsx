@@ -72,7 +72,7 @@ const profile: BuilderProfile = {
   headline: "Mobile builder",
   cohortId: null,
   location: "Nairobi",
-  dayRate: 120,
+  hourlyRate: 15,
   modes: { remote: true, hybrid: false, onSite: false },
   selfDescribedSkills: ["mobile"],
   contact: { email: "naomi@example.com", phone: null, linkedin: null },
@@ -128,7 +128,10 @@ describe("BidDialog", () => {
 
     const dialog = await openDialog(user);
     const rate = within(dialog).getByRole("spinbutton", { name: "Your day rate (USD)" });
-    expect(rate).toHaveValue(120);
+    // Prefilled from the profile's hourly rate (D-59); the bid's own rate field is unchanged here.
+    expect(rate).toHaveValue(15);
+    await user.clear(rate);
+    await user.type(rate, "120");
     expect(within(dialog).getByText(/Founder max: USD 300 \/ day/)).toBeInTheDocument();
     expect(within(dialog).getByText("Your eligible skills: Mobile")).toBeInTheDocument();
     expect(within(dialog).getByText("(confirmed admin-basix naomi-chebet)")).toBeInTheDocument();

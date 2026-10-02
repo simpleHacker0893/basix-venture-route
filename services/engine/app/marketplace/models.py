@@ -99,7 +99,7 @@ class Profile(UuidRow, table=True):
     __tablename__ = "profiles"
     __table_args__ = (
         demo_data_check("profiles"),
-        CheckConstraint("day_rate > 0", name="ck_profiles_day_rate"),
+        CheckConstraint("hourly_rate >= 0 AND hourly_rate <= 50", name="ck_profiles_hourly_rate"),
         CheckConstraint(
             "supports_remote OR supports_hybrid OR supports_onsite", name="ck_profiles_mode"
         ),
@@ -113,7 +113,8 @@ class Profile(UuidRow, table=True):
     headline: str = Field(default="")
     cohort_id: str | None = Field(default=None)
     location: str
-    day_rate: int
+    # USD an hour, 0-50 (D-59, migration 0004).
+    hourly_rate: int
     supports_remote: bool = Field(default=False)
     supports_hybrid: bool = Field(default=False)
     supports_onsite: bool = Field(default=False)
