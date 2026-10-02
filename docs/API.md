@@ -450,7 +450,7 @@ engine proxies OpenRouter speech so the browser never holds `OPENROUTER_API_KEY`
 share one in-memory sliding-window limit per client IP: `VOICE_RATE_LIMIT_PER_MINUTE` requests
 (default 60) in any 60 seconds. The client IP is the TCP peer (`request.client.host`) when
 `VOICE_TRUSTED_PROXY_HOPS` is 0 (the default); with N > 0 it is the Nth `X-Forwarded-For` entry
-from the right, the one our own proxy appended (set 1 behind Railway or any single proxy).
+from the right, the one our own proxy appended (set 1 behind Render or any single proxy).
 Entries to its left are client-written and ignored; fewer than N entries, or no header, falls back
 to the peer. Uvicorn keeps its default of trusting proxy headers only from loopback. At most
 10,000 addresses are tracked; when the table is full, and a sweep of emptied windows (at most once

@@ -5,7 +5,7 @@
  * skipped by `RequireRole`'s redirect afterwards, so every spec is independent of the others.
  */
 import { clerk } from "@clerk/testing/playwright";
-import { expect, type APIResponse, type Page } from "@playwright/test";
+import { expect, type APIResponse, type Locator, type Page } from "@playwright/test";
 
 import { readState, type Role } from "./env";
 
@@ -41,6 +41,21 @@ export async function signInAs(page: Page, role: Role): Promise<void> {
     await page.getByRole("button", { name: `Continue as ${role}` }).click();
   }
   await expect(heading).toBeVisible();
+}
+
+/**
+ * The founder Home's published requests: the "Briefs and routes" list, one item per request named
+ * by its title (the dashboard redesign, d8cdf25, replaced the old table). Only the list's own
+ * items: each one nests a progress list whose stages are list items too. An open request's
+ * "Published" stage reads "Open request".
+ */
+export function publishedRequests(page: Page): Locator {
+  return page.getByRole("list", { name: "Briefs and routes" }).locator(":scope > li");
+}
+
+/** The request title a published-request item is named by. */
+export async function publishedRequestTitle(item: Locator): Promise<string> {
+  return (await item.getAttribute("aria-label")) ?? "";
 }
 
 export async function signOut(page: Page): Promise<void> {

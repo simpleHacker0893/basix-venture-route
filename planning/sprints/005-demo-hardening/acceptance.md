@@ -30,7 +30,7 @@
 
 ### Must
 - [ ] From a fresh clone: `cp .env.example .env`, `docker compose up` → web at `http://localhost:5173`, engine `/health` 200, all five scenarios produce the expected status and gaps, and `/showcase` lists the three demo entries (Venture Route, Crop price SMS digest, School fees tracker). Evidence: Playwright `demo.spec.ts` run against the compose stack, output pasted.
-- [ ] The Railway engine URL returns `/health` 200. The Vercel URL loads the landing page, routes the Health pilot against the Railway engine, and shows `/showcase`.
+- [ ] The Render engine URL returns `/health` 200. The Vercel URL loads the landing page, routes the Health pilot against the Render engine, and shows `/showcase`.
 - [ ] The recording file exists, is linked from README, and shows the real runtime (`/health` visible in the recording).
 - [ ] The Operator completes the `docs/DEMO.md` walkthrough twice from a clean launch and signs off in the PR.
 - [ ] Every merged sprint's acceptance suite is still green in CI on the freeze commit.
