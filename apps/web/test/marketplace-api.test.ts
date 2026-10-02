@@ -216,3 +216,46 @@ describe("errors keep their types", () => {
     expect((error as Error).message).toContain("already bid");
   });
 });
+
+describe("getProfile", () => {
+  const profile = {
+    builderId: "amina-otieno",
+    displayName: "Amina Otieno",
+    headline: "Python and MeTTa builder",
+    cohortId: "cohort-2026a",
+    location: "Nairobi",
+    dayRate: 120,
+    modes: { remote: true, hybrid: true, onSite: false },
+    selfDescribedSkills: [],
+    contact: { email: "amina@example.com", phone: null, linkedin: null },
+    sharing: { email: true, phone: false, linkedin: false },
+    availability: [],
+    skills: [],
+    accountStatus: "pending",
+    confirmed: false,
+    skillSet: [],
+    suggestedSkills: [],
+    githubUrl: null,
+    linkedinUrl: null,
+    demoData: true,
+  };
+
+  it("shares one request between calls made while it is in flight", async () => {
+    const { api: client, calls } = api(200, profile);
+
+    const [a, b] = await Promise.all([client.getProfile(), client.getProfile()]);
+
+    expect(calls.filter((c) => c.url.endsWith("/api/me/profile"))).toHaveLength(1);
+    expect(a.builderId).toBe("amina-otieno");
+    expect(b).toBe(a);
+  });
+
+  it("asks again once the first call has settled, so a saved change is never stale", async () => {
+    const { api: client, calls } = api(200, profile);
+
+    await client.getProfile();
+    await client.getProfile();
+
+    expect(calls.filter((c) => c.url.endsWith("/api/me/profile"))).toHaveLength(2);
+  });
+});

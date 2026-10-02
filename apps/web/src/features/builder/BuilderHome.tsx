@@ -5,6 +5,10 @@
  * builder's bids and bookings. Nothing here matches skills: a request is shown as eligible only
  * when the engine says so, and otherwise with the engine's reason (AGENTS.md rule 1). Self-described
  * skills are shown as display-only (rule 4); seed records carry the Demo data pill (rule 5).
+ *
+ * The page renders in two stages. The profile, evidence, bids and bookings are plain reads and
+ * show as soon as they arrive. The open requests carry a MeTTa verdict per request, which is the
+ * slow call, so they load on their own and the rest of the page never waits for them.
  */
 import type {
   Bid,
@@ -32,7 +36,6 @@ type Snapshot = Readonly<{
   profile: BuilderProfile | null;
   credentials: Credential[];
   projects: ShowcaseProject[];
-  requests: Request[];
   bids: Bid[];
   bookings: Booking[];
 }>;
@@ -134,22 +137,38 @@ export function BuilderHome() {
   const api = useMarketplaceApi();
   const [data, setData] = useState<Snapshot | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
+  // null while the open requests are still loading (stage two); [] once they are in and empty.
+  const [requests, setRequests] = useState<Request[] | null>(null);
+  const [requestsError, setRequestsError] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
+    // Stage one: everything that is a plain read.
     Promise.all([
       api.getProfile().catch(orNotFound<BuilderProfile | null>(null)),
       api.listCredentials().catch(orNotFound<Credential[]>([])),
       api.listProjects().catch(orNotFound<ShowcaseProject[]>([])),
-      api.listRequests().catch(orNotFound<Request[]>([])),
       api.listMyBids().catch(orNotFound<Bid[]>([])),
       api.listMyBookings().catch(orNotFound<Booking[]>([])),
     ])
-      .then(([profile, credentials, projects, requests, bids, bookings]) => {
-        if (!cancelled) setData({ profile, credentials, projects, requests, bids, bookings });
+      .then(([profile, credentials, projects, bids, bookings]) => {
+        if (!cancelled) setData({ profile, credentials, projects, bids, bookings });
       })
       .catch((cause: unknown) => {
         if (!cancelled) setLoadError(errorMessage(cause, "Your home could not be loaded."));
+      });
+    // Stage two: started at the same time, shown whenever it lands. A failure here only affects
+    // the requests section; it no longer blanks the whole page.
+    api
+      .listRequests()
+      .catch(orNotFound<Request[]>([]))
+      .then((list) => {
+        if (!cancelled) setRequests(list);
+      })
+      .catch((cause: unknown) => {
+        if (cancelled) return;
+        setRequestsError(errorMessage(cause, "Open requests could not be loaded."));
+        setRequests([]);
       });
     return () => {
       cancelled = true;
@@ -177,10 +196,11 @@ export function BuilderHome() {
     );
   }
 
-  const { profile, credentials, projects, requests, bids, bookings } = data;
+  const { profile, credentials, projects, bids, bookings } = data;
+  const requestsLoading = requests === null;
   const evidence = [...credentials, ...projects];
   const status = profile?.accountStatus ?? null;
-  const open = requests.filter((r) => r.status === "open");
+  const open = (requests ?? []).filter((r) => r.status === "open");
   const eligible = open.filter((r) => r.eligibility?.eligible === true);
   const confirmed = status === "confirmed";
 
@@ -192,7 +212,11 @@ export function BuilderHome() {
       state: status === "confirmed" ? "done" : status === "pending" ? "review" : status === "rejected" ? "rejected" : "todo",
       pill: status === "pending" ? "In review" : status === "rejected" ? "Rejected" : undefined,
     },
-    { label: "Eligible for requests", state: eligible.length > 0 ? "done" : "locked" },
+    {
+      label: "Eligible for requests",
+      state: eligible.length > 0 ? "done" : "locked",
+      pill: requestsLoading ? "Checking…" : undefined,
+    },
   ];
   const done = steps.filter((s) => s.state === "done").length;
   const pendingEvidence = evidence.find((e) => e.status === "pending");
@@ -215,7 +239,14 @@ export function BuilderHome() {
           }
         : status === "rejected"
           ? { title: "Your account was not confirmed.", body: "Check your profile details and evidence.", cta: "Review your profile", to: "/profile" }
-          : eligible.length > 0
+          : requestsLoading
+            ? {
+                title: "Checking open requests…",
+                body: "The engine is checking which requests fit your verified skills, availability and delivery mode.",
+                cta: "See open requests",
+                to: "/requests",
+              }
+            : eligible.length > 0
             ? {
                 title: `You're eligible for ${eligible.length} ${eligible.length === 1 ? "request" : "requests"}.`,
                 body: "The engine checked your verified skills, availability and delivery mode.",
@@ -308,7 +339,15 @@ export function BuilderHome() {
             </Link>
           </div>
         </div>
-        {shownRequests.length === 0 ? (
+        {requestsLoading ? (
+          <p aria-live="polite" className="rounded-xl border border-dashed border-border-strong px-5 py-5 text-[14px] text-ink-3">
+            Loading open requests…
+          </p>
+        ) : requestsError ? (
+          <p role="alert" className="rounded-card border border-danger/40 bg-surface-strong px-3 py-2 text-[13px] text-danger">
+            {requestsError}
+          </p>
+        ) : shownRequests.length === 0 ? (
           <EmptyBox title="No open requests" body="Founders publish requests from their routes; they appear here with the engine's verdict for you." />
         ) : (
           <ul className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">

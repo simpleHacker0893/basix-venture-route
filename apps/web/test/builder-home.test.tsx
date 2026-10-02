@@ -227,3 +227,44 @@ describe("/home (builder)", () => {
     expect(window.localStorage.getItem("venture-route:sidebar-collapsed")).toBe("0");
   });
 });
+
+describe("/home (builder) loads in two stages", () => {
+  it("shows the profile, bids and evidence while the open requests are still loading", async () => {
+    let release: (list: Request[]) => void = () => undefined;
+    const slow = new Promise<Request[]>((resolve) => {
+      release = resolve;
+    });
+    renderHome({
+      getProfile: async () => profile({ accountStatus: "confirmed", confirmed: true }),
+      listCredentials: async () => [{ ...credential, status: "confirmed" }],
+      listRequests: () => slow,
+      listMyBids: async () => [bid],
+    });
+
+    const next = await screen.findByRole("region", { name: "Next step" });
+    expect(next).toHaveTextContent("Checking open requests…");
+    expect(screen.getByRole("region", { name: "My bids" })).toHaveTextContent("USD 120 / day · Sent");
+    expect(screen.getByRole("region", { name: "Your evidence" })).toHaveTextContent("Python · Credential");
+    expect(screen.getByText("Loading open requests…")).toBeInTheDocument();
+    expect(screen.queryByText("Loading your home…")).not.toBeInTheDocument();
+
+    release([request({ eligible: true, skills: ["python"], path: null, reason: null })]);
+
+    expect(await screen.findByText("Eligible: Python")).toBeInTheDocument();
+    expect(screen.getByRole("region", { name: "Next step" })).toHaveTextContent("You're eligible for 1 request.");
+    expect(screen.queryByText("Loading open requests…")).not.toBeInTheDocument();
+  });
+
+  it("keeps the page when only the requests call fails, and says so in the requests section", async () => {
+    renderHome({
+      listRequests: async () => {
+        throw new Error("The routing engine answered 500.");
+      },
+    });
+
+    expect(await screen.findByRole("alert")).toHaveTextContent("The routing engine answered 500.");
+    expect(screen.getByRole("region", { name: "Next step" })).toBeInTheDocument();
+    expect(screen.getByRole("region", { name: "Your evidence" })).toBeInTheDocument();
+    expect(screen.queryByText("Your home could not be loaded.")).not.toBeInTheDocument();
+  });
+});
