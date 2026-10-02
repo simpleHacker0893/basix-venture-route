@@ -38,6 +38,8 @@ test("builder creates a profile with availability, a mobile credential and a lic
   await signInAs(page, "builder");
   await expectRoleClaim(page, "/api/me/credentials");
 
+  // A builder lands on /home since f650a4c; the profile form lives on /profile.
+  await page.goto("/profile");
   const form = page.getByRole("form", { name: "Builder profile" });
   await form.getByLabel("Display name").fill(displayName());
   await form.getByLabel("Primary location / base").fill("Nairobi");
