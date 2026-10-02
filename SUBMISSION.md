@@ -26,11 +26,11 @@ https://github.com/simpleHacker0893/basix-venture-route
 
 ## Live demo
 
-TBD
+https://basix-venture-route.vercel.app/
 
 ## Slide deck
 
-TBD
+https://canva.link/venture-route
 
 ## Track
 
@@ -38,4 +38,4 @@ MeTTa
 
 ## Demo video
 
-TBD
+https://youtu.be/jCPnXxG3vuU
