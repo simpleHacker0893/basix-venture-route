@@ -152,11 +152,26 @@ describe("/home (builder)", () => {
     renderHome({});
 
     const next = await screen.findByRole("region", { name: "Next step" });
-    expect(next).toHaveTextContent("2 / 4");
+    expect(next).toHaveTextContent("Step 3 of 4 · In review");
     expect(next).toHaveTextContent("BASIX is reviewing your account.");
     expect(within(next).getByRole("link", { name: "Add a project" })).toHaveAttribute("href", "/profile/projects/new");
+    expect(within(next).getByRole("link", { name: "Open My showcase" })).toHaveAttribute("href", "/my-showcase");
     const progress = within(next).getByRole("list", { name: "Your progress" });
-    expect(progress).toHaveTextContent("Confirmed by BASIX adminIn review");
+    const [profileStep, credentialStep, confirmedStep, eligibleStep] = within(progress).getAllByRole("listitem");
+    expect(profileStep).toHaveTextContent("Profile complete");
+    expect(profileStep).toHaveTextContent("done");
+    expect(credentialStep).toHaveTextContent("Credential added");
+    expect(credentialStep).toHaveTextContent("done");
+    expect(confirmedStep).toHaveTextContent("Confirmed by BASIX");
+    expect(confirmedStep).toHaveTextContent("In review");
+    expect(confirmedStep).toHaveTextContent("An admin is reviewing your account now.");
+    expect(eligibleStep).toHaveTextContent("Eligible for requests");
+    expect(eligibleStep).toHaveTextContent("locked");
+    expect(eligibleStep).toHaveTextContent("Unlocks as soon as you are confirmed.");
+    expect(screen.getByRole("heading", { name: "What opens up once BASIX confirms you" })).toBeInTheDocument();
+    expect(screen.getByText("Bid on requests")).toBeInTheDocument();
+    expect(screen.getByText("Your showcase goes public")).toBeInTheDocument();
+    expect(screen.getByText("Appear in routes")).toBeInTheDocument();
 
     expect(screen.getByText("Bidding opens once you’re confirmed")).toBeInTheDocument();
     const bidButton = screen.getByRole("button", { name: "Place a bid · after review" });
@@ -183,13 +198,18 @@ describe("/home (builder)", () => {
     });
 
     const next = await screen.findByRole("region", { name: "Next step" });
-    expect(next).toHaveTextContent("4 / 4");
+    expect(next).toHaveTextContent("All steps done");
     expect(next).toHaveTextContent("You're eligible for 1 request.");
+    for (const item of within(within(next).getByRole("list", { name: "Your progress" })).getAllByRole("listitem")) {
+      expect(item).toHaveTextContent("done");
+    }
+    expect(screen.queryByRole("heading", { name: "What opens up once BASIX confirms you" })).not.toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Requests you're eligible for" })).toBeInTheDocument();
     expect(screen.getByText("Eligible: Python")).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Place a bid" })).toHaveAttribute("href", "/requests");
     expect(screen.getByRole("region", { name: "My bids" })).toHaveTextContent("USD 120 / day · Sent");
     expect(screen.getByText("Requests you've applied to work on, and their status.")).toBeInTheDocument();
+    expect(screen.getByText("Times founders propose to talk with you.")).toBeInTheDocument();
     const interviews = screen.getByRole("region", { name: "Upcoming interviews" });
     expect(within(interviews).getByRole("link", { name: "Health pilot" })).toHaveAttribute("href", "/bookings/bk-1");
     expect(interviews).toHaveTextContent("Fri 25 Sep 2026 · 09:00 EAT");
@@ -203,8 +223,11 @@ describe("/home (builder)", () => {
     renderHome({ getProfile: missing, listCredentials: missing, listProjects: missing, listRequests: missing, listMyBids: missing });
 
     const next = await screen.findByRole("region", { name: "Next step" });
-    expect(next).toHaveTextContent("0 / 4");
+    expect(next).toHaveTextContent("Step 1 of 4");
     expect(within(next).getByRole("link", { name: "Complete your profile" })).toHaveAttribute("href", "/profile");
+    const [first, , , last] = within(within(next).getByRole("list", { name: "Your progress" })).getAllByRole("listitem");
+    expect(first).toHaveAttribute("aria-current", "step");
+    expect(last).toHaveTextContent("locked");
   });
 
   it("collapses the sidebar to an icon rail, keeps each link's name, and remembers the choice", async () => {
@@ -266,5 +289,60 @@ describe("/home (builder) loads in two stages", () => {
     expect(screen.getByRole("region", { name: "Next step" })).toBeInTheDocument();
     expect(screen.getByRole("region", { name: "Your evidence" })).toBeInTheDocument();
     expect(screen.queryByText("Your home could not be loaded.")).not.toBeInTheDocument();
+  });
+});
+
+function showcaseRow(overrides: Partial<ShowcaseProject>): ShowcaseProject {
+  return {
+    id: "p",
+    title: "Project",
+    vertical: "education",
+    licensable: false,
+    completedOn: "2026-01-01",
+    skillIds: ["python"],
+    status: "confirmed",
+    demoData: true,
+    description: "",
+    liveUrl: null,
+    demoUrl: null,
+    pitchVideoUrl: null,
+    pitchDeckUrl: null,
+    showcased: false,
+    showcaseStatus: "none",
+    ...overrides,
+  };
+}
+
+describe("/home (builder) showcase summary", () => {
+  it("lists the three most recent projects with their status pills and links to My showcase", async () => {
+    renderHome({
+      getProfile: async () => profile({ accountStatus: "confirmed", confirmed: true }),
+      listProjects: async () => [
+        showcaseRow({ id: "old", title: "Oldest project", completedOn: "2025-01-01" }),
+        showcaseRow({ id: "live", title: "Agri price tracker", completedOn: "2026-08-01", showcased: true, showcaseStatus: "confirmed" }),
+        showcaseRow({ id: "wait", title: "Clinic intake API", completedOn: "2026-06-01", showcased: true, showcaseStatus: "pending" }),
+        showcaseRow({ id: "draft", title: "Elimu Mtaani", completedOn: "2026-03-01" }),
+      ],
+    });
+
+    const card = await screen.findByRole("region", { name: "Your showcase" });
+    const rows = within(card).getAllByRole("listitem");
+    expect(rows).toHaveLength(3);
+    expect(rows[0]).toHaveTextContent("Agri price tracker");
+    expect(rows[0]).toHaveTextContent("Live");
+    expect(rows[1]).toHaveTextContent("Clinic intake API");
+    expect(rows[1]).toHaveTextContent("Waiting for review");
+    expect(rows[2]).toHaveTextContent("Elimu Mtaani");
+    expect(rows[2]).toHaveTextContent("Draft");
+    expect(within(card).queryByText("Oldest project")).not.toBeInTheDocument();
+    expect(within(card).getByRole("link", { name: "Open My showcase →" })).toHaveAttribute("href", "/my-showcase");
+    expect(card).toHaveTextContent("Projects only appear on the public Showcase once they are live.");
+  });
+
+  it("shows an empty note when there are no projects", async () => {
+    renderHome({ listProjects: async () => [] });
+
+    const card = await screen.findByRole("region", { name: "Your showcase" });
+    expect(card).toHaveTextContent("No projects yet");
   });
 });

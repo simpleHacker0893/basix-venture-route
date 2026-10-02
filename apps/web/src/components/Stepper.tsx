@@ -5,14 +5,15 @@
  *   done      → filled check
  *   current   → filled number with a ring (aria-current="step")
  *   review    → amber clock: the step is with BASIX
+ *   rejected  → cross: BASIX did not confirm this step
  *   locked    → lock: not available yet
  *   upcoming  → grey number
  * `layout` is "row" (circles in a row, labels under), "column" (circles stacked, labels beside) or
  * "responsive" (a column on phones, a row from `md` up). `tone` picks the light or the dark surface.
  */
-import { Check, Clock3, Lock } from "lucide-react";
+import { Check, Clock3, Lock, X } from "lucide-react";
 
-export type StepState = "done" | "current" | "review" | "locked" | "upcoming";
+export type StepState = "done" | "current" | "review" | "rejected" | "locked" | "upcoming";
 
 export type StepperStep = Readonly<{
   label: string;
@@ -35,6 +36,7 @@ const STATE_WORD: Record<StepState, string> = {
   done: "done",
   current: "current step",
   review: "in review",
+  rejected: "not confirmed",
   locked: "locked",
   upcoming: "upcoming",
 };
@@ -48,12 +50,13 @@ function markerClass(state: StepState, tone: "light" | "dark"): string {
   if (state === "done") return "border-accent-green bg-accent-green text-white";
   if (state === "current") return "border-accent-green bg-surface-strong text-accent-green ring-4 ring-accent-green/15";
   if (state === "review") return "border-amber-ink bg-amber-fill text-amber-ink";
+  if (state === "rejected") return "border-danger bg-danger-tint text-danger";
   return "border-border-strong bg-surface-strong text-ink-3";
 }
 
 function labelClass(state: StepState, tone: "light" | "dark"): string {
   if (tone === "dark") return state === "current" ? "font-semibold text-[#f3f1ea]" : "text-[#a7b8b0]";
-  return state === "done" || state === "current" || state === "review" ? "font-semibold text-ink" : "text-ink-3";
+  return state === "done" || state === "current" || state === "review" || state === "rejected" ? "font-semibold text-ink" : "text-ink-3";
 }
 
 export function Stepper({ steps, ariaLabel, layout = "column", tone = "light", size = "md" }: StepperProps) {
@@ -102,6 +105,8 @@ export function Stepper({ steps, ariaLabel, layout = "column", tone = "light", s
                   <Check className={icon} strokeWidth={3} />
                 ) : step.state === "review" ? (
                   <Clock3 className={icon} />
+                ) : step.state === "rejected" ? (
+                  <X className={icon} strokeWidth={3} />
                 ) : step.state === "locked" ? (
                   <Lock className={icon} />
                 ) : (
