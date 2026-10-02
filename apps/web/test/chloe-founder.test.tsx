@@ -165,7 +165,7 @@ describe("the founder-wide Voice: Chloe toggle in the top nav", () => {
 
     await user.click(screen.getByRole("link", { name: "Back to your ventures" }));
     await screen.findByRole("heading", { level: 1, name: "Home" });
-    await user.click(screen.getAllByRole("link", { name: "New route" })[0]!);
+    await user.click(screen.getAllByRole("link", { name: "Route a new venture" })[0]!);
     await screen.findByRole("heading", { level: 1, name: "Describe your MVP" });
     const switches = screen.getAllByRole("switch", { name: "Voice: Chloe" });
     expect(switches).toHaveLength(2);

@@ -12,13 +12,14 @@
  * "responsive" (a column on phones, a row from `md` up). `tone` picks the light or the dark surface.
  */
 import { Check, Clock3, Lock, X } from "lucide-react";
+import type { ReactNode } from "react";
 
 export type StepState = "done" | "current" | "review" | "rejected" | "locked" | "upcoming";
 
 export type StepperStep = Readonly<{
   label: string;
   /** One short line under the label (Home's account steps). */
-  hint?: string;
+  hint?: ReactNode;
   state: StepState;
   /** Small text pill next to the label, e.g. "In review". */
   pill?: string;

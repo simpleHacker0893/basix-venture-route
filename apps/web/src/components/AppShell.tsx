@@ -8,6 +8,7 @@ import type { AccountStatus } from "@venture-route/contracts";
 import {
   CalendarDays,
   CircleCheck,
+  Compass,
   FolderKanban,
   House,
   Inbox,
@@ -28,6 +29,8 @@ import { Link, Outlet, useLocation } from "react-router";
 import { useMarketplaceApi } from "../api/marketplaceContext";
 import { useAuthState, type Role } from "../auth/authContext";
 import { FounderVoiceToggle } from "../chloe/ui/FounderVoiceToggle";
+import { FounderDashboardProvider } from "../features/dashboard/FounderDashboardProvider";
+import { founderCounts, useFounderDashboard } from "../features/dashboard/founderDashboardContext";
 import { LogoMark } from "./Logo";
 import { OfflineBanner } from "./OfflineBanner";
 
@@ -55,16 +58,19 @@ type NavItem = Readonly<{
   label: string;
   icon: LucideIcon;
   tab?: boolean;
-  /** Other pages that belong to this item, so it stays highlighted (e.g. Add a project under My showcase). */
+  /** Other pages that belong to this item, so it stays highlighted (a trailing * matches any path below it). */
   also?: readonly string[];
+  /** A count shown next to the label, hidden at 0 (the founder's totals from the dashboard). */
+  badge?: "ventures" | "bids" | "interviews";
 }>;
 
 const NAV: Record<Role, readonly NavItem[]> = {
   founder: [
     { to: "/dashboard", label: "Home", icon: House, tab: true },
-    { to: "/dashboard#ventures", label: "Ventures", icon: FolderKanban, tab: true },
-    { to: "/dashboard#bids", label: "Bids", icon: Inbox, tab: true },
-    { to: "/dashboard#interviews", label: "Interviews", icon: CalendarDays, tab: true },
+    { to: "/route", label: "Route a venture", icon: Compass },
+    { to: "/dashboard#ventures", label: "Ventures", icon: FolderKanban, tab: true, badge: "ventures", also: ["/ventures/*"] },
+    { to: "/dashboard#bids", label: "Bids", icon: Inbox, tab: true, badge: "bids" },
+    { to: "/dashboard#interviews", label: "Interviews", icon: CalendarDays, tab: true, badge: "interviews" },
   ],
   builder: [
     { to: "/home", label: "Home", icon: House, tab: true },
@@ -95,6 +101,7 @@ const TITLES: Record<string, string> = {
 function titleFor(pathname: string): string | undefined {
   if (TITLES[pathname]) return TITLES[pathname];
   if (pathname.startsWith("/bookings/")) return "Interview";
+  if (pathname.startsWith("/ventures/")) return "Venture";
   if (pathname.startsWith("/builders/")) return "Builder";
   return undefined;
 }
@@ -119,7 +126,9 @@ function initials(text: string): string {
 function isActive(item: NavItem, pathname: string, search: string, hash: string): boolean {
   const [path, fragment] = item.to.split("#");
   const [base, query] = (path ?? "").split("?");
-  if (base !== pathname && !(item.also ?? []).includes(pathname)) return false;
+  const alsoHere = (item.also ?? []).some((other) => (other.endsWith("*") ? pathname.startsWith(other.slice(0, -1)) : other === pathname));
+  if (alsoHere) return true;
+  if (base !== pathname) return false;
   if (query) return search === `?${query}`;
   if (fragment) return hash === `#${fragment}`;
   return !hash && !search.includes("tab=");
@@ -221,9 +230,23 @@ function MenuIcon({ open }: Readonly<{ open: boolean }>) {
   );
 }
 
+/** The shell. A founder's pages share one dashboard response (sidebar badges, Home, a venture). */
 export function AppShell() {
   const auth = useAuthState();
+  return auth.role === "founder" ? (
+    <FounderDashboardProvider>
+      <ShellBody />
+    </FounderDashboardProvider>
+  ) : (
+    <ShellBody />
+  );
+}
+
+function ShellBody() {
+  const auth = useAuthState();
   const role = auth.role ?? "founder";
+  const founder = useFounderDashboard();
+  const badges = founder?.data ? founderCounts(founder.data) : null;
   const { pathname, search, hash } = useLocation();
   const [menuOpen, setMenuOpen] = useState(false);
   const [collapsed, setCollapsed] = useState(readCollapsed);
@@ -239,7 +262,7 @@ export function AppShell() {
         className="inline-flex h-10 items-center gap-2 rounded-xl bg-accent-green px-4 text-[14px] font-semibold text-white shadow-card transition-colors hover:bg-accent-green-hover"
       >
         <Plus aria-hidden="true" className="h-4 w-4" />
-        New route
+        Route a new venture
       </Link>
     ) : role === "builder" && pathname === "/my-showcase" ? (
       <span className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-3">
@@ -292,7 +315,7 @@ export function AppShell() {
           onClick={onPick}
           aria-current={active ? "page" : undefined}
           title={rail ? item.label : undefined}
-          className={`flex items-center gap-3 rounded-xl font-medium transition-colors ${rail ? "justify-center" : "px-3.5"} ${compact ? "min-h-[48px] text-[16px]" : "h-12 text-[15px]"} ${
+          className={`relative flex items-center gap-3 rounded-xl font-medium transition-colors ${rail ? "justify-center" : "px-3.5"} ${compact ? "min-h-[48px] text-[16px]" : "h-12 text-[15px]"} ${
             active
               ? dark
                 ? "bg-accent-green text-white"
@@ -304,6 +327,13 @@ export function AppShell() {
         >
           <Icon aria-hidden="true" className="h-5 w-5 shrink-0" />
           <span className={rail ? "sr-only" : undefined}>{item.label}</span>
+          {item.badge && badges && badges[item.badge] > 0 ? (
+            <span
+              className={`grid h-5 min-w-5 place-items-center rounded-pill bg-accent-green px-1.5 text-[11px] font-semibold text-white ${rail ? "absolute right-1 top-1" : "ml-auto"}`}
+            >
+              {badges[item.badge]}
+            </span>
+          ) : null}
         </Link>
       );
     });
@@ -358,16 +388,6 @@ export function AppShell() {
         </div>
         <nav aria-label="Sections" className="flex flex-col gap-1">
           {navLinks(undefined, false, collapsed)}
-          {role === "founder" ? (
-            <Link
-              to="/route"
-              title={collapsed ? "New route" : undefined}
-              className="mt-5 flex h-12 items-center justify-center gap-2 rounded-xl border border-dashed border-accent-green/70 text-[15px] font-semibold text-accent-green transition-colors hover:bg-sage"
-            >
-              <Plus aria-hidden="true" className="h-4 w-4" />
-              <span className={collapsed ? "sr-only" : undefined}>New route</span>
-            </Link>
-          ) : null}
         </nav>
         <div className="mt-auto">
           <AccountChip role={role} status={status} dark={dark} compact={collapsed} />
