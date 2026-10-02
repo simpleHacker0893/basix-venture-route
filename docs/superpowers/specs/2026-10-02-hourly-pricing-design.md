@@ -46,6 +46,7 @@ If rounding changes which team the assembler picks for a scenario, the status, t
 
 - `profiles.day_rate` is renamed `hourly_rate`; existing values become `min(50, round_half_up(day_rate / 8))`; a check constraint holds `0 <= hourly_rate <= 50`.
 - In `requests`, the stored budget and route snapshot (D-47) are converted the same way: `dailyBudget` → `hourlyBudget` (clamped to 1–250) and `totalDailyRate` → `totalHourlyRate` (÷ 8, half up).
+- `bids.day_rate` (the rate a builder offers on a bid, wire `dayRate`) becomes `hourly_rate` / `hourlyRate` with the same conversion and the same 0–50 check as profiles; the bid dialog pre-fills it from the profile's hourly rate.
 - The migration logs how many builder rates it capped at 50 and how many request snapshots it converted.
 - Downgrade reverses the rename and multiplies by 8 (lossy, acceptable for demo data).
 - Sprint 008's admin-reasons migration becomes `0005`.
