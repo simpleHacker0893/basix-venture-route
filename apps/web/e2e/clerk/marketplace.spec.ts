@@ -69,8 +69,8 @@ test("builder creates a profile with availability, a mobile credential and a lic
   await project.getByRole("checkbox", { name: "Mobile" }).check({ force: true });
   await project.getByLabel("Completion date").fill("2026-08-31");
   await project.getByRole("checkbox", { name: "Licensable as reusable IP" }).check({ force: true });
-  await project.getByRole("button", { name: "Submit for confirmation" }).click();
-  await expect(page.getByRole("heading", { level: 1, name: "Your profile" })).toBeVisible();
+  await project.getByRole("button", { name: "Save project" }).click();
+  await expect(page.getByRole("heading", { level: 1, name: "My showcase" })).toBeVisible();
 
   const token = await sessionToken(page);
   const profile = await engineGet(page, "/api/me/profile", token);

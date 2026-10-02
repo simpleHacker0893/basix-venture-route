@@ -175,7 +175,7 @@ describe("/profile", () => {
 });
 
 describe("/profile/projects/new", () => {
-  it("posts the project with two skills and licensable on, then returns to the profile", async () => {
+  it("posts the project with two skills and licensable on, then returns to My showcase", async () => {
     const user = userEvent.setup();
     const posted: ProjectInput[] = [];
     const marketplace = fakeMarketplace({
@@ -209,14 +209,14 @@ describe("/profile/projects/new", () => {
     await user.click(within(form).getByRole("checkbox", { name: "UI/UX design" }));
     await user.type(within(form).getByLabelText("Completion date"), "2026-08-31");
     await user.click(within(form).getByRole("checkbox", { name: "Licensable as reusable IP" }));
-    await user.click(within(form).getByRole("button", { name: "Submit for confirmation" }));
+    await user.click(within(form).getByRole("button", { name: "Save project" }));
 
     await waitFor(() =>
       expect(posted).toEqual([
         { title: "Clinic triage intake flow", vertical: "health", licensable: true, completedOn: "2026-08-31", skillIds: ["python", "ui-ux"] },
       ]),
     );
-    expect(await screen.findByRole("heading", { level: 1, name: "Your profile" })).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { level: 1, name: "My showcase" })).toBeInTheDocument();
   });
 });
 
@@ -614,7 +614,7 @@ describe("/profile/projects/new links", () => {
     const form = await fillRequired(user);
     await user.type(within(form).getByLabelText("Project link"), "https://github.com/amina/triage");
     await user.type(within(form).getByLabelText("Demo link"), "https://triage.example.org");
-    await user.click(within(form).getByRole("button", { name: "Submit for confirmation" }));
+    await user.click(within(form).getByRole("button", { name: "Save project" }));
 
     await waitFor(() => expect(saved).toHaveLength(1));
     expect(saved[0]!.projectId).toBe("proj-1");
@@ -623,7 +623,7 @@ describe("/profile/projects/new links", () => {
       demoUrl: "https://triage.example.org",
       showcased: false,
     });
-    expect(await screen.findByRole("heading", { level: 1, name: "Your profile" })).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { level: 1, name: "My showcase" })).toBeInTheDocument();
   });
 
   it("sends showcased true when Show on Showcase is on", async () => {
@@ -643,10 +643,39 @@ describe("/profile/projects/new links", () => {
     const form = await fillRequired(user);
     await user.type(within(form).getByLabelText("Project link"), "https://triage.example.org");
     await user.click(within(form).getByRole("checkbox", { name: "Show on Showcase" }));
-    await user.click(within(form).getByRole("button", { name: "Submit for confirmation" }));
+    await user.click(within(form).getByRole("button", { name: "Save project" }));
 
     await waitFor(() => expect(saved).toHaveLength(1));
     expect(saved[0]).toMatchObject({ showcased: true });
+  });
+
+  it("sends the project to review (showcased true, no links) when only the box is ticked, with the helper text", async () => {
+    const user = userEvent.setup();
+    const saved: ShowcaseEditInput[] = [];
+    const marketplace = fakeMarketplace({
+      getProfile: async () => profile({ accountStatus: "pending" }),
+      ...noRows,
+      postProject: async (input) => created(input),
+      saveShowcase: async (_id, body) => {
+        saved.push(body);
+        return showcaseProject({ ...body, showcaseStatus: "pending" });
+      },
+    });
+    render(<App initialPath="/profile/projects/new" source={source} auth={builderAuth} marketplace={marketplace} />);
+
+    const form = await fillRequired(user);
+    const box = within(form).getByRole("checkbox", { name: "Show on Showcase" });
+    expect(box).not.toBeChecked();
+    expect(box).toHaveAccessibleDescription(
+      "Sends this project to BASIX for review. It goes public once your account and the project are both confirmed. Leave it off to keep it private for now.",
+    );
+    expect(await screen.findByText("Your account is still in review. You can save projects now. They stay private until BASIX confirms you.")).toBeInTheDocument();
+    await user.click(box);
+    await user.click(within(form).getByRole("button", { name: "Save project" }));
+
+    await waitFor(() => expect(saved).toHaveLength(1));
+    expect(saved[0]).toMatchObject({ showcased: true, liveUrl: null, demoUrl: null });
+    expect(await screen.findByRole("heading", { level: 1, name: "My showcase" })).toBeInTheDocument();
   });
 
   it("does not call the showcase endpoint when no link is entered", async () => {
@@ -664,9 +693,9 @@ describe("/profile/projects/new links", () => {
     render(<App initialPath="/profile/projects/new" source={source} auth={builderAuth} marketplace={marketplace} />);
 
     const form = await fillRequired(user);
-    await user.click(within(form).getByRole("button", { name: "Submit for confirmation" }));
+    await user.click(within(form).getByRole("button", { name: "Save project" }));
 
-    expect(await screen.findByRole("heading", { level: 1, name: "Your profile" })).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { level: 1, name: "My showcase" })).toBeInTheDocument();
     expect(calls).toBe(0);
   });
 
@@ -684,11 +713,11 @@ describe("/profile/projects/new links", () => {
 
     const form = await fillRequired(user);
     await user.type(within(form).getByLabelText("Project link"), "https://triage.example.org");
-    await user.click(within(form).getByRole("button", { name: "Submit for confirmation" }));
+    await user.click(within(form).getByRole("button", { name: "Save project" }));
 
-    expect(await screen.findByRole("heading", { level: 1, name: "Your profile" })).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { level: 1, name: "My showcase" })).toBeInTheDocument();
     expect(
-      screen.getByText("Project saved. We couldn't save the link. Add it from Edit showcase."),
+      screen.getByText("Project saved. We couldn't save the link. Add it from My showcase."),
     ).toBeInTheDocument();
   });
 

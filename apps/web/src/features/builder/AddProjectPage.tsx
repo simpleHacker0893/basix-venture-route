@@ -4,10 +4,11 @@
  * a pending row until a BASIX admin confirms it; only then is it projected as graph facts.
  */
 import { ProjectInput, ShowcaseEdit, type SkillId } from "@venture-route/contracts";
-import { useState, type FormEvent } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 import { Link, useNavigate } from "react-router";
 
 import { Button } from "@/components/ui/button";
+import type { AccountStatus } from "@venture-route/contracts";
 import { ApiNotFoundError, ApiValidationError } from "../../api/client";
 import { useMarketplaceApi } from "../../api/marketplaceContext";
 import { DemoDataPill } from "../../components/DemoDataPill";
@@ -17,14 +18,16 @@ import { errorMessage, helpClass, inputClass, labelClass, pillClass } from "./fo
 import { Card, FieldError, Toggle } from "./StatusPill";
 
 const MAX_SKILLS = 5;
-const LINK_HELP = "Optional. Add a link so people can see your work. You can change it later in Edit showcase.";
+const LINK_HELP = "Optional. Add a link so people can see your work. You can change it later in My showcase.";
+const SHOWCASE_HELP =
+  "Sends this project to BASIX for review. It goes public once your account and the project are both confirmed. Leave it off to keep it private for now.";
 /** Shown on the profile when the project was created but its link could not be saved. */
-export const LINK_SAVE_FAILED = "Project saved. We couldn't save the link. Add it from Edit showcase.";
+export const LINK_SAVE_FAILED = "Project saved. We couldn't save the link. Add it from My showcase.";
 
 const NEXT_STEPS: { step: string; body: string }[] = [
-  { step: "Submitted", body: "Your project is stored as a pending row on your profile." },
-  { step: "Admin review", body: "A BASIX admin checks the project against the skills it claims to demonstrate." },
-  { step: "Live in graph", body: "Confirmed projects are projected as facts the MeTTa rules reason over (verified-for-skill, reuse-fit)." },
+  { step: "Project saved", body: "It appears in My showcase as a draft, visible only to you." },
+  { step: "You publish it", body: "Turn on Show on Showcase when you are ready." },
+  { step: "BASIX reviews", body: "Once confirmed, it goes live on the public Showcase." },
 ];
 
 export function AddProjectPage() {
@@ -40,6 +43,19 @@ export function AddProjectPage() {
   const [showcased, setShowcased] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [busy, setBusy] = useState(false);
+  // The builder's own account status, for the "still in review" note beside the form.
+  const [account, setAccount] = useState<AccountStatus | null | undefined>(undefined);
+
+  useEffect(() => {
+    let cancelled = false;
+    api
+      .getProfile()
+      .then((profile) => (cancelled ? undefined : setAccount(profile.accountStatus)))
+      .catch(() => (cancelled ? undefined : setAccount(null)));
+    return () => {
+      cancelled = true;
+    };
+  }, [api]);
 
   const clearErrors = () => setErrors({});
 
@@ -81,14 +97,14 @@ export function AddProjectPage() {
     try {
       const created = await api.postProject(parsed.data);
       let notice: string | undefined;
-      if (link.data.liveUrl !== null || link.data.demoUrl !== null) {
+      if (link.data.liveUrl !== null || link.data.demoUrl !== null || link.data.showcased) {
         try {
           await api.saveShowcase(created.id, link.data);
         } catch {
           notice = LINK_SAVE_FAILED;
         }
       }
-      navigate("/profile", { state: notice ? { notice } : undefined });
+      navigate("/my-showcase", { state: notice ? { notice } : undefined });
     } catch (cause) {
       if (cause instanceof ApiValidationError) {
         setErrors(Object.fromEntries(splitFieldMessages(cause.message, PROJECT_FIELDS, {}).map((m) => [m.field, m.text])));
@@ -104,9 +120,12 @@ export function AddProjectPage() {
   const describedBy = (field: string) => (errors[field] ? `error-${field}` : undefined);
 
   return (
-    <div className="mx-auto flex w-full max-w-[1200px] flex-col gap-8 px-6 py-12">
-      <Link to="/profile" className="w-fit text-sm text-ink-2 underline-offset-4 hover:text-accent-green hover:underline">
-        ← Back to builder profile
+    <div className="mx-auto flex w-full max-w-[1200px] flex-col gap-8 px-4 py-8 sm:px-6 sm:py-12">
+      <Link
+        to="/my-showcase"
+        className="inline-flex min-h-11 w-fit items-center text-sm text-ink-2 underline-offset-4 hover:text-accent-green hover:underline sm:min-h-0"
+      >
+        ← My showcase
       </Link>
 
       <header className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
@@ -127,7 +146,7 @@ export function AddProjectPage() {
           aria-label="Add a showcase project"
           onSubmit={(e) => void submit(e)}
           noValidate
-          className="flex flex-col gap-6 rounded-card border border-border bg-surface p-6 lg:col-span-2"
+          className="flex flex-col gap-6 rounded-card border border-border bg-surface p-5 sm:p-6 lg:col-span-2"
         >
           {errors.form ? (
             <p role="alert" className="rounded-card border border-danger/40 bg-surface-strong px-3 py-2 text-[13px] text-danger">
@@ -246,8 +265,8 @@ export function AddProjectPage() {
             <FieldError field="completedOn" errors={errors} />
           </div>
 
-          <fieldset className="flex flex-col gap-3">
-            <legend className={labelClass}>Links</legend>
+          <fieldset className="flex flex-col gap-4 border-t border-border pt-6">
+            <legend className="font-display text-xl font-semibold text-ink">Show your work</legend>
             <span id="project-links-help" className={helpClass}>
               {LINK_HELP}
             </span>
@@ -258,9 +277,11 @@ export function AddProjectPage() {
                 </label>
                 <input
                   id="project-live-url"
+                  type="url"
+                  inputMode="url"
                   autoComplete="off"
                   maxLength={500}
-                  placeholder="Live site or GitHub repo"
+                  placeholder="https://… live site or GitHub repo"
                   value={liveUrl}
                   aria-invalid={errors.liveUrl ? true : undefined}
                   aria-describedby={describedBy("liveUrl") ?? "project-links-help"}
@@ -278,8 +299,11 @@ export function AddProjectPage() {
                 </label>
                 <input
                   id="project-demo-url"
+                  type="url"
+                  inputMode="url"
                   autoComplete="off"
                   maxLength={500}
+                  placeholder="https://… video or walkthrough"
                   value={demoUrl}
                   aria-invalid={errors.demoUrl ? true : undefined}
                   aria-describedby={describedBy("demoUrl") ?? "project-links-help"}
@@ -292,44 +316,66 @@ export function AddProjectPage() {
                 <FieldError field="demoUrl" errors={errors} />
               </div>
             </div>
-            <Toggle
-              id="project-showcased"
-              label="Show on Showcase"
-              checked={showcased}
-              onChange={(next) => {
-                setShowcased(next);
-                clearErrors();
-              }}
-              description="Needs a link. Submitted for public listing once an admin confirms it."
-            />
+            <label
+              htmlFor="project-showcased"
+              className="flex cursor-pointer items-start gap-3 rounded-card border border-accent-green/30 bg-credential-tint/60 p-4"
+            >
+              <input
+                id="project-showcased"
+                type="checkbox"
+                checked={showcased}
+                aria-labelledby="project-showcased-label"
+                aria-describedby="project-showcased-help"
+                onChange={(e) => {
+                  setShowcased(e.target.checked);
+                  clearErrors();
+                }}
+                className="mt-0.5 h-5 w-5 shrink-0 cursor-pointer accent-accent-green"
+              />
+              <span className="flex flex-col gap-1">
+                <span id="project-showcased-label" className="text-sm font-semibold text-ink">
+                  Show on Showcase
+                </span>
+                <span id="project-showcased-help" className="text-[13px] leading-relaxed text-ink-2">
+                  {SHOWCASE_HELP}
+                </span>
+              </span>
+            </label>
           </fieldset>
 
-          <div className="flex items-center justify-end gap-3">
-            <Button type="button" variant="ghost" onClick={() => navigate("/profile")}>
+          <div className="flex flex-col-reverse gap-2 sm:flex-row sm:items-center sm:justify-end sm:gap-3">
+            <Button type="button" variant="outline" size="lg" className="w-full sm:h-10 sm:w-auto" onClick={() => navigate("/my-showcase")}>
               Cancel
             </Button>
-            <Button type="submit" disabled={busy} aria-busy={busy}>
-              {busy ? "Submitting…" : "Submit for confirmation"}
+            <Button type="submit" size="lg" className="w-full sm:h-10 sm:w-auto" disabled={busy} aria-busy={busy}>
+              {busy ? "Saving…" : "Save project"}
             </Button>
           </div>
         </form>
 
-        <Card title="What happens next" eyebrow="Graph assurance">
-          <ol className="flex flex-col gap-3">
-            {NEXT_STEPS.map((item, index) => (
-              <li key={item.step} className="flex gap-3">
-                <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-accent-green font-mono text-[11px] text-white">
-                  {index + 1}
-                </span>
-                <div className="flex flex-col gap-0.5">
-                  <span className="text-sm font-medium text-ink">{item.step}</span>
-                  <span className="text-[12px] leading-relaxed text-ink-3">{item.body}</span>
-                </div>
-              </li>
-            ))}
-          </ol>
-          <p className={helpClass}>Only confirmed rows are projected into the graph; a rejected project leaves it on the next reprojection.</p>
-        </Card>
+        {/* The side panel is for wide screens only; the form carries the same guidance in its helper text. */}
+        <aside className="hidden lg:block">
+          <Card title="What happens next">
+            <ol className="flex flex-col gap-4">
+              {NEXT_STEPS.map((item, index) => (
+                <li key={item.step} className="flex gap-3">
+                  <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-credential-tint font-mono text-[11px] font-semibold text-accent-green">
+                    {index + 1}
+                  </span>
+                  <div className="flex flex-col gap-0.5">
+                    <span className="text-sm font-medium text-ink">{item.step}</span>
+                    <span className="text-[12px] leading-relaxed text-ink-3">{item.body}</span>
+                  </div>
+                </li>
+              ))}
+            </ol>
+            {account !== undefined && account !== "confirmed" ? (
+              <p role="status" className="rounded-card bg-amber-fill/70 px-3.5 py-3 text-[13px] leading-relaxed text-amber-ink">
+                Your account is still in review. You can save projects now. They stay private until BASIX confirms you.
+              </p>
+            ) : null}
+          </Card>
+        </aside>
       </div>
     </div>
   );
