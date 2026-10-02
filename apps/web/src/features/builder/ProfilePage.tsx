@@ -118,6 +118,7 @@ export function ProfilePage() {
           {/* No key on purpose: a save must not remount the form (it keeps the draft and the saved message). */}
           <ProfileForm
             profile={profile}
+            projectCount={loaded.projects.length}
             onSave={async (input) => {
               const next = await api.putProfile(input);
               setLoaded((current) => (current ? { ...current, profile: next } : { profile: next, credentials: [], projects: [] }));
@@ -132,17 +133,7 @@ export function ProfilePage() {
                 setLoaded((current) => (current ? { ...current, credentials: [...current.credentials, created] } : current));
               }}
             />
-            <ProjectsCard
-              projects={loaded.projects}
-              hasProfile={profile !== null}
-              onSaveShowcase={async (projectId, body) => {
-                const updated = await api.saveShowcase(projectId, body);
-                setLoaded((current) =>
-                  current ? { ...current, projects: current.projects.map((p) => (p.id === projectId ? updated : p)) } : current,
-                );
-                return updated;
-              }}
-            />
+            <ProjectsCard projects={loaded.projects} hasProfile={profile !== null} account={profile?.accountStatus ?? null} />
           </div>
         </>
       ) : null}

@@ -78,14 +78,14 @@ export function SiteFooter() {
                         href={link.to}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="inline-block py-1.5 transition-colors hover:text-white sm:py-0"
+                        className="inline-flex min-h-11 items-center transition-colors hover:text-white sm:min-h-0"
                       >
                         {link.label}
                       </a>
                     </li>
                   ) : (
                     <li key={link.label}>
-                      <Link to={link.to} className="inline-block py-1.5 transition-colors hover:text-white sm:py-0">
+                      <Link to={link.to} className="inline-flex min-h-11 items-center transition-colors hover:text-white sm:min-h-0">
                         {link.label}
                       </Link>
                     </li>

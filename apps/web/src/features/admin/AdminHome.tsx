@@ -37,7 +37,7 @@ type LastDecision = { decision: AdminDecision; label: string };
 
 /** Filter pills in the design; the active one is filled ink. */
 const TAB =
-  "h-10 flex-none rounded-pill border border-border bg-surface-strong px-4 text-[14px] font-medium text-ink-2 data-active:border-ink data-active:bg-ink data-active:text-white data-active:shadow-none";
+  "h-11 flex-none rounded-pill border border-border bg-surface-strong px-4 sm:h-10 text-[14px] font-medium text-ink-2 data-active:border-ink data-active:bg-ink data-active:text-white data-active:shadow-none";
 
 const TABS = ["accounts", "credentials", "projects", "showcase", "decided"] as const;
 type TabValue = (typeof TABS)[number];
@@ -579,7 +579,7 @@ function QueueRow({
               aria-expanded={expanded}
               aria-controls={expanded ? panelId : undefined}
               onClick={onToggle}
-              className="mt-0.5 inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-border-strong bg-surface-strong font-mono text-[13px] text-ink-3 hover:border-accent-green hover:text-accent-green"
+              className="mt-0.5 inline-flex h-11 w-11 sm:h-9 sm:w-9 shrink-0 items-center justify-center rounded-lg border border-border-strong bg-surface-strong font-mono text-[13px] text-ink-3 hover:border-accent-green hover:text-accent-green"
             >
               <span aria-hidden="true">{expanded ? "−" : "+"}</span>
             </button>
@@ -605,7 +605,7 @@ function QueueRow({
               type="button"
               disabled={busy}
               onClick={() => onDecide("confirm")}
-              className="inline-flex h-8 items-center rounded-lg bg-accent-green px-3 text-[13px] font-medium text-white hover:bg-accent-green-hover disabled:cursor-not-allowed disabled:opacity-50"
+              className="inline-flex h-11 sm:h-8 items-center rounded-lg bg-accent-green px-3 text-[13px] font-medium text-white hover:bg-accent-green-hover disabled:cursor-not-allowed disabled:opacity-50"
             >
               Confirm
             </button>
@@ -613,7 +613,7 @@ function QueueRow({
               type="button"
               disabled={busy}
               onClick={() => onDecide("reject")}
-              className="inline-flex h-8 items-center rounded-lg border border-border-strong bg-surface-strong px-3 text-[13px] font-medium text-danger hover:border-danger disabled:cursor-not-allowed disabled:opacity-50"
+              className="inline-flex h-11 sm:h-8 items-center rounded-lg border border-border-strong bg-surface-strong px-3 text-[13px] font-medium text-danger hover:border-danger disabled:cursor-not-allowed disabled:opacity-50"
             >
               Reject
             </button>
@@ -653,7 +653,7 @@ function DecidedRow({
           disabled={busy}
           onClick={onReverse}
           title={row.status === "confirmed" ? "Reject this row" : "Confirm this row"}
-          className="inline-flex h-8 items-center rounded-lg border border-border-strong bg-surface-strong px-3 text-[13px] font-medium text-ink hover:border-accent-green disabled:cursor-not-allowed disabled:opacity-50"
+          className="inline-flex h-11 sm:h-8 items-center rounded-lg border border-border-strong bg-surface-strong px-3 text-[13px] font-medium text-ink hover:border-accent-green disabled:cursor-not-allowed disabled:opacity-50"
         >
           Reverse
         </button>
@@ -782,7 +782,7 @@ function ShowcaseEntryCard({
           type="button"
           disabled={busy}
           onClick={() => onDecide("confirm", entry)}
-          className="inline-flex h-8 items-center rounded-lg bg-accent-green px-3 text-[13px] font-medium text-white hover:bg-accent-green-hover disabled:cursor-not-allowed disabled:opacity-50"
+          className="inline-flex h-11 sm:h-8 items-center rounded-lg bg-accent-green px-3 text-[13px] font-medium text-white hover:bg-accent-green-hover disabled:cursor-not-allowed disabled:opacity-50"
         >
           Confirm
         </button>
@@ -790,7 +790,7 @@ function ShowcaseEntryCard({
           type="button"
           disabled={busy}
           onClick={() => onDecide("reject", entry)}
-          className="inline-flex h-8 items-center rounded-lg border border-border-strong bg-surface-strong px-3 text-[13px] font-medium text-danger hover:border-danger disabled:cursor-not-allowed disabled:opacity-50"
+          className="inline-flex h-11 sm:h-8 items-center rounded-lg border border-border-strong bg-surface-strong px-3 text-[13px] font-medium text-danger hover:border-danger disabled:cursor-not-allowed disabled:opacity-50"
         >
           Reject
         </button>

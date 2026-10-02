@@ -63,3 +63,17 @@
     }
   }
 }
+
+/*
+ * Phones: iOS Safari zooms the page into any field whose text is under 16px, so below the sm
+ * breakpoint every text field, select and textarea is 16px. Unlayered on purpose: it must beat the
+ * `text-sm` utilities (which live in a Tailwind layer) without touching any component. From sm up
+ * nothing changes.
+ */
+@media (max-width: 639.98px) {
+  input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="hidden"]):not([type="file"]),
+  select,
+  textarea {
+    font-size: 16px;
+  }
+}

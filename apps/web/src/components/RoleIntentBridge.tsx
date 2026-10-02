@@ -81,7 +81,7 @@ export function RoleIntentBridge() {
           type="button"
           onClick={() => void retry()}
           disabled={retrying}
-          className="h-9 rounded-xl bg-accent-green px-4 font-semibold text-white hover:bg-accent-green-hover disabled:opacity-70"
+          className="h-11 rounded-xl sm:h-9 bg-accent-green px-4 font-semibold text-white hover:bg-accent-green-hover disabled:opacity-70"
         >
           {retrying ? "Trying…" : "Try again"}
         </button>

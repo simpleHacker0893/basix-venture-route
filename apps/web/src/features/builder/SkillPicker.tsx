@@ -100,7 +100,7 @@ export function SkillPicker({
             <option key={skill} value={SKILL_LABELS[skill]} />
           ))}
         </datalist>
-        <Button type="button" variant="secondary" className="h-11 rounded-xl" disabled={atCap} onClick={addSkill}>
+        <Button type="button" variant="secondary" className="h-11 rounded-xl sm:h-11" disabled={atCap} onClick={addSkill}>
           Add skill
         </Button>
       </div>
@@ -109,7 +109,7 @@ export function SkillPicker({
           {value.map((skill) => (
             <li
               key={skill}
-              className="inline-flex h-9 items-center gap-1.5 rounded-pill border border-accent-green/60 bg-sage pl-3.5 pr-1.5 text-[14px] font-medium text-accent-green"
+              className="inline-flex h-11 sm:h-9 items-center gap-1.5 rounded-pill border border-accent-green/60 bg-sage pl-3.5 pr-1.5 text-[14px] font-medium text-accent-green"
             >
               <span>{skill}</span>
               <button

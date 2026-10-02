@@ -55,7 +55,7 @@ export function ShowcaseDetailPage() {
     <div className="mx-auto flex w-full max-w-[1200px] flex-col gap-6 px-6 py-8">
       {state.kind !== "not-found" ? (
         <div>
-          <Link to="/showcase" className="inline-flex items-center gap-1.5 text-[13px] text-ink-3 hover:text-ink">
+          <Link to="/showcase" className="inline-flex min-h-11 items-center gap-1.5 text-[13px] text-ink-3 hover:text-ink sm:min-h-0">
             <span aria-hidden="true">←</span>
             <span>Back to Showcase</span>
           </Link>
@@ -132,7 +132,7 @@ function DetailView({ detail }: Readonly<{ detail: ShowcaseDetail }>) {
                     href={link.url}
                     target="_blank"
                     rel={EXTERNAL_REL}
-                    className="inline-flex h-9 items-center rounded-lg border border-border-strong bg-surface-strong px-3 text-sm font-medium text-ink hover:border-accent-green"
+                    className="inline-flex h-11 sm:h-9 items-center rounded-lg border border-border-strong bg-surface-strong px-3 text-sm font-medium text-ink hover:border-accent-green"
                   >
                     {link.label}
                   </a>

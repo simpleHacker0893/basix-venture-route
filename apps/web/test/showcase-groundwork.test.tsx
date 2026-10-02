@@ -95,7 +95,7 @@ describe("the way back from the Showcase", () => {
     expect(screen.queryByRole("link", { name: "← Back to Home" })).not.toBeInTheDocument();
   });
 
-  it("keeps the builder sidebar's My showcase pointing at the profile section, with a link to the public page", async () => {
+  it("keeps the builder sidebar's My showcase pointing at its own page, and the profile card links to the public page and to it", async () => {
     const marketplace = fakeMarketplace({
       getProfile: async () => {
         throw new ApiNotFoundError();
@@ -106,10 +106,10 @@ describe("the way back from the Showcase", () => {
     render(<App initialPath="/profile" source={source} auth={builderAuth} marketplace={marketplace} />);
 
     const sections = await screen.findByRole("navigation", { name: "Sections" });
-    expect(within(sections).getByRole("link", { name: "My showcase" })).toHaveAttribute("href", "/profile#showcase");
+    expect(within(sections).getByRole("link", { name: "My showcase" })).toHaveAttribute("href", "/my-showcase");
     expect(within(sections).queryByRole("link", { name: "Showcase" })).not.toBeInTheDocument();
     const card = await screen.findByRole("region", { name: "Showcase projects" });
     expect(card).toHaveAttribute("id", "showcase");
-    expect(within(card).getByRole("link", { name: /View public Showcase/ })).toHaveAttribute("href", "/showcase");
+    expect(within(card).getByRole("link", { name: /Manage in My showcase/ })).toHaveAttribute("href", "/my-showcase");
   });
 });

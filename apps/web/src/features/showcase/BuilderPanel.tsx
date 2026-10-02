@@ -51,7 +51,7 @@ export function BuilderPanel({ builder }: Readonly<{ builder: ShowcaseBuilder }>
             {builder.skillSet.map((label) => (
               <span
                 key={label}
-                className="inline-flex h-8 items-center rounded-pill border border-border-strong px-3 text-sm text-ink-2"
+                className="inline-flex h-11 sm:h-8 items-center rounded-pill border border-border-strong px-3 text-sm text-ink-2"
               >
                 {label}
               </span>

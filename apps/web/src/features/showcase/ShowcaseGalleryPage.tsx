@@ -63,7 +63,7 @@ function listParamsFor(filters: Filters): ShowcaseListParams {
 }
 
 function chipClass(selected: boolean): string {
-  return `inline-flex h-8 items-center rounded-pill border px-3 text-sm transition-colors ${
+  return `inline-flex h-11 sm:h-8 items-center rounded-pill border px-3 text-sm transition-colors ${
     selected
       ? "border-accent-green bg-accent-green text-white"
       : "border-border-strong bg-surface-strong text-ink hover:border-accent-green"
@@ -138,7 +138,7 @@ export function ShowcaseGalleryPage() {
   return (
     <div className="mx-auto flex w-full max-w-[1200px] flex-col gap-6 px-6 py-16">
       {backTo ? (
-        <Link to={backTo} className="w-fit text-sm text-ink-2 underline-offset-4 hover:text-accent-green hover:underline">
+        <Link to={backTo} className="inline-flex min-h-11 w-fit items-center text-sm text-ink-2 underline-offset-4 hover:text-accent-green hover:underline">
           ← Back to Home
         </Link>
       ) : null}
@@ -159,11 +159,11 @@ export function ShowcaseGalleryPage() {
               value={searchInput}
               onChange={(event) => setSearchInput(event.target.value)}
               placeholder="Search by title"
-              className="h-9 w-[280px] rounded-card border border-border-strong bg-surface-strong px-3 text-sm"
+              className="h-11 w-full min-w-0 rounded-card sm:h-9 sm:w-[280px] border border-border-strong bg-surface-strong px-3 text-sm"
             />
             <button
               type="submit"
-              className="h-9 rounded-card border border-border-strong bg-surface-strong px-3 text-sm text-ink"
+              className="h-11 rounded-card sm:h-9 border border-border-strong bg-surface-strong px-3 text-sm text-ink"
             >
               Search
             </button>
@@ -195,7 +195,7 @@ export function ShowcaseGalleryPage() {
                 {VERTICAL_LABELS[vertical]}
               </button>
             ))}
-            <label className="ml-2 flex min-h-10 cursor-pointer items-center gap-2 text-[13px] text-ink-2">
+            <label className="ml-2 flex min-h-11 sm:min-h-10 cursor-pointer items-center gap-2 text-[13px] text-ink-2">
               <input
                 type="checkbox"
                 className="h-4 w-4 accent-[var(--vr-accent)]"

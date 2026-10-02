@@ -14,9 +14,11 @@ import { BookingProposePage } from "./features/booking/BookingProposePage";
 import { BookingStatusPage } from "./features/booking/BookingStatusPage";
 import { AddProjectPage } from "./features/builder/AddProjectPage";
 import { BuilderHome } from "./features/builder/BuilderHome";
+import { MyShowcasePage } from "./features/builder/MyShowcasePage";
 import { ProfilePage } from "./features/builder/ProfilePage";
 import { CandidatePage } from "./features/candidate/CandidatePage";
 import { DashboardPage } from "./features/dashboard/DashboardPage";
+import { VenturePage } from "./features/dashboard/VenturePage";
 import { PartnersPage } from "./features/ecosystem/PartnersPage";
 import { HandoffScreen } from "./features/handoff/HandoffScreen";
 import { LandingPage } from "./features/landing/LandingPage";
@@ -100,6 +102,7 @@ export function AppRoutes() {
           {/* The builder's home: status, requests with the engine's verdicts, bids, interviews. */}
           <Route path="home" element={<BuilderHome />} />
           <Route path="profile" element={<ProfilePage />} />
+          <Route path="my-showcase" element={<MyShowcasePage />} />
           <Route path="profile/projects/new" element={<AddProjectPage />} />
           {/* Sprint 004 screen 10: the requests board with the engine's eligibility verdicts. */}
           <Route path="requests" element={<RequestsBoard />} />
@@ -114,6 +117,8 @@ export function AppRoutes() {
         <Route element={<AppShell />}>
           {/* Sprint 004 screen 11: the founder dashboard fed by GET /api/me/dashboard. */}
           <Route path="dashboard" element={<DashboardPage />} />
+          {/* Design F3: one published request, from the dashboard response (no extra endpoint). */}
+          <Route path="ventures/:requestId" element={<VenturePage />} />
           {/* Sprint 004 screen 13, propose variant: ?builder=<slug>&request=<id>. */}
           <Route path="bookings/new" element={<BookingProposePage />} />
         </Route>
