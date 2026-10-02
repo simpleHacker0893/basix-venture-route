@@ -201,7 +201,7 @@ export function ProfileForm({ profile, projectCount = 0, onSave }: ProfileFormPr
       aria-label="Builder profile"
       onSubmit={(e) => void submit(e)}
       noValidate
-      className="grid grid-cols-1 gap-6 lg:grid-cols-[260px_minmax(0,1fr)]"
+      className="grid grid-cols-1 gap-6 xl:grid-cols-[260px_minmax(0,1fr)]"
     >
       <ProfileRail sections={sections} />
       <div className="flex min-w-0 flex-col gap-6">

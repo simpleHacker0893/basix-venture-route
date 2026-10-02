@@ -162,7 +162,7 @@ export function BidDialog({ request, profile, onClose, onPlaced }: Props) {
               maxLength={1000}
               rows={3}
               aria-describedby={errors.message ? "error-message" : undefined}
-              className={`${inputClass} h-auto py-2`}
+              className={`${inputClass} h-auto py-2 sm:h-auto`}
             />
             <p className={helpClass}>Your confirmed credentials and projects are the evidence; name the one that fits.</p>
             <FieldError field="message" errors={errors} />

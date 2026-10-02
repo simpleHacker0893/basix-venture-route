@@ -100,7 +100,7 @@ export function Toggle({
   description,
 }: Readonly<{ id: string; label: string; checked: boolean; onChange(next: boolean): void; description?: React.ReactNode }>) {
   return (
-    <div className="flex min-h-11 items-center justify-between gap-4">
+    <div className="flex min-h-11 items-center justify-between gap-4 sm:min-h-0">
       <div className="flex flex-col gap-0.5">
         <label htmlFor={id} className="text-sm font-medium text-ink">
           {label}

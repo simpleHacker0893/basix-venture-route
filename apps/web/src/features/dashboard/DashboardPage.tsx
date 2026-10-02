@@ -235,7 +235,7 @@ export function DashboardPage() {
             {data.requests.length === 0 ? (
               <div className="flex flex-col items-center gap-3 rounded-2xl border border-dashed border-border-strong bg-surface px-6 py-10 text-center">
                 <p className="text-[15px] text-ink-2">No briefs published yet. Route a brief and publish it as a request.</p>
-                <Link to="/route" className="-my-2 inline-flex items-center gap-1.5 py-3 text-[14px] font-semibold text-accent-green hover:underline">
+                <Link to="/route" className="-my-2 inline-flex items-center gap-1.5 py-3 sm:py-2.5 text-[14px] font-semibold text-accent-green hover:underline">
                   Describe your MVP
                   <ArrowRight aria-hidden="true" className="h-3.5 w-3.5" />
                 </Link>
@@ -265,7 +265,7 @@ export function DashboardPage() {
                             type="button"
                             onClick={() => void viewRoute(request)}
                             disabled={routing !== null}
-                            className="-my-2 py-3 text-[15px] font-semibold text-accent-green hover:underline disabled:opacity-60"
+                            className="-my-2 py-3 sm:py-2.5 text-[15px] font-semibold text-accent-green hover:underline disabled:opacity-60"
                           >
                             {routing === request.id ? "Routing…" : "View route"}
                           </button>

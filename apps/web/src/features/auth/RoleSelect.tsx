@@ -109,7 +109,7 @@ export function RoleSelect() {
           <button
             type="button"
             onClick={() => setManual(true)}
-            className="-my-2 w-fit py-3 text-[14px] font-semibold text-accent-green hover:underline"
+            className="-my-2 w-fit py-3 sm:py-2.5 text-[14px] font-semibold text-accent-green hover:underline"
           >
             Choose your role here instead
           </button>

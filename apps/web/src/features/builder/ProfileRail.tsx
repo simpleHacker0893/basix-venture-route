@@ -17,7 +17,7 @@ export function ProfileRail({ sections }: Readonly<{ sections: readonly ProfileS
   const radius = 30;
   const circumference = 2 * Math.PI * radius;
   return (
-    <aside className="flex flex-col gap-4 lg:sticky lg:top-24 lg:self-start">
+    <aside className="flex flex-col gap-4 xl:sticky xl:top-24 xl:self-start">
       <section aria-label="Profile strength" className="flex flex-col gap-3 rounded-card border border-border bg-surface-strong p-5 shadow-card">
         <div className="flex items-center gap-4">
           <div className="relative grid h-[72px] w-[72px] shrink-0 place-items-center">

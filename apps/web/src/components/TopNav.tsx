@@ -80,7 +80,7 @@ export function TopNav() {
           <Link
             to="/"
             onClick={close}
-            className="flex min-h-11 items-center gap-2.5 font-display text-[19px] font-semibold tracking-tight text-ink hover:opacity-90 sm:text-xl"
+            className="flex min-h-11 items-center gap-2.5 sm:min-h-0 font-display text-[19px] font-semibold tracking-tight text-ink hover:opacity-90 sm:text-xl"
           >
             <LogoMark />
             Venture Route

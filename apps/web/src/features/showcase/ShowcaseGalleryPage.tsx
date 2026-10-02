@@ -195,7 +195,7 @@ export function ShowcaseGalleryPage() {
                 {VERTICAL_LABELS[vertical]}
               </button>
             ))}
-            <label className="ml-2 flex min-h-11 cursor-pointer items-center gap-2 text-[13px] text-ink-2">
+            <label className="ml-2 flex min-h-11 sm:min-h-10 cursor-pointer items-center gap-2 text-[13px] text-ink-2">
               <input
                 type="checkbox"
                 className="h-4 w-4 accent-[var(--vr-accent)]"

@@ -31,7 +31,7 @@ function ExploreLink() {
   return (
     <>
       Just exploring?{" "}
-      <Link to="/route" className="inline-flex min-h-11 items-center gap-1 font-semibold text-accent-green hover:underline">
+      <Link to="/route" className="inline-flex min-h-11 items-center gap-1 font-semibold text-accent-green hover:underline sm:min-h-0 sm:py-2.5">
         Route without an account
         <ArrowRight aria-hidden="true" className="h-3.5 w-3.5" />
       </Link>
@@ -106,7 +106,7 @@ export function SignInScreen() {
             <button
               type="button"
               onClick={() => choose("admin")}
-              className="inline-flex min-h-11 items-center text-ink-3 hover:text-ink hover:underline"
+              className="inline-flex min-h-11 items-center text-ink-3 hover:text-ink hover:underline sm:min-h-0 sm:py-2.5"
             >
               BASIX admin? Sign in
             </button>
@@ -153,7 +153,7 @@ export function SignInScreen() {
                   key={tab.mode}
                   to={`${tab.to}${search}`}
                   aria-current={active ? "page" : undefined}
-                  className={`rounded-lg px-3 py-3 text-center text-[15px] transition-colors ${active ? "bg-surface-strong font-semibold text-ink shadow-card" : "font-medium text-ink-3 hover:text-ink"}`}
+                  className={`rounded-lg px-3 py-3 text-center text-[15px] sm:py-2.5 transition-colors ${active ? "bg-surface-strong font-semibold text-ink shadow-card" : "font-medium text-ink-3 hover:text-ink"}`}
                 >
                   {tab.label}
                 </Link>

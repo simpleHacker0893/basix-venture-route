@@ -100,7 +100,7 @@ export function SkillPicker({
             <option key={skill} value={SKILL_LABELS[skill]} />
           ))}
         </datalist>
-        <Button type="button" variant="secondary" className="h-11 rounded-xl" disabled={atCap} onClick={addSkill}>
+        <Button type="button" variant="secondary" className="h-11 rounded-xl sm:h-11" disabled={atCap} onClick={addSkill}>
           Add skill
         </Button>
       </div>

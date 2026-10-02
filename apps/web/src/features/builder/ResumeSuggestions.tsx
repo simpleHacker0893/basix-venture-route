@@ -116,7 +116,7 @@ export function ResumeSuggestions({ onAccept, currentSkills, max = 20 }: ResumeS
       <Button
         type="button"
         variant="secondary"
-        className="h-11 w-fit gap-2 rounded-xl"
+        className="h-11 w-fit gap-2 rounded-xl sm:h-11"
         disabled={busy || unavailable}
         aria-busy={busy}
         aria-describedby={unavailable ? UNAVAILABLE_ID : undefined}
