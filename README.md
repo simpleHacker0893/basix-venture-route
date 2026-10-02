@@ -11,11 +11,15 @@ Venture Route turns a founder's plain-language brief into the **smallest credibl
 
 | Quick links | |
 |---|---|
-| Live demo | _pending, filled at #142_ |
-| Demo video (3 min) | _to be added_ |
+| Live app | [basix-venture-route.vercel.app](https://basix-venture-route.vercel.app/) |
+| Live engine | [venture-route-engine.onrender.com/health](https://venture-route-engine.onrender.com/health) |
+| Demo videos | [Venture Route](https://youtu.be/jCPnXxG3vuU) · [Venture Route demo](https://youtu.be/dTo9q6tkUmU) · [Team demo](https://youtu.be/jQxrl5ooeQg) |
 | Pitch deck | [canva.link/venture-route](https://canva.link/venture-route) |
 | Run it locally | [Quick start](#quick-start) (about five minutes, no API keys needed) |
 | For MeTTa judges | [Where the MeTTa lives](#for-metta-judges-where-the-metta-lives) |
+| Taking over the project | [docs/HANDOFF.md](docs/HANDOFF.md) |
+
+[![Watch the Venture Route video](https://img.youtube.com/vi/jCPnXxG3vuU/hqdefault.jpg)](https://youtu.be/jCPnXxG3vuU)
 
 <table>
   <tr>
@@ -28,13 +32,13 @@ Venture Route turns a founder's plain-language brief into the **smallest credibl
   </tr>
 </table>
 
-**Status:** Sprints 000–005a merged: the MeTTa engine, the routing core, the founder app, the marketplace (Clerk sign-in, Neon Postgres, requests, eligibility-gated bids, interview bookings), the public Builder Showcase and Chloe voice intake. Demo hardening and deployment are in progress. Hackathon proof of concept for the SingularityNET MeTTa track; demo Thursday 1 October 2026. Every record is fictional demo data.
+**Status:** Sprints 000–005a merged: the MeTTa engine, the routing core, the founder app, the marketplace (Clerk sign-in, Neon Postgres, requests, eligibility-gated bids, interview bookings), the public Builder Showcase and Chloe voice intake. Deployed: the web app on Vercel and the engine on Render, both live from `master`. Hackathon proof of concept for the SingularityNET MeTTa track. Every record is fictional demo data.
 
-**Team:** Simon Njuguna (founder and team lead) and Antony Peter (team mate).
+**Team ThisisAnfield:** Njuguna Njenga, Anthony Onyango, Naomi Wangui.
 
 ## Contents
 
-[The problem](#the-problem) · [Our answer](#our-answer) · [A worked example](#a-worked-example) · [Why this is different](#why-this-is-different) · [For MeTTa judges](#for-metta-judges-where-the-metta-lives) · [What runs today](#what-runs-today) · [Quick start](#quick-start) · [Deploy](#deploy) · [Test, lint, type-check](#test-lint-type-check) · [Architecture](#architecture) · [Demo scenarios](#demo-scenarios) · [Limitations and what is next](#limitations-and-what-is-next) · [Roadmap](#roadmap)
+[The problem](#the-problem) · [Our answer](#our-answer) · [A worked example](#a-worked-example) · [Why this is different](#why-this-is-different) · [For MeTTa judges](#for-metta-judges-where-the-metta-lives) · [Demo links](#demo-links) · [What runs today](#what-runs-today) · [Quick start](#quick-start) · [Installation criteria](#installation-criteria) · [Deploy](#deploy) · [Test, lint, type-check](#test-lint-type-check) · [Architecture](#architecture) · [Demo scenarios](#demo-scenarios) · [Limitations and what is next](#limitations-and-what-is-next) · [Roadmap](#roadmap)
 
 ## The problem
 
@@ -138,12 +142,20 @@ Then open `http://localhost:5173/route`, pick **Health pilot**, open **Why this 
 
 | What | Link |
 |---|---|
-| Live demo | _pending, filled at #142_ |
-| Demo video (3 min) | _to be added_ |
+| Live app (Vercel) | [basix-venture-route.vercel.app](https://basix-venture-route.vercel.app/) |
+| Live engine (Render) | [venture-route-engine.onrender.com](https://venture-route-engine.onrender.com/health) (`/health`) |
 | Pitch deck (Canva, 12 slides) | [canva.link/venture-route](https://canva.link/venture-route) |
 | Repository | [github.com/simpleHacker0893/basix-venture-route](https://github.com/simpleHacker0893/basix-venture-route) |
 
-**Team:** Simon Njuguna (founder and team lead), Antony Peter (team mate).
+### Demo videos
+
+| [![Venture Route](https://img.youtube.com/vi/jCPnXxG3vuU/hqdefault.jpg)](https://youtu.be/jCPnXxG3vuU) | [![Venture Route demo](https://img.youtube.com/vi/dTo9q6tkUmU/hqdefault.jpg)](https://youtu.be/dTo9q6tkUmU) | [![Venture Route team demo](https://img.youtube.com/vi/jQxrl5ooeQg/hqdefault.jpg)](https://youtu.be/jQxrl5ooeQg) |
+|:---:|:---:|:---:|
+| [Venture Route](https://youtu.be/jCPnXxG3vuU) | [Venture Route demo](https://youtu.be/dTo9q6tkUmU) | [Team demo](https://youtu.be/jQxrl5ooeQg) |
+
+The live engine is one Render web service (one instance, D-15). On Render's free plan it sleeps when idle and the first request takes up to a minute to wake it. `GET /health` answers `"status":"ok"` with `facts_loaded: 181` and `rules_loaded: 7` once it is ready.
+
+**Team ThisisAnfield:** Njuguna Njenga, Anthony Onyango, Naomi Wangui.
 
 ## What runs today
 
@@ -248,14 +260,33 @@ The one-shot `seed` service runs `alembic upgrade head` and then `scripts/seed_s
 
 The engine image is `python:3.12-slim` with uv, a non-root user, the migrations, and a health check. The web app is served by Vite locally and by Vercel in deployment (D-27).
 
+### Installation criteria
+
+An install is done when every line below holds. Each comes with the command that proves it.
+
+| Criterion | Check | Expected |
+|---|---|---|
+| Python 3.12 and uv are on the path | `python --version` and `uv --version` | `3.12.x`; uv `0.8` or later |
+| Node 24 and pnpm 9.12 are on the path | `node --version` and `pnpm --version` | `v24.x`; `9.12.x` |
+| The engine loaded the MeTTa graph | `curl -s http://127.0.0.1:8000/health` | `"facts_loaded":181,"rules_loaded":7,"hyperon_version":"0.2.10"` |
+| The web app reaches the engine | open `http://localhost:5173/route`, pick **Health pilot** | a `feasible` route of three builders for USD 370 a day |
+| The engine suite passes | `cd services/engine && uv run pytest -q` | no failures (marketplace tests skip without `TEST_DATABASE_URL`) |
+| The web suite passes | `pnpm -r build && pnpm -r test` | no failures |
+| The marketplace store is migrated (optional) | `uv run alembic current` in `services/engine` | the head revision, with `DATABASE_URL` set |
+
+Sign-in screens need the Clerk keys in `.env` (`VITE_CLERK_PUBLISHABLE_KEY`, `CLERK_SECRET_KEY`, `CLERK_JWKS_URL`); without them the routing flow still works and account screens show "Sign-in is not configured".
+
 ## Deploy
 
 The hosted demo is: browser, then the **web app on Vercel**, then the **engine on Render** (FastAPI + Hyperon, Docker), then **Neon** Postgres. **Clerk** handles sign-in. Deploy in this order: Render, then Vercel, then connect them (the engine's `CORS_ORIGINS` and the Clerk production webhook). After setup, every push to `master` redeploys both hosts. The full step-by-step wizard, with the values to collect and the checks to paste back, is [docs/DEPLOY.md](docs/DEPLOY.md); this section does not repeat it.
 
 | Service | Host | URL |
 |---|---|---|
-| Web app | Vercel | _pending, filled at #142_ |
-| Engine (`/health`) | Render | _pending, filled at #142_ |
+| Web app | Vercel | [basix-venture-route.vercel.app](https://basix-venture-route.vercel.app/) |
+| Engine (`/health`) | Render | [venture-route-engine.onrender.com/health](https://venture-route-engine.onrender.com/health) |
+| Clerk webhook | Render | `https://venture-route-engine.onrender.com/api/webhooks/clerk` (signed by Svix; an unsigned call answers `400`) |
+
+Verified on 2 October 2026 (#142): `/health` answers `200`, and the engine's CORS allows the Vercel origin.
 
 ### Install the deploy tools
 
@@ -271,8 +302,8 @@ On Windows machines with Application Control the native `render.exe` can be bloc
 ### Demo video and submission
 
 - [docs/demo/SCRIPT.md](docs/demo/SCRIPT.md): the demo video plan and script.
-- [SUBMISSION.md](SUBMISSION.md): the hackathon submission text.
-- The demo harness run instructions are not merged yet (#145); link to be added once they are.
+- [SUBMISSION.md](SUBMISSION.md): the hackathon submission text; `uv run python scripts/check_submission.py --final` (in `services/engine`) checks it.
+- [apps/web/e2e/demo/README.md](apps/web/e2e/demo/README.md): the Playwright demo harness that records each scene at 1080p (local only, never in CI).
 
 ## Test, lint, type-check
 
@@ -297,13 +328,14 @@ Engine tests run against the real Hyperon runtime; there are no mocks of it, and
 
 ### Last recorded CI result
 
-From the last recorded run on `master` (CI run 36622550686 at `e712d35`, 29 September 2026); the live status is the CI badge at the top.
+From the last recorded run on `master` (CI run 36971801139 at `3f2d85d`, 2 October 2026); the live status is the CI badge at the top.
 
 | Suite | Result |
 |---|---|
-| Engine (pytest, real Hyperon runtime, Postgres 18 service container) | 565 passed |
-| Web (Vitest) | 268 passed |
-| Playwright, no-key suite against `vite preview` | 23 passed |
+| Engine (pytest, real Hyperon runtime, Postgres 18 service container) | 671 passed |
+| Web (Vitest) | 364 passed |
+| Contracts (Vitest) | 46 passed |
+| Playwright, no-key suite against `vite preview` | 28 passed |
 | Playwright, Clerk suite (real sign-in, blocking in CI) | 21 passed |
 | Lint and types | ruff, `mypy .` strict, TypeScript strict and eslint, Zod ↔ Pydantic schema check, offline-snapshot check |
 
@@ -425,7 +457,7 @@ Planning follows the 120x Architect/Builder Operating Pack. Start with `AGENTS.m
 | 003 Marketplace | 23 Sep | Clerk roles, Postgres store, profiles and proof, admin confirmation projected into the graph | merged |
 | 004 Requests & interviews | 24 Sep | requests published from a route, eligibility-gated bids, interview bookings, founder dashboard | merged |
 | 005a Builder Showcase | 25–27 Sep | public showcase of shipped products, certifications and skills, admin-gated, display-only (D-42, D-43) | merged |
-| 005 Demo hardening | 28 Sep – 1 Oct | single launch command, Render + Vercel deploy, recording, pitch, freeze | in progress |
+| 005 Demo hardening | 28 Sep – 2 Oct | Render + Vercel deploy, demo harness, videos, submission | deployed; demo scenes #147–#149 open |
 | 006 Chloe voice intake | folded into 005a | browser-speech voice skin over the unchanged conversation API (D-38, D-51) | merged |
 
 ## Limitations and what is next
@@ -435,16 +467,13 @@ We would rather state these than have you find them.
 - **Demo data only.** Every builder, credential, project, cohort, university and partner is fictional and labelled. No real BASIX integration, personal data, IP ownership claim or partner relationship is represented.
 - **No payments, contracting or hiring.** Requests, bids and interview bookings are in-app state only.
 - **The language model is optional.** Without a key the engine uses a null adapter and the structured form; routes are identical, because the model never decides them.
-- **Hosted deployment** (Render engine, Vercel web) is being completed for the demo; until then run it locally with the [Quick start](#quick-start). Reprojection latency on the hosted Neon database is a tracked item (issue #51).
+- **Hosted deployment** runs on Render (engine) and Vercel (web), both redeploying from `master`. Reprojection latency on the hosted Neon database is a tracked item (issue #51).
 
 **Next:** real BASIX data replacing the seed graph through the existing projection path, voice intake hardening, and richer partner and cohort facts for the rules to reason over. The rule names stay fixed; new facts, not new matchers.
 
 ## Team
 
-| | |
-|---|---|
-| **Simon Njuguna** | Founder and team lead |
-| **Antony Peter** | Team mate |
+**ThisisAnfield**: Njuguna Njenga, Anthony Onyango, Naomi Wangui.
 
 ## Contributing
 
