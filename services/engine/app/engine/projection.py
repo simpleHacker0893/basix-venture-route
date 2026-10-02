@@ -62,7 +62,9 @@ def render_program(builders: list[ConfirmedBuilder]) -> list[str]:
     lines: list[str] = []
     for b in builders:
         lines.append(f"(confirmed {ADMIN_SYMBOL} {b.builder_id})")
-        lines.append(f"(day-rate {b.builder_id} {b.day_rate})")
+        # Still the profiles.day_rate column; ticket #159 (migration 0004) renames and converts it
+        # to hourly_rate, USD 0-50 (D-59).
+        lines.append(f"(hourly-rate {b.builder_id} {b.day_rate})")
         lines.append(f"(located-in {b.builder_id} {repo.slugify(b.location)})")
         lines.extend(f"(supports-mode {b.builder_id} {mode})" for mode in b.modes)
         lines.extend(

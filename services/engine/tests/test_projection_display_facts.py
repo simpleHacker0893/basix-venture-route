@@ -84,6 +84,14 @@ def _builder(**overrides: Any) -> ConfirmedBuilder:
 # -- render_program(): pure ------------------------------------------------------------------------
 
 
+def test_the_builder_rate_renders_as_an_hourly_rate_fact() -> None:
+    """D-59: the assembler reads `hourly-rate`; no `day-rate` atom reaches the space."""
+    lines = render_program([_builder()])
+
+    assert "(hourly-rate naomi-chebet 120)" in lines
+    assert not any(line.startswith("(day-rate ") for line in lines)
+
+
 def test_display_facts_render_in_their_exact_forms() -> None:
     lines = render_program([_builder()])
 

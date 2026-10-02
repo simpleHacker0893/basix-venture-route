@@ -83,7 +83,8 @@ async def publish(
         delivery_mode=brief.delivery_mode,
         availability_start=brief.availability_start,
         availability_end=brief.availability_end,
-        daily_budget=brief.daily_budget,
+        # The request column keeps its name until ticket #160; it now stores the hourly budget.
+        daily_budget=brief.hourly_budget,
         route_status=body.route.status,
     )
     return request_out(row, user.db_user)

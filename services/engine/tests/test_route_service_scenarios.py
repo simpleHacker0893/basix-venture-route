@@ -1,6 +1,7 @@
 """Route service over the real runtime: engine -> assembler -> VentureRoute (Sprint 001, #13).
 
-Expected values are the exact DOMAIN.md §Demo scenarios (D-22, D-23). The same scenarios are
+Expected values are the exact DOMAIN.md §Demo scenarios (D-22, D-23), in hourly terms since
+D-59 (spec 2026-10-02-hourly-pricing-design.md §Demo scenarios). The same scenarios are
 repeated over HTTP in test_scenarios_api.py (#18).
 """
 
@@ -29,7 +30,7 @@ def test_health_pilot_is_feasible_with_the_exact_team_ip_cohort_and_partner(
         ("daniel-kiptoo", "both"),
         ("grace-wambui", "credential"),
     ]
-    assert route.total_daily_rate == 370
+    assert route.total_hourly_rate == 47
     assert route.reusable_ip is not None
     assert route.reusable_ip.asset_id == "asset-afya-triage"
     assert route.reusable_ip.path.rule == "reuse-fit"
@@ -60,7 +61,7 @@ def test_agri_marketplace_is_feasible_and_cost_ordering_beats_evidence(
         "wanjiru-mwangi",
     ]
     assert "brian-odhiambo" not in {b.builder_id for b in route.builders}
-    assert route.total_daily_rate == 315
+    assert route.total_hourly_rate == 40
     assert route.reusable_ip is not None
     assert route.reusable_ip.asset_id == "asset-shamba-records"
     assert route.partner is not None
@@ -79,7 +80,7 @@ def test_constrained_brief_is_partial_with_one_skill_gap_and_no_fabricated_build
     assert [(b.builder_id, b.covers, b.evidence_type) for b in route.builders] == [
         ("zawadi-njoroge", ["rust"], "credential")
     ]
-    assert route.total_daily_rate == 130
+    assert route.total_hourly_rate == 16
     assert route.reusable_ip is None
     assert route.partner is None
     assert "route-gap" in route.rules_applied
@@ -92,13 +93,15 @@ def test_budget_challenge_is_partial_with_the_d22_budget_gap(
 
     assert route.status == "partial"
     assert route.builders == []
-    assert route.total_daily_rate == 0
+    assert route.total_hourly_rate == 0
     assert len(route.gaps) == 1
     gap = route.gaps[0]
     assert (gap.category, gap.rule) == ("budget", "assembler.budget-fit")
     assert gap.affected == ["amina-otieno", "daniel-kiptoo", "grace-wambui"]
-    assert "370" in gap.statement and "250" in gap.statement
-    assert gap.next_actions == ["Raise daily budget to USD 370"]
+    assert gap.statement == (
+        "Cheapest verified team costs USD 47 an hour; budget is USD 31 an hour"
+    )
+    assert gap.next_actions == ["Raise the hourly budget to USD 47"]
     assert route.cohort is None
     assert route.partner is None
 

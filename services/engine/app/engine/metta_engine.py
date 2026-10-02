@@ -143,14 +143,14 @@ class MettaRouteEngine:
             raise EngineError(f"{builder} belongs to more than one cohort")
         return _parse_cohort(witnesses[0], builder)
 
-    def day_rates(self, builder_ids: list[str]) -> dict[str, int]:
-        """USD per day per builder from `day-rate` atoms (D-24); every id must have one."""
+    def hourly_rates(self, builder_ids: list[str]) -> dict[str, int]:
+        """USD per hour per builder from `hourly-rate` atoms (D-24, D-59); every id has one."""
         rates: dict[str, int] = {}
         for builder_id in builder_ids:
             builder = _symbol(builder_id, "builder id")
-            witnesses = self._query(f"!(match &self (day-rate {builder} $usd) $usd)")
+            witnesses = self._query(f"!(match &self (hourly-rate {builder} $usd) $usd)")
             if len(witnesses) != 1 or not isinstance(witnesses[0], int):
-                raise EngineError(f"expected one integer day-rate fact for {builder}")
+                raise EngineError(f"expected one integer hourly-rate fact for {builder}")
             rates[builder] = witnesses[0]
         return rates
 

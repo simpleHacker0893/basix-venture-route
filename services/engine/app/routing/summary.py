@@ -23,7 +23,7 @@ def template_summary(route: VentureRoute) -> str:
         covered = ", ".join(sorted({skill for b in route.builders for skill in b.covers}))
         parts.append(
             f"{len(route.builders)} builder{'s' if len(route.builders) != 1 else ''} "
-            f"({names}) cover {covered} for USD {route.total_daily_rate} a day."
+            f"({names}) cover {covered} for USD {route.total_hourly_rate} an hour."
         )
     if route.reusable_ip is not None:
         parts.append(f"Reusable IP: {route.reusable_ip.title}.")

@@ -437,7 +437,7 @@ class RouteSnapshot(Wire):
     """What the founder saw when publishing; display-only, never an input to eligibility."""
 
     status: RouteStatus
-    total_daily_rate: SafeInt = Field(alias="totalDailyRate")
+    total_hourly_rate: SafeInt = Field(alias="totalHourlyRate")
     builder_ids: list[str] = Field(alias="builderIds")
 
 

@@ -1,8 +1,8 @@
 """Seam: HTTP POST /api/route and POST /api/conversation, the five DOMAIN.md scenarios (#18).
 
 Expected teams, totals and gaps are the exact literals from planning/DOMAIN.md §Demo scenarios
-and acceptance.md (D-22, D-23). Both paths run with LLM_PROVIDER=null and must agree byte for
-byte on the `route` object.
+and acceptance.md (D-22, D-23), in hourly terms since D-59. Both paths run with
+LLM_PROVIDER=null and must agree byte for byte on the `route` object.
 """
 
 import json
@@ -23,7 +23,7 @@ SCENARIOS: dict[str, dict[str, Any]] = {
             ("daniel-kiptoo", "both"),
             ("grace-wambui", "credential"),
         ],
-        "totalDailyRate": 370,
+        "totalHourlyRate": 47,
         "reusableIp": "asset-afya-triage",
         "cohortOf": "amina-otieno",
         "partner": "amani-health",
@@ -36,7 +36,7 @@ SCENARIOS: dict[str, dict[str, Any]] = {
             ("lucy-achieng", "project"),
             ("wanjiru-mwangi", "credential"),
         ],
-        "totalDailyRate": 315,
+        "totalHourlyRate": 40,
         "reusableIp": "asset-shamba-records",
         "cohortOf": "fatuma-hassan",
         "partner": "shamba-agri",
@@ -45,7 +45,7 @@ SCENARIOS: dict[str, dict[str, Any]] = {
     "brief-constrained-01": {
         "status": "partial",
         "builders": [("zawadi-njoroge", "credential")],
-        "totalDailyRate": 130,
+        "totalHourlyRate": 16,
         "reusableIp": None,
         "cohortOf": "zawadi-njoroge",
         "partner": None,
@@ -54,7 +54,7 @@ SCENARIOS: dict[str, dict[str, Any]] = {
     "brief-budget-01": {
         "status": "partial",
         "builders": [],
-        "totalDailyRate": 0,
+        "totalHourlyRate": 0,
         "reusableIp": "asset-afya-triage",
         "cohortOf": None,
         "partner": None,
@@ -69,7 +69,7 @@ SCENARIOS: dict[str, dict[str, Any]] = {
     "brief-onsite-01": {
         "status": "infeasible",
         "builders": [],
-        "totalDailyRate": 0,
+        "totalHourlyRate": 0,
         "reusableIp": None,
         "cohortOf": None,
         "partner": None,
@@ -118,7 +118,7 @@ def test_scenario_matches_domain_md_exactly(
 
     assert route["status"] == expected["status"]
     assert [(b["builderId"], b["evidenceType"]) for b in route["builders"]] == expected["builders"]
-    assert route["totalDailyRate"] == expected["totalDailyRate"]
+    assert route["totalHourlyRate"] == expected["totalHourlyRate"]
     assert (route["reusableIp"] or {}).get("assetId") == expected["reusableIp"]
     assert (route["partner"] or {}).get("partnerId") == expected["partner"]
     if expected["cohortOf"] is None:
@@ -149,15 +149,17 @@ def test_agri_cost_ordering_beats_evidence_ordering(client: TestClient) -> None:
 
     assert "brian-odhiambo" not in {b["builderId"] for b in route["builders"]}
     lucy = next(b for b in route["builders"] if b["builderId"] == "lucy-achieng")
-    assert (lucy["dayRate"], lucy["evidenceType"]) == (95, "project")
+    assert (lucy["hourlyRate"], lucy["evidenceType"]) == (12, "project")
 
 
 def test_budget_challenge_gap_is_exactly_d22(client: TestClient) -> None:
     route = via_form(client, "brief-budget-01")
 
     gap = route["gaps"][0]
-    assert "370" in gap["statement"] and "250" in gap["statement"]
-    assert gap["nextActions"] == ["Raise daily budget to USD 370"]
+    assert gap["statement"] == (
+        "Cheapest verified team costs USD 47 an hour; budget is USD 31 an hour"
+    )
+    assert gap["nextActions"] == ["Raise the hourly budget to USD 47"]
 
 
 def test_constrained_brief_fabricates_no_mobile_builder(client: TestClient) -> None:

@@ -42,7 +42,7 @@ REQUIRED_FIELDS: tuple[BriefField, ...] = (
     "availabilityStart",
     "availabilityEnd",
     "deliveryMode",
-    "dailyBudget",
+    "hourlyBudget",
     "preferReusableIp",
 )
 
@@ -60,7 +60,7 @@ QUESTIONS: dict[BriefField, str] = {
     "availabilityEnd": "availabilityEnd: last day of the engagement (YYYY-MM-DD)?",
     "deliveryMode": "deliveryMode: remote, hybrid or on-site?",
     "location": "location: which town or city for on-site work?",
-    "dailyBudget": "dailyBudget: your budget in USD per day?",
+    "hourlyBudget": "hourlyBudget: your budget per hour for the whole team, in USD (1 to 250)?",
     "preferReusableIp": "preferReusableIp: should we look for reusable IP (yes or no)?",
 }
 

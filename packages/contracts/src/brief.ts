@@ -2,7 +2,7 @@
  * VentureBrief (PRD §5.3, planning/DOMAIN.md "Venture brief").
  *
  * Mirrors `services/engine/app/models/brief.py`; the parity test keeps the two equal.
- * Money is integer USD per day (D-16). Dates are ISO date-only strings (Africa/Nairobi).
+ * Money is integer USD per hour (D-59, amending D-16). Dates are ISO date-only strings (Africa/Nairobi).
  */
 import { z } from "zod";
 
@@ -36,7 +36,8 @@ export const RequiredSkills = z.array(SkillId).min(1);
 export const TeamSize = z.int().min(1).max(5);
 export const IsoDate = z.iso.date();
 export const Location = z.string().min(1).max(100);
-export const DailyBudget = z.int().positive();
+/** Integer USD per hour for the whole team, 1 to 250 (50 an hour x the largest team of 5, D-59). */
+export const HourlyBudget = z.int().min(1).max(250);
 
 export const VentureBrief = z.strictObject({
   id: Slug,
@@ -49,7 +50,7 @@ export const VentureBrief = z.strictObject({
   deliveryMode: DeliveryMode,
   /** Required when deliveryMode is on-site; the engine enforces the pairing. */
   location: Location.nullable().default(null),
-  dailyBudget: DailyBudget,
+  hourlyBudget: HourlyBudget,
   preferReusableIp: z.boolean(),
   /** Every record in this release is demo data (AGENTS.md non-negotiable 5). */
   demoData: z.boolean().default(true),
@@ -68,7 +69,7 @@ export const BriefField = z.enum([
   "availabilityEnd",
   "deliveryMode",
   "location",
-  "dailyBudget",
+  "hourlyBudget",
   "preferReusableIp",
 ]);
 export type BriefField = z.infer<typeof BriefField>;
@@ -87,7 +88,7 @@ export const PartialBrief = z.strictObject({
   availabilityEnd: IsoDate.nullable().default(null),
   deliveryMode: DeliveryMode.nullable().default(null),
   location: Location.nullable().default(null),
-  dailyBudget: DailyBudget.nullable().default(null),
+  hourlyBudget: HourlyBudget.nullable().default(null),
   preferReusableIp: z.boolean().nullable().default(null),
   demoData: z.boolean().nullable().default(null),
 });

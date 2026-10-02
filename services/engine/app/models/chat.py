@@ -12,7 +12,7 @@ from pydantic import BaseModel, ConfigDict, Field
 from app.models.brief import (
     SLUG,
     DeliveryMode,
-    PositiveSafeInt,
+    HourlyBudget,
     SkillId,
     TeamSize,
     VentureBrief,
@@ -31,7 +31,7 @@ BriefField = Literal[
     "availabilityEnd",
     "deliveryMode",
     "location",
-    "dailyBudget",
+    "hourlyBudget",
     "preferReusableIp",
 ]
 
@@ -57,7 +57,7 @@ class PartialBrief(BaseModel):
     availability_end: date | None = Field(default=None, alias="availabilityEnd")
     delivery_mode: DeliveryMode | None = Field(default=None, alias="deliveryMode")
     location: str | None = Field(default=None, min_length=1, max_length=100)
-    daily_budget: PositiveSafeInt | None = Field(default=None, alias="dailyBudget")
+    hourly_budget: HourlyBudget | None = Field(default=None, alias="hourlyBudget")
     prefer_reusable_ip: bool | None = Field(default=None, alias="preferReusableIp")
     demo_data: bool | None = Field(default=None, alias="demoData")
 

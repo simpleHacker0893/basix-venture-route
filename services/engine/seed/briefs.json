@@ -8,7 +8,7 @@
     "availabilityStart": "2026-09-22",
     "availabilityEnd": "2026-09-29",
     "deliveryMode": "hybrid",
-    "dailyBudget": 400,
+    "hourlyBudget": 50,
     "preferReusableIp": true,
     "demoData": true
   },
@@ -21,7 +21,7 @@
     "availabilityStart": "2026-09-22",
     "availabilityEnd": "2026-09-29",
     "deliveryMode": "remote",
-    "dailyBudget": 350,
+    "hourlyBudget": 44,
     "preferReusableIp": true,
     "demoData": true
   },
@@ -34,20 +34,20 @@
     "availabilityStart": "2026-09-22",
     "availabilityEnd": "2026-10-06",
     "deliveryMode": "remote",
-    "dailyBudget": 300,
+    "hourlyBudget": 38,
     "preferReusableIp": false,
     "demoData": true
   },
   {
     "id": "brief-budget-01",
-    "title": "Budget challenge: health pilot at USD 250 per day",
+    "title": "Budget challenge: health pilot at USD 31 an hour",
     "vertical": "health",
     "requiredSkills": ["python", "ai-metta", "ui-ux"],
     "maximumTeamSize": 3,
     "availabilityStart": "2026-09-22",
     "availabilityEnd": "2026-09-29",
     "deliveryMode": "hybrid",
-    "dailyBudget": 250,
+    "hourlyBudget": 31,
     "preferReusableIp": true,
     "demoData": true
   },
@@ -61,7 +61,7 @@
     "availabilityEnd": "2026-09-29",
     "deliveryMode": "on-site",
     "location": "Kisumu",
-    "dailyBudget": 400,
+    "hourlyBudget": 50,
     "preferReusableIp": true,
     "demoData": true
   }

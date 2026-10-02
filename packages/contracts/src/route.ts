@@ -36,7 +36,7 @@ export const LookupName = z.enum(["cohort-of"]);
 export type LookupName = z.infer<typeof LookupName>;
 
 /** Integers on the wire; the Pydantic mirror carries the same JavaScript safe-integer bounds. */
-export const UsdPerDay = z.int();
+export const UsdPerHour = z.int();
 
 export const ReasoningPath = z.object({
   rule: z.union([RuleName, LookupName]),
@@ -58,7 +58,7 @@ export type Gap = z.infer<typeof Gap>;
 export const RouteBuilder = z.object({
   builderId: z.string(),
   name: z.string(),
-  dayRate: UsdPerDay,
+  hourlyRate: UsdPerHour,
   covers: z.array(SkillId),
   evidenceType: EvidenceType,
   evidencePaths: z.array(ReasoningPath),
@@ -88,7 +88,7 @@ export type RoutePartner = z.infer<typeof RoutePartner>;
 export const VentureRoute = z.object({
   status: RouteStatus,
   builders: z.array(RouteBuilder),
-  totalDailyRate: UsdPerDay,
+  totalHourlyRate: UsdPerHour,
   reusableIp: ReusableIp.nullable().default(null),
   cohort: RouteCohort.nullable().default(null),
   partner: RoutePartner.nullable().default(null),

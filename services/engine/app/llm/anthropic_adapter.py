@@ -46,15 +46,16 @@ EXTRACTION_INSTRUCTION = (
     "infer, guess or complete a field. Skills must be chosen from: python, ai-metta, ui-ux, "
     "frontend, backend, domain-research, mobile, rust, data. Verticals: health, agri, "
     "education. Delivery modes: remote, hybrid, on-site. Dates are ISO YYYY-MM-DD. Budget is "
-    "an integer in USD per day."
+    "an integer in USD per hour for the whole team, from 1 to 250."
 )
 
 EXPLANATION_INSTRUCTION = (
     SYSTEM_INSTRUCTION
     + "\n\nWrite two or three plain sentences for a founder that summarise the route JSON you "
     "are given. Name only the builders, reusable IP, cohort and partner that appear in it, and "
-    "state the total daily rate as given. If `gaps` is not empty, explain each gap in one "
-    "sentence and restate only its `nextActions`. Do not add recommendations of your own."
+    "state the total hourly rate as given, in USD an hour. If `gaps` is not empty, explain "
+    "each gap in one sentence and restate only its `nextActions`. Do not add recommendations "
+    "of your own."
 )
 
 SUGGEST_INSTRUCTION = (

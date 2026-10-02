@@ -80,7 +80,7 @@ HEALTH_PILOT: dict[str, Any] = {
     "availabilityStart": "2026-09-22",
     "availabilityEnd": "2026-09-29",
     "deliveryMode": "hybrid",
-    "dailyBudget": 400,
+    "hourlyBudget": 50,
     "preferReusableIp": True,
 }
 
@@ -89,7 +89,8 @@ HEALTH_PILOT: dict[str, Any] = {
     ("override", "field", "fragment"),
     [
         ({"deliveryMode": "in-person"}, "deliveryMode", "'remote', 'hybrid' or 'on-site'"),
-        ({"dailyBudget": 0}, "dailyBudget", "greater than 0"),
+        ({"hourlyBudget": 0}, "hourlyBudget", "greater than or equal to 1"),
+        ({"hourlyBudget": 251}, "hourlyBudget", "less than or equal to 250"),
         ({"vertical": "fintech"}, "vertical", "'health', 'agri' or 'education'"),
         ({"deliveryMode": "on-site"}, "location", "required when deliveryMode is on-site"),
         ({"maximumTeamSize": 6}, "maximumTeamSize", "less than or equal to 5"),

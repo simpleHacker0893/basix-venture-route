@@ -7,8 +7,8 @@
  */
 import { z } from "zod";
 
-import { DailyBudget, DeliveryMode, IsoDate, Location, SkillId, VentureBrief, Vertical } from "./brief.js";
-import { ReasoningPath, RouteStatus, UsdPerDay } from "./route.js";
+import { DeliveryMode, IsoDate, Location, SkillId, VentureBrief, Vertical } from "./brief.js";
+import { ReasoningPath, RouteStatus, UsdPerHour } from "./route.js";
 
 export const Evidence = z.enum(["credential", "project", "both"]);
 export type Evidence = z.infer<typeof Evidence>;
@@ -38,8 +38,11 @@ export const DisplayName = z.string().min(1).max(80);
 export const Headline = z.string().max(200);
 export const ContactField = z.string().max(100);
 export const CohortId = z.string().min(1).max(40);
-/** Integer USD per day (D-16), same bounds as the brief's daily budget. */
-export const DayRate = DailyBudget;
+/** A positive integer USD amount. Ticket #159 turns the profile rate into `hourlyRate` (0-50) and
+ * ticket #160 the request budget into `hourlyBudget` (D-59); until then both keep this shape. */
+export const PositiveUsd = z.int().positive();
+/** Integer USD per day (D-16), until ticket #159. */
+export const DayRate = PositiveUsd;
 
 /**
  * Sprint 005a (spec #86, D-43/D-52): showcase description, plain link strings (the `https://` /
@@ -389,7 +392,7 @@ export const Count = z.int().min(0);
 /** What the founder saw when publishing; display-only, never an input to eligibility. */
 export const RouteSnapshot = z.strictObject({
   status: RouteStatus,
-  totalDailyRate: UsdPerDay,
+  totalHourlyRate: UsdPerHour,
   builderIds: z.array(z.string()),
 });
 export type RouteSnapshot = z.infer<typeof RouteSnapshot>;
@@ -420,7 +423,7 @@ export const Request = z.strictObject({
   deliveryMode: DeliveryMode,
   availabilityStart: IsoDate,
   availabilityEnd: IsoDate,
-  dailyBudget: DailyBudget,
+  dailyBudget: PositiveUsd,
   routeStatus: RouteStatus,
   status: RequestStatus,
   closedAt: IsoDateTime.nullable().default(null),

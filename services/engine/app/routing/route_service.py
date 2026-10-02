@@ -1,6 +1,6 @@
 """RouteService: validated brief -> VentureRoute, no HTTP, no LLM.
 
-Every fact comes through a MettaRouteEngine method (eligible_builders, gaps, day_rates,
+Every fact comes through a MettaRouteEngine method (eligible_builders, gaps, hourly_rates,
 reuse_candidates, cohort_of, partner_candidates); this module never touches the space.
 Status is a pure function of the gap set and coverage (D-09). Shapes follow D-22 and D-23.
 """
@@ -48,7 +48,7 @@ class RouteService:
         engine = self._engine
         eligible = engine.eligible_builders(brief)
         engine_gaps = engine.gaps(brief)
-        rates = engine.day_rates(sorted({t.builder_id for t in eligible}))
+        rates = engine.hourly_rates(sorted({t.builder_id for t in eligible}))
         assembly = assemble(eligible, rates, brief)
         gaps = [*engine_gaps, *assembly.gaps]
         status = status_for(list(brief.required_skills), eligible, assembly, gaps)
@@ -66,7 +66,7 @@ class RouteService:
         route = VentureRoute(
             status=status,
             builders=assembly.builders,
-            total_daily_rate=assembly.total_daily_rate,
+            total_hourly_rate=assembly.total_hourly_rate,
             reusable_ip=reusable_ip,
             cohort=cohort,
             partner=partner,
