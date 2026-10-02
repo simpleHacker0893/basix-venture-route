@@ -18,9 +18,9 @@ const ENGINE_URL = `http://localhost:${ENGINE_PORT}`;
 
 export default defineConfig({
   testDir: "./e2e",
-  // The Clerk three-role smoke (#47) has its own config and needs real keys; the no-key run
-  // in CI (D-33) must never collect it.
-  testIgnore: ["**/clerk/**"],
+  // The Clerk three-role smoke (#47) and the demo recording (#145) have their own configs and
+  // need real keys; the no-key run in CI (D-33) must never collect them.
+  testIgnore: ["**/clerk/**", "**/demo/**"],
   fullyParallel: false,
   workers: 1,
   retries: isCI ? 1 : 0,

@@ -30,13 +30,13 @@ The Builder never asks for a key in chat (D-26). Everything below is the Operato
 | `ADMIN_EMAILS` | 003 | Your own email(s), comma-separated | n/a |
 | `DATABASE_URL` (pooled, Neon `dev` branch) | 003 | Neon Console → Connect → Pooled connection (see the Neon steps for the asyncpg form) | No |
 | `TEST_DATABASE_URL` (Neon `test` branch) | 003 | Same, on the `test` branch | No |
-| Railway project + public URL | 005 (a smoke deploy in 002 is optional) | railway.com | n/a |
+| Render service + public URL | 005 (a smoke deploy in 002 is optional) | render.com | n/a |
 | Vercel project + URL | 005 (an offline-mode preview in 002 is optional) | vercel.com | n/a |
 
 ## Provisioned on 2026-09-22 (identifiers only, no secrets)
 
 - **Clerk**: application `venture_route`, id `app_3JhCRjM1hxEOxLGT8WtytYs5nuI`. The Clerk CLI 3.3.0 is installed and logged in on the Builder machine. `clerk init --app app_3JhCRjM1hxEOxLGT8WtytYs5nuI` runs inside `apps/web` in the Sprint 003 first ticket, after Sprint 002 creates the app (Sprint 002 has no Clerk).
-- **Neon**: project `venture_route`, id `bold-credit-14500621`, org `org-floral-bird-33863487`, region `aws-us-east-2` (Operator 2026-09-23: keep it; Railway goes to a US region to match). Branches: `production` (default, `br-noisy-field-b5vn5q77`), `dev` (`br-winter-hill-b58k1q2l`) and `test` (`br-weathered-smoke-b5qjh3hg`), the last two created from `production` on 2026-09-23. `production` plays the role the plan below calls `main`. The Neon CLI 4.18 is installed and logged in; the Neon MCP is connected. `neon link --project-id bold-credit-14500621 --branch production -y` writes `.neon` and `.env.local` (libpq URLs with `sslmode`/`channel_binding`, which the asyncpg form must drop, see §Neon step 3) and appends both to `.gitignore`; `neon config init` and `neon deploy` add a `neon.ts` policy and the `@neon/config` packages, which D-17 does not use, so they stay unrun until a decision says otherwise.
+- **Neon**: project `venture_route`, id `bold-credit-14500621`, org `org-floral-bird-33863487`, region `aws-us-east-2` (Operator 2026-09-23: keep it; Render goes to Ohio to match). Branches: `production` (default, `br-noisy-field-b5vn5q77`), `dev` (`br-winter-hill-b58k1q2l`) and `test` (`br-weathered-smoke-b5qjh3hg`), the last two created from `production` on 2026-09-23. `production` plays the role the plan below calls `main`. The Neon CLI 4.18 is installed and logged in; the Neon MCP is connected. `neon link --project-id bold-credit-14500621 --branch production -y` writes `.neon` and `.env.local` (libpq URLs with `sslmode`/`channel_binding`, which the asyncpg form must drop, see §Neon step 3) and appends both to `.gitignore`; `neon config init` and `neon deploy` add a `neon.ts` policy and the `@neon/config` packages, which D-17 does not use, so they stay unrun until a decision says otherwise.
 
 ## Clerk (needed by Sat 26 Sep 20:00 for Sprint 003)
 Skills that will use it: `clerk-setup`, `clerk-react-patterns` (`@clerk/react`, Vite), `clerk-cli`, `clerk-webhooks`, `clerk-testing`, `clerk-backend-api`, and `fastapi-clean-architecture` (Clerk JWT section). Unused: every other `clerk-*` platform skill and `clerk-billing`/`clerk-orgs`.
@@ -47,7 +47,7 @@ Skills that will use it: `clerk-setup`, `clerk-react-patterns` (`@clerk/react`, 
 4. **Users**: after you first sign in through the app in Sprint 003, your email in `ADMIN_EMAILS` becomes admin. Nothing else to set by hand.
 5. **Webhooks**: a signing secret belongs to an endpoint URL.
    - Sprint 003 (local): the Builder follows the `clerk-cli` skill's local webhook testing. Paste whichever `whsec_` it gives you into `.env`.
-   - Sprint 005: create the endpoint `https://<railway-domain>/api/webhooks/clerk` with events `user.created` and `user.updated`, and put that endpoint's secret on Railway.
+   - Sprint 005: create the endpoint `https://<render-domain>/api/webhooks/clerk` with events `user.created` and `user.updated`, and put that endpoint's secret on Render.
 6. Test users for Playwright (`clerk-testing`): Development instances accept `+clerk_test` emails with code `424242`. There is nothing to create in advance.
 
 Paste-ready **Operator** prompt (Claude Code, repo root, not the Builder session):
@@ -58,7 +58,7 @@ Use the clerk-cli skill. Log in to Clerk and select the "Venture Route" applicat
 ## Neon (needed by Sat 26 Sep 20:00 for Sprint 003)
 Skills: `neon-postgres` (connections, pooled vs direct, branches, migrations). The Neon MCP is connected in Claude sessions. Never the Convex skill (D-17).
 
-1. Project `venture_route` exists (`bold-credit-14500621`, region **AWS us-east-2 (Ohio)**). Put Railway in a US region to match (step 3 of Railway).
+1. Project `venture_route` exists (`bold-credit-14500621`, region **AWS us-east-2 (Ohio)**). Put Render in Ohio to match (the Blueprint sets `region: ohio`, D-57).
 2. Branches: `production` (Sprint 005), plus `dev` (Sprint 003–004 `DATABASE_URL`) and `test` (`TEST_DATABASE_URL`), both created from `production` on 2026-09-23. Sprint 005 creates `demo` from `production` for resets.
 3. Connection strings: use **Pooled** (host contains `-pooler`) for the app. Convert Neon's default string to the SQLAlchemy asyncpg form:
    - Neon gives `postgresql://neondb_owner:PASS@ep-xxx-pooler.c-7.us-east-2.aws.neon.tech/neondb?sslmode=require&channel_binding=require`
@@ -71,29 +71,26 @@ Paste-ready **Operator** prompt:
 Use the neon-postgres skill and the Neon MCP. Project "venture_route" (bold-credit-14500621, aws-us-east-2) already has branches production, dev and test. For dev and test, fetch the pooled connection string for database neondb. Convert each to postgresql+asyncpg://…?ssl=require (drop sslmode and channel_binding). Write DATABASE_URL (dev) and TEST_DATABASE_URL (test) into the repo-root .env. Never echo passwords in chat; show only the branch names and host names. Then prove each URL with one `select 1` over asyncpg (uv run python -c ... from services/engine) and paste the result. Do not touch any tracked file.
 ```
 
-## Railway (engine, Sprint 005; optional smoke deploy in Sprint 002)
-Skill: `use-railway`. D-27: you run the `railway` commands; the Builder only writes `docs/DEPLOY.md`.
+## Render (engine, Sprint 005; optional smoke deploy in Sprint 002)
+D-57: Render is the engine host. D-27: you run every `render` write command and enter every secret; the agent may run read-only checks (`curl`, the CORS preflight, `render blueprints validate`). The Builder only writes `docs/DEPLOY.md`.
 
-- Now: create an account and install the CLI (`npm i -g @railway/cli`, `railway login`).
+- Now: create an account and install the CLI (see render.com/docs/cli), then `render login`.
 - Facts the Sprint 005 wizard will need:
-  - The image is `services/engine/Dockerfile`, listening on **port 8000** (hard-coded CMD). Set the variable `PORT=8000`, or pick 8000 as the domain's target port.
-  - Health check path is `/health`. Region: US East, to sit near the Neon project in us-east-2.
-  - Variables: `LLM_PROVIDER`, `ANTHROPIC_API_KEY`, `DEMO_TODAY=2026-09-22`, `MIN_OVERLAP_DAYS=2`, `ENGINE_DEV_QUERY=0`, `CORS_ORIGINS=<vercel url>`. From 003 also `DATABASE_URL`, `CLERK_*` and `ADMIN_EMAILS`.
+  - The image is `services/engine/Dockerfile`, listening on **port 8000** (hard-coded CMD). Set the variable `PORT=8000`.
+  - Health check path is `/health`. Region: `ohio`, to sit near the Neon project in us-east-2.
+  - The service is a Blueprint (`render.yaml` at the repo root, spec #135): Docker runtime, pre-deploy command `alembic upgrade head`, one instance (engine lock, D-15).
+  - Variables: `LLM_PROVIDER`, `ANTHROPIC_API_KEY`, `DEMO_TODAY=2026-09-22`, `MIN_OVERLAP_DAYS=2`, `ENGINE_DEV_QUERY=0`, `CORS_ORIGINS=<vercel url>`. From 003 also `DATABASE_URL`, `DATABASE_URL_DIRECT`, `CLERK_*` and `ADMIN_EMAILS`.
+- Use a **paid** (Starter) instance for the demo: the free plan sleeps and cold-starts in about a minute, and it has no pre-deploy command (migrate by hand once).
 - *(Optional de-risk, end of Sprint 002, ~20 min)* Paste-ready prompt:
 ```text
-Use the use-railway skill. Walk me through deploying services/engine to Railway as service "engine" in a new project "venture-route" (US East, matching Neon us-east-2), from its Dockerfile, with PORT=8000, LLM_PROVIDER=null, DEMO_TODAY=2026-09-22, MIN_OVERLAP_DAYS=2, ENGINE_DEV_QUERY=0 and health check path /health. Give me each railway command to run myself; do not run railway yourself (D-27). After I paste the domain, curl /health and /api/scenarios and report.
+Use the docker-vps-deploy skill as the closest guide. Walk me through deploying services/engine to Render as service "engine" in the region Ohio (matching Neon us-east-2), from its Dockerfile, with PORT=8000, LLM_PROVIDER=null, DEMO_TODAY=2026-09-22, MIN_OVERLAP_DAYS=2, ENGINE_DEV_QUERY=0 and health check path /health. Give me each render command to run myself; do not run render writes yourself (D-27, D-57). After I paste the domain, curl /health and /api/scenarios and report.
 ```
-
-## Render (fallback only, D-05)
-No Render skill is installed, and none is needed. `docker-vps-deploy` is for a plain VPS, not Render.
-- Use Render only if Railway fails on demo week: New → Web Service → this repo, Runtime **Docker**, Root Directory `services/engine`, Health Check Path `/health`, the same variables as Railway, plus `PORT=8000`.
-- Use a **paid** instance for the demo. The free tier sleeps and cold-starts in about a minute, which would break a live demo.
 
 ## Vercel (web, Sprint 005; optional offline preview in Sprint 002)
 Skills: `deploy-to-vercel`, `vercel-react-best-practices`. The Vercel MCP is connected in Claude sessions. D-27: you run `vercel` yourself.
 
 - Import the repo with Root Directory `apps/web`, framework preset **Vite**, and pnpm (lockfile at the repo root).
-- Environment variables: `VITE_API_URL=<railway url>`, `VITE_CLERK_PUBLISHABLE_KEY` (003+), `VITE_OFFLINE_DEMO=0`.
+- Environment variables: `VITE_API_URL=<render url>`, `VITE_CLERK_PUBLISHABLE_KEY` (003+), `VITE_OFFLINE_DEMO=0`.
 - The SPA needs an `index.html` rewrite (`apps/web/vercel.json`); Sprint 005 adds it.
 - *(Optional, end of Sprint 002)*: a preview deploy with `VITE_OFFLINE_DEMO=1` gives a public, API-free fallback URL (this partly answers Q-06).
 

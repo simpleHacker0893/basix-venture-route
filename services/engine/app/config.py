@@ -69,7 +69,7 @@ class Settings(BaseSettings):
     voice_rate_limit_per_minute: int = 60
     # How many trusted proxies sit in front of the engine. 0 keys the limit on the TCP peer; N
     # keys it on the Nth X-Forwarded-For entry from the right (the one our proxy appended), so a
-    # client-written entry is never trusted. 1 behind Railway or any single proxy.
+    # client-written entry is never trusted. 1 behind Render or any single proxy.
     voice_trusted_proxy_hops: int = Field(default=0, ge=0)
     # Browser origins allowed to call the engine, comma-separated (D-30). Credentials stay off
     # in Sprint 002; Sprint 005 adds the Vercel origin on the host.

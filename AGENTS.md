@@ -36,7 +36,7 @@ Demo: Thursday 1 October 2026, BASIX hackathon, SingularityNET MeTTa track. Time
 - `apps/web`: React 19 + Vite + TypeScript, Tailwind, shadcn/ui, vite-plugin-pwa, Clerk React. Talks only to the FastAPI service. Tests: Vitest + React Testing Library + Playwright.
 - `packages/contracts`: Zod schemas for `VentureBrief`, `VentureRoute`, `ChatResponse`; JSON Schema exported for the Pydantic mirror test.
 - Root: Turborepo, Docker Compose (`engine`, `db`, `web`), `.env.example`.
-- Deploy: web on Vercel; engine container on Railway (Render as fallback); database on Neon (Neon CLI/MCP for branches).
+- Deploy: web on Vercel; engine container on Render; database on Neon (Neon CLI/MCP for branches).
 
 ## How a sprint runs
 
@@ -68,5 +68,5 @@ Restore on a fresh clone with `npx skills experimental_install`. The Stitch plug
 | Sprint 000–001 engine | `fastapi-clean-architecture`, `secure-coding`, `docker-project-foundations`, `docker-build-strategies` |
 | Sprint 002 web | `vercel-react-best-practices`, `vercel-composition-patterns`, `web-design-guidelines`, `playwright-cli`; Stitch plugins `stitch-build` (`shadcn-ui`, `react-components`, `react-vite-dashboard`), `stitch-design` (`generate-design`, `extract-design-md`, `code-to-design`), `stitch-utilities` (`design-md`, `enhance-prompt`) |
 | Sprint 003–004 marketplace | `neon-postgres`, `fastapi-clean-architecture` (Clerk JWT section), `clerk-setup`, `clerk-react-patterns`, `clerk-cli`, `clerk-webhooks`, `clerk-testing`, `clerk-backend-api` |
-| Sprint 005 deploy | `docker-compose-patterns`, `deploy-to-vercel`, `use-railway`, `docker-vps-deploy` (Render/VPS fallback only) |
+| Sprint 005 deploy | `docker-compose-patterns`, `deploy-to-vercel`, `docker-vps-deploy` (closest installed skill for the Render Docker deploy; no Render skill is installed, D-57) |
 | Not used by this project (installed, kept for reference) | `convex` (superseded by D-17), `redis-*`, `iris-development`, `clerk-android`, `clerk-expo`, `clerk-swift`, `clerk-nextjs-patterns`, `clerk-nuxt-patterns`, `clerk-vue-patterns`, `clerk-astro-patterns`, `clerk-tanstack-patterns`, `clerk-react-router-patterns`, `clerk-chrome-extension-patterns`, `clerk-billing`. D-17 makes Neon Postgres the store; the Convex or Redis skills must not be used without a superseding decision. |
