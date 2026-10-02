@@ -33,8 +33,8 @@ describe("route result: badge, cost strip, gaps first, cards", () => {
     // Sprint 003 #46: each card links to the founder's candidate view.
     expect(within(cards[0]!).getByRole("link", { name: "View profile" })).toHaveAttribute("href", "/builders/amina-otieno");
     const strip = screen.getByTestId("cost-strip");
-    expect(strip).toHaveTextContent("USD 370 / day");
-    expect(strip).toHaveTextContent("USD 400 / day");
+    expect(strip).toHaveTextContent("USD 47 an hour");
+    expect(strip).toHaveTextContent("USD 50 an hour");
     expect(screen.getByTestId("ip-card")).toHaveTextContent("asset-afya-triage");
     expect(screen.getByTestId("cohort-card")).toHaveTextContent("cohort-2026a");
     expect(screen.getByTestId("partner-card")).toHaveTextContent("amani-health");
@@ -77,7 +77,7 @@ describe("route result: badge, cost strip, gaps first, cards", () => {
     expect(screen.queryByTestId("partner-card")).not.toBeInTheDocument();
   });
 
-  it("Budget challenge: the budget gap button pre-fills the chip with 370 and the re-computed route is Feasible", async () => {
+  it("Budget challenge: the budget gap button pre-fills the chip with 47 and the re-computed route is Feasible", async () => {
     renderApp("/route");
     const user = await routeScenario("Budget challenge");
 
@@ -85,13 +85,13 @@ describe("route result: badge, cost strip, gaps first, cards", () => {
     expect(screen.queryAllByTestId("builder-card")).toHaveLength(0);
     const gap = within(screen.getByTestId("gaps-panel")).getAllByTestId("gap")[0]!;
     expect(gap).toHaveTextContent("assembler.budget-fit");
-    const raise = within(gap).getByRole("button", { name: "Raise daily budget to USD 370" });
+    const raise = within(gap).getByRole("button", { name: "Raise the hourly budget to USD 47" });
     expect(raise).toBeEnabled();
 
     await user.click(raise);
 
     const form = await screen.findByRole("form", { name: "Venture brief" });
-    expect(within(form).getByLabelText("Daily budget")).toHaveValue(370);
+    expect(within(form).getByLabelText("Budget per hour (USD)")).toHaveValue(47);
     await user.click(within(form).getByRole("button", { name: "Find my route" }));
 
     expect(await screen.findByTestId("status-badge")).toHaveTextContent(/^Feasible$/);

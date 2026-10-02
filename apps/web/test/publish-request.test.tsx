@@ -40,17 +40,17 @@ function published(): Request {
       availabilityEnd: "2026-10-06",
       deliveryMode: "remote",
       location: null,
-      dailyBudget: 300,
+      hourlyBudget: 38,
       preferReusableIp: false,
       demoData: true,
     },
-    route: { status: "partial", totalDailyRate: 130, builderIds: ["zawadi-njoroge"] },
+    route: { status: "partial", totalHourlyRate: 16, builderIds: ["zawadi-njoroge"] },
     title: "Constrained brief",
     vertical: "agri",
     deliveryMode: "remote",
     availabilityStart: "2026-09-22",
     availabilityEnd: "2026-10-06",
-    dailyBudget: 300,
+    dailyBudget: 38,
     routeStatus: "partial",
     status: "open",
     closedAt: null,
@@ -87,10 +87,10 @@ describe("Publish as request", () => {
     expect(input.brief).toMatchObject({
       id: "brief-constrained-01",
       requiredSkills: ["mobile", "rust"],
-      dailyBudget: 300,
+      hourlyBudget: 38,
       demoData: true,
     });
-    expect(input.route).toEqual({ status: "partial", totalDailyRate: 130, builderIds: ["zawadi-njoroge"] });
+    expect(input.route).toEqual({ status: "partial", totalHourlyRate: 16, builderIds: ["zawadi-njoroge"] });
     await waitFor(() =>
       expect(screen.queryByRole("heading", { level: 1, name: "Your route through BASIX" })).not.toBeInTheDocument(),
     );
@@ -100,7 +100,7 @@ describe("Publish as request", () => {
     const postRequest = vi.fn(async () => {
       throw new ApiValidationError({
         type: "validation-error",
-        message: "brief.dailyBudget: Input should be greater than 0",
+        message: "brief.hourlyBudget: Input should be greater than or equal to 1",
       });
     });
     renderRoute(founderAuth, postRequest);
@@ -108,7 +108,7 @@ describe("Publish as request", () => {
 
     await user.click(screen.getByRole("button", { name: "Publish as request" }));
 
-    expect(await screen.findByRole("alert")).toHaveTextContent("dailyBudget: Input should be greater than 0");
+    expect(await screen.findByRole("alert")).toHaveTextContent("hourlyBudget: Input should be greater than or equal to 1");
     expect(screen.getByRole("heading", { level: 1, name: "Your route through BASIX" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Publish as request" })).toBeEnabled();
   });

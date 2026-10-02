@@ -26,10 +26,10 @@ describe("handoffText", () => {
     expect(text).toContain("VENTURE ROUTE HANDOFF");
     expect(text).toContain("Brief: Health pilot: triage assistant for community clinics");
     expect(text).toContain("STATUS: Feasible");
-    expect(text).toContain("- Amina Otieno · Python · Both · USD 120 / day");
-    expect(text).toContain("- Daniel Kiptoo · AI / MeTTa · Both · USD 150 / day");
-    expect(text).toContain("- Grace Wambui · UI/UX design · Credential · USD 100 / day");
-    expect(text).toContain("TOTAL DAY RATE: USD 370 / day");
+    expect(text).toContain("- Amina Otieno · Python · Both · USD 15 an hour");
+    expect(text).toContain("- Daniel Kiptoo · AI / MeTTa · Both · USD 19 an hour");
+    expect(text).toContain("- Grace Wambui · UI/UX design · Credential · USD 13 an hour");
+    expect(text).toContain("TOTAL HOURLY RATE: USD 47 an hour");
     expect(text).toContain("REUSABLE IP: Afya Triage (asset-afya-triage)");
     expect(text).toContain("COHORT: cohort-2026a, omni-university");
     expect(text).toContain("PARTNER: amani-health");

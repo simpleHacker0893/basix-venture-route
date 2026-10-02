@@ -38,7 +38,7 @@ describe("/route: scenario chips, banner, validation", () => {
       "/route",
       engineFetch({
         route: () =>
-          jsonResponse({ type: "validation-error", message: "dailyBudget: Input should be greater than 0" }, 422),
+          jsonResponse({ type: "validation-error", message: "hourlyBudget: Input should be greater than or equal to 1" }, 422),
       }),
     );
     const user = userEvent.setup();
@@ -48,8 +48,8 @@ describe("/route: scenario chips, banner, validation", () => {
 
     // The review screen maps the prefix to its field (#26); no engine-unreachable banner appears.
     const alert = await screen.findByRole("alert");
-    expect(alert).toHaveAttribute("id", "error-dailyBudget");
-    expect(alert).toHaveTextContent("Input should be greater than 0");
+    expect(alert).toHaveAttribute("id", "error-hourlyBudget");
+    expect(alert).toHaveTextContent("Input should be greater than or equal to 1");
     expect(screen.queryByText(/Use the form instead/)).not.toBeInTheDocument();
   });
 });

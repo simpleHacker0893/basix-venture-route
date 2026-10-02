@@ -30,7 +30,7 @@ type Draft = {
   range: DateRange | undefined;
   deliveryMode: string;
   location: string;
-  dailyBudget: string;
+  hourlyBudget: string;
   preferReusableIp: boolean;
 };
 
@@ -48,7 +48,7 @@ function draftFrom(initial: PartialBriefInput | null | undefined): Draft {
         : undefined,
     deliveryMode: b.deliveryMode ?? "",
     location: b.location ?? "",
-    dailyBudget: b.dailyBudget != null ? String(b.dailyBudget) : "",
+    hourlyBudget: b.hourlyBudget != null ? String(b.hourlyBudget) : "",
     preferReusableIp: b.preferReusableIp ?? false,
   };
 }
@@ -64,7 +64,7 @@ function toInput(draft: Draft): unknown {
     availabilityEnd: draft.range?.to ? iso(draft.range.to) : undefined,
     deliveryMode: draft.deliveryMode || undefined,
     location: draft.deliveryMode === "on-site" ? draft.location.trim() || undefined : null,
-    dailyBudget: draft.dailyBudget === "" ? undefined : Number(draft.dailyBudget),
+    hourlyBudget: draft.hourlyBudget === "" ? undefined : Number(draft.hourlyBudget),
     preferReusableIp: draft.preferReusableIp,
     demoData: true,
   };
@@ -80,7 +80,7 @@ const FIELD_INPUT_ID: Record<string, string> = {
   availability: "brief-availability",
   deliveryMode: "brief-mode-0",
   location: "brief-location",
-  dailyBudget: "brief-budget",
+  hourlyBudget: "brief-budget",
 };
 
 /**
@@ -327,29 +327,30 @@ export function BriefEditor({ initial, busy, serverError, onSubmit, onBack, back
 
       <div className="flex flex-col gap-1">
         <label htmlFor="brief-budget" className="text-[13px] text-ink-2">
-          Daily budget
+          Budget per hour (USD)
         </label>
         <div
           className={`flex h-10 items-center rounded-card border bg-surface-strong px-3 font-mono focus-within:border-accent-green focus-within:ring-2 focus-within:ring-ring/50 ${
-            errors.dailyBudget ? "border-danger" : "border-border-strong"
+            errors.hourlyBudget ? "border-danger" : "border-border-strong"
           }`}
         >
           <span className="text-ink-3">USD</span>
           <input
             id="brief-budget"
-            name="dailyBudget"
+            name="hourlyBudget"
             inputMode="numeric"
             type="number"
             min={1}
-            value={draft.dailyBudget}
-            aria-invalid={invalid("dailyBudget")}
-            aria-describedby={describedBy("dailyBudget")}
-            onChange={(e) => patch({ dailyBudget: e.target.value })}
+            max={250}
+            value={draft.hourlyBudget}
+            aria-invalid={invalid("hourlyBudget")}
+            aria-describedby={describedBy("hourlyBudget")}
+            onChange={(e) => patch({ hourlyBudget: e.target.value })}
             className="w-24 bg-transparent px-2 focus:outline-none"
           />
-          <span className="text-ink-3">/ day</span>
+          <span className="text-ink-3">an hour</span>
         </div>
-        {error("dailyBudget")}
+        {error("hourlyBudget")}
       </div>
 
       <div className="flex items-center gap-2">

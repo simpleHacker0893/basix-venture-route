@@ -20,7 +20,7 @@ import { SpeakingIndicator } from "../../chloe/ui/SpeakingIndicator";
 import { useReadAloud } from "../../chloe/useReadAloud";
 import { DemoDataPill } from "../../components/DemoDataPill";
 import { SKILL_LABELS, VERTICAL_LABELS } from "../../lib/brief";
-import { usd } from "../../lib/format";
+import { usd, usdPerHour } from "../../lib/format";
 import { formatNairobi, formatNairobiTime } from "../../lib/nairobi";
 import { useRouting } from "../../state/routingContext";
 import { errorMessage } from "../builder/formStyles";
@@ -256,7 +256,7 @@ export function DashboardPage() {
                           <h3 className="text-[18px] font-semibold text-ink sm:text-[20px]">{request.title}</h3>
                           <span className="text-[13.5px] text-ink-3">
                             {VERTICAL_LABELS[request.vertical]} · team of {request.route.builderIds.length} ·{" "}
-                            {usd(request.route.totalDailyRate)} of {usd(request.dailyBudget)}
+                            {usdPerHour(request.route.totalHourlyRate)} of {usdPerHour(request.dailyBudget)}
                           </span>
                         </div>
                         <div className="flex items-center gap-3">

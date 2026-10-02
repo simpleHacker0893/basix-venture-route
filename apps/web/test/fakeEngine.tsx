@@ -32,7 +32,7 @@ export const REQUIRED_FIELDS = [
   "availabilityStart",
   "availabilityEnd",
   "deliveryMode",
-  "dailyBudget",
+  "hourlyBudget",
   "preferReusableIp",
 ] as const;
 
@@ -60,12 +60,12 @@ function routeForBrief(brief: Record<string, unknown>) {
   const wanted = key(brief);
   const candidates = SEED_BRIEFS.filter((seed) => key(seed as unknown as Record<string, unknown>) === wanted)
     .map((seed) => ({ seed, route: snapshot.routes[seed.id as keyof typeof snapshot.routes] }))
-    .sort((a, b) => b.seed.dailyBudget - a.seed.dailyBudget);
+    .sort((a, b) => b.seed.hourlyBudget - a.seed.hourlyBudget);
   if (candidates.length === 0) throw new Error(`fake engine has no route for ${JSON.stringify(brief)}`);
-  const budget = Number(brief.dailyBudget);
+  const budget = Number(brief.hourlyBudget);
   const fits = candidates.find((c) => c.route.status !== "partial" || c.route.builders.length > 0)
   ;
-  if (fits && fits.route.totalDailyRate <= budget) return fits.route;
+  if (fits && fits.route.totalHourlyRate <= budget) return fits.route;
   return candidates[candidates.length - 1]!.route;
 }
 

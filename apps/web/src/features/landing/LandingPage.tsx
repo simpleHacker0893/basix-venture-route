@@ -2,7 +2,7 @@
  * Screen 1, the refined UI (design/refined-ui, screen 01) over the section structure of the Stitch
  * export design/stitch/batch-2/landing-page (D-36): hero, How it works, Evidence, For builders.
  * Every name, skill, rate and fact shown is a seed fact (AGENTS.md rule 10); the preview shows no
- * per-builder day rates because the landing page does not compute a route.
+ * per-builder hourly rates because the landing page does not compute a route.
  */
 import type { EvidenceType } from "@venture-route/contracts";
 import { ArrowRight, Check, ChevronDown, ChevronRight, ShieldCheck } from "lucide-react";
@@ -51,8 +51,8 @@ type PreviewBuilder = Readonly<{
 }>;
 
 /**
- * Seed facts for the Health pilot route (seed/facts.metta, brief-health-01): feasible, USD 370 of
- * 400. Each fact is copied from the builder's eligible-builder path as the engine returns it.
+ * Seed facts for the Health pilot route (seed/facts.metta, brief-health-01): feasible, USD 47 of
+ * 50 an hour. Each fact is copied from the builder's eligible-builder path as the engine returns it.
  */
 const AMINA: PreviewBuilder = {
   id: "amina-otieno",
@@ -90,8 +90,8 @@ const PREVIEW_TEAM: ReadonlyArray<PreviewBuilder> = [
     },
   },
 ];
-const PREVIEW_TOTAL = 370;
-const PREVIEW_BUDGET = 400;
+const PREVIEW_TOTAL = 47;
+const PREVIEW_BUDGET = 50;
 
 /**
  * The hero's route preview: the team, and for the selected builder the three rules and the fact
@@ -187,7 +187,7 @@ function RoutePreview() {
           </ol>
           <div className="mt-3.5 flex flex-wrap items-center justify-between gap-2">
             <span className="font-mono text-[11.5px] text-[#a7b8b0]">
-              Team USD {PREVIEW_TOTAL} of {PREVIEW_BUDGET} / day
+              Team USD {PREVIEW_TOTAL} of {PREVIEW_BUDGET} an hour
             </span>
             <Link
               to="/route"

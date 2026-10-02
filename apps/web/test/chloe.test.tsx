@@ -122,7 +122,7 @@ describe("Chloe on /route", () => {
 
     const assistant = await screen.findByTestId("assistant-turn");
     expect(assistant).toHaveTextContent("To route this brief I still need:");
-    for (const field of ["title", "vertical", "requiredSkills", "maximumTeamSize", "availabilityStart", "availabilityEnd", "deliveryMode", "dailyBudget", "preferReusableIp"]) {
+    for (const field of ["title", "vertical", "requiredSkills", "maximumTeamSize", "availabilityStart", "availabilityEnd", "deliveryMode", "hourlyBudget", "preferReusableIp"]) {
       expect(assistant).toHaveTextContent(`- ${field}:`);
     }
     await waitFor(() => expect(voice.spoken).toEqual([GREETING, QUESTIONS.title]));
@@ -140,7 +140,7 @@ describe("Chloe on /route", () => {
 
     await waitFor(() => expect(voice.spoken).toContain(CONFIRM_PROMPT));
     const readBack = voice.spoken.find((line) => line.startsWith("Here's your brief so far."));
-    expect(readBack).toContain("USD 400 / day");
+    expect(readBack).toContain("Budget USD 50 an hour.");
     expect(voice.spoken.some((line) => line.startsWith("Shall I find your route?"))).toBe(true);
     expect(screen.getByText(CAPTION)).toBeInTheDocument();
 

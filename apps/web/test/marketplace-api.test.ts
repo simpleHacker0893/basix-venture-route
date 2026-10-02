@@ -26,11 +26,11 @@ const brief: VentureBriefInput = {
   availabilityEnd: "2026-10-06",
   deliveryMode: "remote",
   location: null,
-  dailyBudget: 300,
+  hourlyBudget: 38,
   preferReusableIp: false,
   demoData: true,
 };
-const route: RouteSnapshot = { status: "partial", totalDailyRate: 130, builderIds: ["zawadi-njoroge"] };
+const route: RouteSnapshot = { status: "partial", totalHourlyRate: 16, builderIds: ["zawadi-njoroge"] };
 const request = {
   id: "r-1",
   founderId: "user_founder",

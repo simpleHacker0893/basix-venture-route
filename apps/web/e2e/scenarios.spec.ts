@@ -17,8 +17,8 @@ test.describe("scenarios through the founder flow", () => {
     await expect(cards.getByTestId("evidence-badge")).toHaveText(["Both", "Both", "Credential"]);
     for (let i = 0; i < 3; i += 1) await expect(cards.nth(i).getByText("Demo data")).toBeVisible();
     const strip = page.getByTestId("cost-strip");
-    await expect(strip).toContainText("USD 370 / day");
-    await expect(strip).toContainText("USD 400 / day");
+    await expect(strip).toContainText("USD 47 an hour");
+    await expect(strip).toContainText("USD 50 an hour");
     await expect(page.getByTestId("ip-card")).toContainText("asset-afya-triage");
     await expect(page.getByTestId("cohort-card")).toContainText("cohort-2026a");
     await expect(page.getByTestId("partner-card")).toContainText("amani-health");
@@ -86,11 +86,11 @@ test.describe("scenarios through the founder flow", () => {
     expect(family).toMatch(/IBM Plex Mono|monospace/i);
   });
 
-  test("budget change: 250 → Partial with the budget gap, its button sets 370 → Feasible", async ({ page }) => {
+  test("budget change: 31 → Partial with the budget gap, its button sets 47 → Feasible", async ({ page }) => {
     await routeScenario(page, "Health pilot");
     await page.getByRole("button", { name: "Change brief" }).click();
     const form = page.getByRole("form", { name: "Venture brief" });
-    await form.getByLabel("Daily budget").fill("250");
+    await form.getByLabel("Budget per hour (USD)").fill("31");
     await form.getByRole("button", { name: "Find my route" }).click();
 
     await expect(page.getByTestId("status-badge")).toHaveText("Partial");
@@ -98,9 +98,9 @@ test.describe("scenarios through the founder flow", () => {
     const gap = page.getByTestId("gap");
     await expect(gap).toHaveCount(1);
     await expect(gap).toContainText("assembler.budget-fit");
-    await gap.getByRole("button", { name: "Raise daily budget to USD 370" }).click();
+    await gap.getByRole("button", { name: "Raise the hourly budget to USD 47" }).click();
 
-    await expect(page.getByRole("form", { name: "Venture brief" }).getByLabel("Daily budget")).toHaveValue("370");
+    await expect(page.getByRole("form", { name: "Venture brief" }).getByLabel("Budget per hour (USD)")).toHaveValue("47");
     await page.getByRole("button", { name: "Find my route" }).click();
     await expect(page.getByTestId("status-badge")).toHaveText("Feasible");
   });
@@ -121,7 +121,7 @@ test.describe("scenarios through the founder flow", () => {
     await page.getByRole("button", { name: /September 29th, 2026/ }).first().click();
     await page.keyboard.press("Escape");
     await form.getByRole("radio", { name: "Remote" }).check({ force: true });
-    await form.getByLabel("Daily budget").fill("350");
+    await form.getByLabel("Budget per hour (USD)").fill("44");
     await form.getByRole("checkbox", { name: "Prefer reusable IP" }).check();
     await form.getByRole("button", { name: "Find my route" }).click();
     await expect(page.getByTestId("status-badge")).toHaveText("Feasible");

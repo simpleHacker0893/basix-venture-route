@@ -57,7 +57,7 @@ export function RouteResult({ brief, route, onPatch, onChangeBrief, onWhy, publi
         </div>
       </section>
 
-      <CostStrip totalDailyRate={route.totalDailyRate} dailyBudget={brief.dailyBudget} />
+      <CostStrip totalHourlyRate={route.totalHourlyRate} hourlyBudget={brief.hourlyBudget} />
 
       {/* Gaps before team cards, in DOM order (AGENTS.md rule 6). */}
       <GapsPanel gaps={route.gaps} onPatch={onPatch} />

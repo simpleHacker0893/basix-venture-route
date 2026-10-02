@@ -50,13 +50,13 @@ const dashboard: Dashboard = {
       id: "r-constrained",
       founderId: "user_founder",
       brief: constrained,
-      route: { status: "partial", totalDailyRate: 130, builderIds: ["zawadi-njoroge"] },
+      route: { status: "partial", totalHourlyRate: 16, builderIds: ["zawadi-njoroge"] },
       title: constrained.title,
       vertical: constrained.vertical,
       deliveryMode: constrained.deliveryMode,
       availabilityStart: constrained.availabilityStart,
       availabilityEnd: constrained.availabilityEnd,
-      dailyBudget: constrained.dailyBudget,
+      dailyBudget: constrained.hourlyBudget,
       routeStatus: "partial",
       status: "open",
       closedAt: null,
@@ -68,13 +68,13 @@ const dashboard: Dashboard = {
       id: "r-health",
       founderId: "user_founder",
       brief: health,
-      route: { status: "feasible", totalDailyRate: 370, builderIds: ["amina-otieno", "daniel-kiptoo", "grace-wambui"] },
+      route: { status: "feasible", totalHourlyRate: 47, builderIds: ["amina-otieno", "daniel-kiptoo", "grace-wambui"] },
       title: health.title,
       vertical: health.vertical,
       deliveryMode: health.deliveryMode,
       availabilityStart: health.availabilityStart,
       availabilityEnd: health.availabilityEnd,
-      dailyBudget: health.dailyBudget,
+      dailyBudget: health.hourlyBudget,
       routeStatus: "feasible",
       status: "closed",
       closedAt: "2026-09-23T09:00:00Z",
@@ -163,7 +163,7 @@ describe("/dashboard", () => {
     expect(rows[0]).toHaveTextContent("Agri");
     expect(rows[0]).toHaveTextContent("Partial");
     expect(rows[0]).toHaveTextContent("Open");
-    expect(rows[0]).toHaveTextContent("USD 130 / day");
+    expect(rows[0]).toHaveTextContent("USD 16 an hour of USD 38 an hour");
     expect(within(rows[0]!).getByText("Demo data")).toBeInTheDocument();
     expect(rows[1]).toHaveTextContent("Feasible");
     expect(rows[1]).toHaveTextContent("Closed");

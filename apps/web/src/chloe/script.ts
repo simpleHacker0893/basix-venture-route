@@ -8,7 +8,7 @@
 import type { Booking, BriefField, Dashboard, PartialBriefInput, VentureRoute } from "@venture-route/contracts";
 
 import { FIELD_LABELS, MODE_LABELS, SKILL_LABELS, VERTICAL_LABELS } from "../lib/brief";
-import { dateRange, STATUS_LABEL, usd } from "../lib/format";
+import { dateRange, STATUS_LABEL, usdPerHour } from "../lib/format";
 import { formatNairobiSpoken } from "../lib/nairobi";
 import { splitFieldMessages } from "../lib/validationError";
 import type { VoiceError, VoiceErrorCode, VoiceProvider } from "../voice/provider";
@@ -36,7 +36,7 @@ export const QUESTIONS: Record<Exclude<BriefField, "id">, string> = {
   availabilityEnd: "And when should it end?",
   deliveryMode: "How will the team work: remote, hybrid, or on-site?",
   location: "Which town or city is the on-site work in?",
-  dailyBudget: "What's your budget in US dollars per day?",
+  hourlyBudget: "What's your budget per hour for the whole team, in US dollars?",
   preferReusableIp: "Should I look for reusable IP you could build on? Yes or no.",
 };
 
@@ -58,7 +58,7 @@ export function readBack(brief: PartialBriefInput): string {
     `Here's your brief so far. ${brief.title}, in ${VERTICAL_LABELS[brief.vertical!]}. ` +
     `Skills: ${skills}. Up to ${brief.maximumTeamSize} builders. ` +
     `${dateRange(brief.availabilityStart ?? "", brief.availabilityEnd ?? "")}. ` +
-    `${MODE_LABELS[brief.deliveryMode!]}${onSite}. Budget ${usd(brief.dailyBudget ?? 0)}. ` +
+    `${MODE_LABELS[brief.deliveryMode!]}${onSite}. Budget ${usdPerHour(brief.hourlyBudget ?? 0)}. ` +
     `Reusable IP ${reusable}.`
   );
 }

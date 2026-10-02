@@ -73,7 +73,7 @@ const brief: VentureBrief = {
   availabilityEnd: "2026-09-29",
   deliveryMode: "hybrid",
   location: null,
-  dailyBudget: 400,
+  hourlyBudget: 50,
   preferReusableIp: false,
   demoData: true,
 };
@@ -83,7 +83,7 @@ function request(eligibility: Request["eligibility"]): Request {
     id: "req-1",
     founderId: "founder-1",
     brief,
-    route: { status: "feasible", totalDailyRate: 120, builderIds: ["amina-otieno"] },
+    route: { status: "feasible", totalHourlyRate: 15, builderIds: ["amina-otieno"] },
     title: brief.title,
     vertical: "health",
     deliveryMode: "hybrid",

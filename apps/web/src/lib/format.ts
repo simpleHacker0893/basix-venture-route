@@ -1,7 +1,13 @@
 /** Display formats from the Sprint 002 business rules and the DESIGN.md block. */
 import type { EvidenceType, RouteStatus } from "@venture-route/contracts";
 
-/** `USD 370 / day` (D-16: integer USD per day). */
+/** `USD 47 an hour` (D-59: integer USD per hour). Every route figure uses this. */
+export function usdPerHour(amount: number): string {
+  return `USD ${amount} an hour`;
+}
+
+/** `USD 120 / day` (D-16). Only the marketplace profile rate and request budget still use it;
+ * tickets #159 and #160 move them to `usdPerHour` (D-59). */
 export function usd(amount: number): string {
   return `USD ${amount} / day`;
 }

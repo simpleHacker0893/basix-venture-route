@@ -14,7 +14,7 @@
       "availabilityEnd": "2026-09-29",
       "deliveryMode": "hybrid",
       "location": null,
-      "dailyBudget": 400,
+      "hourlyBudget": 50,
       "preferReusableIp": true,
       "demoData": true
     },
@@ -32,7 +32,7 @@
       "availabilityEnd": "2026-09-29",
       "deliveryMode": "remote",
       "location": null,
-      "dailyBudget": 350,
+      "hourlyBudget": 44,
       "preferReusableIp": true,
       "demoData": true
     },
@@ -49,13 +49,13 @@
       "availabilityEnd": "2026-10-06",
       "deliveryMode": "remote",
       "location": null,
-      "dailyBudget": 300,
+      "hourlyBudget": 38,
       "preferReusableIp": false,
       "demoData": true
     },
     "brief-budget-01": {
       "id": "brief-budget-01",
-      "title": "Budget challenge: health pilot at USD 250 per day",
+      "title": "Budget challenge: health pilot at USD 31 an hour",
       "vertical": "health",
       "requiredSkills": [
         "python",
@@ -67,7 +67,7 @@
       "availabilityEnd": "2026-09-29",
       "deliveryMode": "hybrid",
       "location": null,
-      "dailyBudget": 250,
+      "hourlyBudget": 31,
       "preferReusableIp": true,
       "demoData": true
     },
@@ -85,7 +85,7 @@
       "availabilityEnd": "2026-09-29",
       "deliveryMode": "on-site",
       "location": "Kisumu",
-      "dailyBudget": 400,
+      "hourlyBudget": 50,
       "preferReusableIp": true,
       "demoData": true
     }
@@ -97,7 +97,7 @@
         {
           "builderId": "amina-otieno",
           "name": "Amina Otieno",
-          "dayRate": 120,
+          "hourlyRate": 15,
           "covers": [
             "python"
           ],
@@ -129,7 +129,7 @@
         {
           "builderId": "daniel-kiptoo",
           "name": "Daniel Kiptoo",
-          "dayRate": 150,
+          "hourlyRate": 19,
           "covers": [
             "ai-metta"
           ],
@@ -159,7 +159,7 @@
         {
           "builderId": "grace-wambui",
           "name": "Grace Wambui",
-          "dayRate": 100,
+          "hourlyRate": 13,
           "covers": [
             "ui-ux"
           ],
@@ -186,7 +186,7 @@
           ]
         }
       ],
-      "totalDailyRate": 370,
+      "totalHourlyRate": 47,
       "reusableIp": {
         "assetId": "asset-afya-triage",
         "title": "Afya Triage",
@@ -236,7 +236,7 @@
         "partner-fit",
         "reuse-fit"
       ],
-      "summary": "Feasible route: 3 builders (Amina Otieno, Daniel Kiptoo, Grace Wambui) cover ai-metta, python, ui-ux for USD 370 a day. Reusable IP: Afya Triage. Partner: amani-health."
+      "summary": "Feasible route: 3 builders (Amina Otieno, Daniel Kiptoo, Grace Wambui) cover ai-metta, python, ui-ux for USD 47 an hour. Reusable IP: Afya Triage. Partner: amani-health."
     },
     "brief-agri-01": {
       "status": "feasible",
@@ -244,7 +244,7 @@
         {
           "builderId": "fatuma-hassan",
           "name": "Fatuma Hassan",
-          "dayRate": 80,
+          "hourlyRate": 10,
           "covers": [
             "domain-research"
           ],
@@ -273,7 +273,7 @@
         {
           "builderId": "lucy-achieng",
           "name": "Lucy Achieng",
-          "dayRate": 95,
+          "hourlyRate": 12,
           "covers": [
             "backend"
           ],
@@ -302,7 +302,7 @@
         {
           "builderId": "wanjiru-mwangi",
           "name": "Wanjiru Mwangi",
-          "dayRate": 140,
+          "hourlyRate": 18,
           "covers": [
             "frontend"
           ],
@@ -329,7 +329,7 @@
           ]
         }
       ],
-      "totalDailyRate": 315,
+      "totalHourlyRate": 40,
       "reusableIp": {
         "assetId": "asset-shamba-records",
         "title": "Shamba Records",
@@ -377,7 +377,7 @@
         "partner-fit",
         "reuse-fit"
       ],
-      "summary": "Feasible route: 3 builders (Fatuma Hassan, Lucy Achieng, Wanjiru Mwangi) cover backend, domain-research, frontend for USD 315 a day. Reusable IP: Shamba Records. Partner: shamba-agri."
+      "summary": "Feasible route: 3 builders (Fatuma Hassan, Lucy Achieng, Wanjiru Mwangi) cover backend, domain-research, frontend for USD 40 an hour. Reusable IP: Shamba Records. Partner: shamba-agri."
     },
     "brief-constrained-01": {
       "status": "partial",
@@ -385,7 +385,7 @@
         {
           "builderId": "zawadi-njoroge",
           "name": "Zawadi Njoroge",
-          "dayRate": 130,
+          "hourlyRate": 16,
           "covers": [
             "rust"
           ],
@@ -410,7 +410,7 @@
           ]
         }
       ],
-      "totalDailyRate": 130,
+      "totalHourlyRate": 16,
       "reusableIp": null,
       "cohort": {
         "cohortId": "cohort-2025c",
@@ -444,12 +444,12 @@
         "eligible-builder",
         "route-gap"
       ],
-      "summary": "Partial route: 1 builder (Zawadi Njoroge) cover rust for USD 130 a day. Gaps: skill (mobile)."
+      "summary": "Partial route: 1 builder (Zawadi Njoroge) cover rust for USD 16 an hour. Gaps: skill (mobile)."
     },
     "brief-budget-01": {
       "status": "partial",
       "builders": [],
-      "totalDailyRate": 0,
+      "totalHourlyRate": 0,
       "reusableIp": {
         "assetId": "asset-afya-triage",
         "title": "Afya Triage",
@@ -472,14 +472,14 @@
       "gaps": [
         {
           "category": "budget",
-          "statement": "Cheapest verified team costs USD 370 a day; budget is USD 250",
+          "statement": "Cheapest verified team costs USD 47 an hour; budget is USD 31 an hour",
           "affected": [
             "amina-otieno",
             "daniel-kiptoo",
             "grace-wambui"
           ],
           "nextActions": [
-            "Raise daily budget to USD 370"
+            "Raise the hourly budget to USD 47"
           ],
           "rule": "assembler.budget-fit"
         }
@@ -493,7 +493,7 @@
     "brief-onsite-01": {
       "status": "infeasible",
       "builders": [],
-      "totalDailyRate": 0,
+      "totalHourlyRate": 0,
       "reusableIp": null,
       "cohort": null,
       "partner": null,

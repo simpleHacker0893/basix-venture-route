@@ -26,7 +26,7 @@ describe("review: editable chips with inline errors", () => {
     expect(within(form).getByLabelText("Maximum team size")).toHaveValue(3);
     expect(within(form).getByRole("button", { name: /Availability/ })).toHaveTextContent("22 Sep – 29 Sep 2026");
     expect(within(form).getByRole("radio", { name: "Hybrid" })).toBeChecked();
-    expect(within(form).getByLabelText("Daily budget")).toHaveValue(400);
+    expect(within(form).getByLabelText("Budget per hour (USD)")).toHaveValue(50);
     expect(within(form).getByRole("checkbox", { name: "Prefer reusable IP" })).toBeChecked();
   });
 
@@ -35,13 +35,13 @@ describe("review: editable chips with inline errors", () => {
     const user = userEvent.setup();
     const form = await openHealthPilotReview(user);
 
-    await user.clear(within(form).getByLabelText("Daily budget"));
-    await user.type(within(form).getByLabelText("Daily budget"), "0");
+    await user.clear(within(form).getByLabelText("Budget per hour (USD)"));
+    await user.type(within(form).getByLabelText("Budget per hour (USD)"), "0");
     await user.click(within(form).getByRole("button", { name: "Find my route" }));
 
-    const budget = within(form).getByLabelText("Daily budget");
+    const budget = within(form).getByLabelText("Budget per hour (USD)");
     expect(budget).toHaveAttribute("aria-invalid", "true");
-    expect(within(form).getByRole("alert")).toHaveAttribute("id", "error-dailyBudget");
+    expect(within(form).getByRole("alert")).toHaveAttribute("id", "error-hourlyBudget");
     expect(screen.queryByTestId("status-badge")).not.toBeInTheDocument();
   });
 
@@ -50,7 +50,7 @@ describe("review: editable chips with inline errors", () => {
       "/route",
       engineFetch({
         route: () =>
-          jsonResponse({ type: "validation-error", message: "dailyBudget: Input should be greater than 0" }, 422),
+          jsonResponse({ type: "validation-error", message: "hourlyBudget: Input should be greater than or equal to 1" }, 422),
       }),
     );
     const user = userEvent.setup();
@@ -59,9 +59,9 @@ describe("review: editable chips with inline errors", () => {
     await user.click(within(form).getByRole("button", { name: "Find my route" }));
 
     const alert = await within(form).findByRole("alert");
-    expect(alert).toHaveAttribute("id", "error-dailyBudget");
-    expect(alert).toHaveTextContent("Input should be greater than 0");
-    expect(within(form).getByLabelText("Daily budget")).toHaveAttribute("aria-invalid", "true");
+    expect(alert).toHaveAttribute("id", "error-hourlyBudget");
+    expect(alert).toHaveTextContent("Input should be greater than or equal to 1");
+    expect(within(form).getByLabelText("Budget per hour (USD)")).toHaveAttribute("aria-invalid", "true");
   });
 
   it("shows a server message without a field prefix at the top of the form", async () => {
@@ -79,13 +79,27 @@ describe("review: editable chips with inline errors", () => {
     expect(await within(form).findByRole("alert")).toHaveAttribute("id", "error-form");
   });
 
-  it("re-computes the route with the edited budget: 250 turns the Health pilot partial", async () => {
+  it("rejects an hourly budget above 250 inline, before any request (D-59)", async () => {
     renderApp("/route");
     const user = userEvent.setup();
     const form = await openHealthPilotReview(user);
 
-    await user.clear(within(form).getByLabelText("Daily budget"));
-    await user.type(within(form).getByLabelText("Daily budget"), "250");
+    await user.clear(within(form).getByLabelText("Budget per hour (USD)"));
+    await user.type(within(form).getByLabelText("Budget per hour (USD)"), "251");
+    await user.click(within(form).getByRole("button", { name: "Find my route" }));
+
+    expect(within(form).getByLabelText("Budget per hour (USD)")).toHaveAttribute("aria-invalid", "true");
+    expect(within(form).getByRole("alert")).toHaveAttribute("id", "error-hourlyBudget");
+    expect(screen.queryByTestId("status-badge")).not.toBeInTheDocument();
+  });
+
+  it("re-computes the route with the edited budget: 31 turns the Health pilot partial", async () => {
+    renderApp("/route");
+    const user = userEvent.setup();
+    const form = await openHealthPilotReview(user);
+
+    await user.clear(within(form).getByLabelText("Budget per hour (USD)"));
+    await user.type(within(form).getByLabelText("Budget per hour (USD)"), "31");
     await user.click(within(form).getByRole("button", { name: "Find my route" }));
 
     expect(await screen.findByTestId("status-badge")).toHaveTextContent("Partial");

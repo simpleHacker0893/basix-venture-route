@@ -5,16 +5,16 @@
  */
 import type { Gap, PartialBriefInput } from "@venture-route/contracts";
 
-export type BriefPatch = Partial<Pick<PartialBriefInput, "dailyBudget" | "maximumTeamSize">>;
+export type BriefPatch = Partial<Pick<PartialBriefInput, "hourlyBudget" | "maximumTeamSize">>;
 
-const BUDGET = /^Raise daily budget to USD (\d+)$/;
+const BUDGET = /^Raise the hourly budget to USD (\d+)$/;
 const TEAM_SIZE = /^Raise maximum team size to (\d+)$/;
 
 /** The brief change an action text encodes, or null for a suggestion-only action. */
 export function patchForAction(gap: Gap, action: string): BriefPatch | null {
   if (gap.category === "budget") {
     const match = BUDGET.exec(action.trim());
-    if (match) return { dailyBudget: Number(match[1]) };
+    if (match) return { hourlyBudget: Number(match[1]) };
   }
   if (gap.category === "team-size") {
     const match = TEAM_SIZE.exec(action.trim());

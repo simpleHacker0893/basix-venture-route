@@ -57,8 +57,8 @@ describe("intake: chat, scenario chips, the form", () => {
     await user.click(screen.getAllByRole("button", { name: /September 29th, 2026/ })[0]!);
     await user.keyboard("{Escape}");
     await user.click(within(form).getByRole("radio", { name: "Remote" }));
-    await user.clear(within(form).getByLabelText("Daily budget"));
-    await user.type(within(form).getByLabelText("Daily budget"), "350");
+    await user.clear(within(form).getByLabelText("Budget per hour (USD)"));
+    await user.type(within(form).getByLabelText("Budget per hour (USD)"), "44");
     await user.click(within(form).getByRole("checkbox", { name: "Prefer reusable IP" }));
     expect(within(form).getByRole("button", { name: /Availability/ })).toHaveTextContent("22 Sep – 29 Sep 2026");
 

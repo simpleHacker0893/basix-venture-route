@@ -1,6 +1,6 @@
 /**
  * Maps the engine's `validation-error` message to a form field (requirements.md Edge cases):
- * the prefix before the first colon names the field (`dailyBudget: …`); a message without a
+ * the prefix before the first colon names the field (`hourlyBudget: …`); a message without a
  * prefix, or naming a field the editor does not render, belongs at the top of the form.
  */
 const FIELD_PREFIX = /^([A-Za-z][A-Za-z0-9_.]*):\s*(.*)$/s;
@@ -20,7 +20,7 @@ export const EDITOR_FIELDS: readonly string[] = [
   "availability",
   "deliveryMode",
   "location",
-  "dailyBudget",
+  "hourlyBudget",
   "preferReusableIp",
 ];
 
