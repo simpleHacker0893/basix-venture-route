@@ -118,6 +118,7 @@ export function ProfilePage() {
           {/* No key on purpose: a save must not remount the form (it keeps the draft and the saved message). */}
           <ProfileForm
             profile={profile}
+            projectCount={loaded.projects.length}
             onSave={async (input) => {
               const next = await api.putProfile(input);
               setLoaded((current) => (current ? { ...current, profile: next } : { profile: next, credentials: [], projects: [] }));

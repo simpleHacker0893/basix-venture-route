@@ -257,6 +257,15 @@ export function AppShell() {
           Add a project
         </Link>
       </span>
+    ) : role === "builder" && pathname === "/profile" ? (
+      // Submits the profile form below (the form has the matching id); the form guards a double save.
+      <button
+        type="submit"
+        form="builder-profile-form"
+        className="inline-flex h-10 items-center rounded-xl bg-accent-green px-4 text-[14px] font-semibold text-white shadow-card transition-colors hover:bg-accent-green-hover"
+      >
+        Save changes
+      </button>
     ) : role === "builder" && pathname === "/home" ? (
       <Link
         to="/profile"

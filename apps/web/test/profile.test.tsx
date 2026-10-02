@@ -743,3 +743,79 @@ describe("/profile/projects/new links", () => {
   });
 });
 
+
+describe("/profile layout: strength rail and section checklist", () => {
+  it("shows profile strength from the existing fields and a checklist that scrolls to each card", async () => {
+    const user = userEvent.setup();
+    const scrolled: string[] = [];
+    const original = Element.prototype.scrollIntoView;
+    Element.prototype.scrollIntoView = function scrollIntoView(this: Element) {
+      scrolled.push(this.id);
+    };
+    try {
+      const marketplace = fakeMarketplace({
+        getProfile: async () => profile({ accountStatus: "pending", skillSet: ["FastAPI"], sharing: { email: true, phone: false, linkedin: false } }),
+        listCredentials: async () => [],
+        listProjects: async () => [],
+      });
+      render(<App initialPath="/profile" source={source} auth={builderAuth} marketplace={marketplace} />);
+
+      const strength = await screen.findByRole("region", { name: "Profile strength" });
+      // profile() has a name, a headline, skills, availability and a day rate, a mode and a location, shared email; no project yet.
+      expect(strength).toHaveTextContent("5 of 6 done");
+      expect(strength).toHaveTextContent("83%");
+      expect(strength).toHaveTextContent("Next: add a project to your showcase.");
+
+      const sections = screen.getByRole("navigation", { name: "Profile sections" });
+      const links = within(sections).getAllByRole("link");
+      expect(links.map((l) => l.textContent?.replace(/(done|to do)$/, ""))).toEqual([
+        "About you",
+        "Skills",
+        "Availability",
+        "Delivery modes",
+        "Contact sharing",
+        "Showcase projects",
+      ]);
+      expect(within(sections).getByRole("link", { name: /Showcase projects/ })).toHaveTextContent("to do");
+      await user.click(within(sections).getByRole("link", { name: /Availability/ }));
+      await user.click(within(sections).getByRole("link", { name: /Showcase projects/ }));
+      expect(scrolled).toEqual(["profile-availability", "showcase"]);
+    } finally {
+      Element.prototype.scrollIntoView = original;
+    }
+  });
+
+  it("counts sections as they are filled in, without saving", async () => {
+    const user = userEvent.setup();
+    const marketplace = fakeMarketplace({
+      getProfile: async () => profile({ headline: "", sharing: { email: false, phone: false, linkedin: false } }),
+      listCredentials: async () => [],
+      listProjects: async () => [],
+    });
+    render(<App initialPath="/profile" source={source} auth={builderAuth} marketplace={marketplace} />);
+
+    const strength = await screen.findByRole("region", { name: "Profile strength" });
+    expect(strength).toHaveTextContent("3 of 6 done");
+    await user.type(screen.getByLabelText("Headline"), "Python builder");
+    expect(strength).toHaveTextContent("4 of 6 done");
+    await user.click(screen.getByRole("checkbox", { name: "Share email" }));
+    expect(strength).toHaveTextContent("5 of 6 done");
+  });
+
+  it("puts the contact-sharing toggles and public links in the one main column and a Save changes button in the top bar", async () => {
+    const marketplace = fakeMarketplace({
+      getProfile: async () => profile(),
+      listCredentials: async () => [],
+      listProjects: async () => [],
+    });
+    render(<App initialPath="/profile" source={source} auth={builderAuth} marketplace={marketplace} />);
+
+    const form = await screen.findByRole("form", { name: "Builder profile" });
+    for (const title of ["About you", "Skills", "Availability", "Delivery modes & location", "Contact sharing", "Public profile links", "Account status"]) {
+      expect(within(form).getByRole("region", { name: title })).toBeInTheDocument();
+    }
+    const save = within(screen.getByRole("navigation", { name: "Primary" })).getByRole("button", { name: "Save changes" });
+    expect(save).toHaveAttribute("type", "submit");
+    expect(save).toHaveAttribute("form", form.id);
+  });
+});

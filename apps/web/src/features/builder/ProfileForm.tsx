@@ -29,6 +29,8 @@ import { EvidenceBadge } from "../route/Badges";
 import { errorMessage, helpClass, inputClass, labelClass, pillClass } from "./formStyles";
 import { ResumeSuggestions } from "./ResumeSuggestions";
 import { SkillPicker } from "./SkillPicker";
+import { profileSections } from "./profileProgress";
+import { ProfileRail } from "./ProfileRail";
 import { Card, FieldError, Toggle } from "./StatusPill";
 
 /** Skill set + résumé suggestions combined, ≤20 entries of ≤40 characters (D-40, spec #86). */
@@ -37,6 +39,8 @@ const SKILL_SET_LIMIT = 20;
 type ProfileFormProps = Readonly<{
   /** `null` before the first save (GET /api/me/profile answered 404): the form starts empty. */
   profile: BuilderProfile | null;
+  /** How many showcase projects the builder has; only feeds the rail's checklist. */
+  projectCount?: number;
   onSave(input: ProfileInputT): Promise<void>;
 }>;
 
@@ -122,7 +126,7 @@ const ACCOUNT_LINE: Record<BuilderProfile["accountStatus"], string> = {
   rejected: "Rejected by BASIX admin",
 };
 
-export function ProfileForm({ profile, onSave }: ProfileFormProps) {
+export function ProfileForm({ profile, projectCount = 0, onSave }: ProfileFormProps) {
   const [draft, setDraft] = useState<Draft>(() => draftFrom(profile));
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [busy, setBusy] = useState(false);
@@ -136,6 +140,7 @@ export function ProfileForm({ profile, onSave }: ProfileFormProps) {
 
   async function submit(event: FormEvent) {
     event.preventDefault();
+    if (busy) return; // Save changes (top bar) and Save profile (below) both submit this form.
     const parsed = ProfileInput.safeParse(toInput(draft));
     const next: Record<string, string> = {};
     if (!parsed.success) {
@@ -171,6 +176,18 @@ export function ProfileForm({ profile, onSave }: ProfileFormProps) {
   const describedBy = (field: string) => (errors[field] ? `error-${field}` : undefined);
   const invalid = (field: string) => (errors[field] ? true : undefined);
 
+  const sections = profileSections({
+    displayName: draft.displayName,
+    headline: draft.headline,
+    skillCount: (profile?.skills.length ?? 0) + draft.skillSet.length + draft.suggestedSkills.length,
+    windows: draft.windows.length + (currentWindow(draft.range) ? 1 : 0),
+    dayRate: draft.dayRate,
+    modes: draft.modes,
+    location: draft.location,
+    sharing: draft.sharing,
+    projects: projectCount,
+  });
+
   const picked = currentWindow(draft.range);
   const rangeLabel = picked
     ? dateRange(picked.start, picked.end)
@@ -179,15 +196,22 @@ export function ProfileForm({ profile, onSave }: ProfileFormProps) {
       : "Pick a start and end date";
 
   return (
-    <form aria-label="Builder profile" onSubmit={(e) => void submit(e)} noValidate className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-      <div className="flex flex-col gap-6 lg:col-span-2">
+    <form
+      id="builder-profile-form"
+      aria-label="Builder profile"
+      onSubmit={(e) => void submit(e)}
+      noValidate
+      className="grid grid-cols-1 gap-6 lg:grid-cols-[260px_minmax(0,1fr)]"
+    >
+      <ProfileRail sections={sections} />
+      <div className="flex min-w-0 flex-col gap-6">
         {errors.form ? (
           <p id="error-form" role="alert" className="rounded-card border border-danger/40 bg-surface-strong px-3 py-2 text-[13px] text-danger">
             {errors.form}
           </p>
         ) : null}
 
-        <Card title="About you" lead="The name and headline founders see on a route and in candidate lists.">
+        <Card id="profile-about" className="scroll-mt-24" title="About you" lead="The name and headline founders see on a route and in candidate lists.">
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
             <div className="flex flex-col gap-1 md:col-span-2">
               <label htmlFor="profile-display-name" className={labelClass}>
@@ -249,6 +273,8 @@ export function ProfileForm({ profile, onSave }: ProfileFormProps) {
         </Card>
 
         <Card
+          id="profile-skills"
+          className="scroll-mt-24"
           title="Skills"
           lead="Verified only when a confirmed credential or project proves the skill; the engine decides, the profile only shows it."
           aside={
@@ -377,7 +403,7 @@ export function ProfileForm({ profile, onSave }: ProfileFormProps) {
           </div>
         </Card>
 
-        <Card title="Availability" lead="Pick the windows founders can book you for and your day rate. The available-for-brief rule needs the window to overlap a brief by at least two days.">
+        <Card id="profile-availability" className="scroll-mt-24" title="Availability" lead="Pick the windows founders can book you for and your day rate. The available-for-brief rule needs the window to overlap a brief by at least two days.">
           <div className="flex flex-col gap-3">
             <p className="font-mono text-[13px] text-ink-2">
               <span className="text-ink-3">Selected window:</span> {rangeLabel}
@@ -453,7 +479,7 @@ export function ProfileForm({ profile, onSave }: ProfileFormProps) {
           </div>
         </Card>
 
-        <Card title="Delivery modes & location" lead="Checked by the mode-compatible rule against each brief's delivery mode.">
+        <Card id="profile-modes" className="scroll-mt-24" title="Delivery modes & location" lead="Checked by the mode-compatible rule against each brief's delivery mode.">
           <fieldset className="flex flex-col gap-2">
             <legend className={labelClass}>Accepted engagement models</legend>
             <div className="flex flex-wrap gap-2" aria-describedby={describedBy("modes")}>
@@ -495,65 +521,7 @@ export function ProfileForm({ profile, onSave }: ProfileFormProps) {
             <FieldError field="location" errors={errors} />
           </div>
         </Card>
-      </div>
-
-      <div className="flex flex-col gap-6">
-        <Card title="Account status" aside={<DemoDataPill />}>
-          <p className="text-sm font-medium text-ink">
-            {profile ? ACCOUNT_LINE[profile.accountStatus] : "Not submitted yet — save your profile to enter the review queue"}
-          </p>
-          <dl className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1 font-mono text-[12px] text-ink-2">
-            <dt className="text-ink-3">Cohort</dt>
-            <dd>{draft.cohortId.trim() || "none"}</dd>
-            {profile ? (
-              <>
-                <dt className="text-ink-3">Builder ID</dt>
-                <dd translate="no">{profile.builderId}</dd>
-              </>
-            ) : null}
-          </dl>
-        </Card>
-
-        <Card title="Public profile links" lead="Shown on your Showcase profile even when contact sharing is off (spec #86 stories 27-28).">
-          <div className="flex flex-col gap-3">
-            <div className="flex flex-col gap-1">
-              <label htmlFor="profile-github-url" className={labelClass}>
-                GitHub profile
-              </label>
-              <input
-                id="profile-github-url"
-                autoComplete="url"
-                placeholder="https://github.com/…"
-                maxLength={500}
-                value={draft.githubUrl}
-                aria-invalid={invalid("githubUrl")}
-                aria-describedby={describedBy("githubUrl")}
-                onChange={(e) => patch({ githubUrl: e.target.value })}
-                className={inputClass}
-              />
-              <FieldError field="githubUrl" errors={errors} />
-            </div>
-            <div className="flex flex-col gap-1">
-              <label htmlFor="profile-linkedin-url" className={labelClass}>
-                LinkedIn profile
-              </label>
-              <input
-                id="profile-linkedin-url"
-                autoComplete="url"
-                placeholder="https://www.linkedin.com/in/…"
-                maxLength={500}
-                value={draft.linkedinUrl}
-                aria-invalid={invalid("linkedinUrl")}
-                aria-describedby={describedBy("linkedinUrl")}
-                onChange={(e) => patch({ linkedinUrl: e.target.value })}
-                className={inputClass}
-              />
-              <FieldError field="linkedinUrl" errors={errors} />
-            </div>
-          </div>
-        </Card>
-
-        <Card title="Contact sharing" lead="Founders only see what you switch on.">
+        <Card id="profile-contact" className="scroll-mt-24" title="Contact sharing" lead="Founders only see what you switch on.">
           <div className="flex flex-col gap-4">
             <Toggle
               id="profile-share-email"
@@ -611,6 +579,61 @@ export function ProfileForm({ profile, onSave }: ProfileFormProps) {
             </div>
             <FieldError field="sharing" errors={errors} />
           </div>
+        </Card>
+
+        <Card title="Public profile links" lead="Shown on your Showcase profile even when contact sharing is off (spec #86 stories 27-28).">
+          <div className="flex flex-col gap-3">
+            <div className="flex flex-col gap-1">
+              <label htmlFor="profile-github-url" className={labelClass}>
+                GitHub profile
+              </label>
+              <input
+                id="profile-github-url"
+                autoComplete="url"
+                placeholder="https://github.com/…"
+                maxLength={500}
+                value={draft.githubUrl}
+                aria-invalid={invalid("githubUrl")}
+                aria-describedby={describedBy("githubUrl")}
+                onChange={(e) => patch({ githubUrl: e.target.value })}
+                className={inputClass}
+              />
+              <FieldError field="githubUrl" errors={errors} />
+            </div>
+            <div className="flex flex-col gap-1">
+              <label htmlFor="profile-linkedin-url" className={labelClass}>
+                LinkedIn profile
+              </label>
+              <input
+                id="profile-linkedin-url"
+                autoComplete="url"
+                placeholder="https://www.linkedin.com/in/…"
+                maxLength={500}
+                value={draft.linkedinUrl}
+                aria-invalid={invalid("linkedinUrl")}
+                aria-describedby={describedBy("linkedinUrl")}
+                onChange={(e) => patch({ linkedinUrl: e.target.value })}
+                className={inputClass}
+              />
+              <FieldError field="linkedinUrl" errors={errors} />
+            </div>
+          </div>
+        </Card>
+
+        <Card title="Account status" aside={<DemoDataPill />}>
+          <p className="text-sm font-medium text-ink">
+            {profile ? ACCOUNT_LINE[profile.accountStatus] : "Not submitted yet — save your profile to enter the review queue"}
+          </p>
+          <dl className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1 font-mono text-[12px] text-ink-2">
+            <dt className="text-ink-3">Cohort</dt>
+            <dd>{draft.cohortId.trim() || "none"}</dd>
+            {profile ? (
+              <>
+                <dt className="text-ink-3">Builder ID</dt>
+                <dd translate="no">{profile.builderId}</dd>
+              </>
+            ) : null}
+          </dl>
         </Card>
 
         <div className="flex flex-col gap-2">
