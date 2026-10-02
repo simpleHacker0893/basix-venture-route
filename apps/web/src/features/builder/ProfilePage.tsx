@@ -132,17 +132,7 @@ export function ProfilePage() {
                 setLoaded((current) => (current ? { ...current, credentials: [...current.credentials, created] } : current));
               }}
             />
-            <ProjectsCard
-              projects={loaded.projects}
-              hasProfile={profile !== null}
-              onSaveShowcase={async (projectId, body) => {
-                const updated = await api.saveShowcase(projectId, body);
-                setLoaded((current) =>
-                  current ? { ...current, projects: current.projects.map((p) => (p.id === projectId ? updated : p)) } : current,
-                );
-                return updated;
-              }}
-            />
+            <ProjectsCard projects={loaded.projects} hasProfile={profile !== null} account={profile?.accountStatus ?? null} />
           </div>
         </>
       ) : null}

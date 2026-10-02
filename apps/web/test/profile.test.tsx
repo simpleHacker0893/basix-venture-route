@@ -445,7 +445,7 @@ describe("/profile skill set and résumé suggestions (spec #86 stories 17-28)",
   });
 });
 
-describe("/profile 422 field messages (Ruling R24)", () => {
+describe("/my-showcase and /profile 422 field messages (Ruling R24)", () => {
   it("shows a 422 message under pitchVideoUrl in the Showcase editor", async () => {
     const user = userEvent.setup();
     const marketplace = fakeMarketplace({
@@ -457,11 +457,11 @@ describe("/profile 422 field messages (Ruling R24)", () => {
       },
     });
 
-    render(<App initialPath="/profile" source={source} auth={builderAuth} marketplace={marketplace} />);
+    render(<App initialPath="/my-showcase" source={source} auth={builderAuth} marketplace={marketplace} />);
 
     const projects = await screen.findByRole("list", { name: "Projects" });
     const row = within(projects).getByRole("listitem", { name: "Venture Route" });
-    await user.click(within(row).getByRole("button", { name: "Edit showcase" }));
+    await user.click(within(row).getByRole("button", { name: "Edit details and links" }));
     const editor = within(row).getByRole("form", { name: "Showcase details for Venture Route" });
     await user.type(within(editor).getByLabelText("YouTube pitch link"), "https://example.com/not-youtube");
     await user.click(within(editor).getByRole("button", { name: "Save showcase details" }));
@@ -534,7 +534,7 @@ describe("/profile certifications (spec #86 stories 14-16)", () => {
   });
 });
 
-describe("/profile Showcase editor (spec #86 stories 1-6)", () => {
+describe("/my-showcase editor (spec #86 stories 1-6)", () => {
   it("shows the status pill and pending note, and saving sends the entry to review", async () => {
     const user = userEvent.setup();
     const saved: { projectId: string; body: ShowcaseEditInput }[] = [];
@@ -548,17 +548,16 @@ describe("/profile Showcase editor (spec #86 stories 1-6)", () => {
       },
     });
 
-    render(<App initialPath="/profile" source={source} auth={builderAuth} marketplace={marketplace} />);
+    render(<App initialPath="/my-showcase" source={source} auth={builderAuth} marketplace={marketplace} />);
 
     const projects = await screen.findByRole("list", { name: "Projects" });
     const row = within(projects).getByRole("listitem", { name: "Venture Route" });
-    expect(within(row).getByText("Not shown")).toBeInTheDocument();
-    const toggle = within(row).getByRole("button", { name: "Edit showcase" });
+    expect(within(row).getByTestId("state-pill")).toHaveTextContent("Draft");
+    const toggle = within(row).getByRole("button", { name: "Edit details and links" });
     expect(toggle).toHaveAttribute("aria-expanded", "false");
     await user.click(toggle);
-    // The toggle keeps its name "Edit showcase" — collapse state is `aria-expanded`, not a
-    // renamed "Close" button (fix round 1, item 9).
-    expect(within(row).getByRole("button", { name: "Edit showcase" })).toHaveAttribute("aria-expanded", "true");
+    // The toggle keeps its name; the open state is `aria-expanded`, not a renamed "Close" button.
+    expect(within(row).getByRole("button", { name: "Edit details and links" })).toHaveAttribute("aria-expanded", "true");
 
     const editor = within(row).getByRole("form", { name: "Showcase details for Venture Route" });
     await user.type(within(editor).getByLabelText("Description"), "The MeTTa-routed marketplace.");
@@ -569,10 +568,8 @@ describe("/profile Showcase editor (spec #86 stories 1-6)", () => {
     expect(saved[0]!.projectId).toBe("proj-1");
     expect(saved[0]!.body).toMatchObject({ description: "The MeTTa-routed marketplace.", showcased: true });
 
-    expect(await within(row).findByText("Pending review")).toBeInTheDocument();
-    expect(
-      within(row).getByText("A BASIX admin reviews every change before it goes live."),
-    ).toBeInTheDocument();
+    expect(await within(row).findByText("Waiting for review")).toBeInTheDocument();
+    expect(within(row).getByText("Not public yet. BASIX is reviewing this project.")).toBeInTheDocument();
   });
 });
 
@@ -695,8 +692,7 @@ describe("/profile/projects/new links", () => {
     ).toBeInTheDocument();
   });
 
-  it("lists saved links on the profile and offers Add a link when none is saved", async () => {
-    const user = userEvent.setup();
+  it("summarises each project on the profile with its link count and status, and links to My showcase", async () => {
     const marketplace = fakeMarketplace({
       getProfile: async () => profile({ accountStatus: "confirmed", confirmed: true }),
       listCredentials: async () => [],
@@ -709,16 +705,12 @@ describe("/profile/projects/new links", () => {
 
     const projects = await screen.findByRole("list", { name: "Projects" });
     const linked = within(projects).getByRole("listitem", { name: "Venture Route" });
-    const live = within(linked).getByRole("link", { name: /Project link/ });
-    expect(live).toHaveAttribute("href", "https://github.com/amina/triage");
-    expect(live).toHaveAttribute("target", "_blank");
-    expect(live).toHaveAttribute("rel", "noopener noreferrer");
-    expect(within(linked).getByRole("link", { name: /Demo link/ })).toHaveAttribute("href", "https://triage.example.org");
-    expect(within(linked).queryByRole("button", { name: "Add a link" })).not.toBeInTheDocument();
-
-    const bare = within(projects).getByRole("listitem", { name: "No link yet" });
-    await user.click(within(bare).getByRole("button", { name: "Add a link" }));
-    expect(within(bare).getByRole("form", { name: "Showcase details for No link yet" })).toBeInTheDocument();
+    expect(linked).toHaveTextContent("2 links");
+    expect(linked).toHaveTextContent("Draft");
+    expect(within(projects).getByRole("listitem", { name: "No link yet" })).toHaveTextContent("no link yet");
+    const card = screen.getByRole("region", { name: "Showcase projects" });
+    expect(within(card).getByRole("link", { name: /Manage in My showcase/ })).toHaveAttribute("href", "/my-showcase");
+    expect(within(card).getByRole("link", { name: "Add a project" })).toHaveAttribute("href", "/profile/projects/new");
   });
 });
 

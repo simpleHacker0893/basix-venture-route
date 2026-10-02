@@ -50,7 +50,14 @@ function writeCollapsed(collapsed: boolean): void {
   }
 }
 
-type NavItem = Readonly<{ to: string; label: string; icon: LucideIcon; tab?: boolean }>;
+type NavItem = Readonly<{
+  to: string;
+  label: string;
+  icon: LucideIcon;
+  tab?: boolean;
+  /** Other pages that belong to this item, so it stays highlighted (e.g. Add a project under My showcase). */
+  also?: readonly string[];
+}>;
 
 const NAV: Record<Role, readonly NavItem[]> = {
   founder: [
@@ -65,7 +72,7 @@ const NAV: Record<Role, readonly NavItem[]> = {
     { to: "/requests", label: "Open requests", icon: BriefcaseBusiness, tab: true },
     { to: "/home#bids", label: "My bids", icon: Send, tab: true },
     { to: "/home#interviews", label: "Interviews", icon: CalendarDays },
-    { to: "/profile#showcase", label: "My showcase", icon: LayoutGrid },
+    { to: "/my-showcase", label: "My showcase", icon: LayoutGrid, also: ["/profile/projects/new"] },
   ],
   admin: [
     { to: "/admin", label: "Queue", icon: ListChecks, tab: true },
@@ -79,6 +86,7 @@ const TITLES: Record<string, string> = {
   "/home": "Home",
   "/admin": "Review queue",
   "/profile": "Profile",
+  "/my-showcase": "My showcase",
   "/profile/projects/new": "Add a project",
   "/requests": "Open requests",
   "/bookings/new": "Book an interview",
@@ -111,7 +119,7 @@ function initials(text: string): string {
 function isActive(item: NavItem, pathname: string, search: string, hash: string): boolean {
   const [path, fragment] = item.to.split("#");
   const [base, query] = (path ?? "").split("?");
-  if (base !== pathname) return false;
+  if (base !== pathname && !(item.also ?? []).includes(pathname)) return false;
   if (query) return search === `?${query}`;
   if (fragment) return hash === `#${fragment}`;
   return !hash && !search.includes("tab=");
@@ -233,6 +241,22 @@ export function AppShell() {
         <Plus aria-hidden="true" className="h-4 w-4" />
         New route
       </Link>
+    ) : role === "builder" && pathname === "/my-showcase" ? (
+      <span className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-3">
+        <Link
+          to="/showcase"
+          className="inline-flex h-10 items-center rounded-xl border border-border-strong bg-surface-strong px-4 text-[14px] font-medium text-ink transition-colors hover:border-accent-green"
+        >
+          View public Showcase ↗
+        </Link>
+        <Link
+          to="/profile/projects/new"
+          className="inline-flex h-10 items-center gap-2 rounded-xl bg-accent-green px-4 text-[14px] font-semibold text-white shadow-card transition-colors hover:bg-accent-green-hover"
+        >
+          <Plus aria-hidden="true" className="h-4 w-4" />
+          Add a project
+        </Link>
+      </span>
     ) : role === "builder" && pathname === "/home" ? (
       <Link
         to="/profile"
