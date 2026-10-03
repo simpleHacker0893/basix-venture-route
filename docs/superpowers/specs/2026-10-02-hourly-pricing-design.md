@@ -74,7 +74,7 @@ README (worked example, demo scenarios, quick links stay), `planning/DOMAIN.md`,
 
 ## Acceptance
 
-1. `git grep -niE "day-rate|dayRate|day_rate|dailyBudget|daily_budget|DailyRate|daily_rate|UsdPerDay|raise_daily_budget|TOTAL DAY RATE" -- ':!planning/sprints/00[0-6]*' ':!services/engine/alembic/versions/000[1-3]*' ':!planning/DECISIONS.md' ':!graphify-out'` prints nothing.
+1. `git grep -niE "day-rate|dayRate|day_rate|dailyBudget|daily_budget|DailyRate|daily_rate|UsdPerDay|raise_daily_budget|TOTAL DAY RATE" -- ':!planning/sprints/00[0-6]*' ':!services/engine/alembic/versions/000[1-3]*' ':!planning/DECISIONS.md' ':!graphify-out' ':!design' ':!docs/design/stitch-prompts.md'` prints nothing outside migration `0004`, the deliberate negative tests and this spec. `design/` and `docs/design/stitch-prompts.md` are approved design snapshots (D-36) and stay as history.
 2. CI on the PR is green: engine, web (Vitest, no-key Playwright, Clerk Playwright), D-51 check.
 3. `uv run python scripts/export_schema.py --check` and `scripts/export_offline_snapshot.py --check` pass.
 4. After merge and deploy: `curl https://venture-route-engine.onrender.com/health` shows `facts_loaded 181`, `rules_loaded 7`; on <https://basix-venture-route.vercel.app/route> the Health pilot routes `feasible` at USD 47 an hour, and the Budget challenge shows "Raise the hourly budget to USD 47".
