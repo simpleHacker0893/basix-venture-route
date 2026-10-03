@@ -26,7 +26,7 @@ from pydantic import (
 from app.models.brief import (
     JS_SAFE_INT,
     DeliveryMode,
-    PositiveSafeInt,
+    HourlyBudget,
     SafeInt,
     SkillId,
     VentureBrief,
@@ -421,7 +421,7 @@ class Candidate(Wire):
 
 
 # -- Sprint 004 (spec #52 §HTTP API, #54): requests, bids, bookings, eligibility, dashboard -------
-# Nine shapes mirrored by Zod. Money is integer USD per day (D-16); `proposedStart` is ISO 8601
+# Nine shapes mirrored by Zod. Money is integer USD per hour (D-59); `proposedStart` is ISO 8601
 # with offset in UTC and `proposedStartLocal` the same instant rendered in Africa/Nairobi.
 
 RequestStatus = Literal["open", "closed"]
@@ -467,7 +467,7 @@ class RequestOut(Wire):
     delivery_mode: DeliveryMode = Field(alias="deliveryMode")
     availability_start: date = Field(alias="availabilityStart")
     availability_end: date = Field(alias="availabilityEnd")
-    daily_budget: PositiveSafeInt = Field(alias="dailyBudget")
+    hourly_budget: HourlyBudget = Field(alias="hourlyBudget")
     route_status: RouteStatus = Field(alias="routeStatus")
     status: RequestStatus
     closed_at: datetime | None = Field(default=None, alias="closedAt")
@@ -477,7 +477,7 @@ class RequestOut(Wire):
 
 
 class BidCreate(Wire):
-    day_rate: PositiveSafeInt = Field(alias="dayRate")
+    hourly_rate: HourlyRate = Field(alias="hourlyRate")
     message: BidMessage = ""
 
 
@@ -488,7 +488,7 @@ class BidOut(Wire):
     request_status: RequestStatus = Field(alias="requestStatus")
     builder_id: str = Field(alias="builderId")
     display_name: str = Field(alias="displayName")
-    day_rate: PositiveSafeInt = Field(alias="dayRate")
+    hourly_rate: HourlyRate = Field(alias="hourlyRate")
     message: BidMessage
     eligible_skills: list[SkillId] = Field(alias="eligibleSkills")
     path: ReasoningPath

@@ -742,7 +742,7 @@ async def create_request(
     delivery_mode: str,
     availability_start: date,
     availability_end: date,
-    daily_budget: int,
+    hourly_budget: int,
     route_status: str,
 ) -> Request:
     row = Request(
@@ -754,7 +754,7 @@ async def create_request(
         delivery_mode=delivery_mode,
         availability_start=availability_start,
         availability_end=availability_end,
-        daily_budget=daily_budget,
+        hourly_budget=hourly_budget,
         route_status=route_status,
     )
     session.add(row)
@@ -815,7 +815,7 @@ async def add_bid(
     request: Request,
     profile: Profile,
     *,
-    day_rate: int,
+    hourly_rate: int,
     message: str,
     eligible_skills: Sequence[str],
     path: dict[str, Any],
@@ -825,7 +825,7 @@ async def add_bid(
     row = Bid(
         request_id=request.id,
         profile_id=profile.id,
-        day_rate=day_rate,
+        hourly_rate=hourly_rate,
         message=message,
         eligible_skills=list(eligible_skills),
         path=path,

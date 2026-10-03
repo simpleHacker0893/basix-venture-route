@@ -78,10 +78,10 @@ async def test_founder_publishes_the_constrained_brief_and_reads_it_back(
         "agri",
         "remote",
     )
-    assert (body["availabilityStart"], body["availabilityEnd"], body["dailyBudget"]) == (
+    assert (body["availabilityStart"], body["availabilityEnd"], body["hourlyBudget"]) == (
         "2026-09-22",
         "2026-10-06",
-        38,  # the request field keeps its name until #160; it holds the hourly budget
+        38,
     )
     assert body["eligibility"] is None
     assert body["demoData"] is True
@@ -103,6 +103,7 @@ async def test_founder_publishes_the_constrained_brief_and_reads_it_back(
         ({"availabilityStart": "2026-10-06", "availabilityEnd": "2026-09-22"}, "availabilityEnd"),
         ({"deliveryMode": "on-site", "location": None}, "location"),
         ({"hourlyBudget": 0}, "hourlyBudget"),
+        ({"hourlyBudget": 251}, "hourlyBudget"),
     ],
 )
 async def test_malformed_brief_is_422_with_the_field_named(

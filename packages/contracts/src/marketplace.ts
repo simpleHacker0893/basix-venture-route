@@ -7,7 +7,7 @@
  */
 import { z } from "zod";
 
-import { DeliveryMode, IsoDate, Location, SkillId, VentureBrief, Vertical } from "./brief.js";
+import { DeliveryMode, HourlyBudget, IsoDate, Location, SkillId, VentureBrief, Vertical } from "./brief.js";
 import { ReasoningPath, RouteStatus, UsdPerHour } from "./route.js";
 
 export const Evidence = z.enum(["credential", "project", "both"]);
@@ -38,12 +38,8 @@ export const DisplayName = z.string().min(1).max(80);
 export const Headline = z.string().max(200);
 export const ContactField = z.string().max(100);
 export const CohortId = z.string().min(1).max(40);
-/** A positive integer USD amount: the request budget until ticket #160 (`hourlyBudget`, D-59)
- * and a bid's own rate. */
-export const PositiveUsd = z.int().positive();
-/** A bid's rate (D-16); the profile rate is `HourlyRate` below. */
-export const DayRate = PositiveUsd;
-/** A builder's rate: a whole USD 0-50 an hour, 0 meaning free or volunteer (D-59). */
+/** A builder's rate, on the profile and on a bid: a whole USD 0-50 an hour, 0 meaning free or
+ * volunteer (D-59). */
 export const HourlyRate = z.int().min(0).max(50);
 
 /**
@@ -364,7 +360,7 @@ export type Candidate = z.infer<typeof Candidate>;
 
 /**
  * Sprint 004 (spec #52 §HTTP API, #54): requests, bids, bookings, eligibility, dashboard.
- * Money is integer USD per day (D-16); `proposedStart` is ISO 8601 with offset in UTC and
+ * Money is integer USD per hour (D-59); `proposedStart` is ISO 8601 with offset in UTC and
  * `proposedStartLocal` the same instant rendered by the engine in Africa/Nairobi.
  */
 export const RequestStatus = z.enum(["open", "closed"]);
@@ -425,7 +421,8 @@ export const Request = z.strictObject({
   deliveryMode: DeliveryMode,
   availabilityStart: IsoDate,
   availabilityEnd: IsoDate,
-  dailyBudget: PositiveUsd,
+  /** The brief's hourly budget, promoted for listing (D-59). */
+  hourlyBudget: HourlyBudget,
   routeStatus: RouteStatus,
   status: RequestStatus,
   closedAt: IsoDateTime.nullable().default(null),
@@ -437,7 +434,7 @@ export const Request = z.strictObject({
 export type Request = z.infer<typeof Request>;
 
 export const BidCreate = z.strictObject({
-  dayRate: DayRate,
+  hourlyRate: HourlyRate,
   message: BidMessage.default(""),
 });
 export type BidCreate = z.infer<typeof BidCreate>;
@@ -450,7 +447,7 @@ export const Bid = z.strictObject({
   requestStatus: RequestStatus,
   builderId: z.string(),
   displayName: z.string(),
-  dayRate: DayRate,
+  hourlyRate: HourlyRate,
   message: BidMessage,
   /** The skills `eligible-builder` held for, and the first witness the engine returned. */
   eligibleSkills: z.array(SkillId),

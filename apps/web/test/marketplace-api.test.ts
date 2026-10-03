@@ -41,7 +41,7 @@ const request = {
   deliveryMode: "remote",
   availabilityStart: "2026-09-22",
   availabilityEnd: "2026-10-06",
-  dailyBudget: 300,
+  hourlyBudget: 38,
   routeStatus: "partial",
   status: "open",
   closedAt: null,
@@ -56,7 +56,7 @@ const bid = {
   requestStatus: "open",
   builderId: "naomi-chebet",
   displayName: "Naomi Chebet",
-  dayRate: 120,
+  hourlyRate: 15,
   message: "",
   eligibleSkills: ["mobile"],
   path,
@@ -135,7 +135,7 @@ describe("every Sprint 004 call sends the bearer and parses the contract", () =>
     ["postRequest", (a: ReturnType<typeof api>["api"]) => a.postRequest({ brief, route }), 201, request, "POST", "/api/requests"],
     ["closeRequest", (a: ReturnType<typeof api>["api"]) => a.closeRequest("r-1"), 200, { ...request, status: "closed" }, "POST", "/api/requests/r-1/close"],
     ["getEligibility", (a: ReturnType<typeof api>["api"]) => a.getEligibility("r-1"), 200, request.eligibility, "GET", "/api/requests/r-1/eligibility"],
-    ["postBid", (a: ReturnType<typeof api>["api"]) => a.postBid("r-1", { dayRate: 120, message: "" }), 201, bid, "POST", "/api/requests/r-1/bids"],
+    ["postBid", (a: ReturnType<typeof api>["api"]) => a.postBid("r-1", { hourlyRate: 15, message: "" }), 201, bid, "POST", "/api/requests/r-1/bids"],
     ["listBidsOnRequest", (a: ReturnType<typeof api>["api"]) => a.listBidsOnRequest("r-1"), 200, [bid], "GET", "/api/requests/r-1/bids"],
     ["listMyBids", (a: ReturnType<typeof api>["api"]) => a.listMyBids(), 200, [bid], "GET", "/api/me/bids"],
     ["postBooking", (a: ReturnType<typeof api>["api"]) => a.postBooking({ builderId: "naomi-chebet", requestId: null, proposedStart: entry.proposedStart, durationMin: 30, note: "" }), 201, booking, "POST", "/api/bookings"],
@@ -162,8 +162,8 @@ describe("every Sprint 004 call sends the bearer and parses the contract", () =>
     expect(calls[0]?.body).toEqual({ brief, route });
 
     const { api: bids, calls: bidCalls } = api(201, bid);
-    await bids.postBid("r-1", { dayRate: 120, message: "Hi" });
-    expect(bidCalls[0]?.body).toEqual({ dayRate: 120, message: "Hi" });
+    await bids.postBid("r-1", { hourlyRate: 15, message: "Hi" });
+    expect(bidCalls[0]?.body).toEqual({ hourlyRate: 15, message: "Hi" });
   });
 
   it("rejects a body outside the contract", async () => {
@@ -178,7 +178,7 @@ describe("errors keep their types", () => {
     const reason = "eligible-builder does not hold for ali-hassan on any of mobile, rust.";
     const { api: client } = api(403, { detail: reason });
 
-    const error = await client.postBid("r-1", { dayRate: 120, message: "" }).catch((e: unknown) => e);
+    const error = await client.postBid("r-1", { hourlyRate: 15, message: "" }).catch((e: unknown) => e);
 
     expect(error).toBeInstanceOf(ApiForbiddenError);
     expect((error as ApiForbiddenError).reason).toBe(reason);
@@ -194,14 +194,14 @@ describe("errors keep their types", () => {
   it("maps a 422 to field messages", async () => {
     const { api: client } = api(422, {
       type: "validation-error",
-      message: "dayRate: Input should be greater than 0; message: String should have at most 1000 characters",
+      message: "hourlyRate: Input should be less than or equal to 50; message: String should have at most 1000 characters",
     });
 
-    const error = await client.postBid("r-1", { dayRate: 0, message: "" }).catch((e: unknown) => e);
+    const error = await client.postBid("r-1", { hourlyRate: 51, message: "" }).catch((e: unknown) => e);
 
     expect(error).toBeInstanceOf(ApiValidationError);
-    expect(splitFieldMessages((error as ApiValidationError).message, ["dayRate", "message"])).toEqual([
-      { field: "dayRate", text: "Input should be greater than 0" },
+    expect(splitFieldMessages((error as ApiValidationError).message, ["hourlyRate", "message"])).toEqual([
+      { field: "hourlyRate", text: "Input should be less than or equal to 50" },
       { field: "message", text: "String should have at most 1000 characters" },
     ]);
   });
@@ -209,7 +209,7 @@ describe("errors keep their types", () => {
   it("surfaces a 409 as an unreachable error naming the status and the detail", async () => {
     const { api: client } = api(409, { detail: "already bid" });
 
-    const error = await client.postBid("r-1", { dayRate: 120, message: "" }).catch((e: unknown) => e);
+    const error = await client.postBid("r-1", { hourlyRate: 15, message: "" }).catch((e: unknown) => e);
 
     expect(error).toBeInstanceOf(Error);
     expect((error as Error).message).toContain("409");

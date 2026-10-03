@@ -20,7 +20,7 @@ import { SpeakingIndicator } from "../../chloe/ui/SpeakingIndicator";
 import { useReadAloud } from "../../chloe/useReadAloud";
 import { DemoDataPill } from "../../components/DemoDataPill";
 import { SKILL_LABELS, VERTICAL_LABELS } from "../../lib/brief";
-import { usd, usdPerHour } from "../../lib/format";
+import { usdPerHour } from "../../lib/format";
 import { formatNairobi, formatNairobiTime } from "../../lib/nairobi";
 import { useRouting } from "../../state/routingContext";
 import { errorMessage } from "../builder/formStyles";
@@ -181,7 +181,7 @@ export function DashboardPage() {
   const today = nairobiToday();
   const todays = data?.upcomingBookings.filter((b) => b.proposedStartLocal.startsWith(today)) ?? [];
   const later = data?.upcomingBookings.filter((b) => !b.proposedStartLocal.startsWith(today)) ?? [];
-  const budgetOf = (requestId: string) => data?.requests.find((r) => r.id === requestId)?.dailyBudget ?? null;
+  const budgetOf = (requestId: string) => data?.requests.find((r) => r.id === requestId)?.hourlyBudget ?? null;
 
   return (
     <div className="mx-auto flex w-full max-w-[1280px] flex-col gap-8 px-4 py-6 sm:px-6 lg:px-10 lg:py-8">
@@ -256,7 +256,7 @@ export function DashboardPage() {
                           <h3 className="text-[18px] font-semibold text-ink sm:text-[20px]">{request.title}</h3>
                           <span className="text-[13.5px] text-ink-3">
                             {VERTICAL_LABELS[request.vertical]} · team of {request.route.builderIds.length} ·{" "}
-                            {usdPerHour(request.route.totalHourlyRate)} of {usdPerHour(request.dailyBudget)}
+                            {usdPerHour(request.route.totalHourlyRate)} of {usdPerHour(request.hourlyBudget)}
                           </span>
                         </div>
                         <div className="flex items-center gap-3">
@@ -300,7 +300,7 @@ export function DashboardPage() {
                 <ul className="flex flex-col divide-y divide-border">
                   {data.bidsReceived.map((bid) => {
                     const budget = budgetOf(bid.requestId);
-                    const share = budget ? Math.min(100, Math.round((bid.dayRate / budget) * 100)) : null;
+                    const share = budget ? Math.min(100, Math.round((bid.hourlyRate / budget) * 100)) : null;
                     return (
                       <li key={bid.id} className="flex flex-col gap-4 px-5 py-5 sm:px-7 2xl:flex-row 2xl:items-center">
                         <div className="flex min-w-0 flex-1 items-start gap-4">
@@ -321,7 +321,7 @@ export function DashboardPage() {
                         </div>
                         <div className="flex flex-wrap items-center gap-3 sm:pl-16 2xl:flex-nowrap 2xl:pl-0">
                           <div className="flex w-36 flex-col gap-2">
-                            <span className="font-mono text-[14px] text-ink">{usd(bid.dayRate)}</span>
+                            <span className="font-mono text-[14px] text-ink">{usdPerHour(bid.hourlyRate)}</span>
                             {share !== null ? (
                               <span aria-hidden="true" className="h-1.5 overflow-hidden rounded-pill bg-border">
                                 <span className="block h-full rounded-pill bg-accent-green" style={{ width: `${share}%` }} />

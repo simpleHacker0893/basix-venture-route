@@ -1,15 +1,10 @@
 /** Display formats from the Sprint 002 business rules and the DESIGN.md block. */
 import type { EvidenceType, RouteStatus } from "@venture-route/contracts";
 
-/** `USD 47 an hour` (D-59: integer USD per hour). Every route figure uses this. */
+/** `USD 47 an hour` (D-59: integer USD per hour). Every money figure uses this: route totals,
+ * builder rates, request budgets and bids. */
 export function usdPerHour(amount: number): string {
   return `USD ${amount} an hour`;
-}
-
-/** `USD 120 / day` (D-16). Only the request budget and a bid's own rate still use it; ticket #160
- * moves the request budget to `usdPerHour` (D-59). */
-export function usd(amount: number): string {
-  return `USD ${amount} / day`;
 }
 
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];

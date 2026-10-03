@@ -89,7 +89,7 @@ function request(eligibility: Request["eligibility"]): Request {
     deliveryMode: "hybrid",
     availabilityStart: brief.availabilityStart,
     availabilityEnd: brief.availabilityEnd,
-    dailyBudget: 400,
+    hourlyBudget: 50,
     routeStatus: "feasible",
     status: "open",
     closedAt: null,
@@ -106,7 +106,7 @@ const bid: Bid = {
   requestStatus: "open",
   builderId: "amina-otieno",
   displayName: "Amina Otieno",
-  dayRate: 120,
+  hourlyRate: 15,
   message: "",
   eligibleSkills: ["python"],
   path: { rule: "eligible-builder", facts: [], conclusion: "eligible" },
@@ -188,7 +188,7 @@ describe("/home (builder)", () => {
     expect(screen.getByRole("heading", { name: "Requests you're eligible for" })).toBeInTheDocument();
     expect(screen.getByText("Eligible: Python")).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Place a bid" })).toHaveAttribute("href", "/requests");
-    expect(screen.getByRole("region", { name: "My bids" })).toHaveTextContent("USD 120 / day · Sent");
+    expect(screen.getByRole("region", { name: "My bids" })).toHaveTextContent("USD 15 an hour · Sent");
     expect(screen.getByText("Requests you've applied to work on, and their status.")).toBeInTheDocument();
     const interviews = screen.getByRole("region", { name: "Upcoming interviews" });
     expect(within(interviews).getByRole("link", { name: "Health pilot" })).toHaveAttribute("href", "/bookings/bk-1");
@@ -243,7 +243,7 @@ describe("/home (builder) loads in two stages", () => {
 
     const next = await screen.findByRole("region", { name: "Next step" });
     expect(next).toHaveTextContent("Checking open requests…");
-    expect(screen.getByRole("region", { name: "My bids" })).toHaveTextContent("USD 120 / day · Sent");
+    expect(screen.getByRole("region", { name: "My bids" })).toHaveTextContent("USD 15 an hour · Sent");
     expect(screen.getByRole("region", { name: "Your evidence" })).toHaveTextContent("Python · Credential");
     expect(screen.getByText("Loading open requests…")).toBeInTheDocument();
     expect(screen.queryByText("Loading your home…")).not.toBeInTheDocument();

@@ -87,7 +87,7 @@ async def test_tiles_equal_direct_sql_counts_and_lists_follow_the_rules(
     ).status_code == 200
     # two bids on the Constrained request, then Esther is un-confirmed
     naomi_bid = await bid(api, confirmed_builder, constrained["id"])
-    await bid(api, rejected_builder, constrained["id"], dayRate=95)
+    await bid(api, rejected_builder, constrained["id"], hourlyRate=12)
     await decide(rejected_builder, {"account": "rejected"})
     # two bookings against the fixed test clock (2026-09-23 00:00 UTC, conftest TEST_NOW):
     # one in the past (2026-09-22 08:00 EAT), one upcoming (2026-09-24 10:30 EAT)
@@ -164,7 +164,7 @@ async def test_bids_received_is_capped_at_ten_newest_first(
             },
         )
         await decide(extra, {"account": "confirmed", "credential": "confirmed"})
-        placed.append((await bid(api, extra, request["id"], dayRate=100 + index))["id"])
+        placed.append((await bid(api, extra, request["id"], hourlyRate=10 + index))["id"])
 
     body = (await api.get("/api/me/dashboard", headers=founder.headers)).json()
 

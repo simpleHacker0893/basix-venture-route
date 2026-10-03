@@ -56,7 +56,7 @@ const dashboard: Dashboard = {
       deliveryMode: constrained.deliveryMode,
       availabilityStart: constrained.availabilityStart,
       availabilityEnd: constrained.availabilityEnd,
-      dailyBudget: constrained.hourlyBudget,
+      hourlyBudget: constrained.hourlyBudget,
       routeStatus: "partial",
       status: "open",
       closedAt: null,
@@ -74,7 +74,7 @@ const dashboard: Dashboard = {
       deliveryMode: health.deliveryMode,
       availabilityStart: health.availabilityStart,
       availabilityEnd: health.availabilityEnd,
-      dailyBudget: health.hourlyBudget,
+      hourlyBudget: health.hourlyBudget,
       routeStatus: "feasible",
       status: "closed",
       closedAt: "2026-09-23T09:00:00Z",
@@ -91,7 +91,7 @@ const dashboard: Dashboard = {
       requestStatus: "open",
       builderId: "naomi-chebet",
       displayName: "Naomi Chebet",
-      dayRate: 120,
+      hourlyRate: 15,
       message: "The field survey app demonstrates mobile.",
       eligibleSkills: ["mobile"],
       path,
@@ -173,7 +173,10 @@ describe("/dashboard", () => {
     const bids = screen.getByRole("region", { name: "Bids to review" });
     expect(within(bids).getByText("Builders who applied to work on your published request.")).toBeInTheDocument();
     expect(bids).toHaveTextContent("Naomi Chebet");
-    expect(bids).toHaveTextContent("USD 120 / day");
+    expect(bids).toHaveTextContent("USD 15 an hour");
+    expect(bids).not.toHaveTextContent("/ day");
+    // The bid's share of the request's hourly budget: 15 of 38 an hour.
+    expect(bids.querySelector("[style]")).toHaveStyle({ width: "39%" });
     expect(bids).toHaveTextContent(`for ${constrained.title}`);
     expect(within(bids).getByRole("link", { name: "Book interview" })).toHaveAttribute(
       "href",

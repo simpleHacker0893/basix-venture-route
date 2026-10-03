@@ -107,5 +107,5 @@ test("builder sees Eligible · Python on the Health request and bids", async ({ 
   await dialog.getByRole("button", { name: "Submit bid" }).click();
 
   await expect(dialog).toBeHidden();
-  await expect(card.getByText("Bid placed · USD 15 / day")).toBeVisible();
+  await expect(card.getByText("Bid placed · USD 15 an hour")).toBeVisible();
 });

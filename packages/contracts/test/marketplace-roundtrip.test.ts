@@ -49,7 +49,7 @@ const request = {
   deliveryMode: "remote",
   availabilityStart: "2026-09-22",
   availabilityEnd: "2026-10-06",
-  dailyBudget: 38, // the request field is renamed by #160
+  hourlyBudget: 38,
   routeStatus: "partial",
   status: "open",
   closedAt: null,
@@ -65,7 +65,7 @@ const bid = {
   requestStatus: "open",
   builderId: "naomi-chebet",
   displayName: "Naomi Chebet",
-  dayRate: 120,
+  hourlyRate: 15,
   message: "The field survey app demonstrates mobile.",
   eligibleSkills: ["mobile"],
   path,

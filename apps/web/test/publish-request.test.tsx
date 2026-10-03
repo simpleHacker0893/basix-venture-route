@@ -50,7 +50,7 @@ function published(): Request {
     deliveryMode: "remote",
     availabilityStart: "2026-09-22",
     availabilityEnd: "2026-10-06",
-    dailyBudget: 38,
+    hourlyBudget: 38,
     routeStatus: "partial",
     status: "open",
     closedAt: null,

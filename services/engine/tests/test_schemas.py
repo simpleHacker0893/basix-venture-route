@@ -14,7 +14,7 @@ from typing import Any
 import pytest
 from pydantic import ValidationError
 
-from app.marketplace.schemas import ProfileInput
+from app.marketplace.schemas import BidCreate, BidOut, ProfileInput, RequestOut
 from app.models.brief import VentureBrief
 
 SCRIPTS = Path(__file__).resolve().parents[1] / "scripts"
@@ -172,3 +172,39 @@ def test_profile_input_no_longer_takes_a_day_rate() -> None:
 
     with pytest.raises(ValidationError):
         ProfileInput.model_validate({**body, "dayRate": 150})
+
+
+# -- #160 (D-59): a request's budget and a bid's rate are per hour --------------------------------
+
+
+@pytest.mark.parametrize("rate", [0, 50])
+def test_bid_create_accepts_an_hourly_rate_of_zero_to_fifty(rate: int) -> None:
+    assert BidCreate.model_validate({"hourlyRate": rate}).hourly_rate == rate
+
+
+@pytest.mark.parametrize("rate", [-1, 51, 12.5])
+def test_bid_create_rejects_an_hourly_rate_outside_zero_to_fifty(rate: float) -> None:
+    with pytest.raises(ValidationError) as excinfo:
+        BidCreate.model_validate({"hourlyRate": rate})
+
+    assert [error["loc"] for error in excinfo.value.errors()] == [("hourlyRate",)]
+
+
+def test_bid_create_no_longer_takes_a_day_rate() -> None:
+    with pytest.raises(ValidationError):
+        BidCreate.model_validate({"dayRate": 15})
+
+
+def test_bid_out_carries_the_hourly_rate_with_the_profile_bounds() -> None:
+    field = BidOut.model_fields["hourly_rate"]
+    assert field.alias == "hourlyRate"
+    assert "day_rate" not in BidOut.model_fields
+    schema = BidOut.model_json_schema(by_alias=True)["properties"]["hourlyRate"]
+    assert (schema["minimum"], schema["maximum"]) == (0, 50)
+
+
+def test_request_out_carries_the_hourly_budget_one_to_two_fifty() -> None:
+    assert RequestOut.model_fields["hourly_budget"].alias == "hourlyBudget"
+    assert "daily_budget" not in RequestOut.model_fields
+    schema = RequestOut.model_json_schema(by_alias=True)["properties"]["hourlyBudget"]
+    assert (schema["minimum"], schema["maximum"]) == (1, 250)

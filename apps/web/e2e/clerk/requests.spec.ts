@@ -116,12 +116,12 @@ test("builder sees Eligible · Mobile on the board and bids", async ({ page }) =
   await card.getByRole("button", { name: "Bid" }).click();
 
   const dialog = page.getByRole("dialog", { name: `Bid on ${requestTitle}` });
-  await expect(dialog.getByRole("spinbutton", { name: "Your day rate (USD)" })).toHaveValue("15");
+  await expect(dialog.getByRole("spinbutton", { name: "Your hourly rate (USD, 0–50)" })).toHaveValue("15");
   await dialog.getByRole("textbox", { name: "Message to founder (optional)" }).fill("Round-trip bid");
   await dialog.getByRole("button", { name: "Submit bid" }).click();
 
   await expect(dialog).toBeHidden();
-  await expect(card.getByText("Bid placed · USD 15 / day")).toBeVisible();
+  await expect(card.getByText("Bid placed · USD 15 an hour")).toBeVisible();
 });
 
 test("founder sees the bid on the dashboard and proposes an interview", async ({ page }) => {
@@ -129,7 +129,7 @@ test("founder sees the bid on the dashboard and proposes an interview", async ({
   await page.goto("/dashboard");
   const bids = page.getByRole("region", { name: "Bids to review" });
   await expect(bids).toContainText(displayName());
-  await expect(bids).toContainText("USD 15 / day");
+  await expect(bids).toContainText("USD 15 an hour");
 
   await bids.getByRole("link", { name: "Book interview" }).first().click();
   await expect(page.getByRole("heading", { level: 1, name: `Book an interview with ${displayName()}` })).toBeVisible();
