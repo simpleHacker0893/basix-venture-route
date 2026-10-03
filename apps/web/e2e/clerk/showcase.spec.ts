@@ -59,12 +59,12 @@ test("builder creates a profile and a project, then puts it on the Showcase (Pen
   await project.getByRole("radio", { name: "Education" }).check({ force: true });
   await project.getByRole("checkbox", { name: "Frontend" }).check({ force: true });
   await project.getByLabel("Completion date").fill("2026-09-01");
-  await project.getByRole("button", { name: "Submit for confirmation" }).click();
-  await expect(page.getByRole("heading", { level: 1, name: "Your profile" })).toBeVisible();
+  await project.getByRole("button", { name: "Save project" }).click();
+  await expect(page.getByRole("heading", { level: 1, name: "My showcase" })).toBeVisible();
 
   const row = page.getByRole("list", { name: "Projects" }).getByRole("listitem", { name: projectTitle() });
   await expect(row).toBeVisible();
-  await row.getByRole("button", { name: "Edit showcase" }).click();
+  await row.getByRole("button", { name: "Edit details and links" }).click();
 
   const editor = page.getByRole("form", { name: `Showcase details for ${projectTitle()}` });
   await editor.getByLabel("Description").fill(description());
@@ -76,7 +76,7 @@ test("builder creates a profile and a project, then puts it on the Showcase (Pen
   await editor.getByRole("button", { name: "Save showcase details" }).click();
 
   await expect(editor.getByText("Showcase details saved.")).toBeVisible();
-  await expect(row).toContainText("Pending review");
+  await expect(row).toContainText("Waiting for review");
 });
 
 test("admin confirms the builder's account and project", async ({ page }) => {

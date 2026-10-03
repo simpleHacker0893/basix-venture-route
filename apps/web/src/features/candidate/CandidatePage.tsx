@@ -73,7 +73,7 @@ export function CandidatePage() {
   return (
     <div className="mx-auto flex w-full max-w-[1200px] flex-col gap-6 px-6 py-8">
       <div>
-        <Link to="/route" className="inline-flex items-center gap-1.5 text-[13px] text-ink-3 hover:text-ink">
+        <Link to="/route" className="inline-flex min-h-11 items-center gap-1.5 text-[13px] text-ink-3 hover:text-ink sm:min-h-0">
           <span aria-hidden="true">←</span>
           <span>Back to route</span>
         </Link>
@@ -147,7 +147,7 @@ function CandidateView({ candidate }: Readonly<{ candidate: Candidate }>) {
                 type="button"
                 disabled
                 aria-describedby="sprint-004-hint"
-                className="inline-flex h-9 items-center rounded-lg border border-border-strong bg-surface-strong px-3 text-sm font-medium text-ink disabled:cursor-not-allowed disabled:opacity-50"
+                className="inline-flex h-11 sm:h-9 items-center rounded-lg border border-border-strong bg-surface-strong px-3 text-sm font-medium text-ink disabled:cursor-not-allowed disabled:opacity-50"
               >
                 Add to request
               </button>
@@ -155,7 +155,7 @@ function CandidateView({ candidate }: Readonly<{ candidate: Candidate }>) {
                 type="button"
                 disabled
                 aria-describedby="sprint-004-hint"
-                className="inline-flex h-9 items-center rounded-lg bg-accent-green px-3 text-sm font-medium text-white disabled:cursor-not-allowed disabled:opacity-50"
+                className="inline-flex h-11 sm:h-9 items-center rounded-lg bg-accent-green px-3 text-sm font-medium text-white disabled:cursor-not-allowed disabled:opacity-50"
               >
                 Book interview
               </button>

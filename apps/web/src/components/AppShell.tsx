@@ -8,6 +8,7 @@ import type { AccountStatus } from "@venture-route/contracts";
 import {
   CalendarDays,
   CircleCheck,
+  Compass,
   FolderKanban,
   House,
   Inbox,
@@ -28,6 +29,8 @@ import { Link, Outlet, useLocation } from "react-router";
 import { useMarketplaceApi } from "../api/marketplaceContext";
 import { useAuthState, type Role } from "../auth/authContext";
 import { FounderVoiceToggle } from "../chloe/ui/FounderVoiceToggle";
+import { FounderDashboardProvider } from "../features/dashboard/FounderDashboardProvider";
+import { founderCounts, useFounderDashboard } from "../features/dashboard/founderDashboardContext";
 import { LogoMark } from "./Logo";
 import { OfflineBanner } from "./OfflineBanner";
 
@@ -50,14 +53,24 @@ function writeCollapsed(collapsed: boolean): void {
   }
 }
 
-type NavItem = Readonly<{ to: string; label: string; icon: LucideIcon; tab?: boolean }>;
+type NavItem = Readonly<{
+  to: string;
+  label: string;
+  icon: LucideIcon;
+  tab?: boolean;
+  /** Other pages that belong to this item, so it stays highlighted (a trailing * matches any path below it). */
+  also?: readonly string[];
+  /** A count shown next to the label, hidden at 0 (the founder's totals from the dashboard). */
+  badge?: "ventures" | "bids" | "interviews";
+}>;
 
 const NAV: Record<Role, readonly NavItem[]> = {
   founder: [
     { to: "/dashboard", label: "Home", icon: House, tab: true },
-    { to: "/dashboard#ventures", label: "Ventures", icon: FolderKanban, tab: true },
-    { to: "/dashboard#bids", label: "Bids", icon: Inbox, tab: true },
-    { to: "/dashboard#interviews", label: "Interviews", icon: CalendarDays, tab: true },
+    { to: "/route", label: "Route a venture", icon: Compass },
+    { to: "/dashboard#ventures", label: "Ventures", icon: FolderKanban, tab: true, badge: "ventures", also: ["/ventures/*"] },
+    { to: "/dashboard#bids", label: "Bids", icon: Inbox, tab: true, badge: "bids" },
+    { to: "/dashboard#interviews", label: "Interviews", icon: CalendarDays, tab: true, badge: "interviews" },
   ],
   builder: [
     { to: "/home", label: "Home", icon: House, tab: true },
@@ -65,7 +78,7 @@ const NAV: Record<Role, readonly NavItem[]> = {
     { to: "/requests", label: "Open requests", icon: BriefcaseBusiness, tab: true },
     { to: "/home#bids", label: "My bids", icon: Send, tab: true },
     { to: "/home#interviews", label: "Interviews", icon: CalendarDays },
-    { to: "/profile#showcase", label: "My showcase", icon: LayoutGrid },
+    { to: "/my-showcase", label: "My showcase", icon: LayoutGrid, also: ["/profile/projects/new"] },
   ],
   admin: [
     { to: "/admin", label: "Queue", icon: ListChecks, tab: true },
@@ -79,6 +92,7 @@ const TITLES: Record<string, string> = {
   "/home": "Home",
   "/admin": "Review queue",
   "/profile": "Profile",
+  "/my-showcase": "My showcase",
   "/profile/projects/new": "Add a project",
   "/requests": "Open requests",
   "/bookings/new": "Book an interview",
@@ -87,6 +101,7 @@ const TITLES: Record<string, string> = {
 function titleFor(pathname: string): string | undefined {
   if (TITLES[pathname]) return TITLES[pathname];
   if (pathname.startsWith("/bookings/")) return "Interview";
+  if (pathname.startsWith("/ventures/")) return "Venture";
   if (pathname.startsWith("/builders/")) return "Builder";
   return undefined;
 }
@@ -111,6 +126,8 @@ function initials(text: string): string {
 function isActive(item: NavItem, pathname: string, search: string, hash: string): boolean {
   const [path, fragment] = item.to.split("#");
   const [base, query] = (path ?? "").split("?");
+  const alsoHere = (item.also ?? []).some((other) => (other.endsWith("*") ? pathname.startsWith(other.slice(0, -1)) : other === pathname));
+  if (alsoHere) return true;
   if (base !== pathname) return false;
   if (query) return search === `?${query}`;
   if (fragment) return hash === `#${fragment}`;
@@ -213,9 +230,23 @@ function MenuIcon({ open }: Readonly<{ open: boolean }>) {
   );
 }
 
+/** The shell. A founder's pages share one dashboard response (sidebar badges, Home, a venture). */
 export function AppShell() {
   const auth = useAuthState();
+  return auth.role === "founder" ? (
+    <FounderDashboardProvider>
+      <ShellBody />
+    </FounderDashboardProvider>
+  ) : (
+    <ShellBody />
+  );
+}
+
+function ShellBody() {
+  const auth = useAuthState();
   const role = auth.role ?? "founder";
+  const founder = useFounderDashboard();
+  const badges = founder?.data ? founderCounts(founder.data) : null;
   const { pathname, search, hash } = useLocation();
   const [menuOpen, setMenuOpen] = useState(false);
   const [collapsed, setCollapsed] = useState(readCollapsed);
@@ -231,8 +262,33 @@ export function AppShell() {
         className="inline-flex h-10 items-center gap-2 rounded-xl bg-accent-green px-4 text-[14px] font-semibold text-white shadow-card transition-colors hover:bg-accent-green-hover"
       >
         <Plus aria-hidden="true" className="h-4 w-4" />
-        New route
+        Route a new venture
       </Link>
+    ) : role === "builder" && pathname === "/my-showcase" ? (
+      <span className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-3">
+        <Link
+          to="/showcase"
+          className="inline-flex h-10 items-center rounded-xl border border-border-strong bg-surface-strong px-4 text-[14px] font-medium text-ink transition-colors hover:border-accent-green"
+        >
+          View public Showcase ↗
+        </Link>
+        <Link
+          to="/profile/projects/new"
+          className="inline-flex h-10 items-center gap-2 rounded-xl bg-accent-green px-4 text-[14px] font-semibold text-white shadow-card transition-colors hover:bg-accent-green-hover"
+        >
+          <Plus aria-hidden="true" className="h-4 w-4" />
+          Add a project
+        </Link>
+      </span>
+    ) : role === "builder" && pathname === "/profile" ? (
+      // Submits the profile form below (the form has the matching id); the form guards a double save.
+      <button
+        type="submit"
+        form="builder-profile-form"
+        className="inline-flex h-10 items-center rounded-xl bg-accent-green px-4 text-[14px] font-semibold text-white shadow-card transition-colors hover:bg-accent-green-hover"
+      >
+        Save changes
+      </button>
     ) : role === "builder" && pathname === "/home" ? (
       <Link
         to="/profile"
@@ -259,7 +315,7 @@ export function AppShell() {
           onClick={onPick}
           aria-current={active ? "page" : undefined}
           title={rail ? item.label : undefined}
-          className={`flex items-center gap-3 rounded-xl font-medium transition-colors ${rail ? "justify-center" : "px-3.5"} ${compact ? "min-h-[48px] text-[16px]" : "h-12 text-[15px]"} ${
+          className={`relative flex items-center gap-3 rounded-xl font-medium transition-colors ${rail ? "justify-center" : "px-3.5"} ${compact ? "min-h-[48px] text-[16px]" : "h-12 text-[15px]"} ${
             active
               ? dark
                 ? "bg-accent-green text-white"
@@ -271,6 +327,13 @@ export function AppShell() {
         >
           <Icon aria-hidden="true" className="h-5 w-5 shrink-0" />
           <span className={rail ? "sr-only" : undefined}>{item.label}</span>
+          {item.badge && badges && badges[item.badge] > 0 ? (
+            <span
+              className={`grid h-5 min-w-5 place-items-center rounded-pill bg-accent-green px-1.5 text-[11px] font-semibold text-white ${rail ? "absolute right-1 top-1" : "ml-auto"}`}
+            >
+              {badges[item.badge]}
+            </span>
+          ) : null}
         </Link>
       );
     });
@@ -325,16 +388,6 @@ export function AppShell() {
         </div>
         <nav aria-label="Sections" className="flex flex-col gap-1">
           {navLinks(undefined, false, collapsed)}
-          {role === "founder" ? (
-            <Link
-              to="/route"
-              title={collapsed ? "New route" : undefined}
-              className="mt-5 flex h-12 items-center justify-center gap-2 rounded-xl border border-dashed border-accent-green/70 text-[15px] font-semibold text-accent-green transition-colors hover:bg-sage"
-            >
-              <Plus aria-hidden="true" className="h-4 w-4" />
-              <span className={collapsed ? "sr-only" : undefined}>New route</span>
-            </Link>
-          ) : null}
         </nav>
         <div className="mt-auto">
           <AccountChip role={role} status={status} dark={dark} compact={collapsed} />
@@ -347,7 +400,7 @@ export function AppShell() {
           className={`sticky top-0 z-40 border-b backdrop-blur-sm ${dark ? "border-border-dark bg-dark lg:border-border lg:bg-ground/95" : "border-border bg-ground/95"}`}
         >
           <nav aria-label="Primary" className="flex h-16 items-center gap-3 px-4 sm:px-6 lg:h-[72px] lg:px-10">
-            <Link to="/" aria-label="Venture Route" className="lg:hidden">
+            <Link to="/" aria-label="Venture Route" className="grid h-11 w-11 place-items-center lg:hidden">
               <LogoMark size={32} />
             </Link>
             {title ? (
@@ -416,7 +469,7 @@ export function AppShell() {
                 }`}
               >
                 <Icon aria-hidden="true" className="h-5 w-5" />
-                <span className="max-w-full truncate px-1">{item.label}</span>
+                <span className="max-w-full px-1 text-center leading-[1.1]">{item.label}</span>
               </Link>
             );
           })}

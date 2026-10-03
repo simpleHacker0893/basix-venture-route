@@ -1,31 +1,32 @@
 /**
- * Showcase projects with their confirmation status, the link to the add-project screen, and a
- * per-project `ShowcaseEditor` (spec #86 stories 1-13, #99) behind an "Edit showcase" toggle.
+ * The profile's "Showcase projects" section: a short list (title, meta, status pill) with a link to
+ * manage everything in My showcase and a link to add a project. Publishing, links and the showcase
+ * editor live on /my-showcase; this card only summarises.
  */
-import type { ShowcaseEditInput, ShowcaseProject as ShowcaseProjectT } from "@venture-route/contracts";
-import { useState } from "react";
+import type { AccountStatus, ShowcaseProject as ShowcaseProjectT } from "@venture-route/contracts";
 import { Link } from "react-router";
 
-import { DemoDataPill } from "../../components/DemoDataPill";
-import { SKILL_LABELS, VERTICAL_LABELS } from "../../lib/brief";
-import { isoDate } from "../../lib/format";
+import { VERTICAL_LABELS } from "../../lib/brief";
 import { helpClass } from "./formStyles";
-import { ShowcaseEditor } from "./ShowcaseEditor";
-import { Card, ShowcaseStatusPill, StatusPill } from "./StatusPill";
+import { cardCopy, savedLinks, showcaseCardState } from "./showcaseState";
+import { Card } from "./StatusPill";
 
-/** Only web links become anchors; the engine validates too, this keeps a stray scheme inert. */
-const isWebUrl = (url: string | null): url is string => url !== null && /^https?:\/\//i.test(url);
-
-const PENDING_NOTE = "A BASIX admin reviews every change before it goes live.";
+const PILL: Record<ReturnType<typeof showcaseCardState>, string> = {
+  draft: "border border-border-strong bg-surface text-ink-2",
+  waiting: "bg-amber-fill text-amber-ink",
+  live: "bg-credential-tint text-accent-green",
+  "approved-account": "bg-credential-tint text-accent-green",
+  "approved-project": "bg-credential-tint text-accent-green",
+  "needs-changes": "bg-danger-tint text-danger",
+};
 
 type ProjectsCardProps = Readonly<{
   projects: ShowcaseProjectT[];
   hasProfile: boolean;
-  onSaveShowcase(projectId: string, body: ShowcaseEditInput): Promise<ShowcaseProjectT>;
+  account: AccountStatus | null;
 }>;
 
-export function ProjectsCard({ projects, hasProfile, onSaveShowcase }: ProjectsCardProps) {
-  const [expanded, setExpanded] = useState<string | null>(null);
+export function ProjectsCard({ projects, hasProfile, account }: ProjectsCardProps) {
   return (
     <Card
       id="showcase"
@@ -34,77 +35,42 @@ export function ProjectsCard({ projects, hasProfile, onSaveShowcase }: ProjectsC
       eyebrow="Proof"
       lead="A confirmed completed project demonstrates its skills (verified-for-skill, evidence project)."
       aside={
-        <Link
-          to="/profile/projects/new"
-          className="inline-flex h-8 shrink-0 items-center rounded-lg border border-border-strong bg-surface-strong px-3 text-sm font-medium text-ink transition-colors hover:border-accent-green"
-        >
-          Add a showcase project
-        </Link>
+        <div className="flex flex-col gap-2 sm:flex-row">
+          <Link
+            to="/my-showcase"
+            className="inline-flex h-11 shrink-0 items-center justify-center rounded-lg border border-border-strong bg-surface-strong px-3 text-sm font-medium text-ink transition-colors hover:border-accent-green sm:h-9"
+          >
+            Manage in My showcase →
+          </Link>
+          <Link
+            to="/profile/projects/new"
+            className="inline-flex h-11 shrink-0 items-center justify-center rounded-lg bg-accent-green px-3 text-sm font-medium text-white transition-colors hover:bg-accent-green-hover sm:h-9"
+          >
+            Add a project
+          </Link>
+        </div>
       }
     >
-      <Link to="/showcase" className="w-fit text-[13px] text-ink-2 underline-offset-4 hover:text-accent-green hover:underline">
-        View public Showcase ↗
-      </Link>
       {!hasProfile ? <p className={helpClass}>Save your profile first, then add projects.</p> : null}
       {projects.length > 0 ? (
         <ul aria-label="Projects" className="flex flex-col divide-y divide-border">
-          {projects.map((project) => (
-            <li key={project.id} aria-label={project.title} className="flex flex-col gap-3 py-3">
-              <div className="flex flex-wrap items-center justify-between gap-3">
-                <div className="flex flex-col gap-1">
-                  <span className="text-sm font-medium text-ink">{project.title}</span>
+          {projects.map((project) => {
+            const state = showcaseCardState(project, account);
+            const links = savedLinks(project).length;
+            return (
+              <li key={project.id} aria-label={project.title} className="flex items-center justify-between gap-3 py-3">
+                <div className="flex min-w-0 flex-col gap-0.5">
+                  <span className="break-words text-sm font-medium text-ink">{project.title}</span>
                   <span className="text-[12px] text-ink-3">
-                    {VERTICAL_LABELS[project.vertical]} · completed {isoDate(project.completedOn)}
-                    {project.licensable ? " · licensable as reusable IP" : ""}
+                    {VERTICAL_LABELS[project.vertical]} · {links === 0 ? "no link yet" : links === 1 ? "1 link" : `${links} links`}
                   </span>
-                  <div className="flex flex-wrap gap-1.5">
-                    {project.skillIds.map((skill) => (
-                      <span key={skill} className="rounded-pill border border-border-strong bg-surface-strong px-2 py-0.5 text-[12px]">
-                        {SKILL_LABELS[skill]}
-                      </span>
-                    ))}
-                  </div>
                 </div>
-                <div className="flex items-center gap-2">
-                  <ShowcaseStatusPill status={project.showcaseStatus} />
-                  <StatusPill status={project.status} />
-                  <DemoDataPill />
-                  <button
-                    type="button"
-                    aria-expanded={expanded === project.id}
-                    aria-controls={`showcase-editor-${project.id}`}
-                    onClick={() => setExpanded((current) => (current === project.id ? null : project.id))}
-                    className="text-[13px] text-ink-2 underline-offset-4 hover:text-accent-green hover:underline"
-                  >
-                    Edit showcase
-                  </button>
-                </div>
-              </div>
-              <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-[13px]">
-                {isWebUrl(project.liveUrl) ? (
-                  <a href={project.liveUrl} target="_blank" rel="noopener noreferrer" className="text-ink-2 underline-offset-4 hover:text-accent-green hover:underline">
-                    Project link ↗
-                  </a>
-                ) : null}
-                {isWebUrl(project.demoUrl) ? (
-                  <a href={project.demoUrl} target="_blank" rel="noopener noreferrer" className="text-ink-2 underline-offset-4 hover:text-accent-green hover:underline">
-                    Demo link ↗
-                  </a>
-                ) : null}
-                {!isWebUrl(project.liveUrl) && !isWebUrl(project.demoUrl) ? (
-                  <button
-                    type="button"
-                    onClick={() => setExpanded(project.id)}
-                    className="text-ink-2 underline-offset-4 hover:text-accent-green hover:underline"
-                  >
-                    Add a link
-                  </button>
-                ) : null}
-              </div>
-              {project.showcaseStatus === "pending" ? <p className="text-[13px] text-ink-2">{PENDING_NOTE}</p> : null}
-              {expanded === project.id ? <ShowcaseEditor project={project} onSave={onSaveShowcase} /> : null}
-            </li>
-          ))}
+                <span className={`inline-flex h-6 shrink-0 items-center rounded-pill px-2.5 text-[12px] font-semibold ${PILL[state]}`}>
+                  {cardCopy(state, account).pill}
+                </span>
+              </li>
+            );
+          })}
         </ul>
       ) : (
         <p className="text-sm text-ink-muted">No projects yet.</p>

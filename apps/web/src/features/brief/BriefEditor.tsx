@@ -143,7 +143,7 @@ export function BriefEditor({ initial, busy, serverError, onSubmit, onBack, back
     ) : null;
 
   const pillClass = (selected: boolean) =>
-    `inline-flex h-8 cursor-pointer items-center rounded-pill border px-3 text-sm has-focus-visible:ring-2 has-focus-visible:ring-ring/50 has-focus-visible:ring-offset-1 ${
+    `inline-flex h-11 sm:h-8 cursor-pointer items-center rounded-pill border px-3 text-sm has-focus-visible:ring-2 has-focus-visible:ring-ring/50 has-focus-visible:ring-offset-1 ${
       selected
         ? "border-accent-green bg-accent-green text-white"
         : "border-border-strong bg-surface-strong hover:border-accent-green"

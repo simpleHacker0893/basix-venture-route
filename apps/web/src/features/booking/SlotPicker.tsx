@@ -102,7 +102,7 @@ export function SlotPicker({ availability, draft, onChange, summaryLead, errors 
             maxLength={500}
             rows={3}
             onChange={(event) => onChange({ ...draft, note: event.target.value })}
-            className={`${inputClass} h-auto py-2`}
+            className={`${inputClass} h-auto py-2 sm:h-auto`}
           />
           {errors.note ? (
             <p role="alert" className="text-[13px] text-danger">

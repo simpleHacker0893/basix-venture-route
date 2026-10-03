@@ -55,7 +55,7 @@ function filterRequests(requests: readonly Request[], chip: Chip): Request[] {
 }
 
 function chipClass(selected: boolean): string {
-  return `inline-flex h-8 items-center rounded-pill border px-3 text-sm transition-colors ${
+  return `inline-flex h-11 sm:h-8 items-center rounded-pill border px-3 text-sm transition-colors ${
     selected
       ? "border-accent-green bg-accent-green text-white"
       : "border-border-strong bg-surface-strong text-ink hover:border-accent-green"
@@ -182,7 +182,7 @@ export function RequestsBoard() {
                 aria-label="Sort by"
                 value={sort}
                 onChange={(event) => setSort(event.target.value as Sort)}
-                className="h-9 rounded-card border border-border-strong bg-surface-strong px-2 text-sm"
+                className="h-11 rounded-card sm:h-9 border border-border-strong bg-surface-strong px-2 text-sm"
               >
                 {(Object.keys(SORT_LABELS) as Sort[]).map((key) => (
                   <option key={key} value={key}>
@@ -300,7 +300,7 @@ function RequestCard({
           onClick={onBid}
           disabled={!eligible}
           aria-describedby={placed || eligible ? undefined : reasonId}
-          className="mt-2 rounded-md bg-accent-green px-5 py-2 text-sm font-medium text-white transition-colors hover:bg-accent-green-hover disabled:cursor-not-allowed disabled:bg-border-strong disabled:text-ink-3"
+          className="mt-2 min-h-11 rounded-md bg-accent-green px-5 py-2 sm:min-h-0 text-sm font-medium text-white transition-colors hover:bg-accent-green-hover disabled:cursor-not-allowed disabled:bg-border-strong disabled:text-ink-3"
         >
           {placed ? "Bid placed" : "Bid"}
         </button>

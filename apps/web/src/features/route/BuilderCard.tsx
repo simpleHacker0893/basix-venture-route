@@ -53,7 +53,7 @@ export function BuilderCard({ builder, onViewEvidence }: BuilderCardProps) {
           <button
             type="button"
             onClick={() => onViewEvidence(builder.builderId)}
-            className="inline-flex min-h-10 items-center text-[13px] font-medium text-accent-green underline-offset-4 hover:underline sm:min-h-0"
+            className="inline-flex min-h-11 items-center text-[13px] font-medium text-accent-green underline-offset-4 hover:underline sm:min-h-0"
           >
             View evidence path
           </button>
@@ -61,7 +61,7 @@ export function BuilderCard({ builder, onViewEvidence }: BuilderCardProps) {
         {/* Sprint 003 #46: the founder's candidate view; seed builders explain themselves there. */}
         <Link
           to={`/builders/${encodeURIComponent(builder.builderId)}`}
-          className="inline-flex min-h-10 items-center text-[13px] font-medium text-accent-green underline-offset-4 hover:underline sm:min-h-0"
+          className="inline-flex min-h-11 items-center text-[13px] font-medium text-accent-green underline-offset-4 hover:underline sm:min-h-0"
         >
           View profile
         </Link>

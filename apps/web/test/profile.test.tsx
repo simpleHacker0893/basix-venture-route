@@ -213,7 +213,7 @@ describe("/profile", () => {
 });
 
 describe("/profile/projects/new", () => {
-  it("posts the project with two skills and licensable on, then returns to the profile", async () => {
+  it("posts the project with two skills and licensable on, then returns to My showcase", async () => {
     const user = userEvent.setup();
     const posted: ProjectInput[] = [];
     const marketplace = fakeMarketplace({
@@ -247,14 +247,14 @@ describe("/profile/projects/new", () => {
     await user.click(within(form).getByRole("checkbox", { name: "UI/UX design" }));
     await user.type(within(form).getByLabelText("Completion date"), "2026-08-31");
     await user.click(within(form).getByRole("checkbox", { name: "Licensable as reusable IP" }));
-    await user.click(within(form).getByRole("button", { name: "Submit for confirmation" }));
+    await user.click(within(form).getByRole("button", { name: "Save project" }));
 
     await waitFor(() =>
       expect(posted).toEqual([
         { title: "Clinic triage intake flow", vertical: "health", licensable: true, completedOn: "2026-08-31", skillIds: ["python", "ui-ux"] },
       ]),
     );
-    expect(await screen.findByRole("heading", { level: 1, name: "Your profile" })).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { level: 1, name: "My showcase" })).toBeInTheDocument();
   });
 });
 
@@ -483,7 +483,7 @@ describe("/profile skill set and résumé suggestions (spec #86 stories 17-28)",
   });
 });
 
-describe("/profile 422 field messages (Ruling R24)", () => {
+describe("/my-showcase and /profile 422 field messages (Ruling R24)", () => {
   it("shows a 422 message under pitchVideoUrl in the Showcase editor", async () => {
     const user = userEvent.setup();
     const marketplace = fakeMarketplace({
@@ -495,11 +495,11 @@ describe("/profile 422 field messages (Ruling R24)", () => {
       },
     });
 
-    render(<App initialPath="/profile" source={source} auth={builderAuth} marketplace={marketplace} />);
+    render(<App initialPath="/my-showcase" source={source} auth={builderAuth} marketplace={marketplace} />);
 
     const projects = await screen.findByRole("list", { name: "Projects" });
     const row = within(projects).getByRole("listitem", { name: "Venture Route" });
-    await user.click(within(row).getByRole("button", { name: "Edit showcase" }));
+    await user.click(within(row).getByRole("button", { name: "Edit details and links" }));
     const editor = within(row).getByRole("form", { name: "Showcase details for Venture Route" });
     await user.type(within(editor).getByLabelText("YouTube pitch link"), "https://example.com/not-youtube");
     await user.click(within(editor).getByRole("button", { name: "Save showcase details" }));
@@ -572,7 +572,7 @@ describe("/profile certifications (spec #86 stories 14-16)", () => {
   });
 });
 
-describe("/profile Showcase editor (spec #86 stories 1-6)", () => {
+describe("/my-showcase editor (spec #86 stories 1-6)", () => {
   it("shows the status pill and pending note, and saving sends the entry to review", async () => {
     const user = userEvent.setup();
     const saved: { projectId: string; body: ShowcaseEditInput }[] = [];
@@ -586,17 +586,16 @@ describe("/profile Showcase editor (spec #86 stories 1-6)", () => {
       },
     });
 
-    render(<App initialPath="/profile" source={source} auth={builderAuth} marketplace={marketplace} />);
+    render(<App initialPath="/my-showcase" source={source} auth={builderAuth} marketplace={marketplace} />);
 
     const projects = await screen.findByRole("list", { name: "Projects" });
     const row = within(projects).getByRole("listitem", { name: "Venture Route" });
-    expect(within(row).getByText("Not shown")).toBeInTheDocument();
-    const toggle = within(row).getByRole("button", { name: "Edit showcase" });
+    expect(within(row).getByTestId("state-pill")).toHaveTextContent("Draft");
+    const toggle = within(row).getByRole("button", { name: "Edit details and links" });
     expect(toggle).toHaveAttribute("aria-expanded", "false");
     await user.click(toggle);
-    // The toggle keeps its name "Edit showcase" — collapse state is `aria-expanded`, not a
-    // renamed "Close" button (fix round 1, item 9).
-    expect(within(row).getByRole("button", { name: "Edit showcase" })).toHaveAttribute("aria-expanded", "true");
+    // The toggle keeps its name; the open state is `aria-expanded`, not a renamed "Close" button.
+    expect(within(row).getByRole("button", { name: "Edit details and links" })).toHaveAttribute("aria-expanded", "true");
 
     const editor = within(row).getByRole("form", { name: "Showcase details for Venture Route" });
     await user.type(within(editor).getByLabelText("Description"), "The MeTTa-routed marketplace.");
@@ -607,10 +606,8 @@ describe("/profile Showcase editor (spec #86 stories 1-6)", () => {
     expect(saved[0]!.projectId).toBe("proj-1");
     expect(saved[0]!.body).toMatchObject({ description: "The MeTTa-routed marketplace.", showcased: true });
 
-    expect(await within(row).findByText("Pending review")).toBeInTheDocument();
-    expect(
-      within(row).getByText("A BASIX admin reviews every change before it goes live."),
-    ).toBeInTheDocument();
+    expect(await within(row).findByText("Waiting for review")).toBeInTheDocument();
+    expect(within(row).getByText("Not public yet. BASIX is reviewing this project.")).toBeInTheDocument();
   });
 });
 
@@ -655,7 +652,7 @@ describe("/profile/projects/new links", () => {
     const form = await fillRequired(user);
     await user.type(within(form).getByLabelText("Project link"), "https://github.com/amina/triage");
     await user.type(within(form).getByLabelText("Demo link"), "https://triage.example.org");
-    await user.click(within(form).getByRole("button", { name: "Submit for confirmation" }));
+    await user.click(within(form).getByRole("button", { name: "Save project" }));
 
     await waitFor(() => expect(saved).toHaveLength(1));
     expect(saved[0]!.projectId).toBe("proj-1");
@@ -664,7 +661,7 @@ describe("/profile/projects/new links", () => {
       demoUrl: "https://triage.example.org",
       showcased: false,
     });
-    expect(await screen.findByRole("heading", { level: 1, name: "Your profile" })).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { level: 1, name: "My showcase" })).toBeInTheDocument();
   });
 
   it("sends showcased true when Show on Showcase is on", async () => {
@@ -684,10 +681,39 @@ describe("/profile/projects/new links", () => {
     const form = await fillRequired(user);
     await user.type(within(form).getByLabelText("Project link"), "https://triage.example.org");
     await user.click(within(form).getByRole("checkbox", { name: "Show on Showcase" }));
-    await user.click(within(form).getByRole("button", { name: "Submit for confirmation" }));
+    await user.click(within(form).getByRole("button", { name: "Save project" }));
 
     await waitFor(() => expect(saved).toHaveLength(1));
     expect(saved[0]).toMatchObject({ showcased: true });
+  });
+
+  it("sends the project to review (showcased true, no links) when only the box is ticked, with the helper text", async () => {
+    const user = userEvent.setup();
+    const saved: ShowcaseEditInput[] = [];
+    const marketplace = fakeMarketplace({
+      getProfile: async () => profile({ accountStatus: "pending" }),
+      ...noRows,
+      postProject: async (input) => created(input),
+      saveShowcase: async (_id, body) => {
+        saved.push(body);
+        return showcaseProject({ ...body, showcaseStatus: "pending" });
+      },
+    });
+    render(<App initialPath="/profile/projects/new" source={source} auth={builderAuth} marketplace={marketplace} />);
+
+    const form = await fillRequired(user);
+    const box = within(form).getByRole("checkbox", { name: "Show on Showcase" });
+    expect(box).not.toBeChecked();
+    expect(box).toHaveAccessibleDescription(
+      "Sends this project to BASIX for review. It goes public once your account and the project are both confirmed. Leave it off to keep it private for now.",
+    );
+    expect(await screen.findByText("Your account is still in review. You can save projects now. They stay private until BASIX confirms you.")).toBeInTheDocument();
+    await user.click(box);
+    await user.click(within(form).getByRole("button", { name: "Save project" }));
+
+    await waitFor(() => expect(saved).toHaveLength(1));
+    expect(saved[0]).toMatchObject({ showcased: true, liveUrl: null, demoUrl: null });
+    expect(await screen.findByRole("heading", { level: 1, name: "My showcase" })).toBeInTheDocument();
   });
 
   it("does not call the showcase endpoint when no link is entered", async () => {
@@ -705,9 +731,9 @@ describe("/profile/projects/new links", () => {
     render(<App initialPath="/profile/projects/new" source={source} auth={builderAuth} marketplace={marketplace} />);
 
     const form = await fillRequired(user);
-    await user.click(within(form).getByRole("button", { name: "Submit for confirmation" }));
+    await user.click(within(form).getByRole("button", { name: "Save project" }));
 
-    expect(await screen.findByRole("heading", { level: 1, name: "Your profile" })).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { level: 1, name: "My showcase" })).toBeInTheDocument();
     expect(calls).toBe(0);
   });
 
@@ -725,16 +751,15 @@ describe("/profile/projects/new links", () => {
 
     const form = await fillRequired(user);
     await user.type(within(form).getByLabelText("Project link"), "https://triage.example.org");
-    await user.click(within(form).getByRole("button", { name: "Submit for confirmation" }));
+    await user.click(within(form).getByRole("button", { name: "Save project" }));
 
-    expect(await screen.findByRole("heading", { level: 1, name: "Your profile" })).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { level: 1, name: "My showcase" })).toBeInTheDocument();
     expect(
-      screen.getByText("Project saved. We couldn't save the link. Add it from Edit showcase."),
+      screen.getByText("Project saved. We couldn't save the link. Add it from My showcase."),
     ).toBeInTheDocument();
   });
 
-  it("lists saved links on the profile and offers Add a link when none is saved", async () => {
-    const user = userEvent.setup();
+  it("summarises each project on the profile with its link count and status, and links to My showcase", async () => {
     const marketplace = fakeMarketplace({
       getProfile: async () => profile({ accountStatus: "confirmed", confirmed: true }),
       listCredentials: async () => [],
@@ -747,16 +772,88 @@ describe("/profile/projects/new links", () => {
 
     const projects = await screen.findByRole("list", { name: "Projects" });
     const linked = within(projects).getByRole("listitem", { name: "Venture Route" });
-    const live = within(linked).getByRole("link", { name: /Project link/ });
-    expect(live).toHaveAttribute("href", "https://github.com/amina/triage");
-    expect(live).toHaveAttribute("target", "_blank");
-    expect(live).toHaveAttribute("rel", "noopener noreferrer");
-    expect(within(linked).getByRole("link", { name: /Demo link/ })).toHaveAttribute("href", "https://triage.example.org");
-    expect(within(linked).queryByRole("button", { name: "Add a link" })).not.toBeInTheDocument();
-
-    const bare = within(projects).getByRole("listitem", { name: "No link yet" });
-    await user.click(within(bare).getByRole("button", { name: "Add a link" }));
-    expect(within(bare).getByRole("form", { name: "Showcase details for No link yet" })).toBeInTheDocument();
+    expect(linked).toHaveTextContent("2 links");
+    expect(linked).toHaveTextContent("Draft");
+    expect(within(projects).getByRole("listitem", { name: "No link yet" })).toHaveTextContent("no link yet");
+    const card = screen.getByRole("region", { name: "Showcase projects" });
+    expect(within(card).getByRole("link", { name: /Manage in My showcase/ })).toHaveAttribute("href", "/my-showcase");
+    expect(within(card).getByRole("link", { name: "Add a project" })).toHaveAttribute("href", "/profile/projects/new");
   });
 });
 
+
+describe("/profile layout: strength rail and section checklist", () => {
+  it("shows profile strength from the existing fields and a checklist that scrolls to each card", async () => {
+    const user = userEvent.setup();
+    const scrolled: string[] = [];
+    const original = Element.prototype.scrollIntoView;
+    Element.prototype.scrollIntoView = function scrollIntoView(this: Element) {
+      scrolled.push(this.id);
+    };
+    try {
+      const marketplace = fakeMarketplace({
+        getProfile: async () => profile({ accountStatus: "pending", skillSet: ["FastAPI"], sharing: { email: true, phone: false, linkedin: false } }),
+        listCredentials: async () => [],
+        listProjects: async () => [],
+      });
+      render(<App initialPath="/profile" source={source} auth={builderAuth} marketplace={marketplace} />);
+
+      const strength = await screen.findByRole("region", { name: "Profile strength" });
+      // profile() has a name, a headline, skills, availability and a day rate, a mode and a location, shared email; no project yet.
+      expect(strength).toHaveTextContent("5 of 6 done");
+      expect(strength).toHaveTextContent("83%");
+      expect(strength).toHaveTextContent("Next: add a project to your showcase.");
+
+      const sections = screen.getByRole("navigation", { name: "Profile sections" });
+      const links = within(sections).getAllByRole("link");
+      expect(links.map((l) => l.textContent?.replace(/(done|to do)$/, ""))).toEqual([
+        "About you",
+        "Skills",
+        "Availability",
+        "Delivery modes",
+        "Contact sharing",
+        "Showcase projects",
+      ]);
+      expect(within(sections).getByRole("link", { name: /Showcase projects/ })).toHaveTextContent("to do");
+      await user.click(within(sections).getByRole("link", { name: /Availability/ }));
+      await user.click(within(sections).getByRole("link", { name: /Showcase projects/ }));
+      expect(scrolled).toEqual(["profile-availability", "showcase"]);
+    } finally {
+      Element.prototype.scrollIntoView = original;
+    }
+  });
+
+  it("counts sections as they are filled in, without saving", async () => {
+    const user = userEvent.setup();
+    const marketplace = fakeMarketplace({
+      getProfile: async () => profile({ headline: "", sharing: { email: false, phone: false, linkedin: false } }),
+      listCredentials: async () => [],
+      listProjects: async () => [],
+    });
+    render(<App initialPath="/profile" source={source} auth={builderAuth} marketplace={marketplace} />);
+
+    const strength = await screen.findByRole("region", { name: "Profile strength" });
+    expect(strength).toHaveTextContent("3 of 6 done");
+    await user.type(screen.getByLabelText("Headline"), "Python builder");
+    expect(strength).toHaveTextContent("4 of 6 done");
+    await user.click(screen.getByRole("checkbox", { name: "Share email" }));
+    expect(strength).toHaveTextContent("5 of 6 done");
+  });
+
+  it("puts the contact-sharing toggles and public links in the one main column and a Save changes button in the top bar", async () => {
+    const marketplace = fakeMarketplace({
+      getProfile: async () => profile(),
+      listCredentials: async () => [],
+      listProjects: async () => [],
+    });
+    render(<App initialPath="/profile" source={source} auth={builderAuth} marketplace={marketplace} />);
+
+    const form = await screen.findByRole("form", { name: "Builder profile" });
+    for (const title of ["About you", "Skills", "Availability", "Delivery modes & location", "Contact sharing", "Public profile links", "Account status"]) {
+      expect(within(form).getByRole("region", { name: title })).toBeInTheDocument();
+    }
+    const save = within(screen.getByRole("navigation", { name: "Primary" })).getByRole("button", { name: "Save changes" });
+    expect(save).toHaveAttribute("type", "submit");
+    expect(save).toHaveAttribute("form", form.id);
+  });
+});

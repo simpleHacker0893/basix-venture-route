@@ -150,45 +150,48 @@ describe("/dashboard", () => {
     const next = screen.getByRole("region", { name: "Next step" });
     expect(next).toHaveTextContent("You have 1 bid on");
     expect(within(next).getByRole("link", { name: /Review bids/ })).toHaveAttribute("href", "/dashboard#bids");
+    expect(within(next).getByRole("link", { name: "Open this venture" })).toHaveAttribute("href", "/ventures/r-constrained");
     const tiles = screen.getAllByTestId("tile");
-    expect(tiles.map((tile) => tile.dataset.tile)).toEqual(["briefs", "routes", "openRequests", "bidsReceived", "bookings"]);
-    expect(tiles.map((tile) => within(tile).getByTestId("tile-count").textContent)).toEqual(["2", "1 · 1", "1", "1", "2"]);
-    expect(tiles[1]).toHaveTextContent("feasible · partial routes");
-    expect(screen.getAllByRole("link", { name: "New route" })[0]).toHaveAttribute("href", "/route");
+    expect(tiles.map((tile) => tile.dataset.tile)).toEqual(["ventures", "bids", "interviews"]);
+    expect(tiles.map((tile) => within(tile).getByTestId("tile-count").textContent)).toEqual(["2", "1", "2"]);
+    expect(tiles[0]).toHaveTextContent("Requests you published");
+    expect(tiles[1]).toHaveTextContent("Builders who applied");
+    expect(tiles[2]).toHaveTextContent("Confirmed or proposed");
+    expect(screen.getAllByRole("link", { name: "Route a new venture" })[0]).toHaveAttribute("href", "/route");
 
     const list = screen.getByRole("list", { name: "Briefs and routes" });
     const rows = within(list).getAllByRole("listitem", { name: /./ }).filter((item) => item.parentElement === list);
     expect(rows).toHaveLength(2);
     expect(rows[0]).toHaveTextContent(constrained.title);
-    expect(rows[0]).toHaveTextContent("Agri");
     expect(rows[0]).toHaveTextContent("Partial");
     expect(rows[0]).toHaveTextContent("Open");
-    expect(rows[0]).toHaveTextContent("USD 16 an hour of USD 38 an hour");
+    expect(rows[0]).toHaveTextContent("USD 38 an hour · Remote · 1 builder");
     expect(within(rows[0]!).getByText("Demo data")).toBeInTheDocument();
     expect(rows[1]).toHaveTextContent("Feasible");
     expect(rows[1]).toHaveTextContent("Closed");
-    expect(rows[1]).toHaveTextContent("team of 3");
+    expect(rows[1]).toHaveTextContent("3 builders");
     expect(within(rows[0]!).getByRole("list", { name: `${constrained.title} progress` })).toHaveTextContent("Bids (1)");
+    expect(within(rows[0]!).getByRole("link", { name: "Review bids" })).toHaveAttribute("href", "/ventures/r-constrained#bids");
+    expect(within(rows[1]!).getByRole("link", { name: "Open venture" })).toHaveAttribute("href", "/ventures/r-health");
 
     const bids = screen.getByRole("region", { name: "Bids to review" });
     expect(within(bids).getByText("Builders who applied to work on your published request.")).toBeInTheDocument();
     expect(bids).toHaveTextContent("Naomi Chebet");
     expect(bids).toHaveTextContent("USD 15 an hour");
     expect(bids).not.toHaveTextContent("/ day");
-    // The bid's share of the request's hourly budget: 15 of 38 an hour.
-    expect(bids.querySelector("[style]")).toHaveStyle({ width: "39%" });
     expect(bids).toHaveTextContent(`for ${constrained.title}`);
-    expect(within(bids).getByRole("link", { name: "Book interview" })).toHaveAttribute(
+    expect(within(bids).getByRole("link", { name: "Propose interview" })).toHaveAttribute(
       "href",
       "/bookings/new?builder=naomi-chebet&request=r-constrained",
     );
+    expect(within(bids).getByRole("link", { name: "View profile" })).toHaveAttribute("href", "/builders/naomi-chebet");
 
-    const interviews = screen.getByRole("region", { name: "Interviews" });
+    const interviews = screen.getByRole("region", { name: "Upcoming interviews" });
     const link = within(interviews).getByRole("link", { name: /Naomi Chebet/ });
     expect(link).toHaveAttribute("href", "/bookings/k-1");
     expect(interviews).toHaveTextContent("Fri 25 Sep 2026 · 09:00 EAT");
     expect(interviews).toHaveTextContent("Countered");
-    expect(screen.getByText("Times are shown in Africa/Nairobi (UTC+3).")).toBeInTheDocument();
+    expect(screen.getByText("Times are in Nairobi time.")).toBeInTheDocument();
   });
 
   it("View route re-routes the stored brief through the engine and opens the route result", async () => {
@@ -204,15 +207,30 @@ describe("/dashboard", () => {
     expect(within(screen.getByTestId("team-section")).getByRole("heading", { level: 3 })).toHaveTextContent("Zawadi Njoroge");
   });
 
-  it("renders the empty states", async () => {
+  it("shows the welcome card, how it works and the three empty cards on a first visit", async () => {
     renderDashboard(empty);
 
     await screen.findByRole("heading", { level: 1, name: "Home" });
-    expect(screen.getAllByTestId("tile-count").map((el) => el.textContent)).toEqual(["0", "0 · 0", "0", "0", "0"]);
-    expect(screen.getByRole("region", { name: "Next step" })).toHaveTextContent("Route your first venture");
-    expect(screen.getByText("No briefs published yet. Route a brief and publish it as a request.")).toBeInTheDocument();
-    expect(screen.getByText("No bids yet.")).toBeInTheDocument();
-    expect(screen.getByText("No interviews booked yet.")).toBeInTheDocument();
+    const welcome = screen.getByRole("region", { name: "Get started" });
+    expect(welcome).toHaveTextContent("Describe your idea. Get the smallest credible route.");
+    expect(within(welcome).getByRole("link", { name: /Route my venture/ })).toHaveAttribute("href", "/route");
+    expect(within(welcome).getByRole("link", { name: "Try a demo brief" })).toHaveAttribute("href", "/route");
+
+    const how = screen.getByRole("list", { name: "How it works" });
+    expect(within(how).getAllByRole("listitem").map((li) => li.textContent?.replace(/^\d/, ""))).toEqual([
+      "Describe your ideaIn plain language, by chat or form.",
+      "Confirm the briefSkills, dates, delivery mode, team size, budget.",
+      "See your routeVerified builders, cost and any honest gaps.",
+      "Publish and interviewBuilders bid. You book a time inside the app.",
+    ]);
+    expect(screen.getByRole("region", { name: "Ventures" })).toHaveTextContent("No ventures yet. Your published requests appear here.".replace("yet. ", "yet"));
+    expect(screen.getByRole("region", { name: "Bids" })).toHaveTextContent("No bids yet");
+    expect(screen.getByRole("region", { name: "Bids" })).toHaveTextContent("Builders who applied to your request show here.");
+    expect(screen.getByRole("region", { name: "Interviews" })).toHaveTextContent("Nothing booked");
+    expect(screen.getByRole("region", { name: "Interviews" })).toHaveTextContent("Proposed and confirmed times show here.");
+    // The first visit replaces the working dashboard: no next-step card, tiles or venture list.
+    expect(screen.queryByRole("region", { name: "Next step" })).not.toBeInTheDocument();
+    expect(screen.queryByTestId("tile")).not.toBeInTheDocument();
   });
 
   it("is behind the founder guard", async () => {

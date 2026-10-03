@@ -101,7 +101,7 @@ test("founder routes the Constrained brief and publishes it as a request", async
   await expect(first).toContainText("Open");
   requestTitle = await publishedRequestTitle(first);
   expect(requestTitle.length).toBeGreaterThan(0);
-  await expect(page.locator('[data-tile="briefs"]')).toContainText("1");
+  await expect(page.locator('[data-tile="ventures"]')).toContainText("1");
 });
 
 test("builder sees Eligible · Mobile on the board and bids", async ({ page }) => {
