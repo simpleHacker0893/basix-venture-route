@@ -22,6 +22,8 @@ describe("intake: chat, scenario chips, the form", () => {
     const panel = screen.getByRole("complementary", { name: "Your brief so far" });
     expect(within(panel).getAllByText("missing")).toHaveLength(REQUIRED_FIELDS.length - 1);
     expect(within(panel).getByText("Dates:")).toBeInTheDocument();
+    // The budget chip reads per hour (D-59).
+    expect(within(panel).getByText("Budget per hour (USD):")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Find my route" })).toBeDisabled();
     expect(screen.getByText("Demo data")).toBeInTheDocument();
   });

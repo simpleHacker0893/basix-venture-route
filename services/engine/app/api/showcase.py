@@ -3,7 +3,7 @@
 No auth dependency: a token, if sent, is ignored, never required. Every query starts from
 `repo.visible_showcase_projects()`, the one visibility rule. A hidden, missing or malformed id
 answers the same 404 body, so the endpoint is no existence oracle. No response shape carries
-email, phone, location, day rate or availability (D-43); the builder is named by `builderId`.
+email, phone, location, hourly rate or availability (D-43); the builder is named by `builderId`.
 """
 
 from typing import Annotated

@@ -50,7 +50,7 @@ Demo: Thursday 1 October 2026, BASIX hackathon, SingularityNET MeTTa track. Time
 
 - Commits: Conventional Commits (`feat(engine): …`, `test(web): …`, `docs(planning): …`).
 - Python: ruff + mypy strict on `services/engine`; TypeScript: strict mode, eslint.
-- Dates are ISO `YYYY-MM-DD`, date-only, Africa/Nairobi. Money is integer USD per day.
+- Dates are ISO `YYYY-MM-DD`, date-only, Africa/Nairobi. Money is integer USD per hour (D-59).
 - IDs are stable kebab-case slugs from seed files (`amina-otieno`, `cred-py-201`). Never rename a seed ID.
 - MeTTa rule names are the identifiers in `planning/DOMAIN.md`; do not invent new rule names without a DECISIONS entry.
 

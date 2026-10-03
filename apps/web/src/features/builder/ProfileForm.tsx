@@ -403,7 +403,7 @@ export function ProfileForm({ profile, projectCount = 0, onSave }: ProfileFormPr
           </div>
         </Card>
 
-        <Card id="profile-availability" className="scroll-mt-24" title="Availability" lead="Pick the windows founders can book you for and your day rate. The available-for-brief rule needs the window to overlap a brief by at least two days.">
+        <Card id="profile-availability" className="scroll-mt-24" title="Availability" lead="Pick the windows founders can book you for and your hourly rate. The available-for-brief rule needs the window to overlap a brief by at least two days.">
           <div className="flex flex-col gap-3">
             <p className="font-mono text-[13px] text-ink-2">
               <span className="text-ink-3">Selected window:</span> {rangeLabel}

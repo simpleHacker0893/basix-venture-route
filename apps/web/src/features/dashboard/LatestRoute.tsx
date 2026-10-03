@@ -1,6 +1,6 @@
 /**
  * "Your latest route": the most recent request's route snapshot as the dashboard returns it
- * (status, builder count, total daily rate). The gap count is not part of the snapshot, so it is
+ * (status, builder count, total hourly rate). The gap count is not part of the snapshot, so it is
  * not shown; "Why this route?" opens the engine's reasoning in the existing drawer.
  */
 import type { Request } from "@venture-route/contracts";

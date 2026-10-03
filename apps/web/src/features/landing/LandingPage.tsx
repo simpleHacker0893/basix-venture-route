@@ -419,7 +419,7 @@ function ForBuilders() {
           {
             title: "Bid where you are eligible",
             badge: "Deterministic match",
-            body: "Discover venture briefs where deterministic rules confirm you meet the stack requirements, day rate, and delivery timeframe without speculative proposals.",
+            body: "Discover venture briefs where deterministic rules confirm you meet the stack requirements, hourly rate, and delivery timeframe without speculative proposals.",
           },
         ].map((card) => (
           <div key={card.title} className="flex flex-col gap-4 rounded-2xl border border-border bg-surface-strong p-8">

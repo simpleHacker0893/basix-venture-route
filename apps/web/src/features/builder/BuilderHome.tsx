@@ -179,7 +179,7 @@ export function BuilderHome() {
     {
       label: "Profile complete",
       state: stateOf(0, "current"),
-      hint: profileDone ? "Name, skills and availability are in." : "Add your name, day rate and when you are available.",
+      hint: profileDone ? "Name, skills and availability are in." : "Add your name, hourly rate and when you are available.",
     },
     {
       label: "Credential added",
@@ -218,7 +218,7 @@ export function BuilderHome() {
   const pendingEvidence = evidence.find((e) => e.status === "pending");
 
   const next: { title: string; body: string; cta: string; to: string } = !profile
-    ? { title: "Start with your profile.", body: "Add who you are, your day rate and when you are available.", cta: "Complete your profile", to: "/profile" }
+    ? { title: "Start with your profile.", body: "Add who you are, your hourly rate and when you are available.", cta: "Complete your profile", to: "/profile" }
     : evidence.length === 0
       ? {
           title: "Add proof for a skill.",
