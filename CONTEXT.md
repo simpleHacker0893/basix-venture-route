@@ -7,11 +7,11 @@ Venture Route turns a founder's plain-language venture brief into an evidence-ba
 ### Core objects
 
 **Venture brief**:
-A founder's validated request for a team: title, vertical, required skills, maximum team size, availability window, delivery mode, optional location, daily budget, and whether reusable IP is preferred.
+A founder's validated request for a team: title, vertical, required skills, maximum team size, availability window, delivery mode, optional location, hourly budget (whole USD 1–250 an hour for the whole team, D-59), and whether reusable IP is preferred.
 _Avoid_: request (that is a marketplace object), prompt, query
 
 **Route**:
-The engine's answer to a venture brief: a status, the builders with their evidence, the total day rate, optional reusable IP, cohort, partner, gaps, the rules applied, and a summary.
+The engine's answer to a venture brief: a status, the builders with their evidence, the total hourly rate, optional reusable IP, cohort, partner, gaps, the rules applied, and a summary.
 _Avoid_: match, recommendation, result set
 
 **Evidence type**:
@@ -70,7 +70,7 @@ Two named rules belong to the deterministic Python assembler rather than to MeTT
 No subset of eligible builders within the maximum team size covers every satisfiable skill; produces a `team-size` gap.
 
 **assembler.budget-fit**:
-Every covering subset exceeds the daily budget; produces a `budget` gap.
+Every covering subset's summed hourly rate exceeds the hourly budget; produces a `budget` gap.
 
 ### Actors
 
@@ -79,7 +79,7 @@ A person with a venture brief. Uses routing without an account; signs up to post
 _Avoid_: user, customer
 
 **Builder**:
-A MeTTa OmniUniversity or BASIX cohort member with a profile, credentials, projects, availability, and a day rate.
+A MeTTa OmniUniversity or BASIX cohort member with a profile, credentials, projects, availability, and an hourly rate (whole USD 0–50 an hour; 0 means free, D-59).
 _Avoid_: student (on its own), developer, candidate
 
 **BASIX admin**:

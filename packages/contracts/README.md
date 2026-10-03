@@ -6,7 +6,7 @@ so it never sees an unparsed route and never parses MeTTa output.
 
 | Module | Schemas | Engine mirror |
 |---|---|---|
-| `src/brief.ts` | `VentureBrief`, `PartialBrief`, `SkillId`, `Vertical`, `DeliveryMode`, `IsoDate`, `DailyBudget` (PRD §5.3) | `app/models/brief.py` |
+| `src/brief.ts` | `VentureBrief`, `PartialBrief`, `SkillId`, `Vertical`, `DeliveryMode`, `IsoDate`, `HourlyBudget` (PRD §5.3) | `app/models/brief.py` |
 | `src/route.ts` | `VentureRoute`, `RouteBuilder`, `ReusableIp`, `RouteCohort`, `RoutePartner`, `Gap`, `ReasoningPath` (PRD §5.4) | `app/models/route.py`, `app/models/engine.py` |
 | `src/chat.ts` | `ChatTurn`, `ChatResponse` (`clarification | route | validation-error`), `ValidationErrorResponse` (PRD §5.2) | `app/models/chat.py` |
 | `src/marketplace.ts` | `RoleChoice`, `RoleResponse`, `ProfileInput`, `BuilderProfile`, `ProfileSkill`, `CredentialInput`, `Credential`, `ProjectInput`, `Project`, `PendingQueue`, `AdminDecision`, `Candidate`, `SharedContact` (Sprint 003); `RequestCreate`, `Request`, `RouteSnapshot`, `Eligibility`, `BidCreate`, `Bid`, `BookingProposal`, `BookingCreate`, `Booking`, `BookingHistoryEntry`, `Dashboard`, `DashboardCounts`, `RouteCounts` and the literal unions `RequestStatus`, `BidStatus`, `BookingState`, `BookingAction`, `BookingActor`, `DurationMin` (Sprint 004) | `app/marketplace/schemas.py` |
@@ -27,7 +27,8 @@ dropped, `required` sorted, `type: [T, "null"]` written as `anyOf`, Zod's regex 
 the other side follows. Adding a schema means: Pydantic model → `export_schema.py` map → Zod
 mirror → parity `cases` list → regenerate `schema.json`.
 
-Conventions carried by the schemas: money is integer USD per day (D-16); dates are ISO
+Conventions carried by the schemas: money is integer USD per hour (D-59, amending D-16): `hourlyRate` 0–50 on
+profiles, route builders and bids, `hourlyBudget` 1–250 for the whole team; dates are ISO
 date-only strings, timestamps ISO date-time with offset; IDs are kebab-case slugs; every record
 carries `demoData` defaulting to `true`; `maximumTeamSize` is 1–5; `location` is required when
 `deliveryMode` is `on-site` (enforced by the engine validator); integers stay within the

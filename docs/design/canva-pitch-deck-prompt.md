@@ -25,7 +25,7 @@ Four cards: Founder: "a credible, affordable, time-feasible team and a reason to
 SLIDE 4 — The answer
 Headline: "One trustworthy answer."
 Quote-style line: "Given my MVP, constraints and budget, what is the smallest credible route through BASIX, and why should I trust it?"
-Below, the route contents as chips: verified builders · reusable IP · cohort and university · partner · total day rate · named gaps.
+Below, the route contents as chips: verified builders · reusable IP · cohort and university · partner · total hourly rate · named gaps.
 
 SLIDE 5 — How it works
 A left-to-right flow of four steps with arrows: 1 "Founder describes the MVP in plain language (chat or form)" → 2 "Founder confirms the structured brief" → 3 "MeTTa rules decide eligibility, evidence, fit and gaps over inspectable facts" → 4 "Route with evidence, or an honest gap; a language model only explains it".
@@ -41,10 +41,10 @@ Show one reasoning path as a mono card: rule "partner-fit", a four-hop chain Bui
 
 SLIDE 8 — Honest gaps, not fabricated matches
 Headline: "When the ecosystem can't deliver, we say so."
-Example card, amber accent: Constrained brief asks for Mobile and Rust. Result "Partial": one builder verified for Rust at USD 130 / day; gap "skill: no verified Mobile builder" from route-gap, with next actions. Second small card: Budget challenge, USD 250 against a USD 370 team → gap "Raise daily budget to USD 370".
+Example card, amber accent: Constrained brief asks for Mobile and Rust. Result "Partial": one builder verified for Rust at USD 16 an hour; gap "skill: no verified Mobile builder" from route-gap, with next actions. Second small card: Budget challenge, USD 31 an hour against a USD 47 an hour team → gap "Raise the hourly budget to USD 47".
 
 SLIDE 9 — Five live demo scenarios
-A clean table: Health pilot → Feasible, team of 3, USD 370 / day, reusable IP, partner via 4 hops. Agri marketplace → Feasible, team of 3, USD 315 / day. Constrained brief → Partial, Mobile skill gap. Budget challenge → Partial, budget gap. On-site in Kisumu → Infeasible, three location gaps.
+A clean table: Health pilot → Feasible, team of 3, USD 47 an hour, reusable IP, partner via 4 hops. Agri marketplace → Feasible, team of 3, USD 40 an hour. Constrained brief → Partial, Mobile skill gap. Budget challenge → Partial, budget gap. On-site in Kisumu → Infeasible, three location gaps.
 Caption: "Change one hard constraint and the route or the gap changes, live."
 
 SLIDE 10 — A marketplace around the route
