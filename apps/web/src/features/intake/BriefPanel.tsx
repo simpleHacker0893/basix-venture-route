@@ -45,7 +45,7 @@ export function BriefPanel({ brief, onFindRoute }: BriefPanelProps) {
               className="inline-flex h-11 sm:h-8 items-center gap-1 rounded-pill border border-border-strong bg-surface-strong px-3 text-sm text-ink"
             >
               <span className="text-ink-3">{chip.label}:</span>
-              <span className={chip.field === "dailyBudget" ? "font-mono" : "font-medium"}>{chip.value}</span>
+              <span className={chip.field === "hourlyBudget" ? "font-mono" : "font-medium"}>{chip.value}</span>
             </li>
           ),
         )}

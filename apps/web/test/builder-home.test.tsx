@@ -34,7 +34,7 @@ function profile(overrides: Partial<BuilderProfile> = {}): BuilderProfile {
     headline: "Python and MeTTa builder",
     cohortId: "cohort-2026a",
     location: "Nairobi",
-    dayRate: 120,
+    hourlyRate: 15,
     modes: { remote: true, hybrid: true, onSite: false },
     selfDescribedSkills: [],
     contact: { email: "amina@example.com", phone: null, linkedin: null },
@@ -73,7 +73,7 @@ const brief: VentureBrief = {
   availabilityEnd: "2026-09-29",
   deliveryMode: "hybrid",
   location: null,
-  dailyBudget: 400,
+  hourlyBudget: 50,
   preferReusableIp: false,
   demoData: true,
 };
@@ -83,13 +83,13 @@ function request(eligibility: Request["eligibility"]): Request {
     id: "req-1",
     founderId: "founder-1",
     brief,
-    route: { status: "feasible", totalDailyRate: 120, builderIds: ["amina-otieno"] },
+    route: { status: "feasible", totalHourlyRate: 15, builderIds: ["amina-otieno"] },
     title: brief.title,
     vertical: "health",
     deliveryMode: "hybrid",
     availabilityStart: brief.availabilityStart,
     availabilityEnd: brief.availabilityEnd,
-    dailyBudget: 400,
+    hourlyBudget: 50,
     routeStatus: "feasible",
     status: "open",
     closedAt: null,
@@ -106,7 +106,7 @@ const bid: Bid = {
   requestStatus: "open",
   builderId: "amina-otieno",
   displayName: "Amina Otieno",
-  dayRate: 120,
+  hourlyRate: 15,
   message: "",
   eligibleSkills: ["python"],
   path: { rule: "eligible-builder", facts: [], conclusion: "eligible" },
@@ -207,7 +207,7 @@ describe("/home (builder)", () => {
     expect(screen.getByRole("heading", { name: "Requests you're eligible for" })).toBeInTheDocument();
     expect(screen.getByText("Eligible: Python")).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Place a bid" })).toHaveAttribute("href", "/requests");
-    expect(screen.getByRole("region", { name: "My bids" })).toHaveTextContent("USD 120 / day · Sent");
+    expect(screen.getByRole("region", { name: "My bids" })).toHaveTextContent("USD 15 an hour · Sent");
     expect(screen.getByText("Requests you've applied to work on, and their status.")).toBeInTheDocument();
     expect(screen.getByText("Times founders propose to talk with you.")).toBeInTheDocument();
     const interviews = screen.getByRole("region", { name: "Upcoming interviews" });
@@ -266,7 +266,7 @@ describe("/home (builder) loads in two stages", () => {
 
     const next = await screen.findByRole("region", { name: "Next step" });
     expect(next).toHaveTextContent("Checking open requests…");
-    expect(screen.getByRole("region", { name: "My bids" })).toHaveTextContent("USD 120 / day · Sent");
+    expect(screen.getByRole("region", { name: "My bids" })).toHaveTextContent("USD 15 an hour · Sent");
     expect(screen.getByRole("region", { name: "Your evidence" })).toHaveTextContent("Python · Credential");
     expect(screen.getByText("Loading open requests…")).toBeInTheDocument();
     expect(screen.queryByText("Loading your home…")).not.toBeInTheDocument();

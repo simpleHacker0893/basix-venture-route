@@ -6,8 +6,8 @@ phrase their actions here.
 """
 
 
-def raise_daily_budget(total: int) -> list[str]:
-    return [f"Raise daily budget to USD {total}"]
+def raise_hourly_budget(total: int) -> list[str]:
+    return [f"Raise the hourly budget to USD {total}"]
 
 
 def raise_team_size(size: int) -> list[str]:
@@ -15,7 +15,7 @@ def raise_team_size(size: int) -> list[str]:
 
 
 def budget_statement(total: int, budget: int) -> str:
-    return f"Cheapest verified team costs USD {total} a day; budget is USD {budget}"
+    return f"Cheapest verified team costs USD {total} an hour; budget is USD {budget} an hour"
 
 
 def team_size_statement(size: int, maximum: int) -> str:

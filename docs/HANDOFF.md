@@ -64,6 +64,7 @@ Row 5 is the only proof that `CLERK_WEBHOOK_SIGNING_SECRET` on Render matches th
 
 | Item | Kind | Next step |
 |---|---|---|
+| Sprint 007 hourly pricing (D-59, spec #157) | sprint | Every price becomes per hour: builder and bid rates USD 0–50, brief and request budgets USD 1–250 for the team, migration `0004_hourly_pricing` converts stored figures (÷ 8, half up). Tickets #158–#161 on `sprint/007-hourly-pricing`, draft PR #164. After merge, the Render deploy applies `0004` (`preDeployCommand: alembic upgrade head`; on the free plan run it by hand, see `render.yaml`); then check that the Health pilot routes `feasible` at USD 47 an hour. Sprints 008 (admin review, D-60) and 009 (admin communication, D-61) build on it. |
 | Clerk webhook signed delivery | check | Production check row 5. |
 | #147 Builder demo scenes | agent ticket | Not started. Extends the harness in `apps/web/e2e/demo/` (spec #143, D-58). |
 | #148 Connect demo scenes | agent ticket | Not started. Depends on #147. |

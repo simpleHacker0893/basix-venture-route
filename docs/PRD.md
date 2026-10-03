@@ -9,7 +9,7 @@ date: "Version 1.0 · 22 September 2026"
 
 ## 1.1 Product summary
 
-Venture Route is a founder-facing web application that turns a natural-language venture brief into an evidence-backed route through the BASIX ecosystem: the smallest credible team of verified builders, a reusable IP asset when one fits, a relevant cohort and university, a relevant partner, the route's total day rate, and an explicit, named gap whenever a hard constraint cannot be met.
+Venture Route is a founder-facing web application that turns a natural-language venture brief into an evidence-backed route through the BASIX ecosystem: the smallest credible team of verified builders, a reusable IP asset when one fits, a relevant cohort and university, a relevant partner, the route's total hourly rate, and an explicit, named gap whenever a hard constraint cannot be met.
 
 The reasoning that decides eligibility and evidence runs in MeTTa over a relationship graph of BASIX-shaped facts. A language model translates the founder's words into constraints and explains the result; it never selects people, invents proof or claims a route is verified.
 
@@ -63,10 +63,10 @@ BASIX already holds the ingredients of a venture — verified learning, credenti
 - As a founder, I want to describe my MVP in my own words so that I do not need to learn BASIX's data model first.
 - As a founder, I want Venture Route to identify missing constraints (skills, vertical, team size, dates, delivery mode, location, budget, IP preference) so that the route is feasible rather than generic.
 - As a founder, I want to review and correct the structured brief before matching so that a misunderstood skill, date or budget does not produce a wrong route.
-- As a founder, I want the smallest team that covers my required skills within my team-size ceiling and daily budget.
+- As a founder, I want the smallest team that covers my required skills within my team-size ceiling and hourly budget.
 - As a founder, I want to see each selected builder's evidence — credential, project or both — so that I can distinguish verified capability from self-description.
 - As a founder, I want a reusable IP asset surfaced when one fits my vertical and skills, so that I can shorten time to market.
-- As a founder, I want the route's total day rate so that I can confirm it fits my budget.
+- As a founder, I want the route's total hourly rate so that I can confirm it fits my budget.
 - As a founder, I want a clear, named gap when no team can satisfy a constraint, with only approved next actions, so that I can decide what to change.
 - As a founder, I want to inspect the multi-hop reasoning path for any recommendation so that I can audit why it was included.
 - As a founder, I want to export a plain-text venture handoff so that I can share the route with a co-founder, mentor or BASIX operator.
@@ -130,10 +130,10 @@ BASIX already holds the ingredients of a venture — verified learning, credenti
 | 2 | Sign up / sign in | Auth | Clerk prebuilt components; role selection (founder / student) |
 | 3 | Founder chat & intake | Capture the brief | Chat input, clarification prompts, structured-form fallback, preloaded scenarios |
 | 4 | Brief review | Confirm constraints | Editable chips: vertical, skills, team ≤ N, dates, mode, location, budget, IP preference; "Find my route" |
-| 5 | Route result | The answer | Status badge (Feasible / Partial / Infeasible), Gaps panel first when partial, Team cards with evidence badges, IP / Cohort / Partner cards, total day rate vs budget, Demo data label |
+| 5 | Route result | The answer | Status badge (Feasible / Partial / Infeasible), Gaps panel first when partial, Team cards with evidence badges, IP / Cohort / Partner cards, total hourly rate vs hourly budget, Demo data label |
 | 6 | Why this route? drawer | Audit | Ordered source facts, named rule, evidence type; Technical view with raw query/rule expression |
 | 7 | Venture handoff | Share | Plain-text export; copy / download |
-| 8 | Student profile | Presence | Skills with verification state, availability interval, day rate, delivery modes, location, contact sharing controls |
+| 8 | Student profile | Presence | Skills with verification state, availability interval, hourly rate (USD 0–50), delivery modes, location, contact sharing controls |
 | 9 | Add / edit project | Proof | Title, vertical, skills demonstrated, licensable flag, links |
 | 10 | Requests board | Opportunity | Open founder requests; eligibility indicator per request; bid action |
 | 11 | Founder dashboard | Manage | Briefs, routes, requests, bids received, bookings |
@@ -197,7 +197,7 @@ type VentureBrief = {
   availabilityEnd: string;                // ISO date, Africa/Nairobi for the demo
   deliveryMode: "remote" | "hybrid" | "on-site";
   location?: string;                      // required when on-site
-  dailyBudget: number;                    // positive, one demo currency
+  hourlyBudget: number;                   // integer USD per hour for the whole team, 1–250 (D-59)
   preferReusableIp: boolean;
 };
 ```
@@ -212,10 +212,10 @@ type EvidenceType = "credential" | "project" | "both";
 
 type VentureRoute = {
   status: RouteStatus;
-  builders: { builderId: string; name: string; dayRate: number;
+  builders: { builderId: string; name: string; hourlyRate: number;  // integer USD 0–50 an hour
               covers: SkillId[]; evidenceType: EvidenceType;
               evidencePaths: ReasoningPath[] }[];
-  totalDailyRate: number;
+  totalHourlyRate: number;
   reusableIp?: { assetId: string; title: string; path: ReasoningPath };
   cohort?: { cohortId: string; universityId: string; path: ReasoningPath };
   partner?: { partnerId: string; path: ReasoningPath };
@@ -232,7 +232,7 @@ type ReasoningPath = { rule: string; facts: string[]; conclusion: string };
 
 Approximate seed sizes: 12–16 builders, 7–9 skills, 8–12 credentials, 5 IP assets (licensable and not), 3 cohorts/universities, 4 partners, 3 briefs with expected outcomes.
 
-Predicates: `has-self-described-skill`, `earned`, `proves`, `built`, `demonstrates`, `belongs-to`, `cohort-of`, `available` (interval), `supports-mode`, `located-in`, `day-rate`, `vertical`, `licensable`, `supports-vertical` (partner), `confirmed` (admin → credential/project/account).
+Predicates: `has-self-described-skill`, `earned`, `proves`, `built`, `demonstrates`, `belongs-to`, `cohort-of`, `available` (interval), `supports-mode`, `located-in`, `hourly-rate`, `vertical`, `licensable`, `supports-vertical` (partner), `confirmed` (admin → credential/project/account).
 
 Named rules: `verified-for-skill`, `mode-compatible`, `available-for-brief`, `eligible-builder`, `reuse-fit`, `partner-fit`, `route-gap`. A self-described skill is display-only and never proof.
 
@@ -240,8 +240,8 @@ Named rules: `verified-for-skill`, `mode-compatible`, `available-for-brief`, `el
 
 1. Request eligible (builder, skill, evidence) tuples from MeTTa.
 2. Create a gap for every required skill with no eligible builder.
-3. Enumerate eligible subsets up to `maximumTeamSize`; keep subsets covering all satisfiable required skills; reject subsets over `dailyBudget`.
-4. Order by team count, then total cost, then evidence strength (both > credential > project), then stable IDs.
+3. Enumerate eligible subsets up to `maximumTeamSize`; keep subsets covering all satisfiable required skills; reject subsets whose summed `hourlyRate` is over `hourlyBudget`.
+4. Order by team count, then total hourly rate, then evidence strength (both > credential > project), then stable IDs.
 5. Status: `feasible` when all skills covered and a subset survives; `partial` when some skills are covered but a hard constraint remains unsatisfied; `infeasible` when no builder is eligible for any required skill.
 6. Choose IP, cohort and partner by stable ordering from MeTTa candidate sets.
 
@@ -302,7 +302,7 @@ Projection: on every confirmed write (profile, project, credential, confirmation
 | Health pilot | Python, AI/MeTTa, UI/UX; hybrid; this month; budget; reusable IP preferred | Feasible 2–3 person team, health IP asset, cohort/university, health partner |
 | Agri marketplace | Frontend, backend, domain research | Materially different team, IP and partner |
 | Constrained brief | Mobile + Rust within two weeks | Partial route with a Mobile capability gap; no fabricated builder |
-| Budget challenge | Health pilot budget below the team's day rate | Budget gap, or a lower-cost route only if evidence supports one |
+| Budget challenge | Health pilot hourly budget below the team's total hourly rate | Budget gap, or a lower-cost route only if evidence supports one |
 | Delivery-mode challenge | On-site location with no compatible team | Mode/location gap |
 
 # 10. Milestones

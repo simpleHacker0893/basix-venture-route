@@ -50,7 +50,7 @@ HOSTILE = 'a"b\\c) (confirmed admin-basix x)\n(proves cred-x mobile) ; tail'
 def _builder(**overrides: Any) -> ConfirmedBuilder:
     fields: dict[str, Any] = {
         "builder_id": "naomi-chebet",
-        "day_rate": 120,
+        "hourly_rate": 20,
         "location": "Nairobi",
         "modes": ("remote",),
         "availability": ((date(2026, 9, 22), date(2026, 10, 20)),),
@@ -82,6 +82,14 @@ def _builder(**overrides: Any) -> ConfirmedBuilder:
 
 
 # -- render_program(): pure ------------------------------------------------------------------------
+
+
+def test_the_builder_rate_renders_as_an_hourly_rate_fact() -> None:
+    """D-59: the assembler reads `hourly-rate`; no `day-rate` atom reaches the space."""
+    lines = render_program([_builder()])
+
+    assert "(hourly-rate naomi-chebet 20)" in lines
+    assert not any(line.startswith("(day-rate ") for line in lines)
 
 
 def test_display_facts_render_in_their_exact_forms() -> None:
@@ -160,6 +168,16 @@ def test_escaped_labels_load_as_exactly_one_atom_each(engine: MettaRouteEngine) 
         assert smuggled == []
     finally:
         engine.replace_space("")
+
+
+@pytest.mark.anyio
+async def test_a_confirmed_builder_reaches_the_space_with_their_hourly_rate(
+    confirmed_builder: Actor, engine: MettaRouteEngine
+) -> None:
+    """#159: the admin confirms a builder whose profile says hourlyRate 20 (conftest cast)."""
+    rates = engine._query(f"!(match &self (hourly-rate {confirmed_builder.builder_id} $r) $r)")
+
+    assert rates == [20]
 
 
 # -- route-equality over the five demo scenarios (RouteService, real runtime) ---------------------

@@ -28,7 +28,7 @@ import { useMarketplaceApi } from "../../api/marketplaceContext";
 import { DemoDataPill } from "../../components/DemoDataPill";
 import { Stepper, type StepperStep } from "../../components/Stepper";
 import { SKILL_LABELS } from "../../lib/brief";
-import { usd } from "../../lib/format";
+import { usdPerHour } from "../../lib/format";
 import { formatNairobi } from "../../lib/nairobi";
 import { errorMessage } from "./formStyles";
 import { cardCopy, showcaseCardState, type ShowcaseCardState } from "./showcaseState";
@@ -407,7 +407,7 @@ export function BuilderHome() {
                   </div>
                   <div className="flex flex-col gap-1.5">
                     <h3 className="text-[17px] font-semibold leading-snug text-ink">{request.title}</h3>
-                    <span className="font-mono text-[14px] text-ink-2">{usd(request.dailyBudget)} · team budget</span>
+                    <span className="font-mono text-[14px] text-ink-2">{usdPerHour(request.hourlyBudget)} · team budget</span>
                     <span className="text-[14px] text-ink-3">
                       {MODE_LABEL[request.deliveryMode]} · {request.brief.maximumTeamSize}{" "}
                       {request.brief.maximumTeamSize === 1 ? "builder" : "builders"}
@@ -461,7 +461,7 @@ export function BuilderHome() {
                     {bid.demoData ? <DemoDataPill /> : null}
                   </span>
                   <span className="text-[13.5px] text-ink-3">
-                    {usd(bid.dayRate)} · Sent · {bid.requestStatus === "open" ? "request open" : "request closed"}
+                    {usdPerHour(bid.hourlyRate)} · Sent · {bid.requestStatus === "open" ? "request open" : "request closed"}
                   </span>
                 </li>
               ))}

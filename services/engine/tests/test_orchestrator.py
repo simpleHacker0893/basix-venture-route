@@ -28,7 +28,7 @@ HEALTH_FIELDS: dict[str, Any] = {
     "availabilityStart": "2026-09-22",
     "availabilityEnd": "2026-09-29",
     "deliveryMode": "hybrid",
-    "dailyBudget": 400,
+    "hourlyBudget": 50,
     "preferReusableIp": True,
 }
 
@@ -38,7 +38,7 @@ STUB_ROUTE = VentureRoute(
         RouteBuilder(
             builder_id="amina-otieno",
             name="Amina Otieno",
-            day_rate=120,
+            hourly_rate=15,
             covers=["python"],
             evidence_type="both",
             evidence_paths=[
@@ -46,10 +46,10 @@ STUB_ROUTE = VentureRoute(
             ],
         )
     ],
-    total_daily_rate=120,
+    total_hourly_rate=15,
     gaps=[],
     rules_applied=["eligible-builder"],
-    summary="Feasible route: 1 builder (Amina Otieno) cover python for USD 120 a day.",
+    summary="Feasible route: 1 builder (Amina Otieno) cover python for USD 15 an hour.",
 )
 KNOWN_ENTITIES = frozenset({"amina-otieno", "hassan-abdi", "asset-afya-triage"})
 
@@ -107,15 +107,15 @@ def test_vague_message_with_null_adapter_asks_for_every_required_field() -> None
 
 
 def test_partial_extraction_asks_only_for_what_is_missing() -> None:
-    adapter = FakeAdapter(ExtractedBrief(vertical="agri", daily_budget=300))
+    adapter = FakeAdapter(ExtractedBrief(vertical="agri", hourly_budget=38))
 
-    response = orchestrator(adapter).handle(ChatTurn(user_message="an agri app, USD 300 a day"))
+    response = orchestrator(adapter).handle(ChatTurn(user_message="an agri app, USD 38 an hour"))
 
     assert response.type == "clarification"
     assert "vertical" not in response.missing_fields
-    assert "dailyBudget" not in response.missing_fields
+    assert "hourlyBudget" not in response.missing_fields
     assert len(response.missing_fields) == len(REQUIRED_FIELDS) - 2
-    assert (response.partial_brief.vertical, response.partial_brief.daily_budget) == ("agri", 300)
+    assert (response.partial_brief.vertical, response.partial_brief.hourly_budget) == ("agri", 38)
 
 
 def test_on_site_brief_without_location_is_asked_for_the_location() -> None:
@@ -136,14 +136,14 @@ def test_full_extraction_routes_in_one_turn_with_a_generated_id() -> None:
 
     assert response.type == "route"
     assert response.brief.id == "brief-health-pilot"
-    assert response.brief.daily_budget == 400
+    assert response.brief.hourly_budget == 50
     assert response.route == STUB_ROUTE
     assert adapter.explained == [STUB_ROUTE]
 
 
 def test_latest_explicit_correction_wins_over_current_brief() -> None:
     current = PartialBrief.model_validate({**HEALTH_FIELDS, "id": "brief-health-01"})
-    adapter = FakeAdapter(ExtractedBrief(daily_budget=500))
+    adapter = FakeAdapter(ExtractedBrief(hourly_budget=60))
 
     response = orchestrator(adapter).handle(
         ChatTurn(user_message="make the budget 500", current_brief=current)
@@ -151,7 +151,7 @@ def test_latest_explicit_correction_wins_over_current_brief() -> None:
 
     assert response.type == "route"
     assert response.brief.id == "brief-health-01"
-    assert response.brief.daily_budget == 500
+    assert response.brief.hourly_budget == 60
     assert response.brief.title == "Health pilot"
 
 

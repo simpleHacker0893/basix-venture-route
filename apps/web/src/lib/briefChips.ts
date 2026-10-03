@@ -1,7 +1,7 @@
 import type { PartialBriefInput } from "@venture-route/contracts";
 
 import { FIELD_LABELS, MODE_LABELS, SKILL_LABELS, VERTICAL_LABELS } from "./brief";
-import { dateRange, usd } from "./format";
+import { dateRange, usdPerHour } from "./format";
 
 type Chip = { field: string; label: string; value: string | null };
 
@@ -23,7 +23,7 @@ export function briefChips(brief: PartialBriefInput | null): Chip[] {
       value: b.availabilityStart && b.availabilityEnd ? dateRange(b.availabilityStart, b.availabilityEnd) : null,
     },
     { field: "deliveryMode", label: FIELD_LABELS.deliveryMode, value: b.deliveryMode ? MODE_LABELS[b.deliveryMode] : null },
-    { field: "dailyBudget", label: FIELD_LABELS.dailyBudget, value: b.dailyBudget != null ? usd(b.dailyBudget) : null },
+    { field: "hourlyBudget", label: FIELD_LABELS.hourlyBudget, value: b.hourlyBudget != null ? usdPerHour(b.hourlyBudget) : null },
     {
       field: "preferReusableIp",
       label: FIELD_LABELS.preferReusableIp,

@@ -27,7 +27,7 @@ test.describe.configure({ mode: "serial" });
 const SPOKEN_BRIEF =
   "I'm building Health pilot: triage assistant for community clinics. It's for the health vertical. " +
   "I need Python, AI / MeTTa and UI/UX design skills, with at most 3 builders. The work runs from " +
-  "22 September 2026 to 29 September 2026, hybrid, and my budget is 400 US dollars a day.";
+  "22 September 2026 to 29 September 2026, hybrid, and my budget is 50 US dollars an hour.";
 
 /** The routing fields of `brief-health-01`, which F4 restores on camera. */
 const HEALTH_PILOT = {
@@ -37,7 +37,7 @@ const HEALTH_PILOT = {
   maximumTeamSize: "3",
   availability: dateRange("2026-09-22", "2026-09-29"),
   mode: "Hybrid",
-  dailyBudget: "400",
+  hourlyBudget: "50",
 } as const;
 
 const HEALTH_PILOT_SKILLS: ReadonlySet<string> = new Set(HEALTH_PILOT.skills);
@@ -84,8 +84,8 @@ async function normaliseToHealthPilot(page: Page, form: Locator): Promise<void> 
   await expect(availability).toHaveText(HEALTH_PILOT.availability);
 
   await setChecked(form.getByRole("radio", { name: HEALTH_PILOT.mode }), true);
-  const budget = form.getByLabel("Daily budget");
-  if ((await budget.inputValue()) !== HEALTH_PILOT.dailyBudget) await budget.fill(HEALTH_PILOT.dailyBudget);
+  const budget = form.getByLabel("Budget per hour (USD)");
+  if ((await budget.inputValue()) !== HEALTH_PILOT.hourlyBudget) await budget.fill(HEALTH_PILOT.hourlyBudget);
   // The one field the spoken brief left out: Chloe asked for it in F3.
   await setChecked(form.getByRole("checkbox", { name: "Prefer reusable IP" }), true);
 }
@@ -141,7 +141,7 @@ scene("F4", "founder", async (page) => {
   await expect(form).toBeVisible();
   await expect(form.getByRole("radio", { name: "Health" })).toBeChecked();
   await expect(form.getByRole("checkbox", { name: "Python", exact: true })).toBeChecked();
-  await expect(form.getByLabel("Daily budget")).not.toHaveValue("");
+  await expect(form.getByLabel("Budget per hour (USD)")).not.toHaveValue("");
   await hold(page, 1_500);
 
   await normaliseToHealthPilot(page, form);
@@ -151,7 +151,7 @@ scene("F4", "founder", async (page) => {
     else await expect(checkbox).not.toBeChecked();
   }
   await expect(form.getByRole("radio", { name: "Hybrid" })).toBeChecked();
-  await expect(form.getByLabel("Daily budget")).toHaveValue("400");
+  await expect(form.getByLabel("Budget per hour (USD)")).toHaveValue("50");
   await expect(form.getByRole("checkbox", { name: "Prefer reusable IP" })).toBeChecked();
   await hold(page, 2_000);
 
@@ -166,7 +166,7 @@ scene("F5", "founder", async (page) => {
   await expect(cards.getByRole("heading", { level: 3 })).toHaveText(["Amina Otieno", "Daniel Kiptoo", "Grace Wambui"]);
   await expect(cards.getByTestId("evidence-badge")).toHaveText(["Both", "Both", "Credential"]);
   for (let i = 0; i < 3; i += 1) await expect(cards.nth(i).getByText("Demo data")).toBeVisible();
-  await expect(page.getByTestId("cost-strip")).toContainText("USD 370 / day");
+  await expect(page.getByTestId("cost-strip")).toContainText("USD 47 an hour");
   await cards.first().scrollIntoViewIfNeeded();
   await hold(page, 2_500);
   await expect(page.getByTestId("ip-card")).toContainText("asset-afya-triage");
@@ -234,10 +234,10 @@ scene("F7", "founder", async (page) => {
   await page.getByTestId("gaps-panel").scrollIntoViewIfNeeded();
   await hold(page, 3_000);
 
-  // (b) Drop Mobile, budget 250: no affordable team, so no card is shown (D-22).
+  // (b) Drop Mobile, budget 31: no affordable team, so no card is shown (D-22).
   await reroute(page, async (form) => {
     await form.getByRole("checkbox", { name: "Mobile", exact: true }).uncheck({ force: true });
-    await form.getByLabel("Daily budget").fill("250");
+    await form.getByLabel("Budget per hour (USD)").fill("31");
   });
   await expect(page.getByTestId("status-badge")).toHaveText("Partial");
   await expect(page.getByTestId("builder-card")).toHaveCount(0);
@@ -247,10 +247,10 @@ scene("F7", "founder", async (page) => {
   await budgetGap.scrollIntoViewIfNeeded();
   await hold(page, 3_000);
 
-  // (c) The gap's own next action sets 370, and the route is Feasible again.
-  await budgetGap.getByRole("button", { name: "Raise daily budget to USD 370" }).click();
+  // (c) The gap's own next action sets 47, and the route is Feasible again.
+  await budgetGap.getByRole("button", { name: "Raise the hourly budget to USD 47" }).click();
   const form = page.getByRole("form", { name: "Venture brief" });
-  await expect(form.getByLabel("Daily budget")).toHaveValue("370");
+  await expect(form.getByLabel("Budget per hour (USD)")).toHaveValue("47");
   await hold(page, 1_200);
   await form.getByRole("button", { name: "Find my route" }).click();
   await routeHeading(page);

@@ -24,7 +24,7 @@ Bearer = Callable[..., dict[str, str]]
 
 def bid_input(**overrides: Any) -> dict[str, Any]:
     body: dict[str, Any] = {
-        "dayRate": 120,
+        "hourlyRate": 15,
         "message": "The field survey app demonstrates mobile.",
     }
     body.update(overrides)
@@ -59,7 +59,10 @@ async def test_eligible_builders_bid_is_stored_with_the_engines_skills_and_path(
     assert body["requestId"] == request["id"]
     assert (body["requestTitle"], body["requestStatus"]) == (request["title"], "open")
     assert (body["builderId"], body["displayName"]) == ("naomi-chebet", "Naomi Chebet")
-    assert (body["dayRate"], body["message"]) == (120, "The field survey app demonstrates mobile.")
+    assert (body["hourlyRate"], body["message"]) == (
+        15,
+        "The field survey app demonstrates mobile.",
+    )
     assert body["eligibleSkills"] == ["mobile"]
     assert body["path"]["rule"] == "eligible-builder"
     assert "(confirmed admin-basix naomi-chebet)" in body["path"]["facts"]
@@ -132,13 +135,13 @@ async def test_a_second_bid_by_the_same_builder_is_409(
 
     second = await api.post(
         f"/api/requests/{request['id']}/bids",
-        json=bid_input(dayRate=99),
+        json=bid_input(hourlyRate=12),
         headers=confirmed_builder.headers,
     )
 
     assert second.status_code == 409
     assert second.json()["detail"] == "already bid"
-    assert first["dayRate"] == 120
+    assert first["hourlyRate"] == 15
 
 
 async def test_founder_is_403_no_profile_is_404_unknown_request_is_404_no_session_is_401(
@@ -173,9 +176,9 @@ async def test_founder_is_403_no_profile_is_404_unknown_request_is_404_no_sessio
 @pytest.mark.parametrize(
     ("override", "fragment"),
     [
-        ({"dayRate": 0}, "dayRate"),
-        ({"dayRate": -5}, "dayRate"),
-        ({"dayRate": 12.5}, "dayRate"),
+        ({"hourlyRate": -1}, "hourlyRate"),
+        ({"hourlyRate": 51}, "hourlyRate"),
+        ({"hourlyRate": 12.5}, "hourlyRate"),
         ({"message": "x" * 1001}, "message"),
     ],
 )
@@ -199,6 +202,23 @@ async def test_invalid_bid_is_422_with_the_field_named(
     assert fragment in response.json()["message"]
 
 
+@pytest.mark.parametrize("rate", [0, 50])
+async def test_a_bid_takes_an_hourly_rate_of_zero_to_fifty(
+    api: AsyncClient, founder: Actor, confirmed_builder: Actor, rate: int
+) -> None:
+    """D-59: a bid's rate has the profile rate's bounds, USD 0-50 an hour, 0 meaning free."""
+    request = await publish(api, founder)
+
+    response = await api.post(
+        f"/api/requests/{request['id']}/bids",
+        json=bid_input(hourlyRate=rate),
+        headers=confirmed_builder.headers,
+    )
+
+    assert response.status_code == 201, response.text
+    assert response.json()["hourlyRate"] == rate
+
+
 async def test_message_is_optional_and_defaults_to_empty(
     api: AsyncClient, founder: Actor, confirmed_builder: Actor
 ) -> None:
@@ -206,7 +226,7 @@ async def test_message_is_optional_and_defaults_to_empty(
 
     response = await api.post(
         f"/api/requests/{request['id']}/bids",
-        json={"dayRate": 150},
+        json={"hourlyRate": 19},
         headers=confirmed_builder.headers,
     )
 

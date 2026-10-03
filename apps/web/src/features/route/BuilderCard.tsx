@@ -3,7 +3,7 @@ import { Link } from "react-router";
 
 import { DemoDataPill } from "../../components/DemoDataPill";
 import { SKILL_LABELS } from "../../lib/brief";
-import { usd } from "../../lib/format";
+import { usdPerHour } from "../../lib/format";
 import { EvidenceBadge } from "./Badges";
 
 type BuilderCardProps = Readonly<{
@@ -38,7 +38,7 @@ export function BuilderCard({ builder, onViewEvidence }: BuilderCardProps) {
       </div>
       <div className="flex flex-wrap items-center gap-3">
         <EvidenceBadge evidence={builder.evidenceType} />
-        <span className="font-mono text-sm text-ink-2">{usd(builder.dayRate)}</span>
+        <span className="font-mono text-sm text-ink-2">{usdPerHour(builder.hourlyRate)}</span>
       </div>
       <div className="flex flex-wrap items-center gap-2 border-t border-border pt-4 text-sm">
         <span className="text-ink-3">Covers</span>

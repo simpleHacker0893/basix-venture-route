@@ -27,7 +27,7 @@ ROUTE = VentureRoute(
         RouteBuilder(
             builder_id="amina-otieno",
             name="Amina Otieno",
-            day_rate=120,
+            hourly_rate=15,
             covers=["python"],
             evidence_type="both",
             evidence_paths=[
@@ -43,7 +43,7 @@ ROUTE = VentureRoute(
             ],
         )
     ],
-    total_daily_rate=120,
+    total_hourly_rate=15,
     reusable_ip=ReusableIp(
         asset_id="asset-afya-triage",
         title="Afya Triage",
@@ -63,7 +63,7 @@ ROUTE = VentureRoute(
     ),
     gaps=[],
     rules_applied=["eligible-builder", "partner-fit", "reuse-fit"],
-    summary="Feasible route: 1 builder (Amina Otieno) cover python for USD 120 a day.",
+    summary="Feasible route: 1 builder (Amina Otieno) cover python for USD 15 an hour.",
 )
 
 # Every seed entity the route does not carry; none may appear in the explanation request.
@@ -172,7 +172,7 @@ def test_extract_brief_uses_structured_output_and_returns_only_stated_fields() -
                     "availabilityEnd": None,
                     "deliveryMode": "hybrid",
                     "location": None,
-                    "dailyBudget": 400,
+                    "hourlyBudget": 50,
                     "preferReusableIp": None,
                 }
             )
@@ -180,31 +180,31 @@ def test_extract_brief_uses_structured_output_and_returns_only_stated_fields() -
     )
 
     extracted = api.adapter().extract_brief(
-        "A hybrid health pilot needing python and ai-metta, USD 400 a day", PartialBrief()
+        "A hybrid health pilot needing python and ai-metta, USD 50 an hour", PartialBrief()
     )
 
     assert extracted.title == "Health pilot"
     assert extracted.vertical == "health"
     assert extracted.required_skills == ["python", "ai-metta"]
-    assert extracted.daily_budget == 400
+    assert extracted.hourly_budget == 50
     assert extracted.maximum_team_size is None
     request = api.requests[0]
     assert request["model"] == MODEL
     assert request["output_config"]["format"]["type"] == "json_schema"
     assert "requiredSkills" in request["output_config"]["format"]["schema"]["properties"]
-    assert "USD 400 a day" in json.dumps(request["messages"])
+    assert "USD 50 an hour" in json.dumps(request["messages"])
 
 
 def test_extract_brief_serialises_a_dated_current_brief_as_json_context() -> None:
     """A second turn carries dates in `currentBrief`; they must reach the wire as ISO strings."""
-    api = FakeApi(ok(json.dumps({"dailyBudget": 500})))
+    api = FakeApi(ok(json.dumps({"hourlyBudget": 60})))
     current = PartialBrief.model_validate(
-        {"availabilityStart": "2026-09-22", "availabilityEnd": "2026-09-29", "dailyBudget": 400}
+        {"availabilityStart": "2026-09-22", "availabilityEnd": "2026-09-29", "hourlyBudget": 50}
     )
 
     extracted = api.adapter().extract_brief("make the budget 500", current)
 
-    assert extracted.daily_budget == 500
+    assert extracted.hourly_budget == 60
     assert "2026-09-22" in json.dumps(api.requests[0]["messages"])
 
 

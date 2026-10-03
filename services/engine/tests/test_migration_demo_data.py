@@ -62,13 +62,13 @@ CONSTRAINED_BRIEF: dict[str, Any] = {
     "availabilityEnd": "2026-10-06",
     "deliveryMode": "remote",
     "location": None,
-    "dailyBudget": 300,
+    "hourlyBudget": 38,
     "preferReusableIp": False,
     "demoData": True,
 }
 ROUTE_SNAPSHOT: dict[str, Any] = {
     "status": "partial",
-    "totalDailyRate": 130,
+    "totalHourlyRate": 16,
     "builderIds": ["zawadi-njoroge"],
 }
 ELIGIBLE_PATH: dict[str, Any] = {
@@ -113,7 +113,7 @@ def _request(founder_id: UUID, **overrides: Any) -> Request:
         "delivery_mode": "remote",
         "availability_start": date(2026, 9, 22),
         "availability_end": date(2026, 10, 6),
-        "daily_budget": 300,
+        "hourly_budget": 38,
         "route": ROUTE_SNAPSHOT,
         "route_status": "partial",
     }
@@ -124,7 +124,7 @@ def _bid(request_id: UUID, profile_id: UUID, **overrides: Any) -> Bid:
     fields: dict[str, Any] = {
         "request_id": request_id,
         "profile_id": profile_id,
-        "day_rate": 120,
+        "hourly_rate": 15,
         "message": "The field survey app demonstrates mobile.",
         "eligible_skills": ["mobile"],
         "path": ELIGIBLE_PATH,
@@ -161,7 +161,7 @@ async def _seed_chain(session: AsyncSession) -> Seeded:
         builder_id=f"builder-{uuid4().hex[:8]}",
         display_name="Test Builder",
         location="nairobi",
-        day_rate=100,
+        hourly_rate=13,
         supports_remote=True,
     )
     session.add(profile)
@@ -188,7 +188,7 @@ def _rows(seeded: Seeded) -> list[Callable[[], DemoRow]]:
             builder_id=f"builder-{uuid4().hex[:8]}",
             display_name="Other",
             location="kisumu",
-            day_rate=90,
+            hourly_rate=11,
             supports_hybrid=True,
         ),
         lambda: Skill(id=f"skill-{uuid4().hex[:6]}", name="Temporary"),
@@ -250,13 +250,13 @@ async def test_sprint_004_tables_reject_demo_data_null(db_session: AsyncSession)
     inserts = {
         "requests": (
             "INSERT INTO requests (id, founder_id, brief, title, vertical, delivery_mode,"
-            " availability_start, availability_end, daily_budget, route, route_status, demo_data)"
+            " availability_start, availability_end, hourly_budget, route, route_status, demo_data)"
             " VALUES (gen_random_uuid(), :founder, '{}', 't', 'health', 'remote', '2026-09-22',"
-            " '2026-10-06', 300, '{}', 'partial', NULL)"
+            " '2026-10-06', 38, '{}', 'partial', NULL)"
         ),
         "bids": (
-            "INSERT INTO bids (id, request_id, profile_id, day_rate, eligible_skills, path,"
-            " demo_data) VALUES (gen_random_uuid(), :request, :profile, 120, '[]', '{}', NULL)"
+            "INSERT INTO bids (id, request_id, profile_id, hourly_rate, eligible_skills, path,"
+            " demo_data) VALUES (gen_random_uuid(), :request, :profile, 15, '[]', '{}', NULL)"
         ),
         "bookings": (
             "INSERT INTO bookings (id, founder_id, profile_id, proposed_start, duration_min,"
@@ -290,10 +290,12 @@ def _sprint_004_constraints(seeded: Seeded) -> list[tuple[str, Callable[[], Demo
                 founder, availability_start=date(2026, 10, 6), availability_end=date(2026, 9, 22)
             ),
         ),
-        ("ck_requests_daily_budget", lambda: _request(founder, daily_budget=0)),
+        ("ck_requests_hourly_budget", lambda: _request(founder, hourly_budget=0)),
+        ("ck_requests_hourly_budget", lambda: _request(founder, hourly_budget=251)),
         ("ck_requests_route_status", lambda: _request(founder, route_status="great")),
         ("ck_requests_status", lambda: _request(founder, status="paused")),
-        ("ck_bids_day_rate", lambda: _bid(request, profile, day_rate=0)),
+        ("ck_bids_hourly_rate", lambda: _bid(request, profile, hourly_rate=-1)),
+        ("ck_bids_hourly_rate", lambda: _bid(request, profile, hourly_rate=51)),
         ("ck_bids_message_length", lambda: _bid(request, profile, message="x" * 1001)),
         ("ck_bids_status", lambda: _bid(request, profile, status="withdrawn")),
         ("ck_bookings_duration", lambda: _booking(founder, profile, duration_min=60)),
@@ -319,7 +321,7 @@ async def test_one_bid_per_builder_per_request(db_session: AsyncSession) -> None
 
     with pytest.raises(IntegrityError, match="uq_bids_request_profile"):
         async with db_session.begin_nested():
-            db_session.add(_bid(seeded.request_id, seeded.profile_id, day_rate=99))
+            db_session.add(_bid(seeded.request_id, seeded.profile_id, hourly_rate=12))
             await db_session.flush()
 
 

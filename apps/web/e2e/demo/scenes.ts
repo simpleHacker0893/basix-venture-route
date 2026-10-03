@@ -9,7 +9,7 @@ export const SCENES = {
   F2: { clip: "F2-chloe-brief", caption: "She describes her MVP to Chloe" },
   F3: { clip: "F3-chloe-asks", caption: "Chloe asks only for what's missing" },
   F4: { clip: "F4-review", caption: "Review the chips, fix any drift" },
-  F5: { clip: "F5-route", caption: "Feasible: three verified builders, USD 370" },
+  F5: { clip: "F5-route", caption: "Feasible: three verified builders, USD 47 an hour" },
   F6: { clip: "F6-why", caption: "Why this route? Named rules, exact facts" },
   F7: { clip: "F7-change-constraint", caption: "Change a constraint: the gap comes first" },
   F8: { clip: "F8-publish", caption: "Published as a request for builders" },

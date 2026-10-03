@@ -26,7 +26,7 @@ from pydantic import (
 from app.models.brief import (
     JS_SAFE_INT,
     DeliveryMode,
-    PositiveSafeInt,
+    HourlyBudget,
     SafeInt,
     SkillId,
     VentureBrief,
@@ -51,6 +51,8 @@ Location = Annotated[str, Field(min_length=1, max_length=100)]
 ContactField = Annotated[str, Field(max_length=100)]
 CohortId = Annotated[str, Field(min_length=1, max_length=40)]
 Title = Annotated[str, Field(min_length=1, max_length=120)]
+# D-59: a builder's rate is a whole USD 0-50 an hour; 0 means free or volunteer.
+HourlyRate = Annotated[int, Field(ge=0, le=50)]
 Issuer = Annotated[str, Field(min_length=1, max_length=120)]
 
 # Sprint 005a (spec #86, D-43/D-52): showcase description, plain link strings (the `https://` /
@@ -115,7 +117,7 @@ class ProfileInput(Wire):
     headline: Headline = ""
     cohort_id: CohortId | None = Field(default=None, alias="cohortId")
     location: Location
-    day_rate: PositiveSafeInt = Field(alias="dayRate")
+    hourly_rate: HourlyRate = Field(alias="hourlyRate")
     modes: DeliveryModes
     self_described_skills: list[SkillId] = Field(alias="selfDescribedSkills", max_length=9)
     phone: ContactField | None = None
@@ -198,7 +200,7 @@ class BuilderProfile(Wire):
     headline: Headline
     cohort_id: CohortId | None = Field(default=None, alias="cohortId")
     location: Location
-    day_rate: PositiveSafeInt = Field(alias="dayRate")
+    hourly_rate: HourlyRate = Field(alias="hourlyRate")
     modes: DeliveryModes
     self_described_skills: list[SkillId] = Field(alias="selfDescribedSkills")
     contact: Contact
@@ -408,7 +410,7 @@ class Candidate(Wire):
     headline: Headline
     cohort_id: CohortId | None = Field(default=None, alias="cohortId")
     location: Location
-    day_rate: PositiveSafeInt = Field(alias="dayRate")
+    hourly_rate: HourlyRate = Field(alias="hourlyRate")
     modes: DeliveryModes
     availability: list[AvailabilityRange]
     skills: list[ProfileSkill]
@@ -419,7 +421,7 @@ class Candidate(Wire):
 
 
 # -- Sprint 004 (spec #52 §HTTP API, #54): requests, bids, bookings, eligibility, dashboard -------
-# Nine shapes mirrored by Zod. Money is integer USD per day (D-16); `proposedStart` is ISO 8601
+# Nine shapes mirrored by Zod. Money is integer USD per hour (D-59); `proposedStart` is ISO 8601
 # with offset in UTC and `proposedStartLocal` the same instant rendered in Africa/Nairobi.
 
 RequestStatus = Literal["open", "closed"]
@@ -437,7 +439,7 @@ class RouteSnapshot(Wire):
     """What the founder saw when publishing; display-only, never an input to eligibility."""
 
     status: RouteStatus
-    total_daily_rate: SafeInt = Field(alias="totalDailyRate")
+    total_hourly_rate: SafeInt = Field(alias="totalHourlyRate")
     builder_ids: list[str] = Field(alias="builderIds")
 
 
@@ -465,7 +467,7 @@ class RequestOut(Wire):
     delivery_mode: DeliveryMode = Field(alias="deliveryMode")
     availability_start: date = Field(alias="availabilityStart")
     availability_end: date = Field(alias="availabilityEnd")
-    daily_budget: PositiveSafeInt = Field(alias="dailyBudget")
+    hourly_budget: HourlyBudget = Field(alias="hourlyBudget")
     route_status: RouteStatus = Field(alias="routeStatus")
     status: RequestStatus
     closed_at: datetime | None = Field(default=None, alias="closedAt")
@@ -475,7 +477,7 @@ class RequestOut(Wire):
 
 
 class BidCreate(Wire):
-    day_rate: PositiveSafeInt = Field(alias="dayRate")
+    hourly_rate: HourlyRate = Field(alias="hourlyRate")
     message: BidMessage = ""
 
 
@@ -486,7 +488,7 @@ class BidOut(Wire):
     request_status: RequestStatus = Field(alias="requestStatus")
     builder_id: str = Field(alias="builderId")
     display_name: str = Field(alias="displayName")
-    day_rate: PositiveSafeInt = Field(alias="dayRate")
+    hourly_rate: HourlyRate = Field(alias="hourlyRate")
     message: BidMessage
     eligible_skills: list[SkillId] = Field(alias="eligibleSkills")
     path: ReasoningPath

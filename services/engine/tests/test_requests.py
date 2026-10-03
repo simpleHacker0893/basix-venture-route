@@ -30,7 +30,7 @@ async def route_snapshot(api: AsyncClient, brief: dict[str, Any]) -> dict[str, A
     route = (await api.post("/api/route", json=brief)).json()
     return {
         "status": route["status"],
-        "totalDailyRate": route["totalDailyRate"],
+        "totalHourlyRate": route["totalHourlyRate"],
         "builderIds": [b["builderId"] for b in route["builders"]],
     }
 
@@ -59,7 +59,7 @@ async def test_founder_publishes_the_constrained_brief_and_reads_it_back(
     snapshot = await route_snapshot(api, brief)
     assert snapshot == {
         "status": "partial",
-        "totalDailyRate": 130,
+        "totalHourlyRate": 16,
         "builderIds": ["zawadi-njoroge"],
     }
 
@@ -78,10 +78,10 @@ async def test_founder_publishes_the_constrained_brief_and_reads_it_back(
         "agri",
         "remote",
     )
-    assert (body["availabilityStart"], body["availabilityEnd"], body["dailyBudget"]) == (
+    assert (body["availabilityStart"], body["availabilityEnd"], body["hourlyBudget"]) == (
         "2026-09-22",
         "2026-10-06",
-        300,
+        38,
     )
     assert body["eligibility"] is None
     assert body["demoData"] is True
@@ -102,7 +102,8 @@ async def test_founder_publishes_the_constrained_brief_and_reads_it_back(
         ({"requiredSkills": ["mobile", "mobile"]}, "requiredSkills"),
         ({"availabilityStart": "2026-10-06", "availabilityEnd": "2026-09-22"}, "availabilityEnd"),
         ({"deliveryMode": "on-site", "location": None}, "location"),
-        ({"dailyBudget": 0}, "dailyBudget"),
+        ({"hourlyBudget": 0}, "hourlyBudget"),
+        ({"hourlyBudget": 251}, "hourlyBudget"),
     ],
 )
 async def test_malformed_brief_is_422_with_the_field_named(
@@ -114,7 +115,7 @@ async def test_malformed_brief_is_422_with_the_field_named(
         "/api/requests",
         json={
             "brief": brief,
-            "route": {"status": "partial", "totalDailyRate": 0, "builderIds": []},
+            "route": {"status": "partial", "totalHourlyRate": 0, "builderIds": []},
         },
         headers=founder.headers,
     )
@@ -132,14 +133,14 @@ async def test_route_snapshot_is_validated_but_never_recomputed(
 
     bad = await api.post(
         "/api/requests",
-        json={"brief": brief, "route": {"status": "great", "totalDailyRate": 1, "builderIds": []}},
+        json={"brief": brief, "route": {"status": "great", "totalHourlyRate": 1, "builderIds": []}},
         headers=founder.headers,
     )
     stored = await api.post(
         "/api/requests",
         json={
             "brief": brief,
-            "route": {"status": "feasible", "totalDailyRate": 1, "builderIds": []},
+            "route": {"status": "feasible", "totalHourlyRate": 1, "builderIds": []},
         },
         headers=founder.headers,
     )
@@ -191,7 +192,7 @@ async def test_builders_and_admins_cannot_publish(
     brief = await seed_brief(api)
     payload = {
         "brief": brief,
-        "route": {"status": "partial", "totalDailyRate": 0, "builderIds": []},
+        "route": {"status": "partial", "totalHourlyRate": 0, "builderIds": []},
     }
 
     builder = await api.post("/api/requests", json=payload, headers=unconfirmed_builder.headers)

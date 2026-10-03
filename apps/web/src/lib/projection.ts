@@ -73,7 +73,7 @@ export function accountPreview(account: PendingAccount): ProjectionPreview {
   return {
     facts,
     note:
-      "Profile facts (day-rate, located-in, supports-mode, available, has-self-described-skill) are projected from the saved profile once the account is confirmed.",
+      "Profile facts (hourly-rate, located-in, supports-mode, available, has-self-described-skill) are projected from the saved profile once the account is confirmed.",
   };
 }
 

@@ -14,7 +14,7 @@ from typing import Any
 import pytest
 from pydantic import ValidationError
 
-from app.marketplace.schemas import ProfileInput
+from app.marketplace.schemas import BidCreate, BidOut, ProfileInput, RequestOut
 from app.models.brief import VentureBrief
 
 SCRIPTS = Path(__file__).resolve().parents[1] / "scripts"
@@ -80,7 +80,7 @@ HEALTH_PILOT: dict[str, Any] = {
     "availabilityStart": "2026-09-22",
     "availabilityEnd": "2026-09-29",
     "deliveryMode": "hybrid",
-    "dailyBudget": 400,
+    "hourlyBudget": 50,
     "preferReusableIp": True,
 }
 
@@ -89,7 +89,8 @@ HEALTH_PILOT: dict[str, Any] = {
     ("override", "field", "fragment"),
     [
         ({"deliveryMode": "in-person"}, "deliveryMode", "'remote', 'hybrid' or 'on-site'"),
-        ({"dailyBudget": 0}, "dailyBudget", "greater than 0"),
+        ({"hourlyBudget": 0}, "hourlyBudget", "greater than or equal to 1"),
+        ({"hourlyBudget": 251}, "hourlyBudget", "less than or equal to 250"),
         ({"vertical": "fintech"}, "vertical", "'health', 'agri' or 'education'"),
         ({"deliveryMode": "on-site"}, "location", "required when deliveryMode is on-site"),
         ({"maximumTeamSize": 6}, "maximumTeamSize", "less than or equal to 5"),
@@ -114,7 +115,7 @@ def test_brief_rejects_each_invalid_case_with_a_field_specific_message(
 BUILDER_PROFILE: dict[str, Any] = {
     "displayName": "Amina Otieno",
     "location": "Nairobi",
-    "dayRate": 150,
+    "hourlyRate": 19,
     "modes": {"remote": True, "hybrid": False, "onSite": False},
     "selfDescribedSkills": [],
     "sharing": {"email": True, "phone": False, "linkedin": False},
@@ -149,3 +150,61 @@ def test_profile_input_skill_labels_validation_names_the_field(
     assert len(errors) == 1
     location = ".".join(str(part) for part in errors[0]["loc"])
     assert location.split(".")[0] == field
+
+
+@pytest.mark.parametrize("rate", [0, 50])
+def test_profile_input_accepts_an_hourly_rate_of_zero_to_fifty(rate: int) -> None:
+    """D-59: USD 0-50 an hour, 0 meaning free or volunteer."""
+    assert ProfileInput.model_validate({**BUILDER_PROFILE, "hourlyRate": rate}).hourly_rate == rate
+
+
+@pytest.mark.parametrize("rate", [-1, 51, 12.5])
+def test_profile_input_rejects_an_hourly_rate_outside_zero_to_fifty(rate: float) -> None:
+    with pytest.raises(ValidationError) as excinfo:
+        ProfileInput.model_validate({**BUILDER_PROFILE, "hourlyRate": rate})
+
+    errors = excinfo.value.errors()
+    assert [error["loc"] for error in errors] == [("hourlyRate",)]
+
+
+def test_profile_input_no_longer_takes_a_day_rate() -> None:
+    body = {key: value for key, value in BUILDER_PROFILE.items() if key != "hourlyRate"}
+
+    with pytest.raises(ValidationError):
+        ProfileInput.model_validate({**body, "dayRate": 150})
+
+
+# -- #160 (D-59): a request's budget and a bid's rate are per hour --------------------------------
+
+
+@pytest.mark.parametrize("rate", [0, 50])
+def test_bid_create_accepts_an_hourly_rate_of_zero_to_fifty(rate: int) -> None:
+    assert BidCreate.model_validate({"hourlyRate": rate}).hourly_rate == rate
+
+
+@pytest.mark.parametrize("rate", [-1, 51, 12.5])
+def test_bid_create_rejects_an_hourly_rate_outside_zero_to_fifty(rate: float) -> None:
+    with pytest.raises(ValidationError) as excinfo:
+        BidCreate.model_validate({"hourlyRate": rate})
+
+    assert [error["loc"] for error in excinfo.value.errors()] == [("hourlyRate",)]
+
+
+def test_bid_create_no_longer_takes_a_day_rate() -> None:
+    with pytest.raises(ValidationError):
+        BidCreate.model_validate({"dayRate": 15})
+
+
+def test_bid_out_carries_the_hourly_rate_with_the_profile_bounds() -> None:
+    field = BidOut.model_fields["hourly_rate"]
+    assert field.alias == "hourlyRate"
+    assert "day_rate" not in BidOut.model_fields
+    schema = BidOut.model_json_schema(by_alias=True)["properties"]["hourlyRate"]
+    assert (schema["minimum"], schema["maximum"]) == (0, 50)
+
+
+def test_request_out_carries_the_hourly_budget_one_to_two_fifty() -> None:
+    assert RequestOut.model_fields["hourly_budget"].alias == "hourlyBudget"
+    assert "daily_budget" not in RequestOut.model_fields
+    schema = RequestOut.model_json_schema(by_alias=True)["properties"]["hourlyBudget"]
+    assert (schema["minimum"], schema["maximum"]) == (1, 250)

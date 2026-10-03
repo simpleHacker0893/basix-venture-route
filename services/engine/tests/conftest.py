@@ -260,7 +260,7 @@ def builder_profile_input(display_name: str) -> dict[str, Any]:
         "headline": "Mobile builder",
         "cohortId": None,
         "location": "Nairobi",
-        "dayRate": 120,
+        "hourlyRate": 20,
         "modes": {"remote": True, "hybrid": False, "onSite": False},
         "selfDescribedSkills": ["mobile"],
         "phone": None,

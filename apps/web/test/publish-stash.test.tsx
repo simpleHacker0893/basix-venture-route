@@ -31,7 +31,7 @@ const constrained = SEED_BRIEFS.find((brief) => brief.id === "brief-constrained-
 const stashedRoute = {
   status: "partial" as const,
   builders: [],
-  totalDailyRate: 0,
+  totalHourlyRate: 0,
   reusableIp: null,
   cohort: null,
   partner: null,

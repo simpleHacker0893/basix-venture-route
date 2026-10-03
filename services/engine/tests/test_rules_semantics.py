@@ -18,7 +18,7 @@ def _brief(**overrides: object) -> VentureBrief:
         "availabilityStart": "2026-09-22",
         "availabilityEnd": "2026-09-29",
         "deliveryMode": "remote",
-        "dailyBudget": 300,
+        "hourlyBudget": 38,
         "preferReusableIp": False,
     }
     base.update(overrides)

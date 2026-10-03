@@ -41,7 +41,7 @@ ROUTE = VentureRoute(
         RouteBuilder(
             builder_id="amina-otieno",
             name="Amina Otieno",
-            day_rate=120,
+            hourly_rate=15,
             covers=["python"],
             evidence_type="both",
             evidence_paths=[
@@ -53,7 +53,7 @@ ROUTE = VentureRoute(
             ],
         )
     ],
-    total_daily_rate=120,
+    total_hourly_rate=15,
     reusable_ip=ReusableIp(
         asset_id="asset-afya-triage",
         title="Afya Triage",
@@ -73,7 +73,7 @@ ROUTE = VentureRoute(
     ),
     gaps=[],
     rules_applied=["eligible-builder", "partner-fit", "reuse-fit"],
-    summary="Feasible route: 1 builder (Amina Otieno) cover python for USD 120 a day.",
+    summary="Feasible route: 1 builder (Amina Otieno) cover python for USD 15 an hour.",
 )
 
 
@@ -136,13 +136,13 @@ def system_and_user(body: dict[str, Any]) -> tuple[str, str]:
 
 
 def test_extract_brief_posts_the_intake_model_without_reasoning_and_a_strict_schema() -> None:
-    api = FakeApi(ok(json.dumps({"title": "Health pilot", "dailyBudget": 400})))
+    api = FakeApi(ok(json.dumps({"title": "Health pilot", "hourlyBudget": 50})))
     current = PartialBrief.model_validate({"availabilityStart": "2026-09-22"})
 
-    extracted = api.adapter().extract_brief("A health pilot, USD 400 a day", current)
+    extracted = api.adapter().extract_brief("A health pilot, USD 50 an hour", current)
 
     assert extracted.title == "Health pilot"
-    assert extracted.daily_budget == 400
+    assert extracted.hourly_budget == 50
     request = api.requests[0]
     assert request.method == "POST"
     assert str(request.url) == f"{BASE_URL}/chat/completions"
@@ -158,7 +158,7 @@ def test_extract_brief_posts_the_intake_model_without_reasoning_and_a_strict_sch
     system, user = system_and_user(body)
     assert system == EXTRACTION_INSTRUCTION
     assert SYSTEM_INSTRUCTION in system
-    assert "USD 400 a day" in user
+    assert "USD 50 an hour" in user
     assert "2026-09-22" in user
 
 
@@ -289,7 +289,7 @@ def test_an_all_null_extraction_reply_is_accepted() -> None:
 
 
 def test_local_validation_still_enforces_the_dropped_constraints() -> None:
-    api = FakeApi(ok(json.dumps({"maximumTeamSize": 99, "dailyBudget": 0})))
+    api = FakeApi(ok(json.dumps({"maximumTeamSize": 99, "hourlyBudget": 0})))
 
     with pytest.raises(LlmUnavailable):
         api.adapter().extract_brief("hello", None)

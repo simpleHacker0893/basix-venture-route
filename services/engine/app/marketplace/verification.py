@@ -58,7 +58,7 @@ class ConfirmedBuilder:
     """A builder whose account is confirmed, with everything the projection emits for them."""
 
     builder_id: str
-    day_rate: int
+    hourly_rate: int
     location: str
     modes: tuple[str, ...]
     availability: tuple[tuple[date, date], ...]

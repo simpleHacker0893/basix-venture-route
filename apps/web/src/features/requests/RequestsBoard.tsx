@@ -19,7 +19,7 @@ import { ApiNotFoundError } from "../../api/client";
 import { useMarketplaceApi } from "../../api/marketplaceContext";
 import { DemoDataPill } from "../../components/DemoDataPill";
 import { MODE_LABELS, SKILL_LABELS, VERTICAL_LABELS, VERTICALS } from "../../lib/brief";
-import { dateRange, usd } from "../../lib/format";
+import { dateRange, usdPerHour } from "../../lib/format";
 import { errorMessage } from "../builder/formStyles";
 import { BidDialog } from "./BidDialog";
 
@@ -42,7 +42,7 @@ function sortRequests(requests: readonly Request[], sort: Sort): Request[] {
     case "deadline":
       return copy.sort((a, b) => a.availabilityEnd.localeCompare(b.availabilityEnd) || a.title.localeCompare(b.title));
     case "budget":
-      return copy.sort((a, b) => b.dailyBudget - a.dailyBudget || a.title.localeCompare(b.title));
+      return copy.sort((a, b) => b.hourlyBudget - a.hourlyBudget || a.title.localeCompare(b.title));
     case "newest":
       return copy.sort((a, b) => b.createdAt.localeCompare(a.createdAt));
   }
@@ -289,10 +289,10 @@ function RequestCard({
       </div>
       <div className="flex shrink-0 flex-col items-start gap-2 md:items-end">
         <span className="font-mono text-[11px] uppercase tracking-wider text-ink-3">Budget ceiling</span>
-        <span className="font-mono text-sm text-ink">{usd(request.dailyBudget)}</span>
+        <span className="font-mono text-sm text-ink">{usdPerHour(request.hourlyBudget)}</span>
         {placed ? (
           <span className="rounded-pill bg-accent-green/10 px-2 py-0.5 font-mono text-[11px] text-accent-green">
-            Bid placed · {usd(placed.dayRate)}
+            Bid placed · {usdPerHour(placed.hourlyRate)}
           </span>
         ) : null}
         <button

@@ -12,7 +12,7 @@ import { Link, useNavigate, useParams } from "react-router";
 import { DemoDataPill } from "../../components/DemoDataPill";
 import { Stepper } from "../../components/Stepper";
 import { MODE_LABELS, SKILL_LABELS } from "../../lib/brief";
-import { usd } from "../../lib/format";
+import { usdPerHour } from "../../lib/format";
 import { useRouting } from "../../state/routingContext";
 import { StatusBadge } from "../route/Badges";
 import { BidCard } from "./BidCard";
@@ -117,7 +117,7 @@ export function VenturePage() {
                     up to {request.brief.maximumTeamSize} {request.brief.maximumTeamSize === 1 ? "builder" : "builders"}
                   </dd>
                   <dt className="text-ink-3">Budget</dt>
-                  <dd className="font-mono font-medium text-ink">{usd(request.dailyBudget)}</dd>
+                  <dd className="font-mono font-medium text-ink">{usdPerHour(request.hourlyBudget)}</dd>
                 </dl>
                 <button
                   type="button"

@@ -47,7 +47,7 @@ BASIX already holds the ingredients of a venture: verified learning, credentials
 A founder with an MVP today has to:
 
 - browse profiles and **guess whether a stated skill is credible**;
-- estimate whether a team can meet the **dates, delivery mode and daily budget**;
+- estimate whether a team can meet the **dates, delivery mode and hourly budget**;
 - discover reusable IP **by chance**;
 - ask BASIX staff for introductions to the right cohort or partner.
 
@@ -55,21 +55,23 @@ That is slow, hard to audit, and it produces recommendations nobody can verify. 
 
 ## Our answer
 
-Venture Route turns a founder's plain-language venture brief into the smallest credible route through a BASIX-shaped ecosystem: verified builders, reusable IP, cohort and university context, a relevant partner, daily cost, and explicit capability gaps.
+Venture Route turns a founder's plain-language venture brief into the smallest credible route through a BASIX-shaped ecosystem: verified builders, reusable IP, cohort and university context, a relevant partner, hourly cost, and explicit capability gaps.
 
 It is not an AI matcher. MeTTa relationship rules over inspectable facts decide eligibility, evidence, availability, delivery-mode fit, reusable-IP fit, partner fit and gaps. A language model may make intake conversational and explain a computed route, but it never selects people, invents evidence, or sets the route status. Those rules are non-negotiable and are listed in `AGENTS.md`.
 
 ## A worked example
 
-A founder types: *"I need a health-sector pilot: Python, AI/MeTTa and UI/UX, hybrid, USD 400 a day, reusable IP preferred."* The brief is extracted into editable chips and confirmed. Then the rules run.
+A founder types: *"I need a health-sector pilot: Python, AI/MeTTa and UI/UX, hybrid, USD 50 an hour for the team, reusable IP preferred."* The brief is extracted into editable chips and confirmed. Then the rules run.
 
 | Step | What the founder sees | Decided by |
 |---|---|---|
-| Feasible route | Three builders for **USD 370 a day**: Amina Otieno (Python), Daniel Kiptoo (AI/MeTTa), Grace Wambui (UI/UX), each tagged `credential`, `project` or `both` | `verified-for-skill`, `mode-compatible`, `available-for-brief`, `eligible-builder`, then the deterministic assembler |
+| Feasible route | Three builders for **USD 47 an hour**: Amina Otieno (Python, USD 15), Daniel Kiptoo (AI/MeTTa, USD 19), Grace Wambui (UI/UX, USD 13), each tagged `credential`, `project` or `both` | `verified-for-skill`, `mode-compatible`, `available-for-brief`, `eligible-builder`, then the deterministic assembler |
 | Reusable IP and partner | `asset-afya-triage`, and the partner `amani-health` reached through a **four-hop chain** | `reuse-fit`, `partner-fit` |
 | Why this route? | The named rule and the exact source facts behind every card | the reasoning paths the engine returns |
-| Change one constraint: budget USD 250 | **No team.** One named `budget` gap: "Raise daily budget to USD 370" | `assembler.budget-fit` |
+| Change one constraint: budget USD 31 an hour | **No team.** One named `budget` gap: "Cheapest verified team costs USD 47 an hour; budget is USD 31 an hour", with the next action "Raise the hourly budget to USD 47" | `assembler.budget-fit` |
 | Change another: on-site in Kisumu | `infeasible`, with three `location` gaps; no builders invented | `route-gap` |
+
+Every price is per hour (D-59): a builder's rate is a whole number of US dollars from 0 to 50 an hour, and a brief's budget is USD 1 to 250 an hour for the whole team. A team fits when the sum of its members' rates is at most the budget; the deterministic assembler checks it.
 
 The last two rows are the point: when a hard constraint cannot be met, the system reports a **named gap with engine-supplied next actions** instead of producing a plausible-looking team.
 
@@ -269,7 +271,7 @@ An install is done when every line below holds. Each comes with the command that
 | Python 3.12 and uv are on the path | `python --version` and `uv --version` | `3.12.x`; uv `0.8` or later |
 | Node 24 and pnpm 9.12 are on the path | `node --version` and `pnpm --version` | `v24.x`; `9.12.x` |
 | The engine loaded the MeTTa graph | `curl -s http://127.0.0.1:8000/health` | `"facts_loaded":181,"rules_loaded":7,"hyperon_version":"0.2.10"` |
-| The web app reaches the engine | open `http://localhost:5173/route`, pick **Health pilot** | a `feasible` route of three builders for USD 370 a day |
+| The web app reaches the engine | open `http://localhost:5173/route`, pick **Health pilot** | a `feasible` route of three builders for USD 47 an hour |
 | The engine suite passes | `cd services/engine && uv run pytest -q` | no failures (marketplace tests skip without `TEST_DATABASE_URL`) |
 | The web suite passes | `pnpm -r build && pnpm -r test` | no failures |
 | The marketplace store is migrated (optional) | `uv run alembic current` in `services/engine` | the head revision, with `DATABASE_URL` set |
@@ -391,7 +393,7 @@ How a query runs: the brief's fields are added to the space as `brief-*` atoms u
 
 ### Marketplace and projection
 
-Builders sign in with Clerk and keep a profile, availability, credentials and showcase projects in Postgres. A skill on a profile is `verified` only when a confirmed credential or a confirmed project proves it; a self-described skill is display only and never satisfies `verified-for-skill`. An admin confirms or rejects accounts, credentials and projects; each decision commits, then `reproject()` renders every confirmed builder into the same predicates the seed uses (`confirmed`, `day-rate`, `located-in`, `supports-mode`, `available`, `earned`/`proves`, `built`/`demonstrates`, `licensable`/`vertical`) and rebuilds the space. No new predicate and no new rule name; `GET /health` reports the projected atom count as `projected_rows`. Decisions are recorded in `docs/adr/`.
+Builders sign in with Clerk and keep a profile, availability, credentials and showcase projects in Postgres. A skill on a profile is `verified` only when a confirmed credential or a confirmed project proves it; a self-described skill is display only and never satisfies `verified-for-skill`. An admin confirms or rejects accounts, credentials and projects; each decision commits, then `reproject()` renders every confirmed builder into the same predicates the seed uses (`confirmed`, `hourly-rate`, `located-in`, `supports-mode`, `available`, `earned`/`proves`, `built`/`demonstrates`, `licensable`/`vertical`) and rebuilds the space. No new predicate and no new rule name; `GET /health` reports the projected atom count as `projected_rows`. Decisions are recorded in `docs/adr/`.
 
 ### Named rules
 
@@ -409,7 +411,7 @@ services/engine/        FastAPI + Hyperon engine (uv, Python 3.12)
   app/db/               async engine and session dependency (Neon / compose db)
   app/marketplace/      SQLModel tables, repository, verified-skill derivation, booking state machine, slot rules, wire schemas
   app/models/           VentureBrief, VentureRoute, chat and engine result models
-  alembic/              migrations (0001_marketplace, 0002 requests/bids/bookings); `alembic upgrade head` is the release command
+  alembic/              migrations (0001_marketplace, 0002 requests/bids/bookings, 0003_showcase, 0004_hourly_pricing); `alembic upgrade head` is the release command
   seed/                 facts.metta, rules.metta, briefs.json (five demo scenarios)
   scripts/              export_schema.py, export_offline_snapshot.py (both have --check)
   tests/                real-runtime, HTTP-seam and database tests
@@ -429,11 +431,11 @@ Seed briefs in `services/engine/seed/briefs.json`, loaded as chips on `/route`. 
 
 | Brief ID | Scenario | Route |
 |---|---|---|
-| `brief-health-01` | Health pilot: python, ai-metta, ui-ux; hybrid; USD 400/day; reusable IP | `feasible`: three builders for USD 370, `asset-afya-triage`, partner `amani-health` via four hops |
-| `brief-agri-01` | Agri marketplace: frontend, backend, domain-research; remote | `feasible`: a different team for USD 315, `asset-shamba-records`, partner `shamba-agri` |
-| `brief-constrained-01` | Mobile + Rust, remote, two weeks | `partial`: Rust builder eligible, `skill` gap for mobile |
-| `brief-budget-01` | Health pilot at USD 250/day | `partial`: no team, one `budget` gap naming the USD 370 team |
-| `brief-onsite-01` | Health pilot on-site in Kisumu | `infeasible`: three `location` gaps, no builders, IP or partner (D-23) |
+| `brief-health-01` | Health pilot: python, ai-metta, ui-ux; hybrid; USD 50 an hour; reusable IP | `feasible`: Amina Otieno 15 + Daniel Kiptoo 19 + Grace Wambui 13 = USD 47 an hour, `asset-afya-triage`, partner `amani-health` via four hops |
+| `brief-agri-01` | Agri marketplace: frontend, backend, domain-research; remote; USD 44 an hour | `feasible`: Wanjiru Mwangi 18 + Lucy Achieng 12 + Fatuma Hassan 10 = USD 40 an hour (Lucy beats Brian Odhiambo, 15, on cost), `asset-shamba-records`, partner `shamba-agri` |
+| `brief-constrained-01` | Mobile + Rust, remote, two weeks; USD 38 an hour | `partial`: Zawadi Njoroge (Rust, USD 16 an hour) eligible, `skill` gap for mobile |
+| `brief-budget-01` | Health pilot at USD 31 an hour | `partial`: no team, one `budget` gap: "Raise the hourly budget to USD 47" |
+| `brief-onsite-01` | Health pilot on-site in Kisumu; USD 50 an hour | `infeasible`: three `location` gaps, no builders, IP or partner (D-23) |
 
 All builders, credentials, projects, cohorts, universities and partners are fictional and carry `demoData: true`; the UI shows a Demo data pill on every seed-derived or user-entered record.
 

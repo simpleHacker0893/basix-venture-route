@@ -44,7 +44,7 @@ type Sample = {
   deliveryMode?: Request["deliveryMode"];
   availabilityStart?: string;
   availabilityEnd?: string;
-  dailyBudget?: number;
+  hourlyBudget?: number;
   requiredSkills?: Request["brief"]["requiredSkills"];
   eligibility: Request["eligibility"];
   status?: Request["status"];
@@ -63,7 +63,7 @@ function request(sample: Sample): Request {
     availabilityEnd: sample.availabilityEnd ?? "2026-10-06",
     deliveryMode: sample.deliveryMode ?? "remote",
     location: null,
-    dailyBudget: sample.dailyBudget ?? 300,
+    hourlyBudget: 38,
     preferReusableIp: false,
     demoData: true,
   };
@@ -71,13 +71,13 @@ function request(sample: Sample): Request {
     id: sample.id,
     founderId: "user_founder",
     brief,
-    route: { status: "partial", totalDailyRate: 130, builderIds: ["zawadi-njoroge"] },
+    route: { status: "partial", totalHourlyRate: 16, builderIds: ["zawadi-njoroge"] },
     title: brief.title,
     vertical: brief.vertical,
     deliveryMode: brief.deliveryMode,
     availabilityStart: brief.availabilityStart,
     availabilityEnd: brief.availabilityEnd,
-    dailyBudget: brief.dailyBudget,
+    hourlyBudget: sample.hourlyBudget ?? 38,
     routeStatus: "partial",
     status: sample.status ?? "open",
     closedAt: sample.closedAt ?? null,
@@ -99,7 +99,7 @@ const health = request({
   vertical: "health",
   deliveryMode: "hybrid",
   availabilityEnd: "2026-09-29",
-  dailyBudget: 400,
+  hourlyBudget: 50,
   requiredSkills: ["python", "ai-metta", "ui-ux"],
   eligibility: { eligible: false, skills: [], path: null, reason: NOT_ELIGIBLE },
   createdAt: "2026-09-23T09:00:00Z",
@@ -108,7 +108,7 @@ const agri = request({
   id: "r-agri",
   title: "Agri marketplace",
   availabilityEnd: "2026-10-20",
-  dailyBudget: 350,
+  hourlyBudget: 44,
   requiredSkills: ["frontend", "backend", "domain-research"],
   eligibility: { eligible: false, skills: [], path: null, reason: GAP },
   createdAt: "2026-09-22T09:00:00Z",
@@ -128,7 +128,7 @@ const profile: BuilderProfile = {
   headline: "Mobile builder",
   cohortId: null,
   location: "Nairobi",
-  dayRate: 120,
+  hourlyRate: 15,
   modes: { remote: true, hybrid: false, onSite: false },
   selfDescribedSkills: ["mobile"],
   contact: { email: "naomi@example.com", phone: null, linkedin: null },
@@ -173,7 +173,7 @@ describe("/requests board", () => {
     expect(within(eligible).getByText("Demo data")).toBeInTheDocument();
     expect(within(eligible).getByText("22 Sep – 6 Oct 2026")).toBeInTheDocument();
     expect(within(eligible).getByText("Remote")).toBeInTheDocument();
-    expect(within(eligible).getByText("USD 300 / day")).toBeInTheDocument();
+    expect(within(eligible).getByText("USD 38 an hour")).toBeInTheDocument();
     expect(within(eligible).getByText("brief-r-constrained")).toBeInTheDocument();
 
     const ineligible = screen.getByRole("article", { name: "Health pilot" });

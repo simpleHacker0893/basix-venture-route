@@ -7,7 +7,7 @@ from typing import Protocol
 
 from pydantic import BaseModel, ConfigDict, Field
 
-from app.models.brief import DeliveryMode, PositiveSafeInt, SkillId, TeamSize, Vertical
+from app.models.brief import DeliveryMode, HourlyBudget, SkillId, TeamSize, Vertical
 from app.models.chat import PartialBrief
 from app.models.route import VentureRoute
 
@@ -42,7 +42,7 @@ class ExtractedBrief(BaseModel):
     availability_end: date | None = Field(default=None, alias="availabilityEnd")
     delivery_mode: DeliveryMode | None = Field(default=None, alias="deliveryMode")
     location: str | None = Field(default=None, min_length=1, max_length=100)
-    daily_budget: PositiveSafeInt | None = Field(default=None, alias="dailyBudget")
+    hourly_budget: HourlyBudget | None = Field(default=None, alias="hourlyBudget")
     prefer_reusable_ip: bool | None = Field(default=None, alias="preferReusableIp")
 
 

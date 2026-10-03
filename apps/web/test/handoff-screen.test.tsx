@@ -23,7 +23,7 @@ describe("handoff screen", () => {
 
     const text = screen.getByTestId("handoff-text");
     expect(text).toHaveTextContent("VENTURE ROUTE HANDOFF");
-    expect(text).toHaveTextContent("TOTAL DAY RATE: USD 370 / day");
+    expect(text).toHaveTextContent("TOTAL HOURLY RATE: USD 47 an hour");
     const download = screen.getByRole("link", { name: "Download .txt" });
     expect(download).toHaveAttribute("download", "venture-route-brief-health-01.txt");
     expect(download.getAttribute("href")).toMatch(/^data:text\/plain;charset=utf-8,/);

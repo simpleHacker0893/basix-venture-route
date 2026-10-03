@@ -44,7 +44,7 @@ def request_out(
         delivery_mode=row.delivery_mode,
         availability_start=row.availability_start,
         availability_end=row.availability_end,
-        daily_budget=row.daily_budget,
+        hourly_budget=row.hourly_budget,
         route_status=row.route_status,
         status=row.status,
         closed_at=row.closed_at,
@@ -83,7 +83,7 @@ async def publish(
         delivery_mode=brief.delivery_mode,
         availability_start=brief.availability_start,
         availability_end=brief.availability_end,
-        daily_budget=brief.daily_budget,
+        hourly_budget=brief.hourly_budget,
         route_status=body.route.status,
     )
     return request_out(row, user.db_user)

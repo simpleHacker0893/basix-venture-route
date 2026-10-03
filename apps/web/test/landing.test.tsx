@@ -21,7 +21,7 @@ describe("landing page (refined UI over the Stitch structure)", () => {
     expect(within(hero).getByRole("link", { name: "Route my venture" })).toHaveAttribute("href", "/route");
     expect(within(hero).getByRole("link", { name: "See a demo route" })).toHaveAttribute("href", "/route");
     expect(within(hero).getByText("Demo data")).toBeInTheDocument();
-    expect(within(hero).getByText("Team USD 370 of 400 / day")).toBeInTheDocument();
+    expect(within(hero).getByText("Team USD 47 of 50 an hour")).toBeInTheDocument();
     expect(within(hero).getByText("A language model helps you write the brief. It never picks the people.")).toBeInTheDocument();
     for (const name of ["Amina Otieno", "Daniel Kiptoo", "Grace Wambui"]) expect(within(hero).getByText(name)).toBeInTheDocument();
 

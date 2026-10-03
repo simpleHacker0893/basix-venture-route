@@ -46,6 +46,7 @@ If rounding changes which team the assembler picks for a scenario, the status, t
 
 - `profiles.day_rate` is renamed `hourly_rate`; existing values become `min(50, round_half_up(day_rate / 8))`; a check constraint holds `0 <= hourly_rate <= 50`.
 - In `requests`, the stored budget and route snapshot (D-47) are converted the same way: `dailyBudget` → `hourlyBudget` (clamped to 1–250) and `totalDailyRate` → `totalHourlyRate` (÷ 8, half up).
+- `bids.day_rate` (the rate a builder offers on a bid, wire `dayRate`) becomes `hourly_rate` / `hourlyRate` with the same conversion and the same 0–50 check as profiles; the bid dialog pre-fills it from the profile's hourly rate.
 - The migration logs how many builder rates it capped at 50 and how many request snapshots it converted.
 - Downgrade reverses the rename and multiplies by 8 (lossy, acceptable for demo data).
 - Sprint 008's admin-reasons migration becomes `0005`.
@@ -73,7 +74,7 @@ README (worked example, demo scenarios, quick links stay), `planning/DOMAIN.md`,
 
 ## Acceptance
 
-1. `git grep -niE "day-rate|dayRate|day_rate|dailyBudget|daily_budget|DailyRate|daily_rate|UsdPerDay|raise_daily_budget|TOTAL DAY RATE" -- ':!planning/sprints/00[0-6]*' ':!services/engine/alembic/versions/000[1-3]*' ':!planning/DECISIONS.md' ':!graphify-out'` prints nothing.
+1. `git grep -niE "day-rate|dayRate|day_rate|dailyBudget|daily_budget|DailyRate|daily_rate|UsdPerDay|raise_daily_budget|TOTAL DAY RATE" -- ':!planning/sprints/00[0-6]*' ':!services/engine/alembic/versions/000[1-3]*' ':!planning/DECISIONS.md' ':!graphify-out' ':!design' ':!docs/design/stitch-prompts.md'` prints nothing outside migration `0004`, the deliberate negative tests and this spec. `design/` and `docs/design/stitch-prompts.md` are approved design snapshots (D-36) and stay as history.
 2. CI on the PR is green: engine, web (Vitest, no-key Playwright, Clerk Playwright), D-51 check.
 3. `uv run python scripts/export_schema.py --check` and `scripts/export_offline_snapshot.py --check` pass.
 4. After merge and deploy: `curl https://venture-route-engine.onrender.com/health` shows `facts_loaded 181`, `rules_loaded 7`; on <https://basix-venture-route.vercel.app/route> the Health pilot routes `feasible` at USD 47 an hour, and the Budget challenge shows "Raise the hourly budget to USD 47".

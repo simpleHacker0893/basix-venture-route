@@ -1,16 +1,16 @@
 /**
  * The bid dialog on the requests board (screen 10, Stitch batch-4/requests-board, D-36; #70).
- * Pre-fills the builder's profile day rate, shows the founder's daily budget beside it, takes an
- * optional message and posts through MarketplaceApi. On 201 the parent closes it and marks the
+ * Pre-fills the builder's profile hourly rate, shows the founder's hourly budget beside it, takes
+ * an optional message and posts through MarketplaceApi. On 201 the parent closes it and marks the
  * card as bid. A 403 shows the engine's reason verbatim (the same sentence the board shows), a
- * 409 says closed or already bid, a 422 maps to the fields. The day rate is a positive integer
- * USD per day (D-16), checked before posting.
+ * 409 says closed or already bid, a 422 maps to the fields. The hourly rate is a whole USD 0 to
+ * 50 (D-59, the profile rate's bounds), checked with the contract's `HourlyRate` before posting.
  *
  * Substitutions from the export: "Bidding ledger entry" and "Attested" become "Bid" and
  * "Verified"; the "attestation ledger" line and "Available for entire window" are left out
  * (availability is the engine's `available-for-brief`, shown through the path's facts).
  */
-import type { Bid, BuilderProfile, Request } from "@venture-route/contracts";
+import { HourlyRate, type Bid, type BuilderProfile, type Request } from "@venture-route/contracts";
 import { useState, type FormEvent } from "react";
 
 import {
@@ -25,13 +25,13 @@ import {
 import { ApiForbiddenError, ApiUnreachableError, ApiValidationError } from "../../api/client";
 import { useMarketplaceApi } from "../../api/marketplaceContext";
 import { SKILL_LABELS } from "../../lib/brief";
-import { usd } from "../../lib/format";
+import { usdPerHour } from "../../lib/format";
 import { splitFieldMessages } from "../../lib/validationError";
 import { FieldError } from "../builder/StatusPill";
 import { helpClass, inputClass, labelClass } from "../builder/formStyles";
 
-const BID_FIELDS: readonly string[] = ["dayRate", "message"];
-const RATE_ERROR = "Enter a whole number of USD per day, at least 1.";
+const BID_FIELDS: readonly string[] = ["hourlyRate", "message"];
+const RATE_ERROR = "Enter a whole number of USD an hour, from 0 to 50.";
 
 type Props = Readonly<{
   request: Request;
@@ -40,11 +40,11 @@ type Props = Readonly<{
   onPlaced(bid: Bid): void;
 }>;
 
-/** Client-side check of the one rule the engine enforces on the rate (D-16). */
-function parseDayRate(raw: string): number | null {
+/** Client-side check of the one rule the engine enforces on the rate (D-59). */
+function parseHourlyRate(raw: string): number | null {
   if (!/^\d+$/.test(raw.trim())) return null;
-  const value = Number(raw);
-  return Number.isSafeInteger(value) && value > 0 ? value : null;
+  const parsed = HourlyRate.safeParse(Number(raw));
+  return parsed.success ? parsed.data : null;
 }
 
 function mapFailure(cause: unknown): { form?: string; fields: Record<string, string> } {
@@ -67,7 +67,7 @@ function mapFailure(cause: unknown): { form?: string; fields: Record<string, str
 
 export function BidDialog({ request, profile, onClose, onPlaced }: Props) {
   const api = useMarketplaceApi();
-  const [rate, setRate] = useState(profile ? String(profile.dayRate) : "");
+  const [rate, setRate] = useState(profile ? String(profile.hourlyRate) : "");
   const [message, setMessage] = useState("");
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [formError, setFormError] = useState<string | null>(null);
@@ -77,16 +77,16 @@ export function BidDialog({ request, profile, onClose, onPlaced }: Props) {
 
   async function submit(event: FormEvent) {
     event.preventDefault();
-    const dayRate = parseDayRate(rate);
-    if (dayRate === null) {
-      setErrors({ dayRate: RATE_ERROR });
+    const hourlyRate = parseHourlyRate(rate);
+    if (hourlyRate === null) {
+      setErrors({ hourlyRate: RATE_ERROR });
       return;
     }
     setErrors({});
     setFormError(null);
     setBusy(true);
     try {
-      onPlaced(await api.postBid(request.id, { dayRate, message }));
+      onPlaced(await api.postBid(request.id, { hourlyRate, message }));
     } catch (cause) {
       const failure = mapFailure(cause);
       setErrors(failure.fields);
@@ -127,28 +127,29 @@ export function BidDialog({ request, profile, onClose, onPlaced }: Props) {
 
         <form onSubmit={(event) => void submit(event)} className="flex flex-col gap-4" noValidate>
           <div className="flex flex-col gap-1.5">
-            <label htmlFor="bid-day-rate" className={labelClass}>
-              Your day rate (USD)
+            <label htmlFor="bid-hourly-rate" className={labelClass}>
+              Your hourly rate (USD, 0–50)
             </label>
             <div className="flex items-center gap-2">
               <span className="font-mono text-sm text-ink-3">USD</span>
               <input
-                id="bid-day-rate"
+                id="bid-hourly-rate"
                 type="number"
                 inputMode="numeric"
-                min={1}
+                min={0}
+                max={50}
                 step={1}
                 value={rate}
                 onChange={(event) => setRate(event.target.value)}
-                aria-describedby={errors.dayRate ? "error-dayRate bid-budget" : "bid-budget"}
+                aria-describedby={errors.hourlyRate ? "error-hourlyRate bid-budget" : "bid-budget"}
                 className={`${inputClass} w-32`}
               />
-              <span className="font-mono text-sm text-ink-3">/ day</span>
+              <span className="font-mono text-sm text-ink-3">an hour</span>
             </div>
             <p id="bid-budget" className={helpClass}>
-              Founder max: {usd(request.dailyBudget)}
+              Founder max: {usdPerHour(request.hourlyBudget)}
             </p>
-            <FieldError field="dayRate" errors={errors} />
+            <FieldError field="hourlyRate" errors={errors} />
           </div>
 
           <div className="flex flex-col gap-1.5">

@@ -45,21 +45,22 @@ def test_route_form_path_health_pilot_is_feasible_on_the_wire(client: TestClient
         ("grace-wambui", "credential"),
     ]
     assert route["builders"][0]["name"] == "Amina Otieno"
-    assert route["builders"][0]["dayRate"] == 120
-    assert route["totalDailyRate"] == 370
+    assert route["builders"][0]["hourlyRate"] == 15
+    assert route["totalHourlyRate"] == 47
     assert route["reusableIp"]["assetId"] == "asset-afya-triage"
     assert route["cohort"]["cohortId"] == "cohort-2026a"
     assert route["partner"]["partnerId"] == "amani-health"
     assert len(route["partner"]["path"]["facts"]) == 4
     assert route["gaps"] == []
-    assert "rulesApplied" in route and "total_daily_rate" not in route
+    assert "rulesApplied" in route and "total_hourly_rate" not in route
 
 
 @pytest.mark.parametrize(
     ("override", "field"),
     [
         ({"deliveryMode": "in-person"}, "deliveryMode"),
-        ({"dailyBudget": 0}, "dailyBudget"),
+        ({"hourlyBudget": 0}, "hourlyBudget"),
+        ({"hourlyBudget": 251}, "hourlyBudget"),
         ({"vertical": "fintech"}, "vertical"),
         ({"deliveryMode": "on-site"}, "location"),
     ],
@@ -74,6 +75,16 @@ def test_route_validation_errors_are_field_specific_and_never_a_route(
     assert body["type"] == "validation-error"
     assert field in body["message"]
     assert "status" not in body and "builders" not in body
+
+
+@pytest.mark.parametrize("budget", [1, 250])
+def test_route_accepts_an_hourly_budget_at_both_bounds(client: TestClient, budget: int) -> None:
+    """D-59: hourlyBudget is an integer USD per hour from 1 to 250 inclusive."""
+    brief = {**seed_brief("brief-health-01"), "hourlyBudget": budget}
+
+    response = client.post("/api/route", json=brief)
+
+    assert response.status_code == 200, response.text
 
 
 def test_route_rejects_a_non_json_body_with_a_validation_error(client: TestClient) -> None:

@@ -40,7 +40,7 @@ function profile(accountStatus: AccountStatus): BuilderProfile {
     headline: "Python builder",
     cohortId: null,
     location: "Nairobi",
-    dayRate: 120,
+    hourlyRate: 15,
     modes: { remote: true, hybrid: false, onSite: false },
     selfDescribedSkills: [],
     contact: { email: "amina@example.com", phone: null, linkedin: null },

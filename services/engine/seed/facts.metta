@@ -33,7 +33,7 @@
 ; ---- builders ----
 ; amina-otieno: python verified by credential and project (evidence both); ai-metta only self-described
 (belongs-to amina-otieno cohort-2026a)
-(day-rate amina-otieno 120)
+(hourly-rate amina-otieno 15)
 (available amina-otieno 2026-09-20 2026-10-10)
 (supports-mode amina-otieno remote)
 (supports-mode amina-otieno hybrid)
@@ -44,7 +44,7 @@
 
 ; daniel-kiptoo: ai-metta verified by credential and project
 (belongs-to daniel-kiptoo cohort-2026a)
-(day-rate daniel-kiptoo 150)
+(hourly-rate daniel-kiptoo 19)
 (available daniel-kiptoo 2026-09-22 2026-10-03)
 (supports-mode daniel-kiptoo hybrid)
 (supports-mode daniel-kiptoo on-site)
@@ -53,7 +53,7 @@
 
 ; grace-wambui: ui-ux verified by credential
 (belongs-to grace-wambui cohort-2026a)
-(day-rate grace-wambui 100)
+(hourly-rate grace-wambui 13)
 (available grace-wambui 2026-09-15 2026-09-30)
 (supports-mode grace-wambui remote)
 (supports-mode grace-wambui hybrid)
@@ -63,7 +63,7 @@
 
 ; wanjiru-mwangi: frontend verified by credential
 (belongs-to wanjiru-mwangi cohort-2026b)
-(day-rate wanjiru-mwangi 140)
+(hourly-rate wanjiru-mwangi 18)
 (available wanjiru-mwangi 2026-09-22 2026-10-15)
 (supports-mode wanjiru-mwangi remote)
 (supports-mode wanjiru-mwangi hybrid)
@@ -72,7 +72,7 @@
 
 ; brian-odhiambo: backend verified by credential
 (belongs-to brian-odhiambo cohort-2026b)
-(day-rate brian-odhiambo 120)
+(hourly-rate brian-odhiambo 15)
 (available brian-odhiambo 2026-09-20 2026-10-10)
 (supports-mode brian-odhiambo remote)
 (located-in brian-odhiambo kisumu)
@@ -80,7 +80,7 @@
 
 ; fatuma-hassan: domain-research verified by credential
 (belongs-to fatuma-hassan cohort-2026b)
-(day-rate fatuma-hassan 80)
+(hourly-rate fatuma-hassan 10)
 (available fatuma-hassan 2026-09-18 2026-10-02)
 (supports-mode fatuma-hassan remote)
 (supports-mode fatuma-hassan hybrid)
@@ -89,7 +89,7 @@
 
 ; zawadi-njoroge: rust verified by credential
 (belongs-to zawadi-njoroge cohort-2025c)
-(day-rate zawadi-njoroge 130)
+(hourly-rate zawadi-njoroge 16)
 (available zawadi-njoroge 2026-09-22 2026-10-20)
 (supports-mode zawadi-njoroge remote)
 (located-in zawadi-njoroge nakuru)
@@ -97,7 +97,7 @@
 
 ; juma-kariuki: python verified by project but unavailable in the demo windows (availability gap case)
 (belongs-to juma-kariuki cohort-2026a)
-(day-rate juma-kariuki 90)
+(hourly-rate juma-kariuki 11)
 (available juma-kariuki 2026-10-05 2026-10-19)
 (supports-mode juma-kariuki remote)
 (supports-mode juma-kariuki hybrid)
@@ -106,7 +106,7 @@
 
 ; peter-omondi: data verified by credential, on-site only (mode gap case for remote briefs)
 (belongs-to peter-omondi cohort-2025c)
-(day-rate peter-omondi 110)
+(hourly-rate peter-omondi 14)
 (available peter-omondi 2026-09-22 2026-10-06)
 (supports-mode peter-omondi on-site)
 (located-in peter-omondi mombasa)
@@ -114,7 +114,7 @@
 
 ; samuel-kimani: backend verified by credential, overlaps the demo window by exactly 1 day (not available)
 (belongs-to samuel-kimani cohort-2026b)
-(day-rate samuel-kimani 100)
+(hourly-rate samuel-kimani 13)
 (available samuel-kimani 2026-09-29 2026-10-05)
 (supports-mode samuel-kimani remote)
 (located-in samuel-kimani nairobi)
@@ -122,7 +122,7 @@
 
 ; lucy-achieng: backend verified by project, overlaps the demo window by exactly 2 days (available)
 (belongs-to lucy-achieng cohort-2026b)
-(day-rate lucy-achieng 95)
+(hourly-rate lucy-achieng 12)
 (available lucy-achieng 2026-09-28 2026-10-05)
 (supports-mode lucy-achieng remote)
 (supports-mode lucy-achieng hybrid)
@@ -131,7 +131,7 @@
 
 ; kevin-mutua: ui-ux credential NOT confirmed; mobile only self-described
 (belongs-to kevin-mutua cohort-2026a)
-(day-rate kevin-mutua 70)
+(hourly-rate kevin-mutua 9)
 (available kevin-mutua 2026-09-22 2026-09-29)
 (supports-mode kevin-mutua remote)
 (located-in kevin-mutua nairobi)
@@ -140,7 +140,7 @@
 
 ; mercy-akinyi: frontend verified by project, but the account is NOT confirmed (never eligible)
 (belongs-to mercy-akinyi cohort-2026b)
-(day-rate mercy-akinyi 85)
+(hourly-rate mercy-akinyi 11)
 (available mercy-akinyi 2026-09-22 2026-10-10)
 (supports-mode mercy-akinyi remote)
 (supports-mode mercy-akinyi hybrid)
@@ -148,7 +148,7 @@
 
 ; hassan-abdi: only self-described skills (never eligible)
 (belongs-to hassan-abdi cohort-2026a)
-(day-rate hassan-abdi 60)
+(hourly-rate hassan-abdi 8)
 (available hassan-abdi 2026-09-22 2026-10-10)
 (supports-mode hassan-abdi remote)
 (located-in hassan-abdi nairobi)

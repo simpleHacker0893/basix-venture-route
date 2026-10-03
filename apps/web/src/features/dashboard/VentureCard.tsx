@@ -8,7 +8,7 @@ import { Link } from "react-router";
 import { DemoDataPill } from "../../components/DemoDataPill";
 import { Stepper } from "../../components/Stepper";
 import { MODE_LABELS } from "../../lib/brief";
-import { usd } from "../../lib/format";
+import { usdPerHour } from "../../lib/format";
 import { StatusBadge } from "../route/Badges";
 import { STAGES, stageStates, type VentureView } from "./ventureStage";
 
@@ -34,7 +34,7 @@ export function VentureCard({ view, routing, routingBusy, onViewRoute }: Venture
           {request.demoData ? <DemoDataPill /> : null}
         </span>
         <span className="font-mono text-[12.5px] text-ink-2">
-          {usd(request.dailyBudget)} · {MODE_LABELS[request.deliveryMode]} · {builders} {builders === 1 ? "builder" : "builders"}
+          {usdPerHour(request.hourlyBudget)} · {MODE_LABELS[request.deliveryMode]} · {builders} {builders === 1 ? "builder" : "builders"}
         </span>
         <button
           type="button"

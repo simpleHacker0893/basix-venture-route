@@ -45,11 +45,6 @@
         "format": "date-time",
         "type": "string"
       },
-      "dayRate": {
-        "exclusiveMinimum": 0,
-        "maximum": 9007199254740991,
-        "type": "integer"
-      },
       "demoData": {
         "default": true,
         "type": "boolean"
@@ -73,6 +68,11 @@
           "type": "string"
         },
         "type": "array"
+      },
+      "hourlyRate": {
+        "maximum": 50,
+        "minimum": 0,
+        "type": "integer"
       },
       "id": {
         "type": "string"
@@ -145,9 +145,9 @@
     "required": [
       "builderId",
       "createdAt",
-      "dayRate",
       "displayName",
       "eligibleSkills",
+      "hourlyRate",
       "id",
       "message",
       "path",
@@ -161,9 +161,9 @@
   "BidCreate": {
     "additionalProperties": false,
     "properties": {
-      "dayRate": {
-        "exclusiveMinimum": 0,
-        "maximum": 9007199254740991,
+      "hourlyRate": {
+        "maximum": 50,
+        "minimum": 0,
         "type": "integer"
       },
       "message": {
@@ -173,7 +173,7 @@
       }
     },
     "required": [
-      "dayRate"
+      "hourlyRate"
     ],
     "type": "object"
   },
@@ -483,11 +483,6 @@
         ],
         "type": "object"
       },
-      "dayRate": {
-        "exclusiveMinimum": 0,
-        "maximum": 9007199254740991,
-        "type": "integer"
-      },
       "demoData": {
         "default": true,
         "type": "boolean"
@@ -512,6 +507,11 @@
       "headline": {
         "maxLength": 200,
         "type": "string"
+      },
+      "hourlyRate": {
+        "maximum": 50,
+        "minimum": 0,
+        "type": "integer"
       },
       "linkedinUrl": {
         "anyOf": [
@@ -668,9 +668,9 @@
       "builderId",
       "confirmed",
       "contact",
-      "dayRate",
       "displayName",
       "headline",
+      "hourlyRate",
       "location",
       "modes",
       "selfDescribedSkills",
@@ -761,11 +761,6 @@
         },
         "type": "object"
       },
-      "dayRate": {
-        "exclusiveMinimum": 0,
-        "maximum": 9007199254740991,
-        "type": "integer"
-      },
       "demoData": {
         "default": true,
         "type": "boolean"
@@ -778,6 +773,11 @@
       "headline": {
         "maxLength": 200,
         "type": "string"
+      },
+      "hourlyRate": {
+        "maximum": 50,
+        "minimum": 0,
+        "type": "integer"
       },
       "location": {
         "maxLength": 100,
@@ -936,9 +936,9 @@
       "builderId",
       "confirmed",
       "contact",
-      "dayRate",
       "displayName",
       "headline",
+      "hourlyRate",
       "location",
       "modes",
       "projects",
@@ -965,7 +965,7 @@
                 "availabilityEnd",
                 "deliveryMode",
                 "location",
-                "dailyBudget",
+                "hourlyBudget",
                 "preferReusableIp"
               ],
               "type": "string"
@@ -999,19 +999,6 @@
                 ],
                 "default": null
               },
-              "dailyBudget": {
-                "anyOf": [
-                  {
-                    "exclusiveMinimum": 0,
-                    "maximum": 9007199254740991,
-                    "type": "integer"
-                  },
-                  {
-                    "type": "null"
-                  }
-                ],
-                "default": null
-              },
               "deliveryMode": {
                 "anyOf": [
                   {
@@ -1032,6 +1019,19 @@
                 "anyOf": [
                   {
                     "type": "boolean"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null
+              },
+              "hourlyBudget": {
+                "anyOf": [
+                  {
+                    "maximum": 250,
+                    "minimum": 1,
+                    "type": "integer"
                   },
                   {
                     "type": "null"
@@ -1172,11 +1172,6 @@
                 "format": "date",
                 "type": "string"
               },
-              "dailyBudget": {
-                "exclusiveMinimum": 0,
-                "maximum": 9007199254740991,
-                "type": "integer"
-              },
               "deliveryMode": {
                 "enum": [
                   "remote",
@@ -1188,6 +1183,11 @@
               "demoData": {
                 "default": true,
                 "type": "boolean"
+              },
+              "hourlyBudget": {
+                "maximum": 250,
+                "minimum": 1,
+                "type": "integer"
               },
               "id": {
                 "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$",
@@ -1249,8 +1249,8 @@
             "required": [
               "availabilityEnd",
               "availabilityStart",
-              "dailyBudget",
               "deliveryMode",
+              "hourlyBudget",
               "id",
               "maximumTeamSize",
               "preferReusableIp",
@@ -1287,11 +1287,6 @@
                         "type": "string"
                       },
                       "type": "array"
-                    },
-                    "dayRate": {
-                      "maximum": 9007199254740991,
-                      "minimum": -9007199254740991,
-                      "type": "integer"
                     },
                     "evidencePaths": {
                       "items": {
@@ -1347,6 +1342,11 @@
                       ],
                       "type": "string"
                     },
+                    "hourlyRate": {
+                      "maximum": 9007199254740991,
+                      "minimum": -9007199254740991,
+                      "type": "integer"
+                    },
                     "name": {
                       "type": "string"
                     }
@@ -1354,9 +1354,9 @@
                   "required": [
                     "builderId",
                     "covers",
-                    "dayRate",
                     "evidencePaths",
                     "evidenceType",
+                    "hourlyRate",
                     "name"
                   ],
                   "type": "object"
@@ -1632,7 +1632,7 @@
               "summary": {
                 "type": "string"
               },
-              "totalDailyRate": {
+              "totalHourlyRate": {
                 "maximum": 9007199254740991,
                 "minimum": -9007199254740991,
                 "type": "integer"
@@ -1644,7 +1644,7 @@
               "rulesApplied",
               "status",
               "summary",
-              "totalDailyRate"
+              "totalHourlyRate"
             ],
             "type": "object"
           },
@@ -1711,19 +1711,6 @@
                 ],
                 "default": null
               },
-              "dailyBudget": {
-                "anyOf": [
-                  {
-                    "exclusiveMinimum": 0,
-                    "maximum": 9007199254740991,
-                    "type": "integer"
-                  },
-                  {
-                    "type": "null"
-                  }
-                ],
-                "default": null
-              },
               "deliveryMode": {
                 "anyOf": [
                   {
@@ -1744,6 +1731,19 @@
                 "anyOf": [
                   {
                     "type": "boolean"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null
+              },
+              "hourlyBudget": {
+                "anyOf": [
+                  {
+                    "maximum": 250,
+                    "minimum": 1,
+                    "type": "integer"
                   },
                   {
                     "type": "null"
@@ -2035,11 +2035,6 @@
               "format": "date-time",
               "type": "string"
             },
-            "dayRate": {
-              "exclusiveMinimum": 0,
-              "maximum": 9007199254740991,
-              "type": "integer"
-            },
             "demoData": {
               "default": true,
               "type": "boolean"
@@ -2063,6 +2058,11 @@
                 "type": "string"
               },
               "type": "array"
+            },
+            "hourlyRate": {
+              "maximum": 50,
+              "minimum": 0,
+              "type": "integer"
             },
             "id": {
               "type": "string"
@@ -2135,9 +2135,9 @@
           "required": [
             "builderId",
             "createdAt",
-            "dayRate",
             "displayName",
             "eligibleSkills",
+            "hourlyRate",
             "id",
             "message",
             "path",
@@ -2232,11 +2232,6 @@
                   "format": "date",
                   "type": "string"
                 },
-                "dailyBudget": {
-                  "exclusiveMinimum": 0,
-                  "maximum": 9007199254740991,
-                  "type": "integer"
-                },
                 "deliveryMode": {
                   "enum": [
                     "remote",
@@ -2248,6 +2243,11 @@
                 "demoData": {
                   "default": true,
                   "type": "boolean"
+                },
+                "hourlyBudget": {
+                  "maximum": 250,
+                  "minimum": 1,
+                  "type": "integer"
                 },
                 "id": {
                   "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$",
@@ -2309,8 +2309,8 @@
               "required": [
                 "availabilityEnd",
                 "availabilityStart",
-                "dailyBudget",
                 "deliveryMode",
+                "hourlyBudget",
                 "id",
                 "maximumTeamSize",
                 "preferReusableIp",
@@ -2335,11 +2335,6 @@
             "createdAt": {
               "format": "date-time",
               "type": "string"
-            },
-            "dailyBudget": {
-              "exclusiveMinimum": 0,
-              "maximum": 9007199254740991,
-              "type": "integer"
             },
             "deliveryMode": {
               "enum": [
@@ -2456,6 +2451,11 @@
             "founderId": {
               "type": "string"
             },
+            "hourlyBudget": {
+              "maximum": 250,
+              "minimum": 1,
+              "type": "integer"
+            },
             "id": {
               "type": "string"
             },
@@ -2476,7 +2476,7 @@
                   ],
                   "type": "string"
                 },
-                "totalDailyRate": {
+                "totalHourlyRate": {
                   "maximum": 9007199254740991,
                   "minimum": -9007199254740991,
                   "type": "integer"
@@ -2485,7 +2485,7 @@
               "required": [
                 "builderIds",
                 "status",
-                "totalDailyRate"
+                "totalHourlyRate"
               ],
               "type": "object"
             },
@@ -2521,9 +2521,9 @@
             "availabilityStart",
             "brief",
             "createdAt",
-            "dailyBudget",
             "deliveryMode",
             "founderId",
+            "hourlyBudget",
             "id",
             "route",
             "routeStatus",
@@ -4234,11 +4234,6 @@
         ],
         "default": null
       },
-      "dayRate": {
-        "exclusiveMinimum": 0,
-        "maximum": 9007199254740991,
-        "type": "integer"
-      },
       "displayName": {
         "maxLength": 80,
         "minLength": 1,
@@ -4260,6 +4255,11 @@
         "default": "",
         "maxLength": 200,
         "type": "string"
+      },
+      "hourlyRate": {
+        "maximum": 50,
+        "minimum": 0,
+        "type": "integer"
       },
       "linkedin": {
         "anyOf": [
@@ -4383,8 +4383,8 @@
     },
     "required": [
       "availability",
-      "dayRate",
       "displayName",
+      "hourlyRate",
       "location",
       "modes",
       "selfDescribedSkills",
@@ -4578,11 +4578,6 @@
             "format": "date",
             "type": "string"
           },
-          "dailyBudget": {
-            "exclusiveMinimum": 0,
-            "maximum": 9007199254740991,
-            "type": "integer"
-          },
           "deliveryMode": {
             "enum": [
               "remote",
@@ -4594,6 +4589,11 @@
           "demoData": {
             "default": true,
             "type": "boolean"
+          },
+          "hourlyBudget": {
+            "maximum": 250,
+            "minimum": 1,
+            "type": "integer"
           },
           "id": {
             "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$",
@@ -4655,8 +4655,8 @@
         "required": [
           "availabilityEnd",
           "availabilityStart",
-          "dailyBudget",
           "deliveryMode",
+          "hourlyBudget",
           "id",
           "maximumTeamSize",
           "preferReusableIp",
@@ -4681,11 +4681,6 @@
       "createdAt": {
         "format": "date-time",
         "type": "string"
-      },
-      "dailyBudget": {
-        "exclusiveMinimum": 0,
-        "maximum": 9007199254740991,
-        "type": "integer"
       },
       "deliveryMode": {
         "enum": [
@@ -4802,6 +4797,11 @@
       "founderId": {
         "type": "string"
       },
+      "hourlyBudget": {
+        "maximum": 250,
+        "minimum": 1,
+        "type": "integer"
+      },
       "id": {
         "type": "string"
       },
@@ -4822,7 +4822,7 @@
             ],
             "type": "string"
           },
-          "totalDailyRate": {
+          "totalHourlyRate": {
             "maximum": 9007199254740991,
             "minimum": -9007199254740991,
             "type": "integer"
@@ -4831,7 +4831,7 @@
         "required": [
           "builderIds",
           "status",
-          "totalDailyRate"
+          "totalHourlyRate"
         ],
         "type": "object"
       },
@@ -4867,9 +4867,9 @@
       "availabilityStart",
       "brief",
       "createdAt",
-      "dailyBudget",
       "deliveryMode",
       "founderId",
+      "hourlyBudget",
       "id",
       "route",
       "routeStatus",
@@ -4893,11 +4893,6 @@
             "format": "date",
             "type": "string"
           },
-          "dailyBudget": {
-            "exclusiveMinimum": 0,
-            "maximum": 9007199254740991,
-            "type": "integer"
-          },
           "deliveryMode": {
             "enum": [
               "remote",
@@ -4909,6 +4904,11 @@
           "demoData": {
             "default": true,
             "type": "boolean"
+          },
+          "hourlyBudget": {
+            "maximum": 250,
+            "minimum": 1,
+            "type": "integer"
           },
           "id": {
             "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$",
@@ -4970,8 +4970,8 @@
         "required": [
           "availabilityEnd",
           "availabilityStart",
-          "dailyBudget",
           "deliveryMode",
+          "hourlyBudget",
           "id",
           "maximumTeamSize",
           "preferReusableIp",
@@ -4998,7 +4998,7 @@
             ],
             "type": "string"
           },
-          "totalDailyRate": {
+          "totalHourlyRate": {
             "maximum": 9007199254740991,
             "minimum": -9007199254740991,
             "type": "integer"
@@ -5007,7 +5007,7 @@
         "required": [
           "builderIds",
           "status",
-          "totalDailyRate"
+          "totalHourlyRate"
         ],
         "type": "object"
       }
@@ -6062,11 +6062,6 @@
         "format": "date",
         "type": "string"
       },
-      "dailyBudget": {
-        "exclusiveMinimum": 0,
-        "maximum": 9007199254740991,
-        "type": "integer"
-      },
       "deliveryMode": {
         "enum": [
           "remote",
@@ -6078,6 +6073,11 @@
       "demoData": {
         "default": true,
         "type": "boolean"
+      },
+      "hourlyBudget": {
+        "maximum": 250,
+        "minimum": 1,
+        "type": "integer"
       },
       "id": {
         "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$",
@@ -6139,8 +6139,8 @@
     "required": [
       "availabilityEnd",
       "availabilityStart",
-      "dailyBudget",
       "deliveryMode",
+      "hourlyBudget",
       "id",
       "maximumTeamSize",
       "preferReusableIp",
@@ -6174,11 +6174,6 @@
                 "type": "string"
               },
               "type": "array"
-            },
-            "dayRate": {
-              "maximum": 9007199254740991,
-              "minimum": -9007199254740991,
-              "type": "integer"
             },
             "evidencePaths": {
               "items": {
@@ -6234,6 +6229,11 @@
               ],
               "type": "string"
             },
+            "hourlyRate": {
+              "maximum": 9007199254740991,
+              "minimum": -9007199254740991,
+              "type": "integer"
+            },
             "name": {
               "type": "string"
             }
@@ -6241,9 +6241,9 @@
           "required": [
             "builderId",
             "covers",
-            "dayRate",
             "evidencePaths",
             "evidenceType",
+            "hourlyRate",
             "name"
           ],
           "type": "object"
@@ -6519,7 +6519,7 @@
       "summary": {
         "type": "string"
       },
-      "totalDailyRate": {
+      "totalHourlyRate": {
         "maximum": 9007199254740991,
         "minimum": -9007199254740991,
         "type": "integer"
@@ -6531,7 +6531,7 @@
       "rulesApplied",
       "status",
       "summary",
-      "totalDailyRate"
+      "totalHourlyRate"
     ],
     "type": "object"
   }

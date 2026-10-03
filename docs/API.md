@@ -5,7 +5,8 @@ Base URL locally: `http://localhost:8000` (`docker compose up engine` or
 
 Every request and response shape is a Zod schema in `packages/contracts` mirrored by a Pydantic
 model in the engine; `scripts/export_schema.py --check` keeps the two equal. Field names are
-camelCase on the wire, dates are ISO date-only strings, money is integer USD per day (D-16).
+camelCase on the wire, dates are ISO date-only strings, money is integer USD per hour (D-59, amending D-16): builder and bid rates 0–50, brief and
+request budgets 1–250 for the whole team.
 
 | Area | Endpoints | Auth |
 |---|---|---|
@@ -92,7 +93,7 @@ Request (`ChatTurn`):
 ```
 
 `currentBrief` is `Partial<VentureBrief>`: every field optional, `null` means unknown. Field
-values are validated (`maximumTeamSize` 1–5, positive `dailyBudget`, known modes and
+values are validated (`maximumTeamSize` 1–5, `hourlyBudget` 1–250, known modes and
 verticals); a malformed body answers `422` with the validation-error shape.
 
 Responses, discriminated by `type`:
@@ -124,22 +125,25 @@ The structured-form path: a full `VentureBrief` in, a `VentureRoute` out, no lan
 involved. `POST /api/conversation` returns the identical `route` object for the same brief.
 
 Request: a `VentureBrief` (PRD §5.3). `location` is required when `deliveryMode` is `on-site`;
-`maximumTeamSize` is 1–5; `dailyBudget` is a positive integer USD per day.
+`maximumTeamSize` is 1–5; `hourlyBudget` is an integer USD per hour for the whole team, 1–250 (D-59). A team fits when
+the sum of its members' `hourlyRate` is at most `hourlyBudget`; otherwise the route carries a
+`budget` gap: "Cheapest verified team costs USD {total} an hour; budget is USD {budget} an hour"
+with the next action "Raise the hourly budget to USD {total}".
 
 Response `200`: a `VentureRoute` (PRD §5.4):
 
 ```json
 {
   "status": "feasible",
-  "builders": [{ "builderId": "amina-otieno", "name": "Amina Otieno", "dayRate": 120,
+  "builders": [{ "builderId": "amina-otieno", "name": "Amina Otieno", "hourlyRate": 15,
                  "covers": ["python"], "evidenceType": "both", "evidencePaths": [{ "rule": "eligible-builder", "facts": ["..."], "conclusion": "..." }] }],
-  "totalDailyRate": 370,
+  "totalHourlyRate": 47,
   "reusableIp": { "assetId": "asset-afya-triage", "title": "Afya Triage", "path": { "rule": "reuse-fit", "...": "..." } },
   "cohort": { "cohortId": "cohort-2026a", "universityId": "omni-university", "path": { "rule": "cohort-of", "...": "..." } },
   "partner": { "partnerId": "amani-health", "path": { "rule": "partner-fit", "facts": ["(supports-vertical amani-health health)", "..."], "conclusion": "..." } },
   "gaps": [],
   "rulesApplied": ["cohort-of", "eligible-builder", "partner-fit", "reuse-fit"],
-  "summary": "Feasible route: 3 builders (Amina Otieno, Daniel Kiptoo, Grace Wambui) cover ai-metta, python, ui-ux for USD 370 a day. Reusable IP: Afya Triage. Partner: amani-health."
+  "summary": "Feasible route: 3 builders (Amina Otieno, Daniel Kiptoo, Grace Wambui) cover ai-metta, python, ui-ux for USD 47 an hour. Reusable IP: Afya Triage. Partner: amani-health."
 }
 ```
 
@@ -196,7 +200,7 @@ creates or replaces the profile (`ProfileInput`) and never touches the account s
 ```json
 {
   "displayName": "Jane Mwangi", "headline": "Backend builder", "cohortId": "cohort-2026a",
-  "location": "Nairobi", "dayRate": 140,
+  "location": "Nairobi", "hourlyRate": 18,
   "modes": { "remote": true, "hybrid": true, "onSite": false },
   "selfDescribedSkills": ["python", "backend"],
   "phone": "+254700000000", "linkedin": "linkedin.com/in/jane-mwangi",
@@ -208,7 +212,8 @@ creates or replaces the profile (`ProfileInput`) and never touches the account s
 }
 ```
 
-Rules: display name 1–80 characters with a letter or digit, at least one delivery mode, up to
+Rules: display name 1–80 characters with a letter or digit, `hourlyRate` an integer USD per
+hour from 0 (free) to 50 (D-59; `422` naming `hourlyRate` otherwise), at least one delivery mode, up to
 nine self-described skills from the nine skill ids, up to twelve availability ranges with
 `end ≥ start`. Sprint 005a (#94) adds four optional fields, all display-only (never an engine
 input that a rule reads, D-52): `skillSet` (picked by hand) and `suggestedSkills` (résumé chips
@@ -324,7 +329,7 @@ Role `founder` or `admin`. A confirmed builder as a founder sees them (`Candidat
 ```json
 {
   "builderId": "jane-mwangi", "displayName": "Jane Mwangi", "headline": "Backend builder",
-  "cohortId": "cohort-2026a", "location": "Nairobi", "dayRate": 140,
+  "cohortId": "cohort-2026a", "location": "Nairobi", "hourlyRate": 18,
   "modes": { "remote": true, "hybrid": true, "onSite": false },
   "availability": [{ "start": "2026-09-22", "end": "2026-10-20" }],
   "skills": [{ "id": "python", "name": "Python", "status": "verified", "evidence": "both" },
@@ -346,7 +351,7 @@ seed builder ids that have no account, answer `404 {"detail": "no confirmed buil
 No token needed; a token, if sent, is ignored (never `401`/`403`). An entry is public only when
 `showcased`, `showcaseStatus` is `confirmed`, the project is confirmed and the owner's account is
 confirmed: one predicate in the repository (`visible_showcase_projects()`) that both endpoints
-use. No response carries email, phone, location, day rate, availability or the `contact` block;
+use. No response carries email, phone, location, hourly rate, availability or the `contact` block;
 the builder is identified by `builderId` only.
 
 ### GET /api/showcase
@@ -427,7 +432,7 @@ seed builder with a `demo-` builder id, a `seed_demo_<slug>` placeholder Clerk i
 can carry, a `.invalid` email, no availability and never `mobile`; a confirmed, showcased
 project; and the `confirmations` rows (account, project, showcase, and credential where there is
 one) signed by the seed admin `seed_basix_admin`, who cannot sign in. Location
-`Schema placeholder`, day rate 1 and remote mode are schema placeholders, not claims: the store
+`Schema placeholder`, hourly rate 1 and remote mode are schema placeholders, not claims: the store
 requires them, the Showcase never shows them and no route reads them. Row ids are fixed uuid5
 values, so re-running updates in place and changes nothing. It reprojects once and exits non-zero
 on any error. The five demo scenarios route identically before and after (spec #86 Testing 7).
@@ -505,7 +510,7 @@ VOICE_TTS_INSTRUCTIONS, response_format: "mp3"}` as JSON to `POST
 ## Requests: `/api/requests` (Sprint 004)
 
 A request is a founder's published brief: the exact `VentureBrief` the engine routed plus a
-`route` snapshot `{ "status", "totalDailyRate", "builderIds" }` of what the founder saw. The
+`route` snapshot `{ "status", "totalHourlyRate", "builderIds" }` of what the founder saw. The
 web posts what it holds (the routing store's brief and the last route, spec #52 §Web); the
 engine validates the brief again and the snapshot is display-only: every eligibility question
 is answered by the engine again, never read from it. Requests, bids and bookings never become atoms (D-15). Admins have no access this sprint.
@@ -515,8 +520,8 @@ is answered by the engine again, never read from it. Requests, bids and bookings
 Role `founder`. Body `RequestCreate`:
 
 ```json
-{ "brief": { "id": "brief-constrained-01", "title": "…", "vertical": "health", "requiredSkills": ["mobile", "rust"], "maximumTeamSize": 2, "availabilityStart": "2026-09-22", "availabilityEnd": "2026-10-06", "deliveryMode": "remote", "location": null, "dailyBudget": 300, "preferReusableIp": false, "demoData": true },
-  "route": { "status": "partial", "totalDailyRate": 130, "builderIds": ["zawadi-njoroge"] } }
+{ "brief": { "id": "brief-constrained-01", "title": "…", "vertical": "health", "requiredSkills": ["mobile", "rust"], "maximumTeamSize": 2, "availabilityStart": "2026-09-22", "availabilityEnd": "2026-10-06", "deliveryMode": "remote", "location": null, "hourlyBudget": 38, "preferReusableIp": false, "demoData": true },
+  "route": { "status": "partial", "totalHourlyRate": 16, "builderIds": ["zawadi-njoroge"] } }
 ```
 
 The brief is validated as a `VentureBrief` (`422` names the field, e.g. `brief.requiredSkills:
@@ -526,7 +531,7 @@ when deliveryMode is on-site`). Response `201` `Request`:
 ```json
 { "id": "…", "founderId": "user_…", "brief": { … }, "route": { … },
   "title": "…", "vertical": "health", "deliveryMode": "remote", "availabilityStart": "2026-09-22",
-  "availabilityEnd": "2026-10-06", "dailyBudget": 300, "routeStatus": "partial",
+  "availabilityEnd": "2026-10-06", "hourlyBudget": 38, "routeStatus": "partial",
   "status": "open", "closedAt": null, "createdAt": "2026-09-23T07:30:00Z", "eligibility": null, "demoData": true }
 ```
 
@@ -577,10 +582,10 @@ check; the stored bid carries the skills and the reasoning path the engine retur
 Role `builder`; `404 {"detail": "no profile yet"}` without a profile. Body `BidCreate`:
 
 ```json
-{ "dayRate": 120, "message": "The field survey app demonstrates mobile." }
+{ "hourlyRate": 15, "message": "The field survey app demonstrates mobile." }
 ```
 
-`dayRate` is a positive integer USD per day (D-16), `message` up to 1000 characters and
+`hourlyRate` is an integer USD per hour, 0–50 (D-59; the web pre-fills it from the profile), `message` up to 1000 characters and
 optional. The request is locked, checked open, and the route service computes eligibility for
 the builder's slug:
 
@@ -594,7 +599,7 @@ the builder's slug:
 
 ```json
 { "id": "…", "requestId": "…", "requestTitle": "…", "requestStatus": "open",
-  "builderId": "naomi-chebet", "displayName": "Naomi Chebet", "dayRate": 120,
+  "builderId": "naomi-chebet", "displayName": "Naomi Chebet", "hourlyRate": 15,
   "message": "…", "eligibleSkills": ["mobile"],
   "path": { "rule": "eligible-builder", "facts": ["…"], "conclusion": "naomi-chebet is eligible for mobile with both evidence" },
   "status": "submitted", "createdAt": "2026-09-23T07:30:00Z", "demoData": true }

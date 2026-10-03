@@ -8,7 +8,7 @@ import { Link } from "react-router";
 
 import { DemoDataPill } from "../../components/DemoDataPill";
 import { SKILL_LABELS } from "../../lib/brief";
-import { usd } from "../../lib/format";
+import { usdPerHour } from "../../lib/format";
 import { initials, profileHref, proposeHref } from "./ventureStage";
 
 const OUTLINE = "inline-flex h-11 items-center justify-center rounded-xl border border-border-strong bg-surface-strong px-4 text-[14px] font-medium text-ink transition-colors hover:border-accent-green sm:h-10";
@@ -55,7 +55,7 @@ export function BidCard({ bid, variant }: BidCardProps) {
         <div className="flex min-w-0 flex-col gap-1.5">
           <span className="flex flex-wrap items-center gap-x-2.5 gap-y-1">
             <span className={`font-semibold text-ink ${card ? "text-[16px]" : "text-[15px]"}`}>{bid.displayName}</span>
-            <span className="font-mono text-[13px] text-ink-2">{usd(bid.dayRate)}</span>
+            <span className="font-mono text-[13px] text-ink-2">{usdPerHour(bid.hourlyRate)}</span>
             {bid.demoData ? <DemoDataPill /> : null}
           </span>
           <Skills bid={bid} label={card ? "Verified for" : undefined} />

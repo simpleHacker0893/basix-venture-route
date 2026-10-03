@@ -62,13 +62,13 @@ async def test_bids_are_listed_newest_first(
     """Esther Wanjala (project rejected, credential confirmed) is still verified for mobile."""
     request = await publish(api, founder)
     first = await bid(api, confirmed_builder, request["id"])
-    second = await bid(api, rejected_builder, request["id"], dayRate=95)
+    second = await bid(api, rejected_builder, request["id"], hourlyRate=12)
 
     response = await api.get(f"/api/requests/{request['id']}/bids", headers=founder.headers)
 
-    assert [(b["id"], b["builderId"], b["dayRate"]) for b in response.json()] == [
-        (second["id"], "esther-wanjala", 95),
-        (first["id"], "naomi-chebet", 120),
+    assert [(b["id"], b["builderId"], b["hourlyRate"]) for b in response.json()] == [
+        (second["id"], "esther-wanjala", 12),
+        (first["id"], "naomi-chebet", 15),
     ]
 
 
@@ -115,7 +115,7 @@ async def test_builder_sees_own_bids_with_the_request_title_and_status(
     assert (
         await api.post(
             f"/api/requests/{agri['id']}/bids",
-            json={"dayRate": 120},
+            json={"hourlyRate": 15},
             headers=confirmed_builder.headers,
         )
     ).status_code == 403, "not eligible for the Agri brief"

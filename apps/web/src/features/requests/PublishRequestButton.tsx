@@ -2,7 +2,7 @@
  * "Publish as request" on the route result (Sprint 004, #71; PRD §3.2). A signed-in founder
  * publishes the brief and route they just saw without re-entering anything: the client posts
  * what it holds (approach chosen by the Operator, spec #52 §Web): the routing store's current
- * brief and a snapshot `{status, totalDailyRate, builderIds}` of the last response's route.
+ * brief and a snapshot `{status, totalHourlyRate, builderIds}` of the last response's route.
  *
  * The snapshot is display-only. The engine validates the brief again as a VentureBrief and
  * answers every eligibility question by running `eligible-builder` over the graph (#61, #62);

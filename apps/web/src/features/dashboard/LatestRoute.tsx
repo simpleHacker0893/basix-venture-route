@@ -5,7 +5,7 @@
  */
 import type { Request } from "@venture-route/contracts";
 
-import { usd } from "../../lib/format";
+import { usdPerHour } from "../../lib/format";
 import { StatusBadge } from "../route/Badges";
 
 type LatestRouteProps = Readonly<{
@@ -40,7 +40,7 @@ export function LatestRoute({ request, busy, error, onWhy, variant = "card" }: L
       <section aria-label="Route result" className="flex flex-col gap-3 rounded-2xl border border-[#c9dfd3] bg-[#eef5f1] p-5 sm:flex-row sm:items-center sm:gap-6 sm:px-6">
         <StatusBadge status={request.routeStatus} />
         <span className="flex-1 text-[15px] font-medium text-ink">
-          {builders} {builders === 1 ? "builder" : "builders"} · {usd(request.route.totalDailyRate)}
+          {builders} {builders === 1 ? "builder" : "builders"} · {usdPerHour(request.route.totalHourlyRate)}
         </span>
         <div className="flex flex-col gap-1">
           {why}
@@ -62,8 +62,8 @@ export function LatestRoute({ request, busy, error, onWhy, variant = "card" }: L
           <dt className="text-[12px] text-ink-3">{builders === 1 ? "builder" : "builders"}</dt>
         </div>
         <div className="flex flex-col gap-0.5">
-          <dd className="font-display text-[24px] leading-none text-ink">USD {request.route.totalDailyRate}</dd>
-          <dt className="text-[12px] text-ink-3">per day</dt>
+          <dd className="font-display text-[24px] leading-none text-ink">USD {request.route.totalHourlyRate}</dd>
+          <dt className="text-[12px] text-ink-3">an hour</dt>
         </div>
       </dl>
       {why}

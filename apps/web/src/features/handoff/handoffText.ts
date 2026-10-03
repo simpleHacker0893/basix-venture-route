@@ -6,7 +6,7 @@
 import type { VentureBrief, VentureRoute } from "@venture-route/contracts";
 
 import { MODE_LABELS, SKILL_LABELS, VERTICAL_LABELS } from "../../lib/brief";
-import { EVIDENCE_LABEL, STATUS_LABEL, dateRange, usd } from "../../lib/format";
+import { EVIDENCE_LABEL, STATUS_LABEL, dateRange, usdPerHour } from "../../lib/format";
 
 const DEMO_DISCLAIMER =
   "All records are demo data. Routes are computed by MeTTa rules over demo records; this handoff restates the structured route only.";
@@ -22,7 +22,7 @@ export function handoffText(brief: VentureBrief, route: VentureRoute): string {
   lines.push(`Window: ${dateRange(brief.availabilityStart, brief.availabilityEnd)}`);
   lines.push(`Mode: ${MODE_LABELS[brief.deliveryMode]}${brief.location ? ` (${brief.location})` : ""}`);
   lines.push(`Team size: up to ${brief.maximumTeamSize}`);
-  lines.push(`Budget: ${usd(brief.dailyBudget)}`);
+  lines.push(`Budget: ${usdPerHour(brief.hourlyBudget)}`);
   lines.push(`Reusable IP: ${brief.preferReusableIp ? "preferred" : "not required"}`);
   lines.push("");
   lines.push(`STATUS: ${STATUS_LABEL[route.status]}`);
@@ -44,9 +44,9 @@ export function handoffText(brief: VentureBrief, route: VentureRoute): string {
   }
   for (const builder of route.builders) {
     const skills = builder.covers.map((s) => SKILL_LABELS[s]).join(", ");
-    lines.push(`- ${builder.name} · ${skills} · ${EVIDENCE_LABEL[builder.evidenceType]} · ${usd(builder.dayRate)}`);
+    lines.push(`- ${builder.name} · ${skills} · ${EVIDENCE_LABEL[builder.evidenceType]} · ${usdPerHour(builder.hourlyRate)}`);
   }
-  lines.push(`TOTAL DAY RATE: ${usd(route.totalDailyRate)}`);
+  lines.push(`TOTAL HOURLY RATE: ${usdPerHour(route.totalHourlyRate)}`);
   lines.push("");
 
   lines.push(

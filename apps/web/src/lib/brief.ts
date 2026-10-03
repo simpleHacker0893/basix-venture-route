@@ -49,7 +49,7 @@ export const REQUIRED_FIELDS: readonly BriefField[] = [
   "availabilityStart",
   "availabilityEnd",
   "deliveryMode",
-  "dailyBudget",
+  "hourlyBudget",
   "preferReusableIp",
 ];
 
@@ -63,7 +63,7 @@ export const FIELD_LABELS: Record<BriefField, string> = {
   availabilityEnd: "End",
   deliveryMode: "Mode",
   location: "Location",
-  dailyBudget: "Budget",
+  hourlyBudget: "Budget per hour (USD)",
   preferReusableIp: "Reusable IP",
 };
 
@@ -98,7 +98,7 @@ export function toBriefInput(brief: PartialBriefInput): VentureBriefInput | null
     availabilityEnd: brief.availabilityEnd!,
     deliveryMode: brief.deliveryMode!,
     location: brief.location ?? null,
-    dailyBudget: brief.dailyBudget!,
+    hourlyBudget: brief.hourlyBudget!,
     preferReusableIp: brief.preferReusableIp!,
     demoData: true,
   };

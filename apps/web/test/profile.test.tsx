@@ -43,7 +43,7 @@ function profile(overrides: Partial<BuilderProfile> = {}): BuilderProfile {
     headline: "Python and MeTTa builder",
     cohortId: "cohort-2026a",
     location: "Nairobi",
-    dayRate: 150,
+    hourlyRate: 19,
     modes: { remote: true, hybrid: true, onSite: false },
     selfDescribedSkills: ["backend"],
     contact: { email: "amina@example.com", phone: null, linkedin: null },
@@ -117,7 +117,7 @@ describe("/profile", () => {
     const form = await screen.findByRole("form", { name: "Builder profile" });
     await user.type(within(form).getByLabelText("Display name"), "Amina Otieno");
     await user.type(within(form).getByLabelText("Primary location / base"), "Nairobi");
-    await user.type(within(form).getByLabelText("Day rate"), "150");
+    await user.type(within(form).getByLabelText("Hourly rate (USD, 0–50)"), "19");
     await user.click(within(form).getByRole("checkbox", { name: "Remote" }));
     // Two months side by side: October's grid repeats September's last days as outside days.
     await user.click((await screen.findAllByRole("button", { name: /September 22nd, 2026/ }))[0]!);
@@ -128,13 +128,51 @@ describe("/profile", () => {
     expect(saved[0]).toMatchObject({
       displayName: "Amina Otieno",
       location: "Nairobi",
-      dayRate: 150,
+      hourlyRate: 19,
       modes: { remote: true, hybrid: false, onSite: false },
       availability: [{ start: "2026-09-22", end: "2026-09-29" }],
     });
     expect(saved[0]!.availability).toHaveLength(1);
     expect(await screen.findByText("Profile saved.")).toBeInTheDocument();
     // Two calendar months plus typed fields through the full app shell are slow in jsdom under parallel workers.
+  }, 40_000);
+
+  it("labels the rate per hour as a whole number from 0 to 50 and shows the bound inline (D-59)", async () => {
+    const user = userEvent.setup();
+    const saved: ProfileInput[] = [];
+    const marketplace = fakeMarketplace({
+      getProfile: async () => profile(),
+      putProfile: async (input) => {
+        saved.push(input);
+        return profile({ ...input });
+      },
+      ...noRows,
+    });
+
+    render(<App initialPath="/profile" source={source} auth={builderAuth} marketplace={marketplace} />);
+
+    const form = await screen.findByRole("form", { name: "Builder profile" });
+    const rate = within(form).getByLabelText("Hourly rate (USD, 0–50)");
+    expect(rate).toHaveValue(19);
+    expect(rate).toHaveAttribute("min", "0");
+    expect(rate).toHaveAttribute("max", "50");
+    expect(rate).toHaveAttribute("step", "1");
+    expect(within(form).getByText("an hour")).toBeInTheDocument();
+
+    await user.clear(rate);
+    await user.type(rate, "51");
+    await user.click(within(form).getByRole("button", { name: "Save profile" }));
+
+    expect(await within(form).findByRole("alert")).toHaveAttribute("id", "error-hourlyRate");
+    expect(rate).toHaveAttribute("aria-invalid", "true");
+    expect(saved).toHaveLength(0);
+
+    await user.clear(rate);
+    await user.type(rate, "0");
+    await user.click(within(form).getByRole("button", { name: "Save profile" }));
+
+    await waitFor(() => expect(saved).toHaveLength(1));
+    expect(saved[0]!.hourlyRate).toBe(0);
   }, 40_000);
 
   it("adds a credential and lists it as pending", async () => {

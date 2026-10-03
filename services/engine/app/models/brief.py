@@ -32,6 +32,8 @@ SafeInt = Annotated[int, Field(ge=-JS_SAFE_INT, le=JS_SAFE_INT)]
 PositiveSafeInt = Annotated[int, Field(gt=0, le=JS_SAFE_INT)]
 # Small positive integer (PRD 5.3); 1 to 5 per Sprint 001 requirements.md item 2.
 TeamSize = Annotated[int, Field(ge=1, le=5)]
+# Integer USD per hour for the whole team: 1 to 250, 50 an hour x the largest team of 5 (D-59).
+HourlyBudget = Annotated[int, Field(ge=1, le=250)]
 
 
 class VentureBrief(BaseModel):
@@ -48,7 +50,7 @@ class VentureBrief(BaseModel):
     availability_end: date = Field(alias="availabilityEnd")
     delivery_mode: DeliveryMode = Field(alias="deliveryMode")
     location: str | None = Field(default=None, min_length=1, max_length=100)
-    daily_budget: PositiveSafeInt = Field(alias="dailyBudget")
+    hourly_budget: HourlyBudget = Field(alias="hourlyBudget")
     prefer_reusable_ip: bool = Field(alias="preferReusableIp")
     demo_data: bool = Field(default=True, alias="demoData")
 

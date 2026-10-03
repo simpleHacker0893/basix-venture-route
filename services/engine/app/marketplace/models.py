@@ -99,7 +99,7 @@ class Profile(UuidRow, table=True):
     __tablename__ = "profiles"
     __table_args__ = (
         demo_data_check("profiles"),
-        CheckConstraint("day_rate > 0", name="ck_profiles_day_rate"),
+        CheckConstraint("hourly_rate >= 0 AND hourly_rate <= 50", name="ck_profiles_hourly_rate"),
         CheckConstraint(
             "supports_remote OR supports_hybrid OR supports_onsite", name="ck_profiles_mode"
         ),
@@ -113,7 +113,8 @@ class Profile(UuidRow, table=True):
     headline: str = Field(default="")
     cohort_id: str | None = Field(default=None)
     location: str
-    day_rate: int
+    # USD an hour, 0-50 (D-59, migration 0004).
+    hourly_rate: int
     supports_remote: bool = Field(default=False)
     supports_hybrid: bool = Field(default=False)
     supports_onsite: bool = Field(default=False)
@@ -247,7 +248,9 @@ class Request(UuidRow, table=True):
     __table_args__ = (
         demo_data_check("requests"),
         CheckConstraint("availability_end >= availability_start", name="ck_requests_window"),
-        CheckConstraint("daily_budget > 0", name="ck_requests_daily_budget"),
+        CheckConstraint(
+            "hourly_budget >= 1 AND hourly_budget <= 250", name="ck_requests_hourly_budget"
+        ),
         CheckConstraint(_in("route_status", ROUTE_STATUSES), name="ck_requests_route_status"),
         CheckConstraint(_in("status", REQUEST_STATUSES), name="ck_requests_status"),
         Index("ix_requests_status_created_at", "status", "created_at"),
@@ -260,7 +263,7 @@ class Request(UuidRow, table=True):
     delivery_mode: str
     availability_start: date
     availability_end: date
-    daily_budget: int
+    hourly_budget: int
     route: dict[str, Any] = Field(sa_column=Column(JSONB, nullable=False))
     route_status: str
     status: str = Field(default="open", sa_column_kwargs={"server_default": "open"})
@@ -274,7 +277,7 @@ class Bid(UuidRow, table=True):
     __tablename__ = "bids"
     __table_args__ = (
         demo_data_check("bids"),
-        CheckConstraint("day_rate > 0", name="ck_bids_day_rate"),
+        CheckConstraint("hourly_rate >= 0 AND hourly_rate <= 50", name="ck_bids_hourly_rate"),
         CheckConstraint(
             f"char_length(message) <= {BID_MESSAGE_MAX}", name="ck_bids_message_length"
         ),
@@ -284,7 +287,7 @@ class Bid(UuidRow, table=True):
 
     request_id: UUID = Field(foreign_key="requests.id", index=True)
     profile_id: UUID = Field(foreign_key="profiles.id", index=True)
-    day_rate: int
+    hourly_rate: int
     message: str = Field(default="", sa_column_kwargs={"server_default": ""})
     eligible_skills: list[str] = Field(sa_column=Column(JSONB, nullable=False))
     path: dict[str, Any] = Field(sa_column=Column(JSONB, nullable=False))

@@ -50,13 +50,13 @@ const dashboard: Dashboard = {
       id: "r-constrained",
       founderId: "user_founder",
       brief: constrained,
-      route: { status: "partial", totalDailyRate: 130, builderIds: ["zawadi-njoroge"] },
+      route: { status: "partial", totalHourlyRate: 16, builderIds: ["zawadi-njoroge"] },
       title: constrained.title,
       vertical: constrained.vertical,
       deliveryMode: constrained.deliveryMode,
       availabilityStart: constrained.availabilityStart,
       availabilityEnd: constrained.availabilityEnd,
-      dailyBudget: constrained.dailyBudget,
+      hourlyBudget: constrained.hourlyBudget,
       routeStatus: "partial",
       status: "open",
       closedAt: null,
@@ -68,13 +68,13 @@ const dashboard: Dashboard = {
       id: "r-health",
       founderId: "user_founder",
       brief: health,
-      route: { status: "feasible", totalDailyRate: 370, builderIds: ["amina-otieno", "daniel-kiptoo", "grace-wambui"] },
+      route: { status: "feasible", totalHourlyRate: 47, builderIds: ["amina-otieno", "daniel-kiptoo", "grace-wambui"] },
       title: health.title,
       vertical: health.vertical,
       deliveryMode: health.deliveryMode,
       availabilityStart: health.availabilityStart,
       availabilityEnd: health.availabilityEnd,
-      dailyBudget: health.dailyBudget,
+      hourlyBudget: health.hourlyBudget,
       routeStatus: "feasible",
       status: "closed",
       closedAt: "2026-09-23T09:00:00Z",
@@ -91,7 +91,7 @@ const dashboard: Dashboard = {
       requestStatus: "open",
       builderId: "naomi-chebet",
       displayName: "Naomi Chebet",
-      dayRate: 120,
+      hourlyRate: 15,
       message: "The field survey app demonstrates mobile.",
       eligibleSkills: ["mobile"],
       path,
@@ -165,7 +165,7 @@ describe("/dashboard", () => {
     expect(rows[0]).toHaveTextContent(constrained.title);
     expect(rows[0]).toHaveTextContent("Partial");
     expect(rows[0]).toHaveTextContent("Open");
-    expect(rows[0]).toHaveTextContent("USD 300 / day · Remote · 1 builder");
+    expect(rows[0]).toHaveTextContent("USD 38 an hour · Remote · 1 builder");
     expect(within(rows[0]!).getByText("Demo data")).toBeInTheDocument();
     expect(rows[1]).toHaveTextContent("Feasible");
     expect(rows[1]).toHaveTextContent("Closed");
@@ -177,7 +177,8 @@ describe("/dashboard", () => {
     const bids = screen.getByRole("region", { name: "Bids to review" });
     expect(within(bids).getByText("Builders who applied to work on your published request.")).toBeInTheDocument();
     expect(bids).toHaveTextContent("Naomi Chebet");
-    expect(bids).toHaveTextContent("USD 120 / day");
+    expect(bids).toHaveTextContent("USD 15 an hour");
+    expect(bids).not.toHaveTextContent("/ day");
     expect(bids).toHaveTextContent(`for ${constrained.title}`);
     expect(within(bids).getByRole("link", { name: "Propose interview" })).toHaveAttribute(
       "href",

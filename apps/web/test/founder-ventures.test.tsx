@@ -38,13 +38,13 @@ function request(id: string, brief: typeof health, overrides: Partial<Request> =
     id,
     founderId: "user_founder",
     brief,
-    route: { status: "feasible", totalDailyRate: 370, builderIds: ["amina-otieno", "daniel-kiptoo", "grace-wambui"] },
+    route: { status: "feasible", totalHourlyRate: 47, builderIds: ["amina-otieno", "daniel-kiptoo", "grace-wambui"] },
     title: brief.title,
     vertical: brief.vertical,
     deliveryMode: brief.deliveryMode,
     availabilityStart: brief.availabilityStart,
     availabilityEnd: brief.availabilityEnd,
-    dailyBudget: brief.dailyBudget,
+    hourlyBudget: brief.hourlyBudget,
     routeStatus: "feasible",
     status: "open",
     closedAt: null,
@@ -63,7 +63,7 @@ function bid(id: string, requestId: string, name: string, builderId: string, ski
     requestStatus: "open",
     builderId,
     displayName: name,
-    dayRate: 140,
+    hourlyRate: 18,
     message,
     eligibleSkills: skills,
     path: { rule: "eligible-builder", facts: ["(confirmed admin-basix x)"], conclusion: "x is eligible" },
@@ -103,7 +103,7 @@ const counts = (c: Partial<Dashboard["counts"]> = {}): Dashboard["counts"] => ({
 
 const withBids: Dashboard = {
   counts: counts({ openRequests: 2, bidsReceived: 3, bookings: 0 }),
-  requests: [request("r-health", health, { createdAt: "2026-09-23T07:30:00Z" }), request("r-agri", agri, { createdAt: "2026-09-21T07:30:00Z", routeStatus: "partial", route: { status: "partial", totalDailyRate: 250, builderIds: ["a", "b"] } })],
+  requests: [request("r-health", health, { createdAt: "2026-09-23T07:30:00Z" }), request("r-agri", agri, { createdAt: "2026-09-21T07:30:00Z", routeStatus: "partial", route: { status: "partial", totalHourlyRate: 31, builderIds: ["a", "b"] } })],
   bidsReceived: [
     bid("b-1", "r-health", "Amina Otieno", "amina-otieno", ["python", "backend"], "Available weekdays, remote."),
     bid("b-2", "r-health", "Brian Mwangi", "brian-mwangi", ["frontend", "ui-ux", "python"]),
@@ -196,7 +196,7 @@ describe("/dashboard with requests", () => {
     );
   });
 
-  it("shows the latest route (status, builders, daily rate) and opens the reasoning drawer from it", async () => {
+  it("shows the latest route (status, builders, hourly rate) and opens the reasoning drawer from it", async () => {
     const user = userEvent.setup();
     renderAt("/dashboard", withBids);
 
@@ -204,7 +204,7 @@ describe("/dashboard with requests", () => {
     expect(latest).toHaveTextContent("Feasible");
     expect(latest).toHaveTextContent(health.title); // the most recent request by creation time
     expect(latest).toHaveTextContent("3");
-    expect(latest).toHaveTextContent("USD 370");
+    expect(latest).toHaveTextContent("USD 47");
     await user.click(within(latest).getByRole("button", { name: /Why this route\? See the rules and facts/ }));
 
     expect(await screen.findByRole("dialog", { name: "Why this route?" })).toBeInTheDocument();
@@ -277,12 +277,12 @@ describe("/ventures/:requestId", () => {
 
     const brief = screen.getByRole("region", { name: "Brief" });
     expect(brief).toHaveTextContent("Hybrid");
-    expect(brief).toHaveTextContent(`USD ${health.dailyBudget} / day`);
+    expect(brief).toHaveTextContent(`USD ${health.hourlyBudget} an hour`);
     expect(within(brief).getByRole("button", { name: "View route →" })).toBeInTheDocument();
 
     const strip = screen.getByRole("region", { name: "Route result" });
     expect(strip).toHaveTextContent("Feasible");
-    expect(strip).toHaveTextContent("3 builders · USD 370 / day");
+    expect(strip).toHaveTextContent("3 builders · USD 47 an hour");
     expect(within(strip).getByRole("button", { name: "Why this route? →" })).toBeInTheDocument();
 
     const bids = screen.getByRole("list", { name: "Bids" });

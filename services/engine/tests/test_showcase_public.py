@@ -23,7 +23,7 @@ VIDEO_ID = "dQw4w9WgXcQ"
 VIDEO = f"https://www.youtube.com/watch?v={VIDEO_ID}"
 NAOMI_PHONE = "+254700111222"
 NAOMI_LINKEDIN_CONTACT = "linkedin.com/in/naomi-private-contact"
-FORBIDDEN_KEYS = {"email", "phone", "location", "dayRate", "availability", "contact"}
+FORBIDDEN_KEYS = {"email", "phone", "location", "hourlyRate", "availability", "contact"}
 
 AT_P1 = datetime(2026, 9, 20, 9, 0, tzinfo=UTC)
 AT_LATER = datetime(2026, 9, 21, 9, 0, tzinfo=UTC)

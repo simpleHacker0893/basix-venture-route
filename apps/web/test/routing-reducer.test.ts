@@ -19,7 +19,7 @@ const brief: VentureBrief = {
   availabilityEnd: "2026-10-06",
   deliveryMode: "remote",
   location: null,
-  dailyBudget: 300,
+  hourlyBudget: 38,
   preferReusableIp: false,
   demoData: true,
 };
@@ -30,7 +30,7 @@ const route: VentureRoute = {
     {
       builderId: "zawadi-njoroge",
       name: "Zawadi Njoroge",
-      dayRate: 130,
+      hourlyRate: 16,
       covers: ["rust"],
       evidenceType: "credential",
       evidencePaths: [
@@ -42,7 +42,7 @@ const route: VentureRoute = {
       ],
     },
   ],
-  totalDailyRate: 130,
+  totalHourlyRate: 16,
   reusableIp: null,
   cohort: null,
   partner: null,
@@ -98,7 +98,7 @@ describe("hydrated", () => {
     });
     state = routingReducer(state, {
       type: "response-received",
-      response: { type: "validation-error", message: "dailyBudget: required" },
+      response: { type: "validation-error", message: "hourlyBudget: required" },
     });
     state = routingReducer(state, { type: "engine-unreachable", message: "down" });
     state = routingReducer(state, { type: "request-started" });

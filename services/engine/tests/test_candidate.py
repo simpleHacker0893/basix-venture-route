@@ -71,7 +71,7 @@ async def test_confirmed_builder_shows_verified_skills_projects_and_shared_conta
     assert body["builderId"] == "jane-mwangi"
     assert body["displayName"] == "Jane Mwangi"
     assert body["cohortId"] == "cohort-2026a"
-    assert body["dayRate"] == 140
+    assert body["hourlyRate"] == 18
     assert body["modes"] == {"remote": True, "hybrid": True, "onSite": False}
     assert body["availability"] == [{"start": "2026-09-22", "end": "2026-10-20"}]
     assert body["confirmed"] is True

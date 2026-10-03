@@ -15,7 +15,7 @@ export type ProfileProgressInput = Readonly<{
   headline: string;
   skillCount: number;
   windows: number;
-  dayRate: string;
+  hourlyRate: string;
   modes: Readonly<{ remote: boolean; hybrid: boolean; onSite: boolean }>;
   location: string;
   sharing: Readonly<{ email: boolean; phone: boolean; linkedin: boolean }>;
@@ -23,7 +23,7 @@ export type ProfileProgressInput = Readonly<{
 }>;
 
 export function profileSections(input: ProfileProgressInput): ProfileSection[] {
-  const rate = Number(input.dayRate);
+  const rate = Number(input.hourlyRate);
   return [
     {
       id: "profile-about",
@@ -35,8 +35,8 @@ export function profileSections(input: ProfileProgressInput): ProfileSection[] {
     {
       id: "profile-availability",
       label: "Availability",
-      done: input.windows > 0 && Number.isFinite(rate) && rate > 0,
-      next: "add when you are available and your day rate",
+      done: input.windows > 0 && input.hourlyRate.trim() !== "" && Number.isFinite(rate) && rate >= 0,
+      next: "add when you are available and your hourly rate",
     },
     {
       id: "profile-modes",

@@ -33,7 +33,7 @@ const candidate: Candidate = {
   headline: "Mobile builder",
   cohortId: null,
   location: "Nairobi",
-  dayRate: 120,
+  hourlyRate: 15,
   modes: { remote: true, hybrid: false, onSite: false },
   availability: [{ start: "2026-09-22", end: "2026-10-20" }],
   skills: [{ id: "mobile", name: "Mobile", status: "verified", evidence: "both" }],
