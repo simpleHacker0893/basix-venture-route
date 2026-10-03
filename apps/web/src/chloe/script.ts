@@ -163,5 +163,5 @@ export function consentCaption(kind: VoiceProvider["kind"] | undefined): string 
  * on-screen text stored in the `chloe` turn is unchanged.
  */
 export function spokenForm(text: string): string {
-  return text.replaceAll(" / day", " a day").replaceAll(" – ", " to ").replaceAll("UI/UX", "U I U X");
+  return text.replaceAll(" – ", " to ").replaceAll("UI/UX", "U I U X");
 }

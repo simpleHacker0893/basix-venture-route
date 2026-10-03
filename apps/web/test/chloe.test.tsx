@@ -408,8 +408,8 @@ describe("Chloe on /route", () => {
     } as unknown as Window;
     const provider = selectProvider("web", false, win, { transform: spokenForm });
 
-    await provider!.speak("Budget USD 400 / day.");
-    expect(said).toEqual(["Budget USD 400 a day."]);
+    await provider!.speak("Skills UI/UX. Budget USD 50 an hour.");
+    expect(said).toEqual(["Skills U I U X. Budget USD 50 an hour."]);
   });
   it("leaving /route and coming back repeats nothing: no new spoken lines, no new chloe-turns", async () => {
     const voice = createFakeVoiceProvider();
