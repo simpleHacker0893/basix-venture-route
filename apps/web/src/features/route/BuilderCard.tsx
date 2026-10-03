@@ -11,7 +11,7 @@ type BuilderCardProps = Readonly<{
   onViewEvidence?(builderId: string): void;
 }>;
 
-/** One selected builder: name, day rate, covered skills, evidence badge, Demo data pill. */
+/** One selected builder: name, hourly rate, covered skills, evidence badge, Demo data pill. */
 export function BuilderCard({ builder, onViewEvidence }: BuilderCardProps) {
   return (
     <article

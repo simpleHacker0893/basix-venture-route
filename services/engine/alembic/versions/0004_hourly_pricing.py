@@ -84,6 +84,7 @@ def _profiles_down() -> None:
 
 def _requests_up() -> None:
     converted = _count("SELECT count(*) FROM requests")
+    snapshots = _count("SELECT count(*) FROM requests WHERE route ? 'totalDailyRate'")
     op.drop_constraint("ck_requests_daily_budget", "requests", type_="check")
     op.alter_column("requests", "daily_budget", new_column_name="hourly_budget")
     brief_budget = _budget("(brief->>'dailyBudget')::numeric")
@@ -104,6 +105,7 @@ def _requests_up() -> None:
         f"hourly_budget >= {MIN_HOURLY_BUDGET} AND hourly_budget <= {MAX_HOURLY_BUDGET}",
     )
     print(f"0004_hourly_pricing: converted {converted} request(s) to an hourly budget")
+    print(f"0004_hourly_pricing: converted {snapshots} route snapshot(s) to totalHourlyRate")
 
 
 def _requests_down() -> None:

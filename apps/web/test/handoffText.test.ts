@@ -18,7 +18,7 @@ function scenario(id: keyof typeof snapshot.routes) {
 }
 
 describe("handoffText", () => {
-  it("Health pilot: status, three team lines with day rates, total, IP, cohort, partner, rules, disclaimer", () => {
+  it("Health pilot: status, three team lines with hourly rates, total, IP, cohort, partner, rules, disclaimer", () => {
     const { brief, route } = scenario("brief-health-01");
 
     const text = handoffText(brief, route);

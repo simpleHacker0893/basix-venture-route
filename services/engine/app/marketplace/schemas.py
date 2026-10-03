@@ -558,7 +558,7 @@ class Dashboard(Wire):
 
 
 # -- Sprint 005a (spec #86 §API contracts, §Web): Builder Showcase and skill suggestions --------
-# Public reads never carry email, phone, location, day rate or availability (D-43). Link fields
+# Public reads never carry email, phone, location, hourly rate or availability (D-43). Link fields
 # are plain strings capped at 500 chars; `https://` / host / YouTube rules are enforced by the
 # endpoints through `app/marketplace/links.py` (#89), not by these wire shapes. `MatchedSkillKind`
 # and `ShowcaseStatus` are declared with the other top-level literals above.
@@ -603,7 +603,7 @@ class ShowcasePage(Wire):
 
 class ShowcaseBuilder(Wire):
     """The builder panel (story 42): verified skills, self-described chips, certifications and
-    public profile links only; never email, phone, location, day rate or availability (D-43)."""
+    public profile links only; never email, phone, location, hourly rate or availability (D-43)."""
 
     builder_id: str = Field(alias="builderId")
     display_name: DisplayName = Field(alias="displayName")
