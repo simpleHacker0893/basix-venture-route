@@ -131,7 +131,7 @@ test("founder sees the bid on the dashboard and proposes an interview", async ({
   await expect(bids).toContainText(displayName());
   await expect(bids).toContainText("USD 15 an hour");
 
-  await bids.getByRole("link", { name: "Book interview" }).first().click();
+  await bids.getByRole("link", { name: "Propose interview" }).first().click();
   await expect(page.getByRole("heading", { level: 1, name: `Book an interview with ${displayName()}` })).toBeVisible();
   await page.getByRole("button", { name: /September 24th, 2026/ }).click();
   await page.getByRole("radio", { name: "10:30 EAT" }).click();

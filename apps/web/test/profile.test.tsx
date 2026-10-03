@@ -799,7 +799,7 @@ describe("/profile layout: strength rail and section checklist", () => {
       render(<App initialPath="/profile" source={source} auth={builderAuth} marketplace={marketplace} />);
 
       const strength = await screen.findByRole("region", { name: "Profile strength" });
-      // profile() has a name, a headline, skills, availability and a day rate, a mode and a location, shared email; no project yet.
+      // profile() has a name, a headline, skills, availability and an hourly rate, a mode and a location, shared email; no project yet.
       expect(strength).toHaveTextContent("5 of 6 done");
       expect(strength).toHaveTextContent("83%");
       expect(strength).toHaveTextContent("Next: add a project to your showcase.");
